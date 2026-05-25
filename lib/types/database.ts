@@ -1,0 +1,278 @@
+export type UserRole =
+  | 'owner'
+  | 'admin_pusat'
+  | 'spv'
+  | 'operator_produksi'
+  | 'gudang'
+  | 'accounting'
+  | 'kepala_cabang'
+
+export type StatusProduksi = 'Annealing' | 'Pas Berat' | 'Siap Packing' | 'Sudah Packing' | 'Reject'
+export type StatusShieldtag = 'Aktif' | 'Terdistribusi' | 'Terjual' | 'VOID'
+export type StatusKirimMut = 'Belum Dikirim' | 'Sudah Dikirim' | 'Cancel'
+export type StatusTerimaMut = 'Belum Diterima' | 'Sudah Diterima' | 'Cancel'
+export type StatusKirimPO = 'Belum Dikirim' | 'Sedang Diproses' | 'Sudah Dikirim' | 'Cancel'
+export type StatusTerimaPO = 'Belum Sampai' | 'Dalam Perjalanan' | 'Sudah Sampai' | 'Cancel'
+
+export interface UserProfile {
+  id: string
+  email: string
+  name: string
+  role: UserRole
+  toko: string | null
+  aktif: boolean
+  note: string | null
+  created_at: string
+  voided_at: string | null
+  void_reason: string | null
+}
+
+export interface Cabang {
+  id: number
+  kode: string
+  nama: string
+  alamat: string | null
+  kepala: string | null
+  telp: string | null
+  aktif: boolean
+  created_at: string
+  voided_at: string | null
+  void_reason: string | null
+}
+
+export interface Batch {
+  id: number
+  kode: string
+  tanggal: string
+  supplier: string | null
+  bahan_dari_pusat: number | null
+  foto_bahan_pusat: string | null
+  timbangan_akhir: number | null
+  foto_timbangan_akhir: string | null
+  sisa_fisik: number | null
+  foto_sisa_fisik: string | null
+  harga_beli: number | null
+  hpp_gr: number | null
+  biaya_tbh: BiayaTambahan[]
+  catatan: string | null
+  created_at: string
+  created_by: string | null
+  voided_at: string | null
+  void_reason: string | null
+}
+
+export interface BiayaTambahan {
+  nama: string
+  jumlah: number
+}
+
+export interface ProduksiItem {
+  id: number
+  kode: string
+  batch_kode: string | null
+  gramasi: string
+  pcs: number
+  total_gram: number | null
+  current_status: StatusProduksi | null
+  catatan: string | null
+  created_at: string
+  created_by: string | null
+  voided_at: string | null
+  void_reason: string | null
+}
+
+export interface ProduksiEvent {
+  id: number
+  produksi_item_id: number
+  tanggal: string
+  status: StatusProduksi
+  total_gram: number | null
+  sisa_serbuk: number | null
+  foto: string | null
+  foto_sisa_serbuk: string | null
+  fotos_extra: string[]
+  catatan: string | null
+  user_name: string | null
+  created_at: string
+  voided_at: string | null
+  void_reason: string | null
+}
+
+export interface Packing {
+  id: number
+  kode: string
+  produksi_item_id: number | null
+  tanggal: string
+  batch_kode: string | null
+  gramasi: string | null
+  pcs: number
+  total_gram: number | null
+  pic: string | null
+  foto: string | null
+  catatan: string | null
+  created_at: string
+  created_by: string | null
+  voided_at: string | null
+  void_reason: string | null
+}
+
+export interface Shieldtag {
+  id: number
+  kode: string
+  packing_id: number | null
+  batch_kode: string | null
+  gramasi: string | null
+  hpp: number | null
+  status: StatusShieldtag
+  lokasi: string | null
+  tgl_regis: string | null
+  tgl_dist: string | null
+  tgl_jual: string | null
+  harga_jual: number
+  created_at: string
+  voided_at: string | null
+  void_reason: string | null
+}
+
+export interface Mutasi {
+  id: number
+  kode: string
+  tanggal: string
+  cabang_tujuan: string | null
+  shieldtag_kodes: string[] | null
+  pcs: number | null
+  total_gram: number | null
+  pic: string | null
+  foto: string | null
+  catatan: string | null
+  status_kirim: StatusKirimMut
+  tanggal_kirim: string | null
+  status_terima: StatusTerimaMut
+  tanggal_terima: string | null
+  keterangan_tambahan: string | null
+  created_at: string
+  created_by: string | null
+  voided_at: string | null
+  void_reason: string | null
+}
+
+export interface StokToko {
+  id: number
+  tanggal: string
+  toko: string | null
+  gramasi: string
+  pcs: number
+  sumber: string
+  catatan: string | null
+  created_at: string
+  created_by: string | null
+}
+
+export interface POToko {
+  id: number
+  tanggal: string
+  toko: string | null
+  gramasi: string | null
+  pcspo: number
+  kirim: number | null
+  customer: string | null
+  status_g: StatusKirimPO
+  status_t: StatusTerimaPO
+  keterangan_tambahan: string | null
+  catatan: string | null
+  created_at: string
+  created_by: string | null
+  voided_at: string | null
+  void_reason: string | null
+}
+
+export interface AuditLog {
+  id: number
+  timestamp: string
+  user_id: string | null
+  user_name: string | null
+  user_role: string | null
+  action: string
+  module: string
+  record_key: string | null
+  record_id: string | null
+  before_data: Record<string, unknown> | null
+  after_data: Record<string, unknown> | null
+  reason: string | null
+}
+
+export interface Penjualan {
+  id: number
+  no_faktur: string | null
+  tanggal: string
+  tipe: string
+  status: string
+  tgl_selesai: string | null
+  source: string
+  toko: string | null
+  marketplace_akun: string | null
+  nama_customer: string
+  ktp_customer: string | null
+  hp_customer: string
+  shieldtag_kodes: string[]
+  gramasi: string
+  pcs: number
+  harga_jual: number
+  fee_marketplace: number
+  ongkir: number
+  hpp_total: number
+  profit: number
+  no_invoice_mktpl: string | null
+  catatan: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export interface BarangMasuk {
+  id: number
+  tanggal: string
+  gramasi: string
+  pcs: number
+  tipe: string
+  sumber: string | null
+  kondisi: string
+  pic: string
+  foto: string | null
+  catatan: string | null
+  created_by: string | null
+  created_at: string
+  batch_kode: string | null
+}
+
+// Role permissions helper
+export const ROLE_LABELS: Record<UserRole, string> = {
+  owner: 'Owner',
+  admin_pusat: 'Admin Pusat',
+  spv: 'Supervisor',
+  operator_produksi: 'Operator Produksi',
+  gudang: 'Gudang',
+  accounting: 'Accounting',
+  kepala_cabang: 'Kepala Cabang',
+}
+
+export const ROLE_ACCESS: Record<UserRole, string[]> = {
+  owner: ['*'],
+  admin_pusat: ['dashboard', 'bahan-baku', 'produksi', 'shieldtag', 'inventory', 'mutasi', 'penjualan', 'po-cabang', 'laporan', 'pengaturan', 'audit-log'],
+  spv: ['dashboard', 'bahan-baku', 'produksi', 'shieldtag', 'inventory', 'mutasi', 'penjualan', 'po-cabang', 'laporan'],
+  operator_produksi: ['dashboard', 'produksi', 'bahan-baku', 'shieldtag'],
+  gudang: ['dashboard', 'inventory', 'mutasi', 'shieldtag', 'po-cabang'],
+  accounting: ['dashboard', 'penjualan', 'laporan'],
+  kepala_cabang: ['dashboard', 'inventory', 'mutasi', 'penjualan', 'po-cabang', 'laporan'],
+}
+
+export const GRAMASI_OPTIONS = [
+  '0.1', '0.5', '1', '2', '5', '10', '20', '25', '50', '100', '250', '500', '1000'
+]
+
+export const STATUS_PRODUKSI_COLOR: Record<StatusProduksi, string> = {
+  'Pas Berat': 'blue',
+  'Annealing': 'amber',
+  'Siap Packing': 'green',
+  'Sudah Packing': 'purple',
+  'Reject': 'red',
+}
