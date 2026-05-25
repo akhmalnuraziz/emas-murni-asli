@@ -177,11 +177,11 @@ export default function LoginPage() {
             </div>
 
             <h2 className="text-[26px] font-bold text-white leading-[1.4] mb-4">
-              Selamat kembali ke<br />
+              Selamat Datang Di<br />
               <span className="text-amber-300">PT Emas Murni Asli.</span>
             </h2>
             <p className="text-sm text-white/60 leading-relaxed max-w-[260px]">
-              Sudah siap bekerja hari ini? Semua aktivitas produksi, inventory, dan laporan menunggu kamu di dalam. Ayo login dan mulai shift-mu! 💪
+              Sudah siap bekerja hari ini? Semua aktivitas produksi, inventory, dan laporan menunggu kamu di dalam. Ayo login dan mulai bekerja! 💪
             </p>
 
             {/* Role chips */}
