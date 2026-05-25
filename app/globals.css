@@ -1,4 +1,15 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-primary: #7C3AED;
+  --brand-secondary: #8B5CF6;
+  --brand-light: #A78BFA;
+  --brand-bg: #F5F3FF;
+  --brand-gold: #F59E0B;
+  --brand-dark: #1E1B4B;
+}
 
 body {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;

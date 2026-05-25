@@ -1,7 +1,32 @@
-export default function Page() {
+import { createClient } from '@/lib/supabase/server'
+import ProduksiClient from '@/components/modules/produksi/produksi-client'
+
+export default async function ProduksiPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const [
+    { data: profile },
+    { data: produksiList },
+    { data: batches },
+  ] = await Promise.all([
+    supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
+    supabase.from('produksi_item')
+      .select(`*, produksi_event(*)`)
+      .is('voided_at', null)
+      .order('created_at', { ascending: false }),
+    supabase.from('batch')
+      .select('kode, nama_batch, sisa_bahan_seharusnya, timbangan_akhir')
+      .is('voided_at', null)
+      .order('created_at', { ascending: false }),
+  ])
+
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 text-center py-20">
-      <p className="text-slate-400 text-sm">Modul produksi — sedang dibangun</p>
-    </div>
+    <ProduksiClient
+      produksiList={produksiList ?? []}
+      batches={batches ?? []}
+      userRole={profile?.role ?? 'operator_produksi'}
+      userName={profile?.name ?? ''}
+    />
   )
 }
