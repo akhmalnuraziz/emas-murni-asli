@@ -58,8 +58,8 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
      <aside className={cn(
   'fixed top-0 left-0 h-full w-64 bg-white border-r border-slate-100 flex flex-col z-50',
   'transition-transform duration-300 ease-in-out',
-  '-translate-x-full lg:translate-x-0',
-  mobileOpen && 'translate-x-0',
+  '-translate-x-full',
+  mobileOpen ? 'translate-x-0' : 'lg:translate-x-0',
 )}>
 
         {/* Logo / Brand */}
