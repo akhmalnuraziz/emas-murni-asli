@@ -241,18 +241,21 @@ export async function unlockBatch(batchId: number, batchKode: string) {
   return { success: true }
 }
 
-export async function updateSisaFisik(
-  batchId: number, batchKode: string,
-  sisaFisik: number, newFotosB64Json: string, existingFotosJson: string
-) {
+export async function updateSisaFisik(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
 
-  const newB64s   = newFotosB64Json ? JSON.parse(newFotosB64Json) : []
-  const existing  = existingFotosJson ? JSON.parse(existingFotosJson) : []
-  const fotoUrls  = newB64s.length > 0
+  const batchId   = parseInt(formData.get('batch_id') as string)
+  const batchKode = formData.get('batch_kode') as string
+  const sisaFisik = parseFloat(formData.get('sisa_fisik') as string)
+  const existingRaw = formData.get('existing_fotos') as string
+  const existing  = existingRaw ? JSON.parse(existingRaw) : []
+  const newB64Raw = formData.get('new_fotos_b64') as string
+  const newB64s   = newB64Raw ? JSON.parse(newB64Raw) : []
+
+  const fotoUrls = newB64s.length > 0
     ? await uploadBase64Fotos(supabase, newB64s, `sisa-fisik-${batchKode}`, existing)
     : existing
 
@@ -267,9 +270,9 @@ export async function updateSisaFisik(
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'UPDATE_SISA_FISIK', module: 'BAHAN_BAKU',
     record_key: batchKode, record_id: String(batchId),
-    after_data: { sisa_fisik: sisaFisik, fotos: fotoUrls.length },
+    after_data: { sisa_fisik: sisaFisik, fotos_uploaded: fotoUrls.length },
   })
 
   revalidatePath('/bahan-baku')
-  return { success: true }
+  return { success: true, fotosCount: fotoUrls.length }
 }

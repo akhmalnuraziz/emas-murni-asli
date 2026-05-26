@@ -305,9 +305,17 @@ export default function BahanBakuClient({ batches, userRole, userName }: Props) 
       const files=sfFotos[batch.id]??[]
       const newB64s=files.length>0?await filesToBase64(files):[]
       const existingUrls=Array.isArray(batch.foto_sisa_fisik)?batch.foto_sisa_fisik:[]
-      const res=await updateSisaFisik(batch.id,batch.kode,val,JSON.stringify(newB64s),JSON.stringify(existingUrls))
+      // Gunakan FormData — sama seperti createBatch yang sudah terbukti work
+      const fd=new FormData()
+      fd.set('batch_id',String(batch.id))
+      fd.set('batch_kode',batch.kode)
+      fd.set('sisa_fisik',String(val))
+      fd.set('existing_fotos',JSON.stringify(existingUrls))
+      fd.set('new_fotos_b64',JSON.stringify(newB64s))
+      const res=await updateSisaFisik(fd)
       if(res?.error){showToast(res.error,'error');return}
-      showToast('✅ Sisa fisik disimpan')
+      const fotosMsg=res?.fotosCount>0?` + ${res.fotosCount} foto`:''
+      showToast(`✅ Sisa fisik disimpan${fotosMsg}`)
       setSfFotos(p=>({...p,[batch.id]:[]}))
       setEditingSF(null)
     }finally{
