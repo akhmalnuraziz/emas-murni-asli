@@ -26,10 +26,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Sidebar selalu fixed — tidak ikut document flow */}
-      <Sidebar mobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-      {/* Content area — dorong ke kanan sejauh lebar sidebar (256px = w-64) */}
+      <Sidebar
+        mobileOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
       <div className="lg:ml-64 flex flex-col min-h-screen">
         <Header
           title={meta.title}
@@ -42,4 +42,4 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
     </div>
   )
-}"// layout v2" 
+}
