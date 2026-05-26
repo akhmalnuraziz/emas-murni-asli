@@ -471,7 +471,7 @@ export default function BahanBakuClient({ batches, userRole, userName }: Props) 
                     {status==='aktif'&&(
                       <>
                         {!isEditSF?(
-                          <button onClick={()=>{setEditingSF(batch.id);setSfInput(p=>({...p,[batch.id]:String(sisaFisik??'')}))}}
+                          <button onClick={()=>{setEditingSF(batch.id);setSfInput(p=>({...p,[batch.id]:String(sisaFisik??'')}));setSfExistingFotos(p=>({...p,[batch.id]:[...fotoSF]}))}}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-violet-600 bg-white hover:bg-violet-50 border border-violet-200 rounded-xl">
                             <Edit2 size={11}/>{sisaFisik!==null?'Edit Sisa Fisik':'Input Sisa Fisik'}
                           </button>
