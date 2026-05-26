@@ -264,6 +264,7 @@ export default function BahanBakuClient({ batches, userRole, userName }: Props) 
   const [sfInput, setSfInput]                                 = useState<Record<number,string>>({})
   const [sfFotos, setSfFotos]                                 = useState<Record<number,File[]>>({})
   const [sfUploading, setSfUploading]                         = useState<Record<number,boolean>>({})
+  const [sfExistingFotos, setSfExistingFotos]                 = useState<Record<number,string[]>>({})
 
   function showToast(msg:string,type:'success'|'error'='success'){setToast({msg,type});setTimeout(()=>setToast(null),3000)}
 
@@ -304,7 +305,7 @@ export default function BahanBakuClient({ batches, userRole, userName }: Props) 
     try{
       const files=sfFotos[batch.id]??[]
       const newB64s=files.length>0?await filesToBase64(files):[]
-      const existingUrls=Array.isArray(batch.foto_sisa_fisik)?batch.foto_sisa_fisik:[]
+      const existingUrls=sfExistingFotos[batch.id]??[]
       // Gunakan FormData — sama seperti createBatch yang sudah terbukti work
       const fd=new FormData()
       fd.set('batch_id',String(batch.id))
@@ -317,6 +318,7 @@ export default function BahanBakuClient({ batches, userRole, userName }: Props) 
       const fotosMsg=res?.fotosCount>0?` + ${res.fotosCount} foto`:''
       showToast(`✅ Sisa fisik disimpan${fotosMsg}`)
       setSfFotos(p=>({...p,[batch.id]:[]}))
+      setSfExistingFotos(p=>({...p,[batch.id]:[]}))
       setEditingSF(null)
     }finally{
       setSfUploading(p=>({...p,[batch.id]:false}))
@@ -477,7 +479,7 @@ export default function BahanBakuClient({ batches, userRole, userName }: Props) 
                           <div className="space-y-2 border border-violet-200 rounded-xl p-3 bg-white">
                             <div className="flex items-center justify-between">
                               <p className="text-xs font-semibold text-violet-700">Input Sisa Fisik</p>
-                              <button onClick={()=>{setEditingSF(null);setSfFotos(p=>({...p,[batch.id]:[]}))} } className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"><X size={13}/></button>
+                              <button onClick={()=>{setEditingSF(null);setSfFotos(p=>({...p,[batch.id]:[]}));setSfExistingFotos(p=>({...p,[batch.id]:[]}))} } className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"><X size={13}/></button>
                             </div>
                             <div className="flex gap-2">
                               <input type="number" step="0.01" value={sfInput[batch.id]??''} onChange={e=>setSfInput(p=>({...p,[batch.id]:e.target.value}))}
@@ -488,6 +490,24 @@ export default function BahanBakuClient({ batches, userRole, userName }: Props) 
                                 {sfUploading[batch.id]?'Menyimpan...':'Simpan'}
                               </button>
                             </div>
+                            {/* Existing photos dengan X button */}
+                            {(sfExistingFotos[batch.id]??[]).length>0&&(
+                              <div>
+                                <p className="text-[10px] text-slate-400 mb-1.5">Foto tersimpan — klik X untuk hapus</p>
+                                <div className="flex gap-2 flex-wrap">
+                                  {(sfExistingFotos[batch.id]??[]).map((url:string,i:number)=>(
+                                    <div key={i} className="relative w-16 h-16">
+                                      <img src={url} alt="" className="w-full h-full object-cover rounded-xl border border-slate-200"/>
+                                      <button type="button"
+                                        onClick={()=>setSfExistingFotos(p=>({...p,[batch.id]:(p[batch.id]??[]).filter((_,j)=>j!==i)}))}
+                                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600">
+                                        <X size={10}/>
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                             <FotoPicker files={sfFotos[batch.id]??[]}
                               onAdd={f=>setSfFotos(p=>({...p,[batch.id]:[...(p[batch.id]??[]),...f].slice(0,10)}))}
                               onRemove={i=>i===-1?setSfFotos(p=>({...p,[batch.id]:[]})):setSfFotos(p=>({...p,[batch.id]:(p[batch.id]??[]).filter((_,j)=>j!==i)}))}
