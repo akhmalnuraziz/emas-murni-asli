@@ -25,22 +25,32 @@ function hitungSelisih(pusat: number, gudang: number) {
 }
 
 // ─── Upload foto ke Supabase Storage dari browser ─────────────────────────────
-async function uploadFotos(files: File[], prefix: string): Promise<string[]> {
+async function uploadFotos(files: File[], prefix: string): Promise<{ urls: string[]; error?: string }> {
   const supabase = createClient()
   const urls: string[] = []
-  const safe = prefix.replace(/\//g, '_')
+  const safe = prefix.replace(/\//g, '_').replace(/\s/g, '-')
+
   for (let i = 0; i < Math.min(files.length, 10); i++) {
     const f = files[i]
     if (!f || f.size === 0) continue
-    const ext = f.name.split('.').pop() ?? 'jpg'
-    const path = `batch/${safe}/${Date.now()}_${i}.${ext}`
-    const { error } = await supabase.storage.from('emas-fotos').upload(path, f, { upsert: true })
-    if (!error) {
+    if (f.size > 8 * 1024 * 1024) return { urls, error: `${f.name} terlalu besar (max 8MB per foto)` }
+
+    try {
+      const ext = f.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+      const path = `batch/${safe}/${Date.now()}_${i}.${ext}`
+      const { error: uploadErr } = await supabase.storage
+        .from('emas-fotos')
+        .upload(path, f, { upsert: true, contentType: f.type || 'image/jpeg' })
+
+      if (uploadErr) return { urls, error: `Upload gagal: ${uploadErr.message}` }
+
       const { data } = supabase.storage.from('emas-fotos').getPublicUrl(path)
       urls.push(data.publicUrl)
+    } catch (err: any) {
+      return { urls, error: `Error: ${err?.message ?? 'Koneksi gagal'}` }
     }
   }
-  return urls
+  return { urls }
 }
 
 function getBatchStatus(b: any) {
@@ -101,13 +111,34 @@ function BatchForm({ initial, onSubmit, onCancel, isPending, error, isEdit = fal
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (newFotos.length === 0) {
+      const fd = new FormData(e.currentTarget)
+      fd.set('biaya_tbh', JSON.stringify(biayaTbh))
+      onSubmit(fd, existingFotos)
+      return
+    }
+
     setUploading(true)
-    const prefix = initial?.kode ?? `batch-${Date.now()}`
-    const uploadedUrls = newFotos.length > 0 ? await uploadFotos(newFotos, prefix) : []
-    setUploading(false)
-    const fd = new FormData(e.currentTarget)
-    fd.set('biaya_tbh', JSON.stringify(biayaTbh))
-    onSubmit(fd, [...existingFotos, ...uploadedUrls])
+    try {
+      const prefix = initial?.kode ?? `batch-${Date.now()}`
+      const { urls: uploadedUrls, error: uploadError } = await uploadFotos(newFotos, prefix)
+      if (uploadError) {
+        setUploading(false)
+        // Show error via parent's error state
+        const fd = new FormData(e.currentTarget)
+        fd.set('biaya_tbh', JSON.stringify(biayaTbh))
+        fd.set('upload_error', uploadError)
+        onSubmit(fd, existingFotos) // submit tanpa foto baru, biarkan parent handle error
+        return
+      }
+      setUploading(false)
+      const fd = new FormData(e.currentTarget)
+      fd.set('biaya_tbh', JSON.stringify(biayaTbh))
+      onSubmit(fd, [...existingFotos, ...uploadedUrls])
+    } catch (err: any) {
+      setUploading(false)
+      alert(`Upload error: ${err?.message ?? 'Coba lagi'}`)
+    }
   }
 
   return (
