@@ -10,7 +10,6 @@ async function generateBatchCode(supabase: any): Promise<string> {
   return `${BATCH_PREFIX}/${String((count ?? 0) + 1).padStart(4, '0')}`
 }
 
-// Hitung ulang sisa_bahan_seharusnya setelah ada produksi
 async function updateSisaSeharusnya(supabase: any, batchKode: string) {
   const { data: prodList } = await supabase
     .from('produksi_item').select('berat_awal')
@@ -23,27 +22,33 @@ async function updateSisaSeharusnya(supabase: any, batchKode: string) {
     }).eq('kode', batchKode)
   }
 }
-// Upload foto via server Supabase client (always authenticated)
-async function serverUploadFotos(supabase: any, formData: FormData, prefix: string, existing: string[]): Promise<string[]> {
-  const safe = prefix.replace(/[\/\s]/g, '_')
-  const count = parseInt(formData.get('foto_count') as string ?? '0')
+
+// Upload foto dari base64 string ke Supabase Storage (server selalu authenticated)
+async function uploadBase64Fotos(
+  supabase: any, b64Array: string[], prefix: string, existing: string[]
+): Promise<string[]> {
   const urls: string[] = [...existing]
-  for (let i = 0; i < count; i++) {
-    const file = formData.get(`foto_file_${i}`) as File | null
-    if (!file || file.size === 0) continue
-    const ext = file.name.split('.').pop() ?? 'jpg'
-    const path = `batch/${safe}/${Date.now()}_${i}.${ext}`
-    const { error } = await supabase.storage
-      .from('emas-fotos').upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' })
-    if (!error) {
-      const { data } = supabase.storage.from('emas-fotos').getPublicUrl(path)
-      urls.push(data.publicUrl)
+  const safe = prefix.replace(/[^a-zA-Z0-9_-]/g, '_')
+  for (let i = 0; i < b64Array.length; i++) {
+    const b64 = b64Array[i]
+    if (!b64) continue
+    try {
+      const base64Data = b64.replace(/^data:image\/\w+;base64,/, '')
+      const buffer = Buffer.from(base64Data, 'base64')
+      const path = `batch/${safe}/${Date.now()}_${i}.jpg`
+      const { error } = await supabase.storage
+        .from('emas-fotos')
+        .upload(path, buffer, { contentType: 'image/jpeg', upsert: true })
+      if (!error) {
+        const { data } = supabase.storage.from('emas-fotos').getPublicUrl(path)
+        urls.push(data.publicUrl)
+      }
+    } catch (err) {
+      console.error('Upload error:', err)
     }
   }
   return urls
 }
-
-
 
 export async function createBatch(formData: FormData) {
   const supabase = await createClient()
@@ -64,31 +69,30 @@ export async function createBatch(formData: FormData) {
   const beratPusat    = parseFloat(formData.get('bahan_dari_pusat') as string)
   const beratGudang   = parseFloat(formData.get('timbangan_akhir') as string)
 
-  if (!tanggalDatang)               return { error: 'Tanggal kedatangan wajib diisi' }
-  if (!tanggalBeli)                 return { error: 'Tanggal pembelian wajib diisi' }
+  if (!tanggalDatang) return { error: 'Tanggal kedatangan wajib diisi' }
+  if (!tanggalBeli)   return { error: 'Tanggal pembelian wajib diisi' }
   if (!beratPusat || beratPusat <= 0) return { error: 'Berat dari pusat wajib diisi' }
   if (!beratGudang || beratGudang <= 0) return { error: 'Berat timbangan gudang wajib diisi' }
 
-  // Selisih = Pusat - Gudang (positif = kiriman lebih berat, negatif = terima kurang)
-  const selisih     = beratPusat - beratGudang
-  const absSelisih  = Math.abs(selisih)
-  const catatan     = formData.get('catatan') as string
-
-  if (absSelisih > 0.05 && !catatan?.trim()) {
+  const selisih    = beratPusat - beratGudang
+  const catatan    = formData.get('catatan') as string
+  if (Math.abs(selisih) > 0.05 && !catatan?.trim()) {
     return { error: 'Selisih berat melewati batas toleransi (>0.05gr) — catatan wajib diisi' }
   }
 
-  const hargaBeli      = parseFloat(formData.get('harga_beli') as string) || 0
-  const biayaTbhRaw    = formData.get('biaya_tbh') as string
-  const biayaTbh       = biayaTbhRaw ? JSON.parse(biayaTbhRaw) : []
-  const totalBiayaTbh  = biayaTbh.reduce((s: number, b: any) => s + (b.jumlah || 0), 0)
-  const totalHpp       = hargaBeli + totalBiayaTbh
-  const hppGr          = beratGudang > 0 ? totalHpp / beratGudang : 0
+  const hargaBeli     = parseFloat(formData.get('harga_beli') as string) || 0
+  const biayaTbhRaw   = formData.get('biaya_tbh') as string
+  const biayaTbh      = biayaTbhRaw ? JSON.parse(biayaTbhRaw) : []
+  const totalBiayaTbh = biayaTbh.reduce((s: number, b: any) => s + (b.jumlah || 0), 0)
+  const totalHpp      = hargaBeli + totalBiayaTbh
+  const hppGr         = beratGudang > 0 ? totalHpp / beratGudang : 0
 
-  // Upload foto via server (compressed files dari client)
-  const existingFotosRaw = formData.get('existing_fotos') as string
-  const existing = existingFotosRaw ? JSON.parse(existingFotosRaw) : []
-  const fotoUrls = await serverUploadFotos(supabase, formData, kode, existing)
+  // Upload foto dari base64
+  const existingRaw = formData.get('existing_fotos') as string
+  const existing    = existingRaw ? JSON.parse(existingRaw) : []
+  const newB64Raw   = formData.get('new_fotos_b64') as string
+  const newB64s     = newB64Raw ? JSON.parse(newB64Raw) : []
+  const fotoUrls    = await uploadBase64Fotos(supabase, newB64s, kode, existing)
 
   const { data, error } = await supabase.from('batch').insert({
     kode,
@@ -105,7 +109,7 @@ export async function createBatch(formData: FormData) {
     hpp_gr:                hppGr,
     catatan:               catatan || null,
     fotos:                 fotoUrls,
-    sisa_bahan_seharusnya: beratGudang, // awal = full timbangan gudang
+    sisa_bahan_seharusnya: beratGudang,
     created_by:            user.id,
   }).select().single()
 
@@ -114,7 +118,7 @@ export async function createBatch(formData: FormData) {
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'CREATE_BATCH', module: 'BAHAN_BAKU',
-    record_key: kode, after_data: data,
+    record_key: kode, after_data: { kode, fotos_count: fotoUrls.length },
   })
 
   revalidatePath('/bahan-baku')
@@ -130,10 +134,9 @@ export async function updateBatch(batchId: number, batchKode: string, formData: 
   const beratPusat  = parseFloat(formData.get('bahan_dari_pusat') as string)
   const beratGudang = parseFloat(formData.get('timbangan_akhir') as string)
   const selisih     = beratPusat - beratGudang
-  const absSelisih  = Math.abs(selisih)
   const catatan     = formData.get('catatan') as string
 
-  if (absSelisih > 0.05 && !catatan?.trim()) {
+  if (Math.abs(selisih) > 0.05 && !catatan?.trim()) {
     return { error: 'Selisih berat melewati batas toleransi — catatan wajib diisi' }
   }
 
@@ -144,16 +147,17 @@ export async function updateBatch(batchId: number, batchKode: string, formData: 
   const totalHpp      = hargaBeli + totalBiayaTbh
   const hppGr         = beratGudang > 0 ? totalHpp / beratGudang : 0
 
-  const existingFotosRaw = formData.get('existing_fotos') as string
-  const existingFotos    = existingFotosRaw ? JSON.parse(existingFotosRaw) : undefined
-  const hasFotoFiles     = parseInt(formData.get('foto_count') as string ?? '0') > 0
-  const fotoUrls         = (hasFotoFiles || existingFotos !== undefined)
-    ? await serverUploadFotos(supabase, formData, batchKode, existingFotos ?? [])
-    : undefined
-  const sisaFisikRaw   = formData.get('sisa_fisik') as string
-  const sisaFisik      = sisaFisikRaw ? parseFloat(sisaFisikRaw) : null
+  const existingRaw = formData.get('existing_fotos') as string
+  const existing    = existingRaw ? JSON.parse(existingRaw) : []
+  const newB64Raw   = formData.get('new_fotos_b64') as string
+  const newB64s     = newB64Raw ? JSON.parse(newB64Raw) : []
+  const fotoUrls    = newB64s.length > 0
+    ? await uploadBase64Fotos(supabase, newB64s, batchKode, existing)
+    : existing
 
-  const updateData: any = {
+  const { data: before } = await supabase.from('batch').select('*').eq('id', batchId).single()
+
+  const { error } = await supabase.from('batch').update({
     nama_batch:       formData.get('nama_batch') as string,
     supplier:         formData.get('supplier') as string,
     tanggal:          formData.get('tanggal_datang') as string,
@@ -166,12 +170,9 @@ export async function updateBatch(batchId: number, batchKode: string, formData: 
     total_hpp:        totalHpp,
     hpp_gr:           hppGr,
     catatan:          catatan || null,
-  }
-  if (fotoUrls !== undefined) updateData.fotos = fotoUrls
-  if (sisaFisik !== null)     updateData.sisa_fisik = sisaFisik
+    fotos:            fotoUrls,
+  }).eq('id', batchId)
 
-  const { data: before } = await supabase.from('batch').select('*').eq('id', batchId).single()
-  const { error } = await supabase.from('batch').update(updateData).eq('id', batchId)
   if (error) return { error: error.message }
 
   await updateSisaSeharusnya(supabase, batchKode)
@@ -180,7 +181,7 @@ export async function updateBatch(batchId: number, batchKode: string, formData: 
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'EDIT_BATCH', module: 'BAHAN_BAKU',
     record_key: batchKode, record_id: String(batchId),
-    before_data: before, after_data: updateData,
+    before_data: before,
   })
 
   revalidatePath('/bahan-baku')
@@ -196,19 +197,13 @@ export async function deleteBatch(batchId: number, batchKode: string) {
 
   const { count: prodCount } = await supabase.from('produksi_item')
     .select('*', { count: 'exact', head: true }).eq('batch_kode', batchKode).is('voided_at', null)
-  if ((prodCount ?? 0) > 0) {
-    return { error: `Batch memiliki ${prodCount} data produksi aktif. Hapus data produksi terlebih dahulu.` }
-  }
+  if ((prodCount ?? 0) > 0) return { error: `Batch memiliki ${prodCount} data produksi. Hapus produksi terlebih dahulu.` }
 
-  const { data: before } = await supabase.from('batch').select('*').eq('id', batchId).single()
-  await supabase.from('batch').update({
-    voided_at: new Date().toISOString(), void_reason: 'DELETED_BY_USER'
-  }).eq('id', batchId)
+  await supabase.from('batch').update({ voided_at: new Date().toISOString(), void_reason: 'DELETED_BY_USER' }).eq('id', batchId)
 
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
-    action: 'DELETE_BATCH', module: 'BAHAN_BAKU',
-    record_key: batchKode, record_id: String(batchId), before_data: before,
+    action: 'DELETE_BATCH', module: 'BAHAN_BAKU', record_key: batchKode, record_id: String(batchId),
   })
 
   revalidatePath('/bahan-baku')
@@ -221,15 +216,11 @@ export async function lockBatch(batchId: number, batchKode: string) {
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
 
-  await supabase.from('batch').update({
-    voided_at: new Date().toISOString(), void_reason: 'LOCKED_BY_USER'
-  }).eq('id', batchId)
-
+  await supabase.from('batch').update({ voided_at: new Date().toISOString(), void_reason: 'LOCKED_BY_USER' }).eq('id', batchId)
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'LOCK_BATCH', module: 'BAHAN_BAKU', record_key: batchKode, record_id: String(batchId),
   })
-
   revalidatePath('/bahan-baku')
   return { success: true }
 }
@@ -242,53 +233,41 @@ export async function unlockBatch(batchId: number, batchKode: string) {
   if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
 
   await supabase.from('batch').update({ voided_at: null, void_reason: null }).eq('id', batchId)
-
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'UNLOCK_BATCH', module: 'BAHAN_BAKU', record_key: batchKode, record_id: String(batchId),
   })
-
   revalidatePath('/bahan-baku')
   return { success: true }
 }
 
-export async function updateSisaFisik(batchId: number, batchKode: string, sisaFisik: number, newFiles?: File[], existingUrls?: string[]) {
+export async function updateSisaFisik(
+  batchId: number, batchKode: string,
+  sisaFisik: number, newFotosB64Json: string, existingFotosJson: string
+) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
 
-  // Upload foto sisa fisik via server
-  let fotoUrls: string[] | undefined = existingUrls
-  if (newFiles && newFiles.length > 0) {
-    const safe = batchKode.replace(/[\/\s]/g, '_')
-    const urls: string[] = [...(existingUrls ?? [])]
-    for (let i = 0; i < Math.min(newFiles.length, 10); i++) {
-      const f = newFiles[i]
-      if (!f || f.size === 0) continue
-      const ext = f.name.split('.').pop() ?? 'jpg'
-      const path = `batch/sisa-fisik-${safe}/${Date.now()}_${i}.${ext}`
-      const { error } = await supabase.storage
-        .from('emas-fotos').upload(path, f, { upsert: true, contentType: f.type || 'image/jpeg' })
-      if (!error) {
-        const { data } = supabase.storage.from('emas-fotos').getPublicUrl(path)
-        urls.push(data.publicUrl)
-      }
-    }
-    fotoUrls = urls
-  }
+  const newB64s   = newFotosB64Json ? JSON.parse(newFotosB64Json) : []
+  const existing  = existingFotosJson ? JSON.parse(existingFotosJson) : []
+  const fotoUrls  = newB64s.length > 0
+    ? await uploadBase64Fotos(supabase, newB64s, `sisa-fisik-${batchKode}`, existing)
+    : existing
 
-  const updateData: any = { sisa_fisik: sisaFisik }
-  if (fotoUrls !== undefined) updateData.foto_sisa_fisik = fotoUrls
+  const { error } = await supabase.from('batch').update({
+    sisa_fisik: sisaFisik,
+    foto_sisa_fisik: fotoUrls,
+  }).eq('id', batchId)
 
-  const { error } = await supabase.from('batch').update(updateData).eq('id', batchId)
   if (error) return { error: error.message }
 
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'UPDATE_SISA_FISIK', module: 'BAHAN_BAKU',
     record_key: batchKode, record_id: String(batchId),
-    after_data: { sisa_fisik: sisaFisik, foto_count: fotoUrls?.length ?? 0 },
+    after_data: { sisa_fisik: sisaFisik, fotos: fotoUrls.length },
   })
 
   revalidatePath('/bahan-baku')
