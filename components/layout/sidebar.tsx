@@ -46,12 +46,18 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
     <>
       {/* Mobile overlay */}
       {mobileOpen && (
-        <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={onClose} />
+        <div
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+          onClick={onClose}
+        />
       )}
 
-      {/* Sidebar — pakai inline style untuk transform, Tailwind hanya untuk visual */}
-      <aside
-  className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-slate-100 flex flex-col z-50 transition-transform duration-300 ease-in-out lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
+      {/* Sidebar */}
+      <aside className={cn(
+        'fixed top-0 left-0 h-full w-64 bg-white border-r border-slate-100 flex flex-col z-50',
+        'transition-transform duration-300 ease-in-out',
+        mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      )}>
         {/* Logo */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
@@ -63,7 +69,7 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
               <p className="text-[9px] text-slate-400 leading-tight">Production System</p>
             </div>
           </div>
-          <button onClick={onClose} className="lg:hidden p-1 text-slate-400 rounded-lg">
+          <button onClick={onClose} className="lg:hidden p-1 text-slate-400 hover:text-slate-600 rounded-lg">
             <X size={16} />
           </button>
         </div>
@@ -80,7 +86,9 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
                 onClick={onClose}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
-                  active ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                  active
+                    ? 'bg-violet-50 text-violet-700 font-semibold'
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
                 )}
               >
                 <Icon size={16} className={active ? 'text-violet-600' : 'text-slate-400'} />
@@ -97,10 +105,15 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
             const Icon = item.icon
             const active = isActive(item.href)
             return (
-              <Link key={item.href} href={item.href} onClick={onClose}
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onClose}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
-                  active ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
+                  active
+                    ? 'bg-violet-50 text-violet-700 font-semibold'
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
                 )}
               >
                 <Icon size={16} className={active ? 'text-violet-600' : 'text-slate-400'} />
