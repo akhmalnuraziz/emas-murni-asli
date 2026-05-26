@@ -7,7 +7,10 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
-    serverActions: { allowedOrigins: ['produksigudangcj.vercel.app'] },
+    serverActions: {
+      allowedOrigins: ['produksigudangcj.vercel.app', 'localhost:3000'],
+      bodySizeLimit: '10mb', // ← fix untuk foto base64 upload
+    },
   },
 }
 
