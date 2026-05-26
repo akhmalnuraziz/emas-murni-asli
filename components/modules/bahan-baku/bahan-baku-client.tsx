@@ -7,7 +7,6 @@ import {
   Scale, ImageIcon
 } from 'lucide-react'
 import { cn, formatRupiah, formatDate } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/client'
 import {
   createBatch, updateBatch, deleteBatch,
   lockBatch, unlockBatch, updateSisaFisik
@@ -44,27 +43,37 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
-async function uploadFotos(files: File[], prefix: string): Promise<{ urls: string[]; error?: string }> {
-  const supabase = createClient()
-  const urls: string[] = []
-  const safe = prefix.replace(/[\/\s]/g, '_')
-  for (let i = 0; i < Math.min(files.length, 10); i++) {
-    const f = files[i]
-    if (!f || f.size === 0) continue
-    if (f.size > 8 * 1024 * 1024) return { urls, error: `${f.name} terlalu besar (max 8MB)` }
-    try {
-      const ext = f.name.split('.').pop()?.toLowerCase() ?? 'jpg'
-      const path = `batch/${safe}/${Date.now()}_${i}.${ext}`
-      const { error: uploadErr } = await supabase.storage
-        .from('emas-fotos').upload(path, f, { upsert: true, contentType: f.type || 'image/jpeg' })
-      if (uploadErr) return { urls, error: `Upload gagal: ${uploadErr.message}` }
-      const { data } = supabase.storage.from('emas-fotos').getPublicUrl(path)
-      urls.push(data.publicUrl)
-    } catch (err: any) {
-      return { urls, error: `Error: ${err?.message ?? 'Koneksi gagal'}` }
+// Compress foto di browser sebelum kirim ke server (max 350KB per foto)
+async function compressImage(file: File): Promise<File> {
+  return new Promise(resolve => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      let { width, height } = img
+      const maxDim = 1600
+      if (width > maxDim || height > maxDim) {
+        const r = Math.min(maxDim/width, maxDim/height)
+        width = Math.floor(width * r)
+        height = Math.floor(height * r)
+      }
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')!
+      ctx.drawImage(img, 0, 0, width, height)
+      let q = 0.8
+      const tryQ = () => {
+        canvas.toBlob(blob => {
+          if (!blob) { resolve(file); return }
+          if (blob.size <= 350 * 1024 || q <= 0.3) {
+            resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }))
+          } else { q -= 0.1; tryQ() }
+        }, 'image/jpeg', q)
+      }
+      tryQ()
     }
-  }
-  return { urls }
+    img.onerror = () => resolve(file)
+    img.src = URL.createObjectURL(file)
+  })
 }
 
 const inputCls = 'w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400 bg-white'
@@ -100,20 +109,23 @@ function BatchForm({ initial, onSubmit, onCancel, isPending, error, isEdit = fal
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const formEl = e.currentTarget // capture BEFORE any await
+    const fd = new FormData(formEl)
+    fd.set('biaya_tbh', JSON.stringify(biayaTbh))
+    fd.set('existing_fotos', JSON.stringify(existingFotos))
     if (newFotos.length === 0) {
-      const fd = new FormData(formEl)
-      fd.set('biaya_tbh', JSON.stringify(biayaTbh))
       onSubmit(fd, existingFotos)
       return
     }
     setUploading(true)
     try {
-      const prefix = initial?.kode ?? `batch-${Date.now()}`
-      const { urls: uploadedUrls, error: uploadErr } = await uploadFotos(newFotos, prefix)
-      if (uploadErr) { alert(`Upload foto gagal: ${uploadErr}\n\nCoba lagi atau simpan tanpa foto.`); return }
-      const fd = new FormData(formEl)
-      fd.set('biaya_tbh', JSON.stringify(biayaTbh))
-      onSubmit(fd, [...existingFotos, ...uploadedUrls])
+      // Compress semua foto dulu baru kirim ke server
+      const compressed: File[] = []
+      for (const f of newFotos.slice(0, 10)) {
+        compressed.push(await compressImage(f))
+      }
+      compressed.forEach((f, i) => fd.append(`foto_file_${i}`, f))
+      fd.set('foto_count', String(compressed.length))
+      onSubmit(fd, existingFotos) // server akan upload via Supabase server client
     } finally {
       setUploading(false)
     }
@@ -320,14 +332,11 @@ export default function BahanBakuClient({ batches, userRole, userName }: Props) 
     if (isNaN(val) || val < 0) { showToast('Nilai tidak valid', 'error'); return }
     setUploadingSF(p => ({...p, [batch.id]: true}))
     try {
-      let fotoUrls: string[] = Array.isArray(batch.foto_sisa_fisik) ? batch.foto_sisa_fisik : []
       const files = sisaFisikFotos[batch.id] ?? []
-      if (files.length > 0) {
-        const { urls, error: uploadErr } = await uploadFotos(files, `sisa-${batch.kode}`)
-        if (uploadErr) { showToast(uploadErr, 'error'); return }
-        fotoUrls = [...fotoUrls, ...urls]
-      }
-      const res = await updateSisaFisik(batch.id, batch.kode, val, fotoUrls)
+      const compressed: File[] = []
+      for (const f of files.slice(0, 10)) compressed.push(await compressImage(f))
+      const res = await updateSisaFisik(batch.id, batch.kode, val, compressed,
+        Array.isArray(batch.foto_sisa_fisik) ? batch.foto_sisa_fisik : [])
       if (res?.error) { showToast(res.error, 'error'); return }
       showToast('✅ Sisa fisik disimpan')
       setSisaFisikFotos(p => ({...p, [batch.id]: []}))

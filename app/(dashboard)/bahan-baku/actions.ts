@@ -23,6 +23,27 @@ async function updateSisaSeharusnya(supabase: any, batchKode: string) {
     }).eq('kode', batchKode)
   }
 }
+// Upload foto via server Supabase client (always authenticated)
+async function serverUploadFotos(supabase: any, formData: FormData, prefix: string, existing: string[]): Promise<string[]> {
+  const safe = prefix.replace(/[\/\s]/g, '_')
+  const count = parseInt(formData.get('foto_count') as string ?? '0')
+  const urls: string[] = [...existing]
+  for (let i = 0; i < count; i++) {
+    const file = formData.get(`foto_file_${i}`) as File | null
+    if (!file || file.size === 0) continue
+    const ext = file.name.split('.').pop() ?? 'jpg'
+    const path = `batch/${safe}/${Date.now()}_${i}.${ext}`
+    const { error } = await supabase.storage
+      .from('emas-fotos').upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' })
+    if (!error) {
+      const { data } = supabase.storage.from('emas-fotos').getPublicUrl(path)
+      urls.push(data.publicUrl)
+    }
+  }
+  return urls
+}
+
+
 
 export async function createBatch(formData: FormData) {
   const supabase = await createClient()
@@ -64,9 +85,10 @@ export async function createBatch(formData: FormData) {
   const totalHpp       = hargaBeli + totalBiayaTbh
   const hppGr          = beratGudang > 0 ? totalHpp / beratGudang : 0
 
-  // Foto — dikirim sebagai URL yang sudah di-upload client-side ke Supabase Storage
-  const fotoUrlsRaw = formData.get('foto_urls') as string
-  const fotoUrls    = fotoUrlsRaw ? JSON.parse(fotoUrlsRaw) : []
+  // Upload foto via server (compressed files dari client)
+  const existingFotosRaw = formData.get('existing_fotos') as string
+  const existing = existingFotosRaw ? JSON.parse(existingFotosRaw) : []
+  const fotoUrls = await serverUploadFotos(supabase, formData, kode, existing)
 
   const { data, error } = await supabase.from('batch').insert({
     kode,
@@ -122,8 +144,12 @@ export async function updateBatch(batchId: number, batchKode: string, formData: 
   const totalHpp      = hargaBeli + totalBiayaTbh
   const hppGr         = beratGudang > 0 ? totalHpp / beratGudang : 0
 
-  const fotoUrlsRaw    = formData.get('foto_urls') as string
-  const fotoUrls       = fotoUrlsRaw ? JSON.parse(fotoUrlsRaw) : undefined
+  const existingFotosRaw = formData.get('existing_fotos') as string
+  const existingFotos    = existingFotosRaw ? JSON.parse(existingFotosRaw) : undefined
+  const hasFotoFiles     = parseInt(formData.get('foto_count') as string ?? '0') > 0
+  const fotoUrls         = (hasFotoFiles || existingFotos !== undefined)
+    ? await serverUploadFotos(supabase, formData, batchKode, existingFotos ?? [])
+    : undefined
   const sisaFisikRaw   = formData.get('sisa_fisik') as string
   const sisaFisik      = sisaFisikRaw ? parseFloat(sisaFisikRaw) : null
 
@@ -226,11 +252,31 @@ export async function unlockBatch(batchId: number, batchKode: string) {
   return { success: true }
 }
 
-export async function updateSisaFisik(batchId: number, batchKode: string, sisaFisik: number, fotoUrls?: string[]) {
+export async function updateSisaFisik(batchId: number, batchKode: string, sisaFisik: number, newFiles?: File[], existingUrls?: string[]) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+
+  // Upload foto sisa fisik via server
+  let fotoUrls: string[] | undefined = existingUrls
+  if (newFiles && newFiles.length > 0) {
+    const safe = batchKode.replace(/[\/\s]/g, '_')
+    const urls: string[] = [...(existingUrls ?? [])]
+    for (let i = 0; i < Math.min(newFiles.length, 10); i++) {
+      const f = newFiles[i]
+      if (!f || f.size === 0) continue
+      const ext = f.name.split('.').pop() ?? 'jpg'
+      const path = `batch/sisa-fisik-${safe}/${Date.now()}_${i}.${ext}`
+      const { error } = await supabase.storage
+        .from('emas-fotos').upload(path, f, { upsert: true, contentType: f.type || 'image/jpeg' })
+      if (!error) {
+        const { data } = supabase.storage.from('emas-fotos').getPublicUrl(path)
+        urls.push(data.publicUrl)
+      }
+    }
+    fotoUrls = urls
+  }
 
   const updateData: any = { sisa_fisik: sisaFisik }
   if (fotoUrls !== undefined) updateData.foto_sisa_fisik = fotoUrls
