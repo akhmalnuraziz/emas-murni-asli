@@ -51,11 +51,7 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
 
       {/* Sidebar — pakai inline style untuk transform, Tailwind hanya untuk visual */}
       <aside
-        style={{
-          transform: mobileOpen ? 'translateX(0)' : undefined,
-        }}
-        className="fixed top-0 left-0 h-full w-64 bg-white border-r border-slate-100 flex flex-col z-50 transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0"
-      >
+  className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-slate-100 flex flex-col z-50 transition-transform duration-300 ease-in-out lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
         {/* Logo */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
