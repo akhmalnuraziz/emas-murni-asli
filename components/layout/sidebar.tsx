@@ -56,13 +56,9 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
 
       {/* Sidebar — SELALU fixed, tidak pernah static */}
       <aside className={cn(
-        'fixed top-0 left-0 h-full w-64 bg-white border-r border-slate-100 flex flex-col z-50',
-        'transition-transform duration-300 ease-in-out',
-        // Desktop: selalu tampil (translate-x-0)
-        // Mobile: tampil hanya jika mobileOpen
-        '-translate-x-full lg:translate-x-0',
-mobileOpen && 'translate-x-0',
-      )}>
+  'sidebar-nav fixed top-0 left-0 h-full w-64 bg-white border-r border-slate-100 flex flex-col z-50',
+  mobileOpen && 'mobile-open',
+)}>
 
         {/* Logo / Brand */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">

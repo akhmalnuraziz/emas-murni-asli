@@ -1,23 +1,13 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-:root {
-  --brand-primary: #7C3AED;
-  --brand-secondary: #8B5CF6;
-  --brand-light: #A78BFA;
-  --brand-bg: #F5F3FF;
-  --brand-gold: #F59E0B;
-  --brand-dark: #1E1B4B;
+/* Sidebar visibility fix — tidak bergantung pada Tailwind dynamic class */
+.sidebar-nav {
+  transform: translateX(-100%);
+  transition: transform 300ms ease-in-out;
 }
-
-body {
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+@media (min-width: 1024px) {
+  .sidebar-nav {
+    transform: translateX(0);
+  }
 }
-
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: #f1f0fb; }
-::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: #8b5cf6; }
-
-*:focus-visible { outline: 2px solid #7C3AED; outline-offset: 2px; }
+.sidebar-nav.mobile-open {
+  transform: translateX(0);
+}
