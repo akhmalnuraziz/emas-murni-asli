@@ -235,10 +235,20 @@ function BatchForm({ initial, onSubmit, onCancel, isPending, error, isEdit = fal
         )}
         <label className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-slate-200 rounded-xl cursor-pointer hover:border-violet-400 hover:bg-violet-50 transition-all">
           <ImageIcon size={16} className="text-slate-400" />
-          <span className="text-sm text-slate-500">{newFotos.length > 0 ? `${newFotos.length} foto dipilih` : 'Pilih foto atau klik di sini'}</span>
+          <span className="text-sm text-slate-500">
+            {newFotos.length > 0 ? `${newFotos.length} foto dipilih — klik lagi untuk tambah` : 'Pilih foto (boleh 1-1 atau sekaligus)'}
+          </span>
           <input type="file" accept="image/*" multiple className="hidden"
-            onChange={e => setNewFotos(p => [...p, ...Array.from(e.target.files ?? [])].slice(0, 10))} />
+            onChange={e => {
+              const picked = Array.from(e.target.files ?? [])
+              setNewFotos(p => [...p, ...picked].slice(0, 10))
+              e.currentTarget.value = '' // reset agar bisa pilih 1-1 lagi
+            }} />
         </label>
+        {newFotos.length > 0 && (
+          <button type="button" onClick={() => setNewFotos([])}
+            className="text-xs text-red-500 hover:underline">Hapus semua foto baru</button>
+        )}
       </div>
       {error && <p className="text-xs text-red-600 bg-red-50 p-3 rounded-xl">{error}</p>}
       <div className="flex gap-3 justify-end pt-1">
@@ -503,19 +513,22 @@ export default function BahanBakuClient({ batches, userRole, userName }: Props) 
                     {status === 'aktif' && (
                       <>
                         {!isEditingSF ? (
-                          <div className="flex items-center justify-between pt-1">
+                          <div className="space-y-2 pt-1">
                             {fotoSisaFisik.length > 0 && (
-                              <div className="flex gap-1.5 flex-wrap">
-                                {fotoSisaFisik.slice(0,4).map((url: string, i: number) => (
-                                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-lg overflow-hidden border border-slate-200 block">
-                                    <img src={url} alt="" className="w-full h-full object-cover"/>
-                                  </a>
-                                ))}
-                                {fotoSisaFisik.length > 4 && <span className="text-xs text-slate-400 self-center">+{fotoSisaFisik.length - 4}</span>}
+                              <div>
+                                <p className="text-[10px] font-semibold text-slate-400 mb-1.5">Foto Sisa Fisik ({fotoSisaFisik.length})</p>
+                                <div className="flex gap-2 flex-wrap">
+                                  {fotoSisaFisik.map((url: string, i: number) => (
+                                    <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                                      className="w-16 h-16 rounded-xl overflow-hidden border border-slate-200 block hover:opacity-80">
+                                      <img src={url} alt="" className="w-full h-full object-cover"/>
+                                    </a>
+                                  ))}
+                                </div>
                               </div>
                             )}
                             <button onClick={() => { setEditingSisaFisik(batch.id); setSisaFisikInput(p => ({...p, [batch.id]: String(sisaFisik ?? '')})) }}
-                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-violet-600 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-xl ml-auto">
+                              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-violet-600 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-xl">
                               <Edit2 size={11}/>{sisaFisik !== null ? 'Edit Sisa Fisik' : 'Input Sisa Fisik'}
                             </button>
                           </div>
@@ -551,12 +564,17 @@ export default function BahanBakuClient({ batches, userRole, userName }: Props) 
                             )}
                             <label className="flex items-center gap-2 px-3 py-2 border border-dashed border-slate-200 rounded-xl cursor-pointer hover:border-violet-400 hover:bg-violet-50 transition-all">
                               <ImageIcon size={12} className="text-slate-400"/>
-                              <span className="text-xs text-slate-500">Tambah foto sisa fisik (max 10)</span>
+                              <span className="text-xs text-slate-500">Tambah foto sisa fisik (boleh 1-1 atau sekaligus)</span>
                               <input type="file" accept="image/*" multiple className="hidden"
                                 onChange={e => {
-                                  const files = Array.from(e.target.files ?? []).slice(0,10)
-                                  setSisaFisikFotos(p => ({...p,[batch.id]:files}))
-                                  setSisaFisikPreviews(p => ({...p,[batch.id]:files.map(f => URL.createObjectURL(f))}))
+                                  const picked = Array.from(e.target.files ?? [])
+                                  setSisaFisikFotos(p => ({...p,[batch.id]: [...(p[batch.id]??[]), ...picked].slice(0,10)}))
+                                  setSisaFisikPreviews(prev => {
+                                    const existing = prev[batch.id] ?? []
+                                    const newUrls = picked.map(f => URL.createObjectURL(f))
+                                    return {...prev, [batch.id]: [...existing, ...newUrls].slice(0,10)}
+                                  })
+                                  e.currentTarget.value = '' // reset agar bisa pilih 1-1
                                 }}/>
                             </label>
                           </div>
