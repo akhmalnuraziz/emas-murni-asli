@@ -226,20 +226,23 @@ export async function unlockBatch(batchId: number, batchKode: string) {
   return { success: true }
 }
 
-export async function updateSisaFisik(batchId: number, batchKode: string, sisaFisik: number) {
+export async function updateSisaFisik(batchId: number, batchKode: string, sisaFisik: number, fotoUrls?: string[]) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
 
-  const { error } = await supabase.from('batch').update({ sisa_fisik: sisaFisik }).eq('id', batchId)
+  const updateData: any = { sisa_fisik: sisaFisik }
+  if (fotoUrls !== undefined) updateData.foto_sisa_fisik = fotoUrls
+
+  const { error } = await supabase.from('batch').update(updateData).eq('id', batchId)
   if (error) return { error: error.message }
 
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'UPDATE_SISA_FISIK', module: 'BAHAN_BAKU',
     record_key: batchKode, record_id: String(batchId),
-    after_data: { sisa_fisik: sisaFisik },
+    after_data: { sisa_fisik: sisaFisik, foto_count: fotoUrls?.length ?? 0 },
   })
 
   revalidatePath('/bahan-baku')

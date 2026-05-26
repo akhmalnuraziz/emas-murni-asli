@@ -336,7 +336,10 @@ export default function BahanBakuClient({ batches, userRole, userName }: Props) 
   const [toast, setToast]               = useState<{msg:string;type:'success'|'error'}|null>(null)
   const [formError, setFormError]       = useState('')
   const [isPending, startTransition]    = useTransition()
-  const [sisaFisikInput, setSisaFisikInput] = useState<Record<number,string>>({})
+  const [sisaFisikInput, setSisaFisikInput]       = useState<Record<number,string>>({})
+  const [sisaFisikFotos, setSisaFisikFotos]       = useState<Record<number,File[]>>({})
+  const [sisaFisikPreviews, setSisaFisikPreviews] = useState<Record<number,string[]>>({})
+  const [uploadingSF, setUploadingSF]             = useState<Record<number,boolean>>({})
 
   function showToast(msg: string, type: 'success'|'error' = 'success') {
     setToast({ msg, type })
@@ -394,13 +397,27 @@ export default function BahanBakuClient({ batches, userRole, userName }: Props) 
     })
   }
 
-  function handleSisaFisik(batch: any) {
+  async function handleSisaFisik(batch: any) {
     const val = parseFloat(sisaFisikInput[batch.id] ?? '')
     if (isNaN(val) || val < 0) { showToast('Nilai sisa fisik tidak valid', 'error'); return }
+
+    setUploadingSF(p => ({...p, [batch.id]: true}))
+    let fotoUrls: string[] = batch.foto_sisa_fisik ?? []
+
+    const files = sisaFisikFotos[batch.id] ?? []
+    if (files.length > 0) {
+      const { urls, error: uploadErr } = await uploadFotos(files, `sisa-fisik-${batch.kode}`)
+      if (uploadErr) { showToast(uploadErr, 'error'); setUploadingSF(p => ({...p, [batch.id]: false})); return }
+      fotoUrls = [...fotoUrls, ...urls]
+    }
+    setUploadingSF(p => ({...p, [batch.id]: false}))
+
     startTransition(async () => {
-      const res = await updateSisaFisik(batch.id, batch.kode, val)
+      const res = await updateSisaFisik(batch.id, batch.kode, val, fotoUrls)
       if (res?.error) { showToast(res.error, 'error'); return }
       showToast('✅ Sisa fisik disimpan')
+      setSisaFisikFotos(p => ({...p, [batch.id]: []}))
+      setSisaFisikPreviews(p => ({...p, [batch.id]: []}))
     })
   }
 
@@ -574,16 +591,65 @@ export default function BahanBakuClient({ batches, userRole, userName }: Props) 
                       </div>
                     </div>
                     {status === 'aktif' && (
-                      <div className="flex gap-2 items-center pt-1">
-                        <input type="number" step="0.01"
-                          value={sisaFisikInput[batch.id] ?? (sisaFisik ?? '')}
-                          onChange={e => setSisaFisikInput(p => ({...p, [batch.id]: e.target.value}))}
-                          placeholder="Input sisa fisik bahan (gram)..."
-                          className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400 bg-white"/>
-                        <button onClick={() => handleSisaFisik(batch)} disabled={isPending}
-                          className="px-4 py-2 text-sm font-bold text-white bg-violet-600 hover:bg-violet-700 rounded-xl disabled:opacity-60 flex items-center gap-1.5">
-                          <Scale size={13}/> Simpan
-                        </button>
+                      <div className="space-y-2 pt-1">
+                        {/* Input berat + simpan */}
+                        <div className="flex gap-2 items-center">
+                          <input type="number" step="0.01"
+                            value={sisaFisikInput[batch.id] ?? (sisaFisik ?? '')}
+                            onChange={e => setSisaFisikInput(p => ({...p, [batch.id]: e.target.value}))}
+                            placeholder="Input sisa fisik bahan (gram)..."
+                            className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400 bg-white"/>
+                          <button onClick={() => handleSisaFisik(batch)} disabled={isPending || uploadingSF[batch.id]}
+                            className="px-4 py-2 text-sm font-bold text-white bg-violet-600 hover:bg-violet-700 rounded-xl disabled:opacity-60 flex items-center gap-1.5 flex-shrink-0">
+                            {uploadingSF[batch.id]
+                              ? <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
+                              : <Scale size={13}/>}
+                            {uploadingSF[batch.id] ? 'Upload...' : 'Simpan'}
+                          </button>
+                        </div>
+                        {/* Foto sisa fisik */}
+                        <div className="space-y-1.5">
+                          <p className="text-[10px] font-semibold text-slate-500">Foto Sisa Fisik (max 10)</p>
+                          {(sisaFisikPreviews[batch.id] ?? []).length > 0 && (
+                            <div className="flex gap-2 flex-wrap">
+                              {(sisaFisikPreviews[batch.id] ?? []).map((url, i) => (
+                                <div key={i} className="relative w-16 h-16">
+                                  <img src={url} alt="" className="w-full h-full object-cover rounded-lg border-2 border-violet-300"/>
+                                  <button type="button"
+                                    onClick={() => {
+                                      setSisaFisikFotos(p => ({...p, [batch.id]: (p[batch.id]??[]).filter((_,j)=>j!==i)}))
+                                      setSisaFisikPreviews(p => ({...p, [batch.id]: (p[batch.id]??[]).filter((_,j)=>j!==i)}))
+                                    }}
+                                    className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center">
+                                    <X size={9}/>
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {/* Foto existing sisa fisik */}
+                          {(batch.foto_sisa_fisik ?? []).length > 0 && (
+                            <div className="flex gap-2 flex-wrap">
+                              {(batch.foto_sisa_fisik ?? []).map((url: string, i: number) => (
+                                <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                                  className="w-16 h-16 rounded-lg overflow-hidden border border-slate-200 block">
+                                  <img src={url} alt="" className="w-full h-full object-cover"/>
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                          <label className="flex items-center gap-2 px-3 py-2 border border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-violet-400 hover:bg-violet-50 transition-all">
+                            <ImageIcon size={13} className="text-slate-400"/>
+                            <span className="text-xs text-slate-500">Pilih foto sisa fisik</span>
+                            <input type="file" accept="image/*" multiple className="hidden"
+                              onChange={e => {
+                                const files = Array.from(e.target.files ?? []).slice(0, 10)
+                                setSisaFisikFotos(p => ({...p, [batch.id]: files}))
+                                const urls = files.map(f => URL.createObjectURL(f))
+                                setSisaFisikPreviews(p => ({...p, [batch.id]: urls}))
+                              }}/>
+                          </label>
+                        </div>
                       </div>
                     )}
                   </div>
