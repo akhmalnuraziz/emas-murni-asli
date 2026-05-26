@@ -26,28 +26,31 @@ async function updateSisaSeharusnya(supabase: any, batchKode: string) {
 // Upload foto dari base64 string ke Supabase Storage (server selalu authenticated)
 async function uploadBase64Fotos(
   supabase: any, b64Array: string[], prefix: string, existing: string[]
-): Promise<string[]> {
+): Promise<{ urls: string[]; uploadError?: string }> {
   const urls: string[] = [...existing]
   const safe = prefix.replace(/[^a-zA-Z0-9_-]/g, '_')
   for (let i = 0; i < b64Array.length; i++) {
     const b64 = b64Array[i]
     if (!b64) continue
     try {
-      const base64Data = b64.replace(/^data:image\/\w+;base64,/, '')
+      const base64Data = b64.replace(/^data:image\/[^;]+;base64,/, '')
+      if (!base64Data) return { urls, uploadError: `Foto ${i+1}: format base64 tidak valid` }
       const buffer = Buffer.from(base64Data, 'base64')
+      if (buffer.length === 0) return { urls, uploadError: `Foto ${i+1}: buffer kosong` }
       const path = `batch/${safe}/${Date.now()}_${i}.jpg`
-      const { error } = await supabase.storage
+      const { error: storageErr } = await supabase.storage
         .from('emas-fotos')
         .upload(path, buffer, { contentType: 'image/jpeg', upsert: true })
-      if (!error) {
-        const { data } = supabase.storage.from('emas-fotos').getPublicUrl(path)
-        urls.push(data.publicUrl)
+      if (storageErr) {
+        return { urls, uploadError: `Foto ${i+1} gagal upload: ${storageErr.message}` }
       }
-    } catch (err) {
-      console.error('Upload error:', err)
+      const { data } = supabase.storage.from('emas-fotos').getPublicUrl(path)
+      urls.push(data.publicUrl)
+    } catch (err: any) {
+      return { urls, uploadError: `Foto ${i+1} error: ${err?.message ?? 'unknown'}` }
     }
   }
-  return urls
+  return { urls }
 }
 
 export async function createBatch(formData: FormData) {
@@ -92,7 +95,8 @@ export async function createBatch(formData: FormData) {
   const existing    = existingRaw ? JSON.parse(existingRaw) : []
   const newB64Raw   = formData.get('new_fotos_b64') as string
   const newB64s     = newB64Raw ? JSON.parse(newB64Raw) : []
-  const fotoUrls    = await uploadBase64Fotos(supabase, newB64s, kode, existing)
+  const { urls: fotoUrls, uploadError: fotoErr } = await uploadBase64Fotos(supabase, newB64s, kode, existing)
+  if (fotoErr) console.error("[createBatch] foto error:", fotoErr)
 
   const { data, error } = await supabase.from('batch').insert({
     kode,
@@ -255,16 +259,19 @@ export async function updateSisaFisik(formData: FormData) {
   const newB64Raw = formData.get('new_fotos_b64') as string
   const newB64s   = newB64Raw ? JSON.parse(newB64Raw) : []
 
-  const fotoUrls = newB64s.length > 0
-    ? await uploadBase64Fotos(supabase, newB64s, `sisa-fisik-${batchKode}`, existing)
-    : existing
+  let fotoUrls = existing
+  if (newB64s.length > 0) {
+    const { urls, uploadError } = await uploadBase64Fotos(supabase, newB64s, `sisa-fisik-${batchKode}`, existing)
+    if (uploadError) return { error: `Upload foto gagal: ${uploadError}` }
+    fotoUrls = urls
+  }
 
   const { error } = await supabase.from('batch').update({
     sisa_fisik: sisaFisik,
     foto_sisa_fisik: fotoUrls,
   }).eq('id', batchId)
 
-  if (error) return { error: error.message }
+  if (error) return { error: `DB error: ${error.message}` }
 
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
