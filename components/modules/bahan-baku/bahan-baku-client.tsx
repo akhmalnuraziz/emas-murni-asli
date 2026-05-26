@@ -111,8 +111,11 @@ function BatchForm({ initial, onSubmit, onCancel, isPending, error, isEdit = fal
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    // ⚠️ Capture form SEBELUM await — e.currentTarget jadi null setelah async
+    const formEl = e.currentTarget
+
     if (newFotos.length === 0) {
-      const fd = new FormData(e.currentTarget)
+      const fd = new FormData(formEl)
       fd.set('biaya_tbh', JSON.stringify(biayaTbh))
       onSubmit(fd, existingFotos)
       return
@@ -122,22 +125,19 @@ function BatchForm({ initial, onSubmit, onCancel, isPending, error, isEdit = fal
     try {
       const prefix = initial?.kode ?? `batch-${Date.now()}`
       const { urls: uploadedUrls, error: uploadError } = await uploadFotos(newFotos, prefix)
+      setUploading(false)
+
       if (uploadError) {
-        setUploading(false)
-        // Show error via parent's error state
-        const fd = new FormData(e.currentTarget)
-        fd.set('biaya_tbh', JSON.stringify(biayaTbh))
-        fd.set('upload_error', uploadError)
-        onSubmit(fd, existingFotos) // submit tanpa foto baru, biarkan parent handle error
+        alert(`Upload foto gagal: ${uploadError}\n\nCoba lagi atau simpan tanpa foto.`)
         return
       }
-      setUploading(false)
-      const fd = new FormData(e.currentTarget)
+
+      const fd = new FormData(formEl)
       fd.set('biaya_tbh', JSON.stringify(biayaTbh))
       onSubmit(fd, [...existingFotos, ...uploadedUrls])
     } catch (err: any) {
       setUploading(false)
-      alert(`Upload error: ${err?.message ?? 'Coba lagi'}`)
+      alert(`Error: ${err?.message ?? 'Coba lagi'}`)
     }
   }
 
