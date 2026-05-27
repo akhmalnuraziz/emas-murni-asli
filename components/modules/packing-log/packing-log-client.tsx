@@ -157,8 +157,9 @@ function CreateModal({items,onClose,onSubmit,isPending,error}:{
 
   async function submit(e:React.FormEvent){
     e.preventDefault()
+    const formEl=e.currentTarget as HTMLFormElement
     setUp(true);const b64=fotos.length>0?await filesToBase64(fotos):[];setUp(false)
-    const fd=new FormData(e.currentTarget as HTMLFormElement)
+    const fd=new FormData(formEl)
     fd.set('fotos_b64',JSON.stringify(b64))
     onSubmit(fd)
   }
@@ -216,8 +217,9 @@ function EditModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;
 
   async function submit(e:React.FormEvent){
     e.preventDefault()
+    const formEl=e.currentTarget as HTMLFormElement
     setUp(true);const b64=fotos.length>0?await filesToBase64(fotos):[];setUp(false)
-    const fd=new FormData(e.currentTarget as HTMLFormElement)
+    const fd=new FormData(formEl)
     fd.set('fotos_b64',JSON.stringify(b64))
     fd.set('existing_fotos',JSON.stringify(existFotos))
     onSubmit(fd)
@@ -325,10 +327,21 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
     return!q||p.kode?.toLowerCase().includes(q)||p.batch_kode?.toLowerCase().includes(q)||p.gramasi?.includes(q)||p.pic_packing?.toLowerCase().includes(q)
   })
 
-  // Summary
+  // Date filter
+  const [dateFilter,setDateFilter]=useState<'all'|'week'|'month'>('all')
+  const now=new Date()
+  const filteredByDate=(records:any[])=>{
+    if(dateFilter==='all')return records
+    const cutoff=new Date()
+    if(dateFilter==='week')cutoff.setDate(now.getDate()-7)
+    else cutoff.setDate(now.getDate()-30)
+    return records.filter(p=>new Date(p.tanggal)>=cutoff)
+  }
+
+  // Summary - PCS based
   const totalRecord=packingList.length
-  const totalSiapPacking=siapPackingItems.length
-  const totalSudahPacking=packingList.filter(p=>p.produksi_item?.current_status==='Sudah Packing').length
+  const totalSiapPackingPcs=siapPackingItems.reduce((s:number,i:any)=>s+(i.pcs_tersisa||0),0)
+  const totalSudahPackingPcs=packingList.reduce((s:number,p:any)=>s+(p.pcs_dipack||0),0)
 
   function handleCreate(fd:FormData){setErr('');startTransition(async()=>{const r=await createPacking(fd);if(r?.error){setErr(r.error);return}showToast(`✅ ${r?.kode} berhasil dicatat`);setModal(null)})}
   function handleEdit(fd:FormData){if(!active)return;setErr('');startTransition(async()=>{const r=await editPacking(active.id,active.kode,fd);if(r?.error){setErr(r.error);return}showToast('✅ Packing diperbarui');setModal(null)})}
@@ -375,27 +388,40 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
         </div>
 
         {/* Summary cards */}
+        {/* Date filter */}
+        <div className="flex gap-2 flex-wrap">
+          {([['all','Semua'],['week','7 Hari'],['month','30 Hari']] as const).map(([val,label])=>(
+            <button key={val} onClick={()=>setDateFilter(val)}
+              className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all"
+              style={dateFilter===val
+                ?{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)',color:'#fff',boxShadow:'0 4px 12px rgba(139,92,246,0.35)'}
+                :{background:'rgba(255,255,255,0.8)',color:'#6B7280',border:'1px solid rgba(209,213,219,0.5)'}}>
+              {label}
+            </button>
+          ))}
+        </div>
+
         <div className="grid grid-cols-3 gap-3">
           {[
-            {label:'Total Record',val:String(totalRecord),color:'#8B5CF6',bg:'rgba(139,92,246,0.06)'},
-            {label:'Siap Packing',val:String(totalSiapPacking),color:'#22C55E',bg:'rgba(34,197,94,0.06)'},
-            {label:'Sudah Packing',val:String(totalSudahPacking),color:'#3B82F6',bg:'rgba(59,130,246,0.06)'},
+            {label:'Total Record',val:String(filteredByDate(filtered).length)+' record',color:'#8B5CF6',bg:'rgba(139,92,246,0.06)'},
+            {label:'Sisa Siap Packing',val:totalSiapPackingPcs+' PCS',color:'#22C55E',bg:'rgba(34,197,94,0.06)'},
+            {label:'Total Sudah Dipack',val:filteredByDate(packingList).reduce((s:number,p:any)=>s+(p.pcs_dipack||0),0)+' PCS',color:'#3B82F6',bg:'rgba(59,130,246,0.06)'},
           ].map(c=>(
             <div key={c.label}className="rounded-2xl p-4 text-center"style={{background:c.bg,backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.6)'}}>
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{c.label}</p>
-              <p className="text-xl font-bold mt-0.5"style={{color:c.color,fontFamily:"'SF Pro Display','Inter',sans-serif"}}>{c.val}</p>
+              <p className="text-base font-bold mt-0.5"style={{color:c.color,fontFamily:"'SF Pro Display','Inter',sans-serif"}}>{c.val}</p>
             </div>
           ))}
         </div>
 
         {/* Mobile cards */}
         <div className="lg:hidden space-y-3">
-          {filtered.length===0?(
+          {filteredByDate(filtered).length===0?(
             <div className="text-center py-12 rounded-3xl"style={{background:'rgba(255,255,255,0.7)',border:'1px solid rgba(255,255,255,0.5)'}}>
               <Package size={32}className="mx-auto text-violet-200 mb-3"/>
               <p className="text-sm font-medium text-gray-400">Belum ada record packing</p>
             </div>
-          ):filtered.map(p=>(
+          ):filteredByDate(filtered).map(p=>(
             <PackingCard key={p.id} p={p} canManage={canManage} canDelete={canDelete}
               onEdit={()=>{setActive(p);setErr('');setModal('edit')}}
               onDelete={()=>{setActive(p);setModal('delete')}}
@@ -419,7 +445,7 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
                   <Package size={28}className="mx-auto text-violet-200 mb-3"/>
                   <p className="text-sm font-medium text-gray-400">Belum ada record packing</p>
                 </td></tr>
-              ):filtered.map((p,idx)=>{
+              ):filteredByDate(filtered).map((p,idx)=>{
                 const fotos=Array.isArray(p.fotos)?p.fotos:[]
                 const stCount=p.shieldtag_count??0
                 const isPrinted=p.status_surat==='sudah_cetak'
