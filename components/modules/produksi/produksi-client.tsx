@@ -20,17 +20,16 @@ interface Props {
 }
 
 const GRAMASI_OPTIONS = ['0.1','0.5','1','2','5','10','20','25','50','100','250','500','1000']
-const STATUS_FLOW = ['Cutting','Pas Berat','Annealing','Siap Packing','Sudah Packing']
+const STATUS_FLOW = ['Cutting','Pas Berat','Annealing','Siap Packing']
 const STATUS_NEXT: Record<string,string> = {
   'Cutting':'Pas Berat','Pas Berat':'Annealing',
-  'Annealing':'Siap Packing','Siap Packing':'Sudah Packing'
+  'Annealing':'Siap Packing'
 }
 const STATUS_CFG: Record<string,{dot:string;bg:string;text:string}> = {
   'Cutting':       {dot:'#3B82F6',bg:'rgba(59,130,246,0.1)',  text:'#2563EB'},
   'Pas Berat':     {dot:'#F97316',bg:'rgba(249,115,22,0.1)', text:'#EA580C'},
   'Annealing':     {dot:'#EAB308',bg:'rgba(234,179,8,0.1)',  text:'#CA8A04'},
   'Siap Packing':  {dot:'#22C55E',bg:'rgba(34,197,94,0.1)',  text:'#16A34A'},
-  'Sudah Packing': {dot:'#8B5CF6',bg:'rgba(139,92,246,0.1)', text:'#7C3AED'},
   'Reject':        {dot:'#EF4444',bg:'rgba(239,68,68,0.1)',  text:'#DC2626'},
 }
 const today = new Date().toISOString().split('T')[0]
@@ -368,7 +367,11 @@ function UpdateModal({item,onClose,onSubmit,isPending,error}:{
     const fb64=fotos.length>0?await filesToBase64(fotos):[]
     const sb64=isPB&&serbuk.length>0?await filesToBase64(serbuk):[]
     setUp(false)
-    const fd=new FormData(el);fd.set('fotos_b64',JSON.stringify(fb64));fd.set('fotos_serbuk_b64',JSON.stringify(sb64));onSubmit(fd)
+    const fd=new FormData(el)
+    fd.set('fotos_b64',JSON.stringify(fb64))
+    fd.set('fotos_serbuk_b64',JSON.stringify(sb64))
+    fd.set('is_reject', status==='Reject'?'1':'0')
+    onSubmit(fd)
   }
   return(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"style={{background:'rgba(0,0,0,0.4)',backdropFilter:'blur(8px)'}}>
@@ -383,32 +386,51 @@ function UpdateModal({item,onClose,onSubmit,isPending,error}:{
         <form onSubmit={submit} className="px-6 py-5 space-y-4 overflow-y-auto max-h-[76vh]">
           <F label="Status Baru" req>
             <select name="status" value={status} onChange={e=>setStatus(e.target.value)} className={inp} required>
-              {STATUS_FLOW.map(s=><option key={s} value={s}>{s}</option>)}
+              {['Cutting','Pas Berat','Annealing','Siap Packing'].map(s=><option key={s} value={s}>{s}</option>)}
               <option value="Reject">Reject</option>
             </select>
           </F>
-          <div className="grid grid-cols-2 gap-3">
-            <F label="Total Berat Sekarang (gr)" req>
-              <input name="total_gram" type="number" step="0.001" className={inp} placeholder={`Sblm: ${item.total_gram} gr`} required/>
-            </F>
-            {isPB&&(
-              <F label="Sisa Serbuk (gr)">
-                <input name="sisa_serbuk" type="number" step="0.001" className={inp} placeholder="0.000" defaultValue="0"/>
+          {status === 'Reject' ? (
+            /* Reject: PCS + Berat */
+            <div className="grid grid-cols-2 gap-3">
+              <F label="PCS Reject" req>
+                <input name="pcs_reject" type="number" min="1" max={item.pcs_good??item.pcs} className={inp}
+                  placeholder={`Max: ${item.pcs_good??item.pcs} PCS`} required/>
               </F>
-            )}
-          </div>
+              <F label="Berat Reject (gr)" req>
+                <input name="berat_reject" type="number" step="0.001" className={inp}
+                  placeholder="Berat total reject" required/>
+              </F>
+            </div>
+          ) : (
+            /* Normal status update */
+            <div className="grid grid-cols-2 gap-3">
+              <F label="Total Berat Sekarang (gr)" req>
+                <input name="total_gram" type="number" step="0.001" className={inp} placeholder={`Sblm: ${item.total_gram} gr`} required/>
+              </F>
+              {isPB&&(
+                <F label="Sisa Serbuk (gr)">
+                  <input name="sisa_serbuk" type="number" step="0.001" className={inp} placeholder="0.000" defaultValue="0"/>
+                </F>
+              )}
+            </div>
+          )}
           <F label="Tanggal" req>
             <input name="tanggal" type="date" defaultValue={today} className={inp} required/>
           </F>
-          {/* Foto Proses — semua status */}
-          <F label="Foto Proses (opsional)">
-            <FotoPicker files={fotos} onAdd={ff=>setFotos(p=>[...p,...ff].slice(0,10))} onRemove={i=>i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))} label="Foto proses di status ini" small/>
-          </F>
-          {/* Foto Sisa Serbuk — hanya Pas Berat */}
-          {isPB&&(
-            <F label="Foto Sisa Serbuk (opsional)">
-              <FotoPicker files={serbuk} onAdd={ff=>setSerbuk(p=>[...p,...ff].slice(0,10))} onRemove={i=>i===-1?setSerbuk([]):setSerbuk(p=>p.filter((_,j)=>j!==i))} label="Foto sisa serbuk emas" small/>
-            </F>
+          {/* Foto Proses — bukan untuk Reject */}
+          {status !== 'Reject' && (
+            <>
+              <F label="Foto Proses (opsional)">
+                <FotoPicker files={fotos} onAdd={ff=>setFotos(p=>[...p,...ff].slice(0,10))} onRemove={i=>i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))} label="Foto proses di status ini" small/>
+              </F>
+              {/* Foto Sisa Serbuk — hanya Pas Berat */}
+              {isPB&&(
+                <F label="Foto Sisa Serbuk (opsional)">
+                  <FotoPicker files={serbuk} onAdd={ff=>setSerbuk(p=>[...p,...ff].slice(0,10))} onRemove={i=>i===-1?setSerbuk([]):setSerbuk(p=>p.filter((_,j)=>j!==i))} label="Foto sisa serbuk emas" small/>
+                </F>
+              )}
+            </>
           )}
           <F label="Catatan">
             <input name="catatan" className={inp} placeholder="Keterangan..."/>
@@ -493,10 +515,17 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
   }
   function handleUpdate(fd:FormData){
     if(!active)return;setErr('')
+    const isReject=fd.get('is_reject')==='1'
     startTransition(async()=>{
-      const r=await updateStatusProduksi(active.id,active.kode,fd)
+      let r:any
+      if(isReject){
+        r=await inputReject(active.id,active.kode,fd)
+      } else {
+        r=await updateStatusProduksi(active.id,active.kode,fd)
+      }
       if(r?.error){setErr(r.error);return}
-      showToast('✅ Status diperbarui');setModal(null)
+      showToast(isReject?'✅ Reject dicatat':'✅ Status diperbarui')
+      setModal(null)
     })
   }
   function handleDelete(){
@@ -565,10 +594,11 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
 
           {/* Table header */}
           <div className="grid px-5 py-3.5 border-b"
-            style={{gridTemplateColumns:'2fr 80px 60px 90px 100px 120px 100px 120px',gap:'12px',borderColor:'rgba(243,244,246,0.9)',background:'rgba(249,250,251,0.6)'}}>
-            {['BATCH','GRAMASI','PCS','TOTAL BERAT','STATUS','TIMELINE','TGL UPDATE','AKSI'].map(h=>(
+            style={{gridTemplateColumns:'2fr 70px 55px 85px 75px 105px 115px 95px 115px',gap:'12px',borderColor:'rgba(243,244,246,0.9)',background:'rgba(249,250,251,0.6)'}}>
+            {['BATCH','GRAMASI','PCS','TOTAL BERAT','SERBUK','STATUS','TIMELINE','TGL UPDATE','AKSI'].map(h=>(
+
               <span key={h} className={cn('text-[10px] font-bold text-gray-400 tracking-widest uppercase',
-                h==='PCS'||h==='TOTAL BERAT'?'hidden md:block':h==='TIMELINE'?'hidden lg:block':h==='TGL UPDATE'?'hidden sm:block':'')}>{h}</span>
+                h==='PCS'||h==='TOTAL BERAT'||h==='SERBUK'?'hidden md:block':h==='TIMELINE'?'hidden lg:block':h==='TGL UPDATE'?'hidden sm:block':'')}>{h}</span>
             ))}
           </div>
 
@@ -589,7 +619,7 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
               <div key={item.id}>
                 <div
                   className={cn('grid px-5 py-4 items-center transition-colors',idx>0?'border-t':'',isExp?'':'hover:bg-gray-50/40')}
-                  style={{gridTemplateColumns:'2fr 80px 60px 90px 100px 120px 100px 120px',gap:'12px',borderColor:'rgba(243,244,246,0.7)',background:isExp?'rgba(139,92,246,0.03)':''}}>
+                  style={{gridTemplateColumns:'2fr 70px 55px 85px 75px 105px 115px 95px 115px',gap:'12px',borderColor:'rgba(243,244,246,0.7)',background:isExp?'rgba(139,92,246,0.03)':''}}>
 
                   {/* BATCH col */}
                   <div className="min-w-0">
@@ -609,6 +639,16 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
 
                   {/* TOTAL BERAT */}
                   <div className="hidden md:block text-sm font-semibold text-gray-700">{item.total_gram}gr</div>
+
+                  {/* SERBUK */}
+                  <div className="hidden md:block">
+                    {(() => {
+                      const totalSerbuk = events.reduce((s:number, ev:any) => s + (Number(ev.sisa_serbuk)||0), 0)
+                      return totalSerbuk > 0
+                        ? <span className="text-xs font-semibold px-2 py-1 rounded-full" style={{background:'rgba(139,92,246,0.1)',color:'#7C3AED'}}>{totalSerbuk.toFixed(3)}gr</span>
+                        : <span className="text-xs text-gray-300">—</span>
+                    })()}
+                  </div>
 
                   {/* STATUS */}
                   <div><Sbadge s={item.current_status}/></div>
