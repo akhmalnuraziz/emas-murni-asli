@@ -5,7 +5,7 @@ import {
   Plus, Search, Edit2, Trash2, Printer, Check, AlertTriangle,
   X, Package, ChevronDown
 } from 'lucide-react'
-import { cn, formatDate, formatGram } from '@/lib/utils'
+import { cn, formatDate } from '@/lib/utils'
 import { createPacking, editPacking, voidPacking, markPrinted } from '@/app/(dashboard)/packing-log/actions'
 import type { UserRole } from '@/lib/types/database'
 
