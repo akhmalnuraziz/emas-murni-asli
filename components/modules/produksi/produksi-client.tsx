@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition, useEffect } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import {
   Plus, Search, ChevronDown, ChevronUp, Edit2, Trash2,
   Check, AlertTriangle, X, Package, Flame, Clock,
