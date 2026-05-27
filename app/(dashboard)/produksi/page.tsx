@@ -12,7 +12,7 @@ export default async function ProduksiPage() {
   ] = await Promise.all([
     supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
     supabase.from('produksi_item')
-      .select(`*, produksi_event(*)`)
+      .select(`*, produksi_event(*), packing!left(pcs_dipack, shieldtag_count, voided_at)`)
       .is('voided_at', null)
       .order('created_at', { ascending: false }),
     supabase.from('batch')
