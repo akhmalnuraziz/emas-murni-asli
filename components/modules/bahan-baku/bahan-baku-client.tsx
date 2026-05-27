@@ -94,7 +94,12 @@ function FotoPicker({files,onAdd,onRemove,label='Tambah foto',small=false}:{
   const s=small?'w-12 h-12':'w-16 h-16'
   return(
     <div className="space-y-2">
-      {lb&&<div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/75 p-4"onClick={()=>setLb(null)}><img src={lb}className="max-w-[95vw] max-h-[90vh] object-contain rounded-2xl"/></div>}
+      {lb&&(
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/85 p-4"onClick={()=>setLb(null)}>
+          <img src={lb}className="max-w-[95vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl"onClick={e=>e.stopPropagation()}/>
+          <button onClick={()=>setLb(null)}className="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center backdrop-blur-sm"><X size={18}/></button>
+        </div>
+      )}
       {prev.length>0&&<div className="flex gap-2 flex-wrap">{prev.map((u,i)=>(
         <div key={i}className={`relative ${s}`}>
           <img src={u}onClick={()=>setLb(u)}className="w-full h-full object-cover rounded-xl border-2 border-violet-300 cursor-pointer hover:scale-105 transition-transform"/>
