@@ -350,7 +350,7 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
                   {/* SELISIH */}
                   <div className="hidden md:block">
                     <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full',
-                      selisihAbs<0.001?'text-emerald-700':'selisihAbs<=0.05?text-amber-700':'text-red-700')}
+                      selisihAbs<0.001?'text-emerald-700':selisihAbs<=0.05?'text-amber-700':'text-red-700')}
                       style={{background:selisihAbs<0.001?'rgba(34,197,94,0.1)':selisihAbs<=0.05?'rgba(245,158,11,0.1)':'rgba(239,68,68,0.1)'}}>
                       {selisihAbs<0.001?'Pas':(selisih>0?'+':'')+selisih.toFixed(3)+' gr'}
                     </span>
