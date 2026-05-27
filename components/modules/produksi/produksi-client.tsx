@@ -96,6 +96,96 @@ function FotoPicker({ files, onAdd, onRemove, label = 'Tambah foto proses', smal
   )
 }
 
+
+// ─── Base64 compress ──────────────────────────────────────────────────────────
+async function filesToBase64(files: File[]): Promise<string[]> {
+  const results: string[] = []
+  for (const file of files.slice(0, 10)) {
+    const b64 = await new Promise<string>((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let { width, height } = img
+        const max = 1200
+        if (width > max || height > max) {
+          const r = Math.min(max/width, max/height)
+          width = Math.floor(width*r); height = Math.floor(height*r)
+        }
+        canvas.width = width; canvas.height = height
+        canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
+        let q = 0.8
+        const tryQ = () => canvas.toBlob(blob => {
+          if (!blob) { resolve(''); return }
+          if (blob.size <= 250*1024 || q <= 0.3) {
+            const reader = new FileReader()
+            reader.onload = () => resolve(reader.result as string)
+            reader.readAsDataURL(blob)
+          } else { q -= 0.1; tryQ() }
+        }, 'image/jpeg', q)
+        tryQ()
+      }
+      img.onerror = () => resolve('')
+      img.src = URL.createObjectURL(file)
+    })
+    if (b64) results.push(b64)
+  }
+  return results
+}
+
+// ─── Foto Picker ──────────────────────────────────────────────────────────────
+function FotoPicker({ files, onAdd, onRemove, label = 'Tambah foto', small = false }: {
+  files: File[]; onAdd: (f: File[]) => void
+  onRemove: (i: number) => void; label?: string; small?: boolean
+}) {
+  const [previews, setPreviews] = useState<string[]>([])
+  const [lightbox, setLightbox] = useState<string|null>(null)
+  useEffect(() => {
+    const urls = files.map(f => URL.createObjectURL(f))
+    setPreviews(urls)
+    return () => urls.forEach(u => URL.revokeObjectURL(u))
+  }, [files])
+  const sz = small ? 'w-14 h-14' : 'w-16 h-16'
+  return (
+    <div className="space-y-2">
+      {lightbox && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setLightbox(null)}>
+          <img src={lightbox} alt="" className="max-w-[95vw] max-h-[90vh] object-contain rounded-xl"/>
+          <button className="absolute top-4 right-4 w-9 h-9 bg-white/20 text-white rounded-full flex items-center justify-center">
+            <X size={18}/>
+          </button>
+        </div>
+      )}
+      {previews.length > 0 && (
+        <div className="flex gap-2 flex-wrap">
+          {previews.map((url, i) => (
+            <div key={i} className={`relative ${sz}`}>
+              <img src={url} alt="" onClick={() => setLightbox(url)}
+                className="w-full h-full object-cover rounded-xl border-2 border-violet-300 cursor-pointer"/>
+              <button type="button" onClick={() => onRemove(i)}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center">
+                <X size={10}/>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <label className="flex items-center gap-2 px-3 py-2 border border-dashed border-slate-200 rounded-xl cursor-pointer hover:border-violet-400 hover:bg-violet-50">
+        <ImageIcon size={13} className="text-slate-400 flex-shrink-0"/>
+        <span className={`text-slate-500 ${small?'text-[11px]':'text-xs'}`}>
+          {files.length > 0 ? `${files.length} foto — klik untuk tambah` : label}
+        </span>
+        <input type="file" accept="image/*" multiple className="hidden"
+          onChange={e => { onAdd(Array.from(e.target.files??[])); e.currentTarget.value='' }}/>
+      </label>
+      {files.length > 0 && (
+        <button type="button" onClick={() => onRemove(-1)}
+          className="text-[11px] text-red-400 hover:underline">Hapus semua foto</button>
+      )}
+    </div>
+  )
+}
+
 const GRAMASI_OPTIONS = ['0.1', '0.5', '1', '2', '5', '10', '20', '25', '50', '100', '250', '500', '1000']
 const STATUS_OPTIONS = ['Cutting', 'Pas Berat', 'Annealing', 'Siap Packing']
 
@@ -136,6 +226,10 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
   const [formError, setFormError] = useState('')
 
   // Form state
+  const [formFotos, setFormFotos] = useState<File[]>([])
+  const [modalFotos, setModalFotos] = useState<File[]>([])
+  const [modalFotosSerbuk, setModalFotosSerbuk] = useState<File[]>([])
+  const [fotosUploading, setFotosUploading] = useState(false)
   const [form, setForm] = useState({
     batch_kode: '', gramasi: '', pcs: '', berat_awal: '',
     status_awal: 'Cutting', tanggal_produksi: new Date().toISOString().split('T')[0],
@@ -171,8 +265,12 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     e.preventDefault()
     setFormError('')
     setUploading(false)
+    setFotosUploading(true)
+    const fotosB64 = formFotos.length > 0 ? await filesToBase64(formFotos) : []
+    setFotosUploading(false)
     const fd = new FormData()
     Object.entries(form).forEach(([k, v]) => fd.set(k, v))
+    fd.set('fotos_b64', JSON.stringify(fotosB64))
     const fotosB64 = formFotos.length > 0 ? await filesToBase64(formFotos) : []
     fd.set('fotos_b64', JSON.stringify(fotosB64))
     startTransition(async () => {
@@ -399,6 +497,15 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
               />
             </div>
 
+            {/* Foto */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-slate-600">Foto Proses (opsional, max 10)</label>
+              <FotoPicker files={formFotos}
+                onAdd={f => setFormFotos(p => [...p,...f].slice(0,10))}
+                onRemove={i => i===-1?setFormFotos([]):setFormFotos(p=>p.filter((_,j)=>j!==i))}
+                label="Foto proses awal produksi"/>
+            </div>
+
             <div className="flex gap-3 justify-end">
               <button type="button" onClick={() => setShowForm(false)}
                 className="px-5 py-2.5 text-sm font-semibold border border-slate-200 rounded-xl hover:bg-slate-50">Batal</button>
@@ -601,6 +708,14 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                 <label className={labelCls}>Sisa Serbuk (gram) — Isi jika status Pas Berat</label>
                 <input name="sisa_serbuk" type="number" step="0.001" className={inputCls}
                   placeholder="0.000" defaultValue="0" />
+              </div>
+              {/* Foto sisa serbuk */}
+              <div className="space-y-1">
+                <label className={labelCls}>Foto Sisa Serbuk (opsional)</label>
+                <FotoPicker files={modalFotosSerbuk}
+                  onAdd={f => setModalFotosSerbuk(p => [...p,...f].slice(0,10))}
+                  onRemove={i => i===-1?setModalFotosSerbuk([]):setModalFotosSerbuk(p=>p.filter((_,j)=>j!==i))}
+                  label="Foto sisa serbuk" small/>
               </div>
               {/* Foto Sisa Serbuk */}
               <div className="flex flex-col gap-1.5">
