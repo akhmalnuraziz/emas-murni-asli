@@ -149,10 +149,6 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     status_awal: 'Cutting', tanggal_produksi: new Date().toISOString().split('T')[0],
     sisa_serbuk: '', memo: '', operator: '', catatan: ''
   })
-  const [formFotos, setFormFotos] = useState<File[]>([])
-  const [modalFotos, setModalFotos] = useState<File[]>([])
-  const [modalFotosSerbuk, setModalFotosSerbuk] = useState<File[]>([])
-  const [uploading, setUploading] = useState(false)
 
   const canCreate = ['owner', 'admin_pusat', 'spv', 'operator_produksi'].includes(userRole)
   const canDelete = ['owner', 'admin_pusat'].includes(userRole)
