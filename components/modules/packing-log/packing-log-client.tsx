@@ -251,7 +251,7 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
     })
   }
   function handlePrint(packing:any){
-    startTransition(async()=>await markPrinted(packing.id))
+    markPrinted(packing.id).catch(console.error)
     const content=document.getElementById(`print-${packing.id}`)
     if(!content)return
     const w=window.open('','_blank')
