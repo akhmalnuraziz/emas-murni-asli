@@ -12,7 +12,7 @@ export default async function PackingLogPage() {
   ] = await Promise.all([
     supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
     supabase.from('packing')
-      .select('*, produksi_item(kode, nama_item, gramasi, pcs_good, pcs, current_status)')
+      .select('*, produksi_item(id, kode, nama_item, gramasi, pcs_good, pcs, current_status, batch_kode)')
       .is('voided_at', null)
       .order('created_at', { ascending: false }),
     supabase.from('produksi_item')
