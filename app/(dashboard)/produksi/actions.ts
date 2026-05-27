@@ -3,53 +3,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
-
-async function uploadBase64Fotos(
-  supabase: any, b64Array: string[], prefix: string
-): Promise<string[]> {
-  const urls: string[] = []
-  const safe = prefix.replace(/[^a-zA-Z0-9_-]/g, '_')
-  for (let i = 0; i < b64Array.length; i++) {
-    const b64 = b64Array[i]
-    if (!b64) continue
-    try {
-      const base64Data = b64.replace(/^data:image\/[^;]+;base64,/, '')
-      const buffer = Buffer.from(base64Data, 'base64')
-      const path = `produksi/${safe}/${Date.now()}_${i}.jpg`
-      const { error } = await supabase.storage
-        .from('emas-fotos').upload(path, buffer, { contentType: 'image/jpeg', upsert: true })
-      if (!error) {
-        const { data } = supabase.storage.from('emas-fotos').getPublicUrl(path)
-        urls.push(data.publicUrl)
-      }
-    } catch {}
-  }
-  return urls
-}
-
-async function uploadBase64Fotos(
-  supabase: any, b64Array: string[], prefix: string
-): Promise<string[]> {
-  const urls: string[] = []
-  const safe = prefix.replace(/[^a-zA-Z0-9_-]/g, '_')
-  for (let i = 0; i < b64Array.length; i++) {
-    const b64 = b64Array[i]
-    if (!b64) continue
-    try {
-      const base64Data = b64.replace(/^data:image\/[^;]+;base64,/, '')
-      const buffer = Buffer.from(base64Data, 'base64')
-      const path = `produksi/${safe}/${Date.now()}_${i}.jpg`
-      const { error } = await supabase.storage
-        .from('emas-fotos').upload(path, buffer, { contentType: 'image/jpeg', upsert: true })
-      if (!error) {
-        const { data } = supabase.storage.from('emas-fotos').getPublicUrl(path)
-        urls.push(data.publicUrl)
-      }
-    } catch {}
-  }
-  return urls
-}
-
 const PROD_PREFIX = 'PROD.GDCJ'
 const PCKG_PREFIX = 'PCKG.GDCJ'
 
@@ -74,6 +27,27 @@ async function updateBatchSisaSeharusnya(supabase: any, batchKode: string) {
       sisa_bahan_seharusnya: Math.max(0, (batch.timbangan_akhir ?? 0) - totalTerpakai)
     }).eq('kode', batchKode)
   }
+}
+
+async function uploadBase64Fotos(supabase: any, b64Array: string[], prefix: string): Promise<string[]> {
+  const urls: string[] = []
+  const safe = prefix.replace(/[^a-zA-Z0-9_-]/g, '_')
+  for (let i = 0; i < b64Array.length; i++) {
+    const b64 = b64Array[i]
+    if (!b64) continue
+    try {
+      const base64Data = b64.replace(/^data:image\/[^;]+;base64,/, '')
+      const buffer = Buffer.from(base64Data, 'base64')
+      const path = `produksi/${safe}/${Date.now()}_${i}.jpg`
+      const { error } = await supabase.storage
+        .from('emas-fotos').upload(path, buffer, { contentType: 'image/jpeg', upsert: true })
+      if (!error) {
+        const { data } = supabase.storage.from('emas-fotos').getPublicUrl(path)
+        urls.push(data.publicUrl)
+      }
+    } catch {}
+  }
+  return urls
 }
 
 export async function createProduksi(formData: FormData) {
@@ -120,11 +94,10 @@ export async function createProduksi(formData: FormData) {
 
   if (error) return { error: error.message }
 
-  const fotosB64 = formData.get('fotos_b64') ? JSON.parse(formData.get('fotos_b64') as string) : []
+  // Upload fotos
+  const fotosB64Raw = formData.get('fotos_b64') as string
+  const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
   const fotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, kode) : []
-
-  const fotosB64Create = formData.get('fotos_b64') ? JSON.parse(formData.get('fotos_b64') as string) : []
-  const fotoUrlsCreate = fotosB64Create.length > 0 ? await uploadBase64Fotos(supabase, fotosB64Create, kode) : []
 
   await supabase.from('produksi_event').insert({
     produksi_item_id: produksi.id, tanggal: tanggalProduksi,
@@ -135,7 +108,6 @@ export async function createProduksi(formData: FormData) {
   })
 
   await updateBatchSisaSeharusnya(supabase, batchKode)
-
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'CREATE', module: 'PRODUKSI', record_key: kode, record_id: String(produksi.id), after_data: produksi,
@@ -166,14 +138,13 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
   const beratSebelumnya = produksi.total_gram ?? 0
   const losses = Math.max(0, beratSebelumnya - totalGramBaru - sisaSerbuk)
 
-  const fotosB64 = formData.get('fotos_b64') ? JSON.parse(formData.get('fotos_b64') as string) : []
+  // Upload fotos
+  const fotosB64Raw = formData.get('fotos_b64') as string
+  const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
   const fotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, `${produksiKode}-${statusBaru}`) : []
-  const fotosSerbukB64 = formData.get('fotos_serbuk_b64') ? JSON.parse(formData.get('fotos_serbuk_b64') as string) : []
-  const fotoSerbukUrls = fotosSerbukB64.length > 0 ? await uploadBase64Fotos(supabase, fotosSerbukB64, `${produksiKode}-serbuk`) : []
 
-  const fotosB64Update = formData.get('fotos_b64') ? JSON.parse(formData.get('fotos_b64') as string) : []
-  const fotoUrlsUpdate = fotosB64Update.length > 0 ? await uploadBase64Fotos(supabase, fotosB64Update, `${produksiKode}-${statusBaru}`) : []
-  const fotosSerbukB64 = formData.get('fotos_serbuk_b64') ? JSON.parse(formData.get('fotos_serbuk_b64') as string) : []
+  const fotosSerbukB64Raw = formData.get('fotos_serbuk_b64') as string
+  const fotosSerbukB64 = fotosSerbukB64Raw ? JSON.parse(fotosSerbukB64Raw) : []
   const fotoSerbukUrls = fotosSerbukB64.length > 0 ? await uploadBase64Fotos(supabase, fotosSerbukB64, `${produksiKode}-serbuk`) : []
 
   await supabase.from('produksi_event').insert({
@@ -181,7 +152,8 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
     total_gram: totalGramBaru, berat_sebelumnya: beratSebelumnya,
     sisa_serbuk: sisaSerbuk, losses,
     catatan: formData.get('catatan') as string || null,
-    user_name: profile?.name || null, fotos: fotoUrls,
+    user_name: profile?.name || null,
+    fotos: fotoUrls,
     fotos_sisa_serbuk: fotoSerbukUrls,
   })
 
@@ -284,7 +256,7 @@ export async function deleteProduksi(produksiId: number, produksiKode: string) {
 
   if ((packingCount ?? 0) > 0) {
     return {
-      error: `Item produksi ini memiliki ${packingCount} data packing aktif. Hapus data packing terlebih dahulu, baru hapus produksi ini.`,
+      error: `Item produksi ini memiliki ${packingCount} data packing aktif. Hapus data packing terlebih dahulu.`,
       step: 'packing',
     }
   }
@@ -335,18 +307,9 @@ export async function createPacking(formData: FormData) {
     selisih_gram: selisih, tanggal,
     pic: formData.get('pic') as string || profile?.name || null,
     catatan: formData.get('catatan') as string || null,
-    status_surat: 'aktif', shieldtag_count: 0, fotos: [],
   }).select().single()
 
   if (error) return { error: error.message }
-
-  // Update status produksi
-  const { data: allPacking } = await supabase.from('packing')
-    .select('pcs_dipack').eq('produksi_item_id', produksiItemId).is('voided_at', null)
-  const totalPacked = (allPacking ?? []).reduce((s: number, p: any) => s + (p.pcs_dipack ?? 0), 0)
-  const statusBaru = totalPacked >= (produksi.pcs_good ?? produksi.pcs) ? 'Sudah Packing' : 'Packing Sebagian'
-
-  await supabase.from('produksi_item').update({ current_status: statusBaru }).eq('id', produksiItemId)
 
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
@@ -363,45 +326,18 @@ export async function voidPacking(packingId: number, packingKode: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
-
-  const { data: packing } = await supabase.from('packing').select('*').eq('id', packingId).single()
-  if (!packing) return { error: 'Data packing tidak ditemukan' }
-
-  const { count: shieldtagCount } = await supabase.from('shieldtag')
-    .select('*', { count: 'exact', head: true })
-    .eq('packing_id', packingId).neq('status', 'VOID')
-
-  if ((shieldtagCount ?? 0) > 0) {
-    return {
-      error: `Packing ini memiliki ${shieldtagCount} Shieldtag aktif. Void semua Shieldtag terkait di modul Shieldtag terlebih dahulu.`,
-      step: 'shieldtag',
-    }
-  }
+  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
 
   await supabase.from('packing').update({
-    status_surat: 'void', voided_at: new Date().toISOString(), void_reason: 'VOID_BY_USER',
+    voided_at: new Date().toISOString(), void_reason: 'VOIDED_BY_USER',
   }).eq('id', packingId)
-
-  if (packing.produksi_item_id) {
-    const { count: activePacking } = await supabase.from('packing')
-      .select('*', { count: 'exact', head: true })
-      .eq('produksi_item_id', packing.produksi_item_id)
-      .neq('status_surat', 'void').is('voided_at', null)
-
-    if ((activePacking ?? 0) === 0) {
-      await supabase.from('produksi_item').update({ current_status: 'Siap Packing' })
-        .eq('id', packing.produksi_item_id)
-    }
-  }
 
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'VOID_PACKING', module: 'PRODUKSI',
-    record_key: packingKode, record_id: String(packingId), before_data: packing,
+    record_key: packingKode, record_id: String(packingId),
   })
 
   revalidatePath('/produksi')
   return { success: true }
 }
-
