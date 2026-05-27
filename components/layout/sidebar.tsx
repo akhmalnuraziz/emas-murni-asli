@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: '/dashboard',  label: 'Dashboard',     icon: LayoutDashboard, module: 'dashboard'  },
   { href: '/bahan-baku', label: 'Bahan Baku',    icon: Package,         module: 'bahan-baku' },
   { href: '/produksi',   label: 'Produksi',      icon: Hammer,          module: 'produksi'   },
+  { href: '/packing-log',label: 'Packing Log',   icon: Package,         module: 'packing-log'},
   { href: '/shieldtag',  label: 'Shieldtag',     icon: Tag,             module: 'shieldtag'  },
   { href: '/inventory',  label: 'Inventory',     icon: Warehouse,       module: 'inventory'  },
   { href: '/mutasi',     label: 'Mutasi Cabang', icon: ArrowLeftRight,  module: 'mutasi'     },
