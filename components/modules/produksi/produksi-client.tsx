@@ -1,9 +1,17 @@
 'use client'
 
 import { useState, useEffect, useTransition, useRef } from 'react'
-import { Plus, Search, X, Check, AlertTriangle, Edit2, Trash2, ImageIcon, ChevronDown, ChevronUp } from 'lucide-react'
-import { cn, formatDate, formatGram } from '@/lib/utils'
-import { createProduksi, updateStatusProduksi, deleteProduksi, editProduksi } from '@/app/(dashboard)/produksi/actions'
+import {
+  Plus, Search, Edit2, Trash2, Check, AlertTriangle,
+  X, ImageIcon, ChevronDown, ChevronUp, Package,
+  Camera, Layers, RefreshCw, Eye, Printer
+} from 'lucide-react'
+import { cn, formatDate, formatGram, formatRupiah } from '@/lib/utils'
+import {
+  createProduksi, updateStatusProduksi, editProduksi,
+  inputReject, leburReject, deleteProduksi,
+  createPacking, voidPacking
+} from '@/app/(dashboard)/produksi/actions'
 import type { UserRole } from '@/lib/types/database'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -14,21 +22,25 @@ interface Props {
   userName: string
 }
 
-// ─── Status Config ─────────────────────────────────────────────────────────
-const SC: Record<string, { label: string; dot: string; ring: string; bg: string; text: string }> = {
-  'Cutting':       { label: 'Cutting',       dot: '#3B82F6', ring: 'ring-blue-400',    bg: 'bg-blue-50',    text: 'text-blue-700'    },
-  'Pas Berat':     { label: 'Pas Berat',      dot: '#F97316', ring: 'ring-orange-400',  bg: 'bg-orange-50',  text: 'text-orange-700'  },
-  'Annealing':     { label: 'Annealing',      dot: '#EAB308', ring: 'ring-yellow-400',  bg: 'bg-yellow-50',  text: 'text-yellow-700'  },
-  'QC':            { label: 'QC',             dot: '#8B5CF6', ring: 'ring-violet-400',  bg: 'bg-violet-50',  text: 'text-violet-700'  },
-  'Siap Packing':  { label: 'Siap Packing',   dot: '#10B981', ring: 'ring-emerald-400', bg: 'bg-emerald-50', text: 'text-emerald-700' },
-  'Sudah Packing': { label: 'Sudah Packing',  dot: '#059669', ring: 'ring-green-500',   bg: 'bg-green-50',   text: 'text-green-800'   },
-  'Reject':        { label: 'Reject',         dot: '#EF4444', ring: 'ring-red-400',     bg: 'bg-red-50',     text: 'text-red-700'     },
+// ─── Constants ────────────────────────────────────────────────────────────────
+const GRAMASI_OPTIONS = ['0.1','0.5','1','2','5','10','20','25','50','100','250','500','1000']
+const STATUS_FLOW = ['Cutting','Pas Berat','Annealing','QC','Siap Packing','Sudah Packing']
+const STATUS_NEXT: Record<string,string> = {
+  'Cutting':'Pas Berat','Pas Berat':'Annealing','Annealing':'QC',
+  'QC':'Siap Packing','Siap Packing':'Sudah Packing'
 }
 
-const STATUS_OPTIONS = ['Cutting', 'Pas Berat', 'Annealing', 'QC', 'Siap Packing']
-const GRAMASI_OPTIONS = ['0.1', '0.5', '1', '2', '5', '10', '20', '25', '50', '100', '250', '500', '1000']
+const STATUS_COLOR: Record<string,{dot:string;bg:string;text:string;label:string}> = {
+  'Cutting':       { dot:'#3B82F6', bg:'rgba(59,130,246,0.12)', text:'#2563EB', label:'Cutting' },
+  'Pas Berat':     { dot:'#F97316', bg:'rgba(249,115,22,0.12)', text:'#EA580C', label:'Pas Berat' },
+  'Annealing':     { dot:'#EAB308', bg:'rgba(234,179,8,0.12)',  text:'#CA8A04', label:'Annealing' },
+  'QC':            { dot:'#06B6D4', bg:'rgba(6,182,212,0.12)',  text:'#0891B2', label:'QC' },
+  'Siap Packing':  { dot:'#22C55E', bg:'rgba(34,197,94,0.12)',  text:'#16A34A', label:'Siap Packing' },
+  'Sudah Packing': { dot:'#8B5CF6', bg:'rgba(139,92,246,0.12)', text:'#7C3AED', label:'Sudah Packing' },
+  'Reject':        { dot:'#EF4444', bg:'rgba(239,68,68,0.12)',  text:'#DC2626', label:'Reject' },
+}
 
-// ─── Image compress to base64 ─────────────────────────────────────────────
+// ─── filesToBase64 ────────────────────────────────────────────────────────────
 async function filesToBase64(files: File[]): Promise<string[]> {
   const results: string[] = []
   for (const file of files.slice(0, 10)) {
@@ -63,10 +75,13 @@ async function filesToBase64(files: File[]): Promise<string[]> {
   return results
 }
 
-// ─── FotoPicker ───────────────────────────────────────────────────────────
-function FotoPicker({ files, existing = [], onAdd, onRemove, onRemoveExisting, label = 'Tambah foto' }: {
-  files: File[]; existing?: string[]; onAdd: (f: File[]) => void
-  onRemove: (i: number) => void; onRemoveExisting?: (i: number) => void; label?: string
+// ─── FotoPicker ──────────────────────────────────────────────────────────────
+function FotoPicker({ files, existing=[], onAdd, onRemove, onRemoveExisting, label='Tambah foto', small=false }: {
+  files: File[]; existing?: string[]
+  onAdd: (f: File[]) => void
+  onRemove: (i: number) => void
+  onRemoveExisting?: (i: number) => void
+  label?: string; small?: boolean
 }) {
   const [previews, setPreviews] = useState<string[]>([])
   const [lightbox, setLightbox] = useState<string|null>(null)
@@ -75,504 +90,749 @@ function FotoPicker({ files, existing = [], onAdd, onRemove, onRemoveExisting, l
     setPreviews(urls)
     return () => urls.forEach(u => URL.revokeObjectURL(u))
   }, [files])
+  const sz = small ? 'w-14 h-14' : 'w-16 h-16'
   return (
     <div className="space-y-2">
       {lightbox && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4" onClick={() => setLightbox(null)}>
-          <img src={lightbox} className="max-w-[95vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl"/>
-          <button className="absolute top-4 right-4 w-9 h-9 bg-white/20 backdrop-blur rounded-full flex items-center justify-center text-white"><X size={16}/></button>
+          <img src={lightbox} alt="" className="max-w-[95vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl"/>
+          <button className="absolute top-4 right-4 w-10 h-10 bg-white/20 text-white rounded-full flex items-center justify-center backdrop-blur-sm"><X size={18}/></button>
         </div>
       )}
       {(existing.length > 0 || previews.length > 0) && (
         <div className="flex gap-2 flex-wrap">
           {existing.map((url, i) => (
-            <div key={`e${i}`} className="relative w-16 h-16">
-              <img src={url} onClick={() => setLightbox(url)} className="w-full h-full object-cover rounded-xl border border-white/50 shadow cursor-pointer hover:opacity-80 transition"/>
+            <div key={`ex-${i}`} className={`relative ${sz} group`}>
+              <img src={url} alt="" onClick={() => setLightbox(url)}
+                className="w-full h-full object-cover rounded-xl border border-violet-200/50 cursor-pointer group-hover:scale-105 transition-transform"/>
               {onRemoveExisting && (
-                <button type="button" onClick={() => onRemoveExisting(i)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"><X size={9}/></button>
+                <button type="button" onClick={() => onRemoveExisting(i)}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                  <X size={9}/>
+                </button>
               )}
-              <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-[8px] text-center py-0.5 rounded-b-xl">Tersimpan</div>
             </div>
           ))}
           {previews.map((url, i) => (
-            <div key={`n${i}`} className="relative w-16 h-16">
-              <img src={url} onClick={() => setLightbox(url)} className="w-full h-full object-cover rounded-xl border-2 border-violet-400 shadow cursor-pointer hover:opacity-80 transition"/>
-              <button type="button" onClick={() => onRemove(i)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"><X size={9}/></button>
-              <div className="absolute bottom-0 left-0 right-0 bg-violet-600/70 text-white text-[8px] text-center py-0.5 rounded-b-xl">Baru</div>
+            <div key={`new-${i}`} className={`relative ${sz}`}>
+              <img src={url} alt="" onClick={() => setLightbox(url)}
+                className="w-full h-full object-cover rounded-xl border-2 border-violet-400/60 cursor-pointer"/>
+              <button type="button" onClick={() => onRemove(i)}
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center shadow-sm">
+                <X size={9}/>
+              </button>
+              <div className="absolute bottom-0 left-0 right-0 bg-violet-500/70 text-white text-[8px] text-center py-0.5 rounded-b-xl">BARU</div>
             </div>
           ))}
         </div>
       )}
-      <label className="flex items-center gap-2 px-3 py-2.5 bg-white/60 backdrop-blur border border-white/60 rounded-xl cursor-pointer hover:bg-violet-50/60 hover:border-violet-300 transition-all group">
-        <ImageIcon size={14} className="text-slate-400 group-hover:text-violet-500 transition flex-shrink-0"/>
-        <span className="text-xs text-slate-500 group-hover:text-violet-600 transition">
-          {files.length > 0 ? `${files.length} foto baru — klik tambah lagi` : label}
+      <label className="flex items-center gap-2 px-3 py-2.5 border border-dashed border-violet-200 rounded-xl cursor-pointer hover:border-violet-400 hover:bg-violet-50/50 transition-all bg-white/40">
+        <Camera size={13} className="text-violet-400 flex-shrink-0"/>
+        <span className={`text-slate-500 ${small?'text-[11px]':'text-xs'}`}>
+          {files.length > 0 ? `${files.length} foto baru — klik untuk tambah` : label}
         </span>
-        <input type="file" accept="image/*" multiple className="hidden" onChange={e => { onAdd(Array.from(e.target.files??[])); e.currentTarget.value='' }}/>
+        <input type="file" accept="image/*" multiple className="hidden"
+          onChange={e => { onAdd(Array.from(e.target.files??[])); e.currentTarget.value='' }}/>
       </label>
-      {files.length > 0 && <button type="button" onClick={() => onRemove(-1)} className="text-[11px] text-red-400 hover:text-red-600 hover:underline transition">Hapus semua foto baru</button>}
-    </div>
-  )
-}
-
-// ─── Timeline Dot with Popup ───────────────────────────────────────────────
-function TimelineDot({ event }: { event: any }) {
-  const [show, setShow] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  const cfg = SC[event.status] ?? SC['Cutting']
-  const fotos = Array.isArray(event.fotos) ? event.fotos : []
-  const fotosSerbuk = Array.isArray(event.fotos_sisa_serbuk) ? event.fotos_sisa_serbuk : []
-
-  // Close on outside click
-  useEffect(() => {
-    if (!show) return
-    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setShow(false) }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [show])
-
-  return (
-    <div ref={ref} className="relative flex-shrink-0">
-      <button
-        type="button"
-        onClick={() => setShow(v => !v)}
-        onMouseEnter={() => setShow(true)}
-        onMouseLeave={() => setShow(false)}
-        className="w-3.5 h-3.5 rounded-full border-2 border-white shadow-md transition-all duration-200 hover:scale-125 active:scale-110"
-        style={{ backgroundColor: cfg.dot }}
-      />
-      {show && (
-        <div
-          onMouseEnter={() => setShow(true)}
-          onMouseLeave={() => setShow(false)}
-          className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] border border-white/80 p-3 pointer-events-auto"
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cfg.dot }}/>
-            <span className={cn('text-xs font-bold', cfg.text)}>{cfg.label}</span>
-            <span className="text-[10px] text-slate-400 ml-auto">{event.tanggal ? formatDate(event.tanggal) : '—'}</span>
-          </div>
-          <div className="space-y-1 text-[11px] text-slate-600">
-            <div className="flex justify-between"><span className="text-slate-400">Berat</span><span className="font-semibold">{event.total_gram ? `${event.total_gram} gr` : '—'}</span></div>
-            {event.sisa_serbuk > 0 && <div className="flex justify-between"><span className="text-slate-400">Sisa Serbuk</span><span className="font-semibold text-amber-600">{event.sisa_serbuk} gr</span></div>}
-            {event.losses > 0 && <div className="flex justify-between"><span className="text-slate-400">Losses</span><span className="font-semibold text-red-500">{event.losses?.toFixed(3)} gr</span></div>}
-            {event.user_name && <div className="flex justify-between"><span className="text-slate-400">Operator</span><span className="font-medium">{event.user_name}</span></div>}
-            {event.catatan && <div className="mt-1 text-slate-500 italic text-[10px] leading-tight">{event.catatan}</div>}
-          </div>
-          {fotos.length > 0 && (
-            <div className="flex gap-1 mt-2 flex-wrap">
-              {fotos.slice(0,3).map((url: string, i: number) => (
-                <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-lg overflow-hidden border border-slate-100 block hover:opacity-80 transition">
-                  <img src={url} className="w-full h-full object-cover"/>
-                </a>
-              ))}
-              {fotos.length > 3 && <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] text-slate-500 font-semibold">+{fotos.length-3}</div>}
-            </div>
-          )}
-          {fotosSerbuk.length > 0 && (
-            <div className="mt-1.5">
-              <p className="text-[10px] text-slate-400 mb-1">Sisa Serbuk</p>
-              <div className="flex gap-1">
-                {fotosSerbuk.slice(0,2).map((url: string, i: number) => (
-                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-lg overflow-hidden border border-amber-100 block">
-                    <img src={url} className="w-full h-full object-cover"/>
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-          <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white/95 border-r border-b border-white/80 rotate-45 shadow-sm"/>
-        </div>
+      {files.length > 0 && (
+        <button type="button" onClick={() => onRemove(-1)} className="text-[11px] text-red-400 hover:text-red-600 hover:underline">Hapus semua foto baru</button>
       )}
     </div>
   )
 }
 
-function Timeline({ events }: { events: any[] }) {
-  if (!events || events.length === 0) return <span className="text-[11px] text-slate-300">Belum ada proses</span>
-  const sorted = [...events].sort((a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime())
+// ─── StatusBadge ─────────────────────────────────────────────────────────────
+function StatusBadge({ status }: { status: string }) {
+  const cfg = STATUS_COLOR[status] ?? STATUS_COLOR['Cutting']
   return (
-    <div className="flex items-center gap-1">
-      {sorted.map((ev, i) => (
-        <div key={ev.id ?? i} className="flex items-center gap-1">
-          {i > 0 && <div className="w-3 h-px bg-slate-200"/>}
-          <TimelineDot event={ev}/>
-        </div>
+    <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
+      style={{ background: cfg.bg, color: cfg.text }}>
+      {cfg.label}
+    </span>
+  )
+}
+
+// ─── TimelineDots ─────────────────────────────────────────────────────────────
+function TimelineDots({ events }: { events: any[] }) {
+  const [popup, setPopup] = useState<{idx: number; event: any} | null>(null)
+  const sorted = [...events].sort((a,b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime())
+  const dots = sorted.slice(-5)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setPopup(null)
+    }
+    document.addEventListener('click', handleClick)
+    return () => document.removeEventListener('click', handleClick)
+  }, [])
+
+  return (
+    <div ref={ref} className="flex items-center gap-1.5 relative">
+      {dots.map((ev, i) => {
+        const cfg = STATUS_COLOR[ev.status] ?? { dot: '#94A3B8' }
+        const isOpen = popup?.idx === i
+        return (
+          <div key={i} className="relative">
+            <button
+              type="button"
+              onClick={() => setPopup(isOpen ? null : { idx: i, event: ev })}
+              onMouseEnter={() => setPopup({ idx: i, event: ev })}
+              onMouseLeave={() => setPopup(null)}
+              className="w-3 h-3 rounded-full border-2 border-white shadow-sm transition-all hover:scale-150 active:scale-125"
+              style={{ background: cfg.dot, boxShadow: `0 0 0 2px ${cfg.dot}30` }}
+            />
+            {isOpen && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-44 animate-in fade-in-0 zoom-in-95"
+                onMouseEnter={() => setPopup({ idx: i, event: ev })}
+                onMouseLeave={() => setPopup(null)}>
+                <div className="bg-white/95 backdrop-blur-xl border border-white/60 rounded-2xl shadow-2xl p-3 text-left"
+                  style={{ boxShadow: `0 8px 32px ${cfg.dot}25, 0 2px 8px rgba(0,0,0,0.1)` }}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-2 h-2 rounded-full" style={{ background: cfg.dot }}/>
+                    <span className="text-xs font-bold text-gray-800">{ev.status}</span>
+                  </div>
+                  <div className="space-y-0.5 text-[11px] text-gray-500">
+                    <p>{formatDate(ev.tanggal)}</p>
+                    <p className="font-medium text-gray-700">{ev.total_gram} gr</p>
+                    {ev.losses > 0 && <p className="text-orange-500">Losses: {ev.losses} gr</p>}
+                    {ev.sisa_serbuk > 0 && <p className="text-violet-500">Serbuk: {ev.sisa_serbuk} gr</p>}
+                    {ev.catatan && <p className="italic text-[10px] truncate">{ev.catatan}</p>}
+                    {(ev.fotos?.length > 0) && <p className="text-blue-500">{ev.fotos.length} foto proses</p>}
+                  </div>
+                  {/* Triangle */}
+                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white/95 border-r border-b border-white/60 rotate-45"/>
+                </div>
+              </div>
+            )}
+          </div>
+        )
+      })}
+      {/* Remaining dots (gray) */}
+      {Array.from({ length: Math.max(0, 5 - dots.length) }).map((_, i) => (
+        <div key={`empty-${i}`} className="w-3 h-3 rounded-full bg-gray-200 border-2 border-white shadow-sm"/>
       ))}
     </div>
   )
 }
 
-// ─── Shared styles ─────────────────────────────────────────────────────────
-const inputCls = 'w-full px-3.5 py-2.5 text-sm bg-white/80 backdrop-blur border border-white/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400/50 focus:border-violet-300 placeholder:text-slate-300 transition-all'
-const labelCls = 'text-xs font-semibold text-slate-500 tracking-wide uppercase'
-const selCls = 'w-full px-3.5 py-2.5 text-sm bg-white/80 backdrop-blur border border-white/60 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400/50 appearance-none transition-all'
+// ─── Form field component ─────────────────────────────────────────────────────
+const Field = ({ label, children, required }: { label: string; children: React.ReactNode; required?: boolean }) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="text-xs font-semibold text-gray-500 tracking-wide uppercase">
+      {label}{required && <span className="text-red-400 ml-0.5">*</span>}
+    </label>
+    {children}
+  </div>
+)
 
-// ─── Main Component ────────────────────────────────────────────────────────
-export default function ProduksiClient({ produksiList, batches, userRole, userName }: Props) {
-  const [search, setSearch]             = useState('')
-  const [filterStatus, setFilterStatus] = useState('semua')
-  const [showForm, setShowForm]         = useState(false)
-  const [expandedId, setExpandedId]     = useState<number|null>(null)
-  const [activeModal, setActiveModal]   = useState<{type:string;item:any}|null>(null)
-  const [toast, setToast]               = useState<{msg:string;type:'success'|'error'}|null>(null)
-  const [formError, setFormError]       = useState('')
-  const [isPending, startTransition]    = useTransition()
+const inputCls = "w-full px-4 py-3 text-sm bg-white/70 border border-gray-200/80 rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/50 focus:border-violet-300 transition-all placeholder:text-gray-400 backdrop-blur-sm"
+const today = new Date().toISOString().split('T')[0]
 
-  // Create form
-  const [formFotos, setFormFotos]       = useState<File[]>([])
-  const [fotosUploading, setFotosUploading] = useState(false)
+// ─── Create Modal ─────────────────────────────────────────────────────────────
+function CreateModal({ batches, onClose, onSubmit, isPending, error }: {
+  batches: any[]; onClose: () => void
+  onSubmit: (fd: FormData) => void; isPending: boolean; error: string
+}) {
   const [form, setForm] = useState({
-    batch_kode:'', gramasi:'', pcs:'', berat_awal:'',
-    status_awal:'Cutting', tanggal_produksi: new Date().toISOString().split('T')[0],
-    sisa_serbuk:'', memo:'', operator:'', catatan:''
+    batch_kode: batches[0]?.kode ?? '', gramasi: '1', pcs: '',
+    berat_awal: '', status_awal: 'Cutting',
+    tanggal_produksi: today, operator: '', memo: '', catatan: ''
   })
+  const [fotos, setFotos] = useState<File[]>([])
+  const [uploading, setUploading] = useState(false)
+  const set = (k: string, v: string) => setForm(p => ({...p, [k]: v}))
 
-  // Update status modal
-  const [modalFotos, setModalFotos]             = useState<File[]>([])
-  const [modalFotosSerbuk, setModalFotosSerbuk] = useState<File[]>([])
-
-  const activeBatches = batches.filter((b: any) => !b.voided_at)
-  const canCreate = ['owner','admin_pusat','spv','operator_produksi'].includes(userRole)
-  const canEdit   = ['owner','admin_pusat','spv','operator_produksi'].includes(userRole)
-  const canDelete = ['owner','admin_pusat'].includes(userRole)
-
-  const filtered = produksiList.filter(p => {
-    if (filterStatus !== 'semua' && p.current_status !== filterStatus) return false
-    if (search) {
-      const q = search.toLowerCase()
-      return (p.kode??'').toLowerCase().includes(q) || (p.batch_kode??'').toLowerCase().includes(q) || (p.gramasi??'').toLowerCase().includes(q)
-    }
-    return true
-  })
-
-  const statusCounts = produksiList.reduce((acc: any, p: any) => {
-    acc[p.current_status] = (acc[p.current_status]||0)+1; return acc
-  }, {})
-
-  function showToast(msg: string, type: 'success'|'error' = 'success') {
-    setToast({msg,type}); setTimeout(()=>setToast(null),3000)
-  }
-
-  function closeModal() {
-    setActiveModal(null); setFormError('')
-    setModalFotos([]); setModalFotosSerbuk([])
-  }
-
-  // ─── Create ───────────────────────────────────────────────────────────────
-  async function handleCreate(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setFotosUploading(true)
-    const fotosB64 = formFotos.length > 0 ? await filesToBase64(formFotos) : []
-    setFotosUploading(false)
+    const formEl = e.currentTarget as HTMLFormElement
+    setUploading(true)
+    const fotosB64 = fotos.length > 0 ? await filesToBase64(fotos) : []
+    setUploading(false)
+    const fd = new FormData(formEl)
+    fd.set('fotos_b64', JSON.stringify(fotosB64))
+    onSubmit(fd)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
+      <div className="w-full max-w-lg bg-white/90 backdrop-blur-2xl border border-white/60 rounded-3xl shadow-2xl overflow-hidden"
+        style={{ boxShadow: '0 32px 64px rgba(139,92,246,0.15), 0 8px 32px rgba(0,0,0,0.1)' }}>
+        <div className="px-6 pt-6 pb-4 border-b border-gray-100/80">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900">Permintaan Cetak Baru</h2>
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"><X size={15}/></button>
+          </div>
+        </div>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 overflow-y-auto max-h-[70vh]">
+          <Field label="Batch Bahan Baku" required>
+            <select name="batch_kode" value={form.batch_kode} onChange={e => set('batch_kode', e.target.value)} className={inputCls} required>
+              {batches.map(b => (
+                <option key={b.kode} value={b.kode}>{b.kode} — {b.nama_batch} (Sisa: {(b.sisa_bahan_seharusnya ?? b.timbangan_akhir ?? 0).toFixed(2)} gr)</option>
+              ))}
+            </select>
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Gramasi Target" required>
+              <select name="gramasi" value={form.gramasi} onChange={e => set('gramasi', e.target.value)} className={inputCls} required>
+                {GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} Gram</option>)}
+              </select>
+            </Field>
+            <Field label="Jumlah PCS" required>
+              <input name="pcs" type="number" min="1" value={form.pcs} onChange={e => set('pcs', e.target.value)} placeholder="50" className={inputCls} required/>
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Total Berat (gram)" required>
+              <input name="berat_awal" type="number" step="0.01" value={form.berat_awal} onChange={e => set('berat_awal', e.target.value)} placeholder="50.15" className={inputCls} required/>
+            </Field>
+            <Field label="Status Awal" required>
+              <select name="status_awal" value={form.status_awal} onChange={e => set('status_awal', e.target.value)} className={inputCls} required>
+                {STATUS_FLOW.slice(0,4).map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Tanggal Produksi" required>
+              <input name="tanggal_produksi" type="date" value={form.tanggal_produksi} onChange={e => set('tanggal_produksi', e.target.value)} className={inputCls} required/>
+            </Field>
+            <Field label="Operator / PIC">
+              <input name="operator" value={form.operator} onChange={e => set('operator', e.target.value)} placeholder="Nama operator" className={inputCls}/>
+            </Field>
+          </div>
+          <Field label="Memo Produksi">
+            <input name="memo" value={form.memo} onChange={e => set('memo', e.target.value)} placeholder="Keterangan mesin cetak, pengerjaan..." className={inputCls}/>
+          </Field>
+          <Field label="Foto Proses (opsional, max 10)">
+            <FotoPicker files={fotos}
+              onAdd={f => setFotos(p => [...p,...f].slice(0,10))}
+              onRemove={i => i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))}
+              label="Tambah foto proses awal produksi"/>
+          </Field>
+          {error && <div className="flex items-center gap-2 px-4 py-3 bg-red-50/80 border border-red-100 rounded-2xl text-sm text-red-600"><AlertTriangle size={14}/>{error}</div>}
+          <div className="flex gap-3 justify-end pt-1 pb-1">
+            <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200 transition-colors">Batal</button>
+            <button type="submit" disabled={isPending||uploading}
+              className="px-6 py-2.5 text-sm font-bold text-white rounded-2xl flex items-center gap-2 transition-all disabled:opacity-60"
+              style={{ background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)' }}>
+              {(isPending||uploading) && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
+              {uploading?'Kompres foto...':isPending?'Menyimpan...':'Mulai Alur ('+form.status_awal+')'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Edit Modal ───────────────────────────────────────────────────────────────
+function EditModal({ item, onClose, onSubmit, isPending, error }: {
+  item: any; onClose: () => void
+  onSubmit: (fd: FormData) => void; isPending: boolean; error: string
+}) {
+  const [form, setForm] = useState({
+    gramasi: item.gramasi ?? '',
+    pcs: String(item.pcs ?? ''),
+    berat_awal: String(item.berat_awal ?? item.total_gram ?? ''),
+    operator: item.operator ?? '',
+    catatan: item.catatan ?? '',
+    memo: item.memo ?? '',
+    tanggal_produksi: item.tanggal_produksi ?? item.tanggal ?? today,
+  })
+  const set = (k: string, v: string) => setForm(p => ({...p, [k]: v}))
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
     const fd = new FormData()
     Object.entries(form).forEach(([k,v]) => fd.set(k, v))
+    onSubmit(fd)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
+      <div className="w-full max-w-md bg-white/90 backdrop-blur-2xl border border-white/60 rounded-3xl shadow-2xl overflow-hidden"
+        style={{ boxShadow: '0 32px 64px rgba(139,92,246,0.15), 0 8px 32px rgba(0,0,0,0.1)' }}>
+        <div className="px-6 pt-6 pb-4 border-b border-gray-100/80">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Edit Produksi</h2>
+              <p className="text-xs text-violet-500 font-medium mt-0.5">{item.kode}</p>
+            </div>
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"><X size={15}/></button>
+          </div>
+        </div>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Gramasi" required>
+              <select value={form.gramasi} onChange={e => set('gramasi', e.target.value)} className={inputCls}>
+                {GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} Gram</option>)}
+              </select>
+            </Field>
+            <Field label="PCS" required>
+              <input type="number" min="1" value={form.pcs} onChange={e => set('pcs', e.target.value)} className={inputCls}/>
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Total Berat (gr)" required>
+              <input type="number" step="0.01" value={form.berat_awal} onChange={e => set('berat_awal', e.target.value)} className={inputCls}/>
+            </Field>
+            <Field label="Tanggal">
+              <input type="date" value={form.tanggal_produksi} onChange={e => set('tanggal_produksi', e.target.value)} className={inputCls}/>
+            </Field>
+          </div>
+          <Field label="Operator / PIC">
+            <input value={form.operator} onChange={e => set('operator', e.target.value)} placeholder="Nama operator" className={inputCls}/>
+          </Field>
+          <Field label="Memo">
+            <input value={form.memo} onChange={e => set('memo', e.target.value)} placeholder="Keterangan..." className={inputCls}/>
+          </Field>
+          <Field label="Catatan">
+            <input value={form.catatan} onChange={e => set('catatan', e.target.value)} placeholder="Catatan tambahan..." className={inputCls}/>
+          </Field>
+          {error && <div className="flex items-center gap-2 px-4 py-3 bg-red-50/80 border border-red-100 rounded-2xl text-sm text-red-600"><AlertTriangle size={14}/>{error}</div>}
+          <div className="flex gap-3 justify-end pt-1">
+            <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200 transition-colors">Batal</button>
+            <button type="submit" disabled={isPending}
+              className="px-6 py-2.5 text-sm font-bold text-white rounded-2xl flex items-center gap-2 disabled:opacity-60 transition-all"
+              style={{ background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)' }}>
+              {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
+              {isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Update Status Modal ──────────────────────────────────────────────────────
+function UpdateStatusModal({ item, onClose, onSubmit, isPending, error }: {
+  item: any; onClose: () => void
+  onSubmit: (fd: FormData) => void; isPending: boolean; error: string
+}) {
+  const suggested = STATUS_NEXT[item.current_status] ?? 'Siap Packing'
+  const [status, setStatus] = useState(suggested)
+  const [fotos, setFotos] = useState<File[]>([])
+  const [fotosSerbuk, setFotosSerbuk] = useState<File[]>([])
+  const [uploading, setUploading] = useState(false)
+  const isPasBerat = status === 'Pas Berat'
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const formEl = e.currentTarget as HTMLFormElement
+    setUploading(true)
+    const fotosB64 = fotos.length > 0 ? await filesToBase64(fotos) : []
+    const fotosSerbukB64 = (isPasBerat && fotosSerbuk.length > 0) ? await filesToBase64(fotosSerbuk) : []
+    setUploading(false)
+    const fd = new FormData(formEl)
     fd.set('fotos_b64', JSON.stringify(fotosB64))
+    fd.set('fotos_serbuk_b64', JSON.stringify(fotosSerbukB64))
+    onSubmit(fd)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
+      <div className="w-full max-w-md bg-white/90 backdrop-blur-2xl border border-white/60 rounded-3xl shadow-2xl overflow-hidden"
+        style={{ boxShadow: '0 32px 64px rgba(139,92,246,0.15), 0 8px 32px rgba(0,0,0,0.1)' }}>
+        <div className="px-6 pt-6 pb-4 border-b border-gray-100/80">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Update Status Produksi</h2>
+              <p className="text-xs font-semibold mt-0.5" style={{ color: '#8B5CF6' }}>
+                {item.kode} — {item.gramasi}gr × {item.pcs} PCS
+              </p>
+            </div>
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"><X size={15}/></button>
+          </div>
+        </div>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 overflow-y-auto max-h-[75vh]">
+          <Field label="Status Baru" required>
+            <select name="status" value={status} onChange={e => setStatus(e.target.value)} className={inputCls} required>
+              {STATUS_FLOW.map(s => <option key={s} value={s}>{s}</option>)}
+              <option value="Reject">Reject</option>
+            </select>
+          </Field>
+          <Field label="Total Berat Sekarang (gram)" required>
+            <input name="total_gram" type="number" step="0.001" className={inputCls}
+              placeholder={`Berat sebelumnya: ${item.total_gram} gr`} required/>
+          </Field>
+
+          {isPasBerat && (
+            <Field label="Sisa Serbuk (gram)">
+              <input name="sisa_serbuk" type="number" step="0.001" className={inputCls} placeholder="0.000" defaultValue="0"/>
+            </Field>
+          )}
+
+          <Field label="Tanggal" required>
+            <input name="tanggal" type="date" defaultValue={today} className={inputCls} required/>
+          </Field>
+
+          {/* Foto Proses — untuk SEMUA status */}
+          <Field label="Foto Proses (opsional, max 10)">
+            <FotoPicker files={fotos}
+              onAdd={f => setFotos(p => [...p,...f].slice(0,10))}
+              onRemove={i => i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))}
+              label="Foto proses di status ini" small/>
+          </Field>
+
+          {/* Foto Sisa Serbuk — HANYA untuk Pas Berat */}
+          {isPasBerat && (
+            <Field label="Foto Sisa Serbuk (opsional, max 10)">
+              <FotoPicker files={fotosSerbuk}
+                onAdd={f => setFotosSerbuk(p => [...p,...f].slice(0,10))}
+                onRemove={i => i===-1?setFotosSerbuk([]):setFotosSerbuk(p=>p.filter((_,j)=>j!==i))}
+                label="Foto sisa serbuk emas" small/>
+            </Field>
+          )}
+
+          <Field label="Catatan">
+            <input name="catatan" className={inputCls} placeholder="Keterangan tambahan..."/>
+          </Field>
+
+          {error && <div className="flex items-center gap-2 px-4 py-3 bg-red-50/80 border border-red-100 rounded-2xl text-sm text-red-600"><AlertTriangle size={14}/>{error}</div>}
+
+          <div className="flex gap-3 justify-end pt-1">
+            <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200 transition-colors">Batal</button>
+            <button type="submit" disabled={isPending||uploading}
+              className="px-6 py-2.5 text-sm font-bold text-white rounded-2xl flex items-center gap-2 disabled:opacity-60 transition-all"
+              style={{ background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)' }}>
+              {(isPending||uploading) && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
+              {uploading?'Kompres foto...':isPending?'Menyimpan...':'Simpan Status'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Delete Confirm Modal ─────────────────────────────────────────────────────
+function DeleteModal({ item, onClose, onConfirm, isPending }: {
+  item: any; onClose: () => void; onConfirm: () => void; isPending: boolean
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
+      <div className="w-full max-w-sm bg-white/90 backdrop-blur-2xl border border-white/60 rounded-3xl shadow-2xl p-6"
+        style={{ boxShadow: '0 32px 64px rgba(239,68,68,0.15)' }}>
+        <div className="w-14 h-14 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
+          <Trash2 size={24} className="text-red-500"/>
+        </div>
+        <h2 className="text-lg font-bold text-gray-900 text-center">Hapus Item Produksi?</h2>
+        <p className="text-sm text-gray-500 text-center mt-2 mb-6">
+          <span className="font-semibold text-gray-700">{item.kode}</span> akan dihapus dari sistem.
+        </p>
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200 transition-colors">Batal</button>
+          <button onClick={onConfirm} disabled={isPending}
+            className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-2xl disabled:opacity-60 transition-colors flex items-center justify-center gap-2">
+            {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
+            {isPending ? 'Menghapus...' : 'Ya, Hapus'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Event History Row ────────────────────────────────────────────────────────
+function EventHistory({ events }: { events: any[] }) {
+  const sorted = [...events].sort((a,b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime())
+  const [lightbox, setLightbox] = useState<string|null>(null)
+  return (
+    <div className="space-y-2 pt-2">
+      {lightbox && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 p-4" onClick={() => setLightbox(null)}>
+          <img src={lightbox} alt="" className="max-w-[95vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl"/>
+        </div>
+      )}
+      {sorted.map((ev, i) => {
+        const cfg = STATUS_COLOR[ev.status] ?? { dot: '#94A3B8', bg: 'rgba(148,163,184,0.12)', text: '#64748B' }
+        const fotos = Array.isArray(ev.fotos) ? ev.fotos : []
+        const fotosSerbuk = Array.isArray(ev.fotos_sisa_serbuk) ? ev.fotos_sisa_serbuk : []
+        return (
+          <div key={ev.id ?? i} className="flex gap-3">
+            <div className="flex flex-col items-center">
+              <div className="w-3 h-3 rounded-full mt-1 flex-shrink-0" style={{ background: cfg.dot }}/>
+              {i < sorted.length-1 && <div className="w-0.5 flex-1 mt-1" style={{ background: `${cfg.dot}40` }}/>}
+            </div>
+            <div className="flex-1 pb-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: cfg.bg, color: cfg.text }}>{ev.status}</span>
+                <span className="text-xs text-gray-400">{formatDate(ev.tanggal)}</span>
+                <span className="text-xs font-semibold text-gray-700">{ev.total_gram} gr</span>
+                {ev.losses > 0 && <span className="text-xs text-orange-500">losses {ev.losses} gr</span>}
+                {ev.sisa_serbuk > 0 && <span className="text-xs text-violet-500">serbuk {ev.sisa_serbuk} gr</span>}
+                {ev.user_name && <span className="text-xs text-gray-400">· {ev.user_name}</span>}
+              </div>
+              {ev.catatan && <p className="text-xs text-gray-400 mt-0.5 italic">{ev.catatan}</p>}
+              {(fotos.length > 0 || fotosSerbuk.length > 0) && (
+                <div className="flex gap-1.5 flex-wrap mt-1.5">
+                  {fotos.map((url: string, fi: number) => (
+                    <div key={fi} className="relative group">
+                      <img src={url} alt="" onClick={() => setLightbox(url)}
+                        className="w-10 h-10 rounded-lg object-cover cursor-pointer border border-gray-200/60 hover:scale-110 transition-transform"/>
+                    </div>
+                  ))}
+                  {fotosSerbuk.map((url: string, fi: number) => (
+                    <div key={`s-${fi}`} className="relative group">
+                      <img src={url} alt="" onClick={() => setLightbox(url)}
+                        className="w-10 h-10 rounded-lg object-cover cursor-pointer border-2 border-violet-300/60 hover:scale-110 transition-transform"/>
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-violet-400 rounded-full text-[7px] text-white flex items-center justify-center font-bold">S</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+export default function ProduksiClient({ produksiList, batches, userRole, userName }: Props) {
+  const [isPending, startTransition] = useTransition()
+  const [search, setSearch] = useState('')
+  const [filterStatus, setFilterStatus] = useState<string>('Semua')
+  const [expandedId, setExpandedId] = useState<number|null>(null)
+  const [showCreate, setShowCreate] = useState(false)
+  const [editItem, setEditItem] = useState<any|null>(null)
+  const [updateItem, setUpdateItem] = useState<any|null>(null)
+  const [deleteItem, setDeleteItem] = useState<any|null>(null)
+  const [formError, setFormError] = useState('')
+  const [toast, setToast] = useState<{msg: string; type: 'success'|'error'}|null>(null)
+
+  function showToast(msg: string, type: 'success'|'error' = 'success') {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3500)
+  }
+
+  const canEdit = ['owner','admin_pusat','spv','operator_produksi'].includes(userRole)
+  const canDelete = ['owner','admin_pusat'].includes(userRole)
+
+  // Filter
+  const filtered = produksiList.filter(item => {
+    if (filterStatus !== 'Semua' && item.current_status !== filterStatus) return false
+    const q = search.toLowerCase()
+    return !q || item.kode?.toLowerCase().includes(q) || item.batch_kode?.toLowerCase().includes(q) || item.gramasi?.includes(q)
+  })
+
+  // Status counts
+  const counts = produksiList.reduce((acc, item) => {
+    acc[item.current_status] = (acc[item.current_status] ?? 0) + 1
+    return acc
+  }, {} as Record<string,number>)
+
+  function handleCreate(fd: FormData) {
     setFormError('')
     startTransition(async () => {
       const r = await createProduksi(fd)
-      if (r.error) { setFormError(r.error); return }
-      showToast(`✅ Produksi ${r.kode} berhasil dibuat`)
-      setShowForm(false)
-      setFormFotos([])
-      setForm({ batch_kode:'',gramasi:'',pcs:'',berat_awal:'',status_awal:'Cutting',tanggal_produksi:new Date().toISOString().split('T')[0],sisa_serbuk:'',memo:'',operator:'',catatan:'' })
+      if (r?.error) { setFormError(r.error); return }
+      showToast(`✅ Produksi ${r?.kode} berhasil dibuat`)
+      setShowCreate(false)
     })
   }
 
-  // ─── Update Status ────────────────────────────────────────────────────────
-  const handleUpdateStatus = async (fd: FormData) => {
-    if (!activeModal) return
-    setFormError('')
-    setFotosUploading(true)
-    const fotosB64 = modalFotos.length > 0 ? await filesToBase64(modalFotos) : []
-    const fotosSerbukB64 = modalFotosSerbuk.length > 0 ? await filesToBase64(modalFotosSerbuk) : []
-    fd.set('fotos_b64', JSON.stringify(fotosB64))
-    fd.set('fotos_serbuk_b64', JSON.stringify(fotosSerbukB64))
-    setFotosUploading(false)
-    startTransition(async () => {
-      const r = await updateStatusProduksi(activeModal.item.id, activeModal.item.kode, fd)
-      if (r.error) { setFormError(r.error); return }
-      showToast('✅ Status berhasil diperbarui')
-      closeModal()
-    })
-  }
-
-  // ─── Edit ─────────────────────────────────────────────────────────────────
-  const handleEdit = (fd: FormData) => {
-    if (!activeModal) return
+  function handleEdit(fd: FormData) {
+    if (!editItem) return
     setFormError('')
     startTransition(async () => {
-      const r = await editProduksi(activeModal.item.id, activeModal.item.kode, fd)
-      if (r.error) { setFormError(r.error); return }
+      const r = await editProduksi(editItem.id, editItem.kode, fd)
+      if (r?.error) { setFormError(r.error); return }
       showToast('✅ Data produksi diperbarui')
-      closeModal()
+      setEditItem(null)
     })
   }
 
-  // ─── Delete ───────────────────────────────────────────────────────────────
-  const handleDelete = (item: any) => {
+  function handleUpdateStatus(fd: FormData) {
+    if (!updateItem) return
+    setFormError('')
     startTransition(async () => {
-      const r = await deleteProduksi(item.id, item.kode)
-      if (r.error) { showToast(r.error, 'error'); return }
-      showToast('🗑️ Item produksi dihapus')
-      closeModal()
+      const r = await updateStatusProduksi(updateItem.id, updateItem.kode, fd)
+      if (r?.error) { setFormError(r.error); return }
+      showToast('✅ Status diperbarui')
+      setUpdateItem(null)
     })
   }
 
-  // ─── Render ────────────────────────────────────────────────────────────────
+  function handleDelete() {
+    if (!deleteItem) return
+    startTransition(async () => {
+      const r = await deleteProduksi(deleteItem.id, deleteItem.kode)
+      if (r?.error) { showToast(r.error, 'error'); return }
+      showToast('🗑️ Item produksi dihapus')
+      setDeleteItem(null)
+    })
+  }
+
+  const filterTabs = ['Semua', ...STATUS_FLOW, 'Reject']
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F5F5F7] via-white to-[#EFEFF4] pb-20">
+    <div className="min-h-screen pb-24" style={{ background: 'linear-gradient(160deg, #F5F5F7 0%, #EFEFF4 50%, #F5F5F7 100%)' }}>
       {/* Toast */}
       {toast && (
-        <div className={cn('fixed top-5 right-5 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-2xl text-sm font-semibold text-white shadow-[0_8px_32px_rgba(0,0,0,0.15)] backdrop-blur-xl border border-white/20 transition-all',
-          toast.type==='success'?'bg-emerald-500/90':'bg-red-500/90')}>
-          {toast.type==='success'?<Check size={16}/>:<AlertTriangle size={16}/>}{toast.msg}
+        <div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-2xl text-sm font-semibold text-white shadow-2xl',
+          toast.type==='success' ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 'bg-gradient-to-r from-red-500 to-rose-600')}>
+          {toast.type==='success' ? <Check size={15}/> : <AlertTriangle size={15}/>}
+          {toast.msg}
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto px-4 pt-2 space-y-5">
+      <div className="p-4 lg:p-6 space-y-5">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Produksi</h1>
-            <p className="text-sm text-slate-400 mt-0.5">{produksiList.length} item aktif</p>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Produksi</h1>
+            <p className="text-sm text-gray-400 mt-0.5">{produksiList.length} item aktif</p>
           </div>
-          {canCreate && (
-            <button onClick={() => setShowForm(v => !v)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-600 to-violet-500 text-white text-sm font-semibold rounded-2xl shadow-[0_4px_16px_rgba(139,92,246,0.35)] hover:shadow-[0_6px_24px_rgba(139,92,246,0.45)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200">
-              <Plus size={16}/> Cetak Baru
+          {canEdit && (
+            <button onClick={() => { setShowCreate(true); setFormError('') }}
+              className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white rounded-2xl shadow-lg transition-all hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
+              style={{ background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)', boxShadow: '0 4px 20px rgba(139,92,246,0.4)' }}>
+              <Plus size={15}/> Cetak Baru
             </button>
           )}
         </div>
 
-        {/* Filter Pills */}
+        {/* Search */}
+        <div className="relative">
+          <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Cari kode produksi, batch, gramasi..."
+            className="w-full pl-10 pr-4 py-3 bg-white/70 backdrop-blur-sm border border-gray-200/60 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300"/>
+        </div>
+
+        {/* Filter tabs */}
         <div className="flex gap-2 flex-wrap">
-          {(['semua', ...Object.keys(SC)] as string[]).map(st => {
-            const cfg = SC[st]
-            const count = st === 'semua' ? produksiList.length : (statusCounts[st]||0)
+          {filterTabs.map(s => {
+            const isActive = filterStatus === s
+            const cfg = s !== 'Semua' ? STATUS_COLOR[s] : null
+            const count = s === 'Semua' ? produksiList.length : (counts[s] ?? 0)
             return (
-              <button key={st} onClick={() => setFilterStatus(st)}
-                className={cn('px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 flex items-center gap-1.5',
-                  filterStatus===st
-                    ? 'bg-violet-600 text-white shadow-[0_4px_12px_rgba(139,92,246,0.3)]'
-                    : 'bg-white/70 backdrop-blur border border-white/60 text-slate-600 hover:border-violet-200 hover:text-violet-600')}>
-                {cfg && <span className="w-2 h-2 rounded-full flex-shrink-0" style={{backgroundColor: cfg.dot}}/>}
-                {st === 'semua' ? 'Semua' : cfg?.label}
-                <span className={cn('text-[10px]', filterStatus===st?'text-white/80':'text-slate-400')}>{count}</span>
+              <button key={s} onClick={() => setFilterStatus(s)}
+                className={cn('flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all',
+                  isActive
+                    ? 'text-white shadow-md'
+                    : 'bg-white/70 text-gray-500 hover:bg-white border border-gray-200/60')}
+                style={isActive ? { background: cfg?.dot ?? 'linear-gradient(135deg,#8B5CF6,#7C3AED)', boxShadow: `0 4px 12px ${cfg?.dot ?? '#8B5CF6'}40` } : {}}>
+                <span>{s}</span>
+                {count > 0 && <span className={cn('px-1.5 py-0.5 rounded-full text-[10px]', isActive ? 'bg-white/25' : 'bg-gray-100')}>{count}</span>}
               </button>
             )
           })}
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300"/>
-          <input value={search} onChange={e=>setSearch(e.target.value)}
-            placeholder="Cari kode, batch, gramasi..."
-            className="w-full pl-9 pr-4 py-2.5 bg-white/70 backdrop-blur border border-white/60 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 shadow-sm text-slate-700 placeholder:text-slate-300 transition-all"/>
-        </div>
-
-        {/* Create Form */}
-        {showForm && canCreate && (
-          <div className="bg-white/80 backdrop-blur-xl border border-white/60 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.08)] p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-slate-800">Permintaan Cetak Baru</h2>
-              <button onClick={() => { setShowForm(false); setFormFotos([]) }} className="w-8 h-8 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center justify-center transition"><X size={14} className="text-slate-500"/></button>
-            </div>
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div className="flex flex-col gap-1.5">
-                <label className={labelCls}>Batch Bahan Baku *</label>
-                <select value={form.batch_kode} onChange={e => setForm(f=>({...f,batch_kode:e.target.value}))} required className={selCls}>
-                  <option value="">Pilih batch...</option>
-                  {activeBatches.map((b:any) => (
-                    <option key={b.kode} value={b.kode}>{b.kode} — {b.nama_batch||b.kode} (Sisa: {(b.sisa_bahan_seharusnya??b.timbangan_akhir??0).toFixed(2)} gr)</option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Gramasi Target *</label>
-                  <select value={form.gramasi} onChange={e=>setForm(f=>({...f,gramasi:e.target.value}))} required className={selCls}>
-                    <option value="">Pilih gramasi</option>
-                    {GRAMASI_OPTIONS.map(g=><option key={g} value={g}>{g} Gram</option>)}
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Jumlah PCS *</label>
-                  <input type="number" value={form.pcs} onChange={e=>setForm(f=>({...f,pcs:e.target.value}))} required placeholder="50" className={inputCls}/>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Total Berat (gram) *</label>
-                  <input type="number" step="0.01" value={form.berat_awal} onChange={e=>setForm(f=>({...f,berat_awal:e.target.value}))} required placeholder="50.15" className={inputCls}/>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Status Awal *</label>
-                  <select value={form.status_awal} onChange={e=>setForm(f=>({...f,status_awal:e.target.value}))} className={selCls}>
-                    {STATUS_OPTIONS.map(s=><option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Tanggal *</label>
-                  <input type="date" value={form.tanggal_produksi} onChange={e=>setForm(f=>({...f,tanggal_produksi:e.target.value}))} required className={inputCls}/>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Operator</label>
-                  <input value={form.operator} onChange={e=>setForm(f=>({...f,operator:e.target.value}))} placeholder={userName} className={inputCls}/>
-                </div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className={labelCls}>Memo Produksi</label>
-                <input value={form.memo} onChange={e=>setForm(f=>({...f,memo:e.target.value}))} placeholder="Keterangan mesin cetak, pengerjaan..." className={inputCls}/>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className={labelCls}>Foto Proses (opsional, max 10)</label>
-                <FotoPicker files={formFotos} onAdd={f=>setFormFotos(p=>[...p,...f].slice(0,10))} onRemove={i=>i===-1?setFormFotos([]):setFormFotos(p=>p.filter((_,j)=>j!==i))} label="Tambah foto proses awal"/>
-              </div>
-              {formError && <div className="flex items-center gap-2 p-3 bg-red-50/80 border border-red-100 rounded-xl text-sm text-red-600"><AlertTriangle size={14}/>{formError}</div>}
-              <div className="flex gap-3 justify-end pt-1">
-                <button type="button" onClick={()=>{setShowForm(false);setFormFotos([])}} className="px-5 py-2.5 text-sm font-semibold bg-white/70 border border-slate-200 rounded-xl hover:bg-slate-50 transition">Batal</button>
-                <button type="submit" disabled={isPending||fotosUploading} className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-violet-600 to-violet-500 rounded-xl shadow-[0_4px_12px_rgba(139,92,246,0.3)] hover:shadow-[0_6px_20px_rgba(139,92,246,0.4)] disabled:opacity-60 flex items-center gap-2 transition-all">
-                  {(isPending||fotosUploading)&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
-                  {fotosUploading?'Mengompres...' : isPending?'Menyimpan...' : `Mulai Alur (${form.status_awal})`}
-                </button>
-              </div>
-            </form>
+        {/* Table */}
+        <div className="bg-white/70 backdrop-blur-xl border border-white/60 rounded-3xl shadow-xl overflow-hidden"
+          style={{ boxShadow: '0 8px 40px rgba(139,92,246,0.08), 0 2px 12px rgba(0,0,0,0.04)' }}>
+          {/* Table header */}
+          <div className="grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-4 px-5 py-3.5 bg-gray-50/60 border-b border-gray-100/80 text-xs font-bold text-gray-400 uppercase tracking-wider">
+            <span>Item</span>
+            <span className="hidden sm:block">Gramasi × PCS</span>
+            <span className="hidden md:block">Status</span>
+            <span className="hidden lg:block">Timeline</span>
+            <span className="hidden sm:block">Tgl Update</span>
+            <span>Aksi</span>
           </div>
-        )}
 
-        {/* List */}
-        <div className="space-y-3">
           {filtered.length === 0 ? (
-            <div className="text-center py-20 text-slate-300">
-              <div className="text-5xl mb-3">📦</div>
-              <p className="text-sm font-medium text-slate-400">Tidak ada item produksi</p>
+            <div className="text-center py-16">
+              <div className="w-16 h-16 bg-violet-50 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                <Package size={28} className="text-violet-300"/>
+              </div>
+              <p className="text-sm text-gray-400 font-medium">Tidak ada item produksi</p>
+              <p className="text-xs text-gray-300 mt-1">Mulai dengan klik "Cetak Baru"</p>
             </div>
-          ) : filtered.map(item => {
-            const cfg = SC[item.current_status]
+          ) : filtered.map((item, idx) => {
             const events = Array.isArray(item.produksi_event) ? item.produksi_event : []
+            const lastEvent = events.length > 0 ? events.sort((a: any,b: any) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime())[0] : null
             const isExpanded = expandedId === item.id
-            return (
-              <div key={item.id} className="bg-white/75 backdrop-blur-xl border border-white/60 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-300 overflow-hidden">
-                {/* Main Row */}
-                <div className="flex items-center gap-3 px-4 py-3.5">
-                  {/* Status dot */}
-                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 ring-2 ring-white shadow-sm" style={{backgroundColor: cfg?.dot ?? '#94A3B8'}}/>
+            const cfg = STATUS_COLOR[item.current_status] ?? STATUS_COLOR['Cutting']
 
-                  {/* Main info */}
-                  <div className="flex-1 min-w-0">
+            return (
+              <div key={item.id}>
+                <div className={cn('grid grid-cols-[1fr_auto_auto_auto_auto_auto] gap-4 px-5 py-4 items-center transition-colors cursor-default',
+                  idx > 0 ? 'border-t border-gray-100/60' : '',
+                  isExpanded ? 'bg-violet-50/30' : 'hover:bg-gray-50/50')}>
+                  {/* Item info */}
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-bold text-slate-800 font-mono">{item.kode}</span>
-                      {cfg && <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full', cfg.bg, cfg.text)}>{cfg.label}</span>}
-                      <span className="text-xs text-slate-400">{item.gramasi}gr × {item.pcs} PCS</span>
+                      <span className="text-sm font-bold text-gray-800">{item.kode}</span>
+                      <span className="md:hidden"><StatusBadge status={item.current_status}/></span>
                     </div>
-                    <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                      <span className="text-[11px] text-slate-400">{item.batch_kode}</span>
-                      {item.total_gram && <span className="text-[11px] font-semibold text-violet-600">{item.total_gram} gr</span>}
-                      {item.operator && <span className="text-[11px] text-slate-400">👤 {item.operator}</span>}
-                    </div>
+                    <p className="text-xs text-gray-400 mt-0.5 truncate">{item.batch_kode} · {item.operator || 'No operator'}</p>
+                  </div>
+
+                  {/* Gramasi × PCS */}
+                  <div className="hidden sm:flex flex-col items-end">
+                    <span className="text-sm font-bold text-gray-700">{item.gramasi}gr × {item.pcs}</span>
+                    <span className="text-xs text-gray-400">{item.total_gram} gr</span>
+                  </div>
+
+                  {/* Status */}
+                  <div className="hidden md:block">
+                    <StatusBadge status={item.current_status}/>
                   </div>
 
                   {/* Timeline */}
-                  <div className="hidden sm:flex items-center">
-                    <Timeline events={events}/>
+                  <div className="hidden lg:block">
+                    <TimelineDots events={events}/>
+                  </div>
+
+                  {/* Date */}
+                  <div className="hidden sm:block text-right">
+                    <span className="text-xs text-gray-400">{lastEvent ? formatDate(lastEvent.tanggal) : formatDate(item.tanggal_produksi)}</span>
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    {/* + Update Status */}
-                    {canEdit && !['Sudah Packing'].includes(item.current_status) && (
-                      <button onClick={() => { setActiveModal({type:'update_status',item}); setFormError('') }}
-                        className="w-8 h-8 bg-violet-50 hover:bg-violet-100 border border-violet-100 text-violet-600 rounded-xl flex items-center justify-center transition-all hover:scale-105"
+                  <div className="flex items-center gap-1">
+                    {canEdit && item.current_status !== 'Sudah Packing' && (
+                      <button onClick={() => { setUpdateItem(item); setFormError('') }}
+                        className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110"
+                        style={{ background: 'rgba(139,92,246,0.1)', color: '#7C3AED' }}
                         title="Update Status">
                         <Plus size={14}/>
                       </button>
                     )}
-                    {/* Edit */}
                     {canEdit && (
-                      <button onClick={() => { setActiveModal({type:'edit',item}); setFormError('') }}
-                        className="w-8 h-8 bg-slate-50 hover:bg-slate-100 text-slate-500 rounded-xl flex items-center justify-center transition-all hover:scale-105"
+                      <button onClick={() => { setEditItem(item); setFormError('') }}
+                        className="w-8 h-8 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center transition-all hover:scale-110 hover:bg-blue-100"
                         title="Edit">
                         <Edit2 size={13}/>
                       </button>
                     )}
-                    {/* Delete */}
                     {canDelete && (
-                      <button onClick={() => setActiveModal({type:'delete',item})}
-                        className="w-8 h-8 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl flex items-center justify-center transition-all hover:scale-105"
+                      <button onClick={() => setDeleteItem(item)}
+                        className="w-8 h-8 rounded-xl bg-red-50 text-red-400 flex items-center justify-center transition-all hover:scale-110 hover:bg-red-100"
                         title="Hapus">
                         <Trash2 size={13}/>
                       </button>
                     )}
-                    {/* Expand */}
                     <button onClick={() => setExpandedId(isExpanded ? null : item.id)}
-                      className="w-8 h-8 bg-slate-50 hover:bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center transition-all">
+                      className="w-8 h-8 rounded-xl bg-gray-100 text-gray-500 flex items-center justify-center transition-all hover:scale-110 hover:bg-gray-200">
                       {isExpanded ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
                     </button>
                   </div>
                 </div>
 
-                {/* Mobile timeline */}
-                <div className="sm:hidden px-4 pb-3 flex items-center gap-2">
-                  <Timeline events={events}/>
-                </div>
-
-                {/* Expanded: event history */}
+                {/* Expanded: Event History */}
                 {isExpanded && (
-                  <div className="border-t border-slate-100/80 px-4 py-4 space-y-2 bg-slate-50/40">
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Riwayat Proses</p>
-                    {events.length === 0 ? (
-                      <p className="text-xs text-slate-300 text-center py-4">Belum ada riwayat proses</p>
-                    ) : [...events].sort((a,b)=>new Date(a.tanggal).getTime()-new Date(b.tanggal).getTime()).map((ev, i) => {
-                      const ecfg = SC[ev.status]
-                      const evFotos = Array.isArray(ev.fotos) ? ev.fotos : []
-                      const evSerbuk = Array.isArray(ev.fotos_sisa_serbuk) ? ev.fotos_sisa_serbuk : []
-                      return (
-                        <div key={ev.id??i} className="flex gap-3">
-                          <div className="flex flex-col items-center">
-                            <div className="w-3 h-3 rounded-full border-2 border-white shadow mt-0.5 flex-shrink-0" style={{backgroundColor: ecfg?.dot ?? '#94A3B8'}}/>
-                            {i < events.length-1 && <div className="w-px flex-1 bg-slate-200 mt-1"/>}
-                          </div>
-                          <div className="pb-3 flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className={cn('text-xs font-bold', ecfg?.text)}>{ecfg?.label ?? ev.status}</span>
-                              <span className="text-[11px] text-slate-400">{ev.tanggal ? formatDate(ev.tanggal) : '—'}</span>
-                              {ev.user_name && <span className="text-[11px] text-slate-400">· {ev.user_name}</span>}
-                            </div>
-                            <div className="flex gap-4 mt-0.5 text-[11px] text-slate-500 flex-wrap">
-                              {ev.total_gram && <span>Berat: <b>{ev.total_gram} gr</b></span>}
-                              {ev.sisa_serbuk > 0 && <span className="text-amber-600">Serbuk: <b>{ev.sisa_serbuk} gr</b></span>}
-                              {ev.losses > 0 && <span className="text-red-500">Loses: <b>{ev.losses?.toFixed(3)} gr</b></span>}
-                            </div>
-                            {ev.catatan && <p className="text-[11px] text-slate-400 italic mt-0.5">{ev.catatan}</p>}
-                            {evFotos.length > 0 && (
-                              <div className="flex gap-1.5 mt-2 flex-wrap">
-                                {evFotos.map((url: string, j: number) => (
-                                  <a key={j} href={url} target="_blank" rel="noopener noreferrer" className="w-14 h-14 rounded-xl overflow-hidden border border-slate-100 block hover:opacity-80 transition">
-                                    <img src={url} className="w-full h-full object-cover"/>
-                                  </a>
-                                ))}
-                              </div>
-                            )}
-                            {evSerbuk.length > 0 && (
-                              <div className="mt-2">
-                                <p className="text-[10px] text-slate-400 mb-1">Foto Sisa Serbuk</p>
-                                <div className="flex gap-1.5 flex-wrap">
-                                  {evSerbuk.map((url: string, j: number) => (
-                                    <a key={j} href={url} target="_blank" rel="noopener noreferrer" className="w-14 h-14 rounded-xl overflow-hidden border border-amber-100 block hover:opacity-80 transition">
-                                      <img src={url} className="w-full h-full object-cover"/>
-                                    </a>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
+                  <div className="px-5 pb-5 border-t border-violet-100/60 bg-violet-50/20">
+                    <div className="pt-3">
+                      {/* Mobile info */}
+                      <div className="flex items-center gap-3 mb-3 lg:hidden">
+                        <TimelineDots events={events}/>
+                        <StatusBadge status={item.current_status}/>
+                        <span className="text-xs text-gray-400">{item.gramasi}gr × {item.pcs} pcs</span>
+                      </div>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Riwayat Proses</p>
+                      {events.length === 0 ? (
+                        <p className="text-xs text-gray-400 italic">Belum ada event</p>
+                      ) : (
+                        <EventHistory events={events}/>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -581,170 +841,32 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
         </div>
       </div>
 
-      {/* ─── Update Status Modal ──────────────────────────────────────────────── */}
-      {activeModal?.type === 'update_status' && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl shadow-[0_24px_64px_rgba(0,0,0,0.15)] max-w-lg w-full p-6 border border-white/80">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-base font-bold text-slate-800">Update Status Produksi</h3>
-                <p className="text-xs text-violet-500 font-semibold mt-0.5">{activeModal.item.kode} — {activeModal.item.gramasi}gr × {activeModal.item.pcs} PCS</p>
-              </div>
-              <button onClick={closeModal} className="w-8 h-8 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center justify-center transition"><X size={14} className="text-slate-500"/></button>
-            </div>
-            <form onSubmit={async e => {
-              e.preventDefault()
-              const fd = new FormData(e.target as HTMLFormElement)
-              await handleUpdateStatus(fd)
-            }} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Status Baru *</label>
-                  <select name="status" required className={selCls} onChange={() => {}}>
-                    {STATUS_OPTIONS.map(s=><option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Total Berat Sekarang (gram) *</label>
-                  <input name="total_gram" type="number" step="0.001" required className={inputCls} placeholder={`Ref: ${activeModal.item.total_gram} gr`}/>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Tanggal *</label>
-                  <input name="tanggal" type="date" required className={inputCls} defaultValue={new Date().toISOString().split('T')[0]}/>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Catatan</label>
-                  <input name="catatan" className={inputCls} placeholder="Keterangan tambahan..."/>
-                </div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className={labelCls}>Sisa Serbuk (gram) — Isi jika Pas Berat</label>
-                <input name="sisa_serbuk" type="number" step="0.001" className={inputCls} placeholder="0.000" defaultValue="0"/>
-              </div>
-              {/* Foto Proses — semua status */}
-              <div className="flex flex-col gap-1.5">
-                <label className={labelCls}>Foto Proses (opsional, max 10)</label>
-                <FotoPicker files={modalFotos} onAdd={f=>setModalFotos(p=>[...p,...f].slice(0,10))} onRemove={i=>i===-1?setModalFotos([]):setModalFotos(p=>p.filter((_,j)=>j!==i))} label="Foto proses di status ini"/>
-              </div>
-              {/* Foto Sisa Serbuk — hanya tampil kalau status Pas Berat dipilih */}
-              <StatusFotoSerbukField modalFotosSerbuk={modalFotosSerbuk} setModalFotosSerbuk={setModalFotosSerbuk}/>
-              {formError && <div className="flex items-center gap-2 p-3 bg-red-50/80 border border-red-100 rounded-xl text-sm text-red-600"><AlertTriangle size={14}/>{formError}</div>}
-              <div className="flex gap-3 justify-end">
-                <button type="button" onClick={closeModal} className="px-5 py-2.5 text-sm font-semibold bg-white/70 border border-slate-200 rounded-xl hover:bg-slate-50 transition">Batal</button>
-                <button type="submit" disabled={isPending||fotosUploading} className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-violet-600 to-violet-500 rounded-xl shadow-[0_4px_12px_rgba(139,92,246,0.3)] disabled:opacity-60 flex items-center gap-2 transition-all">
-                  {(isPending||fotosUploading)&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
-                  {fotosUploading?'Mengompres...' : isPending?'Menyimpan...' : 'Simpan Status'}
-                </button>
-              </div>
-            </form>
+      {/* Modals */}
+      {showCreate && batches.length > 0 && (
+        <CreateModal batches={batches} onClose={() => setShowCreate(false)}
+          onSubmit={handleCreate} isPending={isPending} error={formError}/>
+      )}
+      {showCreate && batches.length === 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
+          <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-6 shadow-2xl max-w-sm w-full">
+            <AlertTriangle size={24} className="text-amber-500 mx-auto mb-3"/>
+            <p className="text-center text-sm text-gray-700 font-medium">Tidak ada batch aktif. Registrasi batch bahan baku terlebih dahulu.</p>
+            <button onClick={() => setShowCreate(false)} className="w-full mt-4 py-2.5 bg-gray-100 rounded-2xl text-sm font-semibold">Tutup</button>
           </div>
         </div>
       )}
-
-      {/* ─── Edit Modal ───────────────────────────────────────────────────────── */}
-      {activeModal?.type === 'edit' && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl shadow-[0_24px_64px_rgba(0,0,0,0.15)] max-w-lg w-full p-6 border border-white/80">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-slate-800">Edit Data Produksi</h3>
-              <button onClick={closeModal} className="w-8 h-8 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center justify-center transition"><X size={14} className="text-slate-500"/></button>
-            </div>
-            <form onSubmit={e => { e.preventDefault(); handleEdit(new FormData(e.target as HTMLFormElement)) }} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Gramasi *</label>
-                  <select name="gramasi" required defaultValue={activeModal.item.gramasi} className={selCls}>
-                    {GRAMASI_OPTIONS.map(g=><option key={g} value={g}>{g} Gram</option>)}
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>PCS *</label>
-                  <input name="pcs" type="number" required defaultValue={activeModal.item.pcs} className={inputCls}/>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Total Berat (gram) *</label>
-                  <input name="berat_awal" type="number" step="0.01" required defaultValue={activeModal.item.berat_awal} className={inputCls}/>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Tanggal *</label>
-                  <input name="tanggal_produksi" type="date" required defaultValue={activeModal.item.tanggal_produksi ?? activeModal.item.tanggal} className={inputCls}/>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Operator</label>
-                  <input name="operator" defaultValue={activeModal.item.operator??''} placeholder={userName} className={inputCls}/>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className={labelCls}>Memo</label>
-                  <input name="memo" defaultValue={activeModal.item.memo??''} placeholder="Keterangan..." className={inputCls}/>
-                </div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className={labelCls}>Catatan</label>
-                <input name="catatan" defaultValue={activeModal.item.catatan??''} placeholder="Catatan tambahan..." className={inputCls}/>
-              </div>
-              {formError && <div className="flex items-center gap-2 p-3 bg-red-50/80 border border-red-100 rounded-xl text-sm text-red-600"><AlertTriangle size={14}/>{formError}</div>}
-              <div className="flex gap-3 justify-end">
-                <button type="button" onClick={closeModal} className="px-5 py-2.5 text-sm font-semibold bg-white/70 border border-slate-200 rounded-xl hover:bg-slate-50 transition">Batal</button>
-                <button type="submit" disabled={isPending} className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-violet-600 to-violet-500 rounded-xl shadow-[0_4px_12px_rgba(139,92,246,0.3)] disabled:opacity-60 flex items-center gap-2 transition-all">
-                  {isPending&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
-                  {isPending?'Menyimpan...':'Simpan Perubahan'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {editItem && (
+        <EditModal item={editItem} onClose={() => setEditItem(null)}
+          onSubmit={handleEdit} isPending={isPending} error={formError}/>
       )}
-
-      {/* ─── Delete Modal ─────────────────────────────────────────────────────── */}
-      {activeModal?.type === 'delete' && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl shadow-[0_24px_64px_rgba(0,0,0,0.15)] max-w-sm w-full p-6 border border-white/80">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-red-50 rounded-2xl flex items-center justify-center"><Trash2 size={18} className="text-red-500"/></div>
-              <div>
-                <h3 className="font-bold text-slate-800">Hapus Item Produksi?</h3>
-                <p className="text-xs text-slate-400">Aksi ini tidak dapat dibatalkan</p>
-              </div>
-            </div>
-            <p className="text-sm text-slate-600 mb-4">Hapus <span className="font-bold text-red-500">{activeModal.item.kode}</span>? Berat {formatGram(activeModal.item.berat_awal)} akan dikembalikan ke batch {activeModal.item.batch_kode}.</p>
-            <div className="flex gap-3 justify-end">
-              <button onClick={closeModal} className="px-5 py-2.5 text-sm font-semibold bg-white/70 border border-slate-200 rounded-xl hover:bg-slate-50 transition">Batal</button>
-              <button onClick={() => handleDelete(activeModal.item)} disabled={isPending} className="px-5 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-xl disabled:opacity-60 transition">
-                {isPending?'Menghapus...':'Ya, Hapus'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {updateItem && (
+        <UpdateStatusModal item={updateItem} onClose={() => setUpdateItem(null)}
+          onSubmit={handleUpdateStatus} isPending={isPending} error={formError}/>
       )}
-    </div>
-  )
-}
-
-// ─── Helper: Foto Sisa Serbuk only shows when Pas Berat selected ──────────
-function StatusFotoSerbukField({ modalFotosSerbuk, setModalFotosSerbuk }: {
-  modalFotosSerbuk: File[]; setModalFotosSerbuk: React.Dispatch<React.SetStateAction<File[]>>
-}) {
-  const [selectedStatus, setSelectedStatus] = useState('Cutting')
-  // Watch the status select in the parent form
-  useEffect(() => {
-    const sel = document.querySelector('select[name="status"]') as HTMLSelectElement
-    if (!sel) return
-    const handler = () => setSelectedStatus(sel.value)
-    sel.addEventListener('change', handler)
-    setSelectedStatus(sel.value || 'Cutting')
-    return () => sel.removeEventListener('change', handler)
-  }, [])
-  if (selectedStatus !== 'Pas Berat') return null
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-semibold text-slate-500 tracking-wide uppercase">Foto Sisa Serbuk (opsional)</label>
-      <FotoPicker files={modalFotosSerbuk} onAdd={f=>setModalFotosSerbuk(p=>[...p,...f].slice(0,10))} onRemove={i=>i===-1?setModalFotosSerbuk([]):setModalFotosSerbuk(p=>p.filter((_,j)=>j!==i))} label="Foto sisa serbuk emas"/>
+      {deleteItem && (
+        <DeleteModal item={deleteItem} onClose={() => setDeleteItem(null)}
+          onConfirm={handleDelete} isPending={isPending}/>
+      )}
     </div>
   )
 }
