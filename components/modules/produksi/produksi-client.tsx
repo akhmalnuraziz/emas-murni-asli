@@ -594,11 +594,11 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
 
           {/* Table header */}
           <div className="grid px-5 py-3.5 border-b"
-            style={{gridTemplateColumns:'2fr 70px 55px 85px 75px 105px 115px 95px 115px',gap:'12px',borderColor:'rgba(243,244,246,0.9)',background:'rgba(249,250,251,0.6)'}}>
-            {['BATCH','GRAMASI','PCS','TOTAL BERAT','SERBUK','STATUS','TIMELINE','TGL UPDATE','AKSI'].map(h=>(
+            style={{gridTemplateColumns:'2fr 70px 55px 85px 75px 75px 105px 115px 95px 115px',gap:'12px',borderColor:'rgba(243,244,246,0.9)',background:'rgba(249,250,251,0.6)'}}>
+            {['BATCH','GRAMASI','PCS','TOTAL BERAT','SERBUK','LOSES','STATUS','TIMELINE','TGL UPDATE','AKSI'].map(h=>(
 
               <span key={h} className={cn('text-[10px] font-bold text-gray-400 tracking-widest uppercase',
-                h==='PCS'||h==='TOTAL BERAT'||h==='SERBUK'?'hidden md:block':h==='TIMELINE'?'hidden lg:block':h==='TGL UPDATE'?'hidden sm:block':'')}>{h}</span>
+                h==='PCS'||h==='TOTAL BERAT'||h==='SERBUK'||h==='LOSES'?'hidden md:block':h==='TIMELINE'?'hidden lg:block':h==='TGL UPDATE'?'hidden sm:block':'')}>{h}</span>
             ))}
           </div>
 
@@ -619,7 +619,7 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
               <div key={item.id}>
                 <div
                   className={cn('grid px-5 py-4 items-center transition-colors',idx>0?'border-t':'',isExp?'':'hover:bg-gray-50/40')}
-                  style={{gridTemplateColumns:'2fr 70px 55px 85px 75px 105px 115px 95px 115px',gap:'12px',borderColor:'rgba(243,244,246,0.7)',background:isExp?'rgba(139,92,246,0.03)':''}}>
+                  style={{gridTemplateColumns:'2fr 70px 55px 85px 75px 75px 105px 115px 95px 115px',gap:'12px',borderColor:'rgba(243,244,246,0.7)',background:isExp?'rgba(139,92,246,0.03)':''}}>
 
                   {/* BATCH col */}
                   <div className="min-w-0">
@@ -646,6 +646,16 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
                       const totalSerbuk = events.reduce((s:number, ev:any) => s + (Number(ev.sisa_serbuk)||0), 0)
                       return totalSerbuk > 0
                         ? <span className="text-xs font-semibold px-2 py-1 rounded-full" style={{background:'rgba(139,92,246,0.1)',color:'#7C3AED'}}>{totalSerbuk.toFixed(3)}gr</span>
+                        : <span className="text-xs text-gray-300">—</span>
+                    })()}
+                  </div>
+
+                  {/* LOSES */}
+                  <div className="hidden md:block">
+                    {(() => {
+                      const totalLoses = events.reduce((s:number, ev:any) => s + (Number(ev.losses)||0), 0)
+                      return totalLoses > 0
+                        ? <span className="text-xs font-semibold px-2 py-1 rounded-full" style={{background:'rgba(249,115,22,0.1)',color:'#EA580C'}}>{totalLoses.toFixed(3)}gr</span>
                         : <span className="text-xs text-gray-300">—</span>
                     })()}
                   </div>
