@@ -655,8 +655,8 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
                     {(() => {
                       const totalLoses = events.reduce((s:number, ev:any) => s + (Number(ev.losses)||0), 0)
                       return totalLoses > 0
-                        ? <span className="text-xs font-semibold px-2 py-1 rounded-full" style={{background:'rgba(249,115,22,0.1)',color:'#EA580C'}}>{totalLoses.toFixed(3)}gr</span>
-                        : <span className="text-xs text-gray-300">—</span>
+                        ? <span className="text-xs font-semibold px-2 py-1 rounded-full" style={{background:'rgba(249,115,22,0.1)',color:'#EA580C'}}>{totalLoses.toFixed(3)} gr</span>
+                        : <span className="text-xs text-gray-300 font-medium">0 gr</span>
                     })()}
                   </div>
 
