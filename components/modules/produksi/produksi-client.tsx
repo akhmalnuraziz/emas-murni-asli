@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import {
   Plus, Search, ChevronDown, ChevronUp, Edit2, Trash2,
   Check, AlertTriangle, X, Package, Flame, Clock,
@@ -189,10 +189,20 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
   const handleUpdateStatus = async (fd: FormData) => {
     if (!activeModal) return
     setFormError('')
+    // Upload fotos before sending to server
+    const fotosB64 = modalFotos.length > 0 ? await filesToBase64(modalFotos) : []
+    const fotosSerbukB64 = modalFotosSerbuk.length > 0 ? await filesToBase64(modalFotosSerbuk) : []
+    fd.set('fotos_b64', JSON.stringify(fotosB64))
+    fd.set('fotos_serbuk_b64', JSON.stringify(fotosSerbukB64))
     startTransition(async () => {
       const r = await updateStatusProduksi(activeModal.item.id, activeModal.item.kode, fd)
       if (r.error) setFormError(r.error)
-      else { setActiveModal(null); showToast('Status berhasil diperbarui ✓', 'success') }
+      else {
+        setActiveModal(null)
+        setModalFotos([])
+        setModalFotosSerbuk([])
+        showToast('Status berhasil diperbarui ✓', 'success')
+      }
     })
   }
 
