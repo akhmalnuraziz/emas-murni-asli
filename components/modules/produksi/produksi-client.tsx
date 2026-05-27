@@ -466,7 +466,7 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
   function handleDelete(){if(!active)return;startTransition(async()=>{const r=await deleteProduksi(active.id,active.kode);if(r?.error){showToast(r.error,false);return}showToast('🗑️ Batch dihapus');setModal(null)})}
 
   // Grid columns: BATCH | GRAMASI | PCS | TOTAL BERAT | SERBUK | LOSES | PACKING | SHIELDTAG | STATUS | TIMELINE | TGL | AKSI
-  const gridCols = '2fr 65px 55px 80px 75px 75px 95px 85px 100px 110px 90px 115px'
+  const gridCols = '2fr 65px 55px 80px 70px 70px 105px 90px 110px 90px 80px 110px'
 
   return(
     <div className="min-h-screen pb-24"style={{background:'linear-gradient(160deg,#F5F5F7 0%,#EFEFF4 60%,#F5F5F7 100%)'}}>
@@ -517,7 +517,7 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
           {/* Header */}
           <div className="grid px-5 py-3.5 border-b min-w-[1100px]"
             style={{gridTemplateColumns:gridCols,gap:'8px',borderColor:'rgba(243,244,246,0.9)',background:'rgba(249,250,251,0.6)'}}>
-            {['BATCH','GRAMASI','PCS','TOTAL BERAT','SERBUK','LOSES','PACKING','SHIELDTAG','STATUS','TIMELINE','TGL UPDATE','AKSI'].map(h=>(
+            {['BATCH','GRAMASI','PCS','TOTAL BERAT','SERBUK','LOSES','STATUS','TGL UPDATE','TIMELINE','PACKING','SHIELDTAG','AKSI'].map(h=>(
               <span key={h}className="text-[10px] font-bold text-gray-400 tracking-widest uppercase whitespace-nowrap">{h}</span>
             ))}
           </div>
@@ -568,6 +568,12 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
                       {totalLoses>0?`${totalLoses.toFixed(3)}gr`:'0 gr'}
                     </span>
                   </div>
+                  {/* STATUS */}
+                  <div><Sbadge s={item.current_status}/></div>
+                  {/* TGL UPDATE */}
+                  <span className="text-xs text-gray-400 font-medium">{lastEv?formatDate(lastEv.tanggal):formatDate(item.tanggal_produksi??item.tanggal)}</span>
+                  {/* TIMELINE */}
+                  <div><TLine events={events}/></div>
                   {/* PACKING */}
                   <div>
                     <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap',totalPacked>0?totalPacked>=pcsGood?'text-violet-700':'text-blue-600':'text-gray-400')}
@@ -582,12 +588,6 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
                       🏷 {totalST}/{totalPacked}
                     </span>
                   </div>
-                  {/* STATUS */}
-                  <div><Sbadge s={item.current_status}/></div>
-                  {/* TIMELINE */}
-                  <div><TLine events={events}/></div>
-                  {/* TGL UPDATE */}
-                  <span className="text-xs text-gray-400 font-medium">{lastEv?formatDate(lastEv.tanggal):formatDate(item.tanggal_produksi??item.tanggal)}</span>
                   {/* AKSI */}
                   <div className="flex items-center gap-1">
                     {canEdit&&item.current_status!=='Sudah Packing'&&(
