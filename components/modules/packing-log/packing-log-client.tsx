@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import {
   Plus, Search, Edit2, Trash2, Printer, Check,
   AlertTriangle, X, Package, Camera
@@ -25,13 +25,92 @@ const F = ({label,req,children}:{label:string;req?:boolean;children:React.ReactN
   </div>
 )
 
-// ─── Print View (hidden, used by print logic) ─────────────────────────────────
+// ─── Lightbox ─────────────────────────────────────────────────────────────────
+function Lightbox({url,onClose}:{url:string;onClose:()=>void}){
+  useEffect(()=>{
+    const fn=(e:KeyboardEvent)=>{if(e.key==='Escape')onClose()}
+    document.addEventListener('keydown',fn);return()=>document.removeEventListener('keydown',fn)
+  },[onClose])
+  return(
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/85" onClick={onClose}>
+      <img src={url} alt="" className="max-w-[95vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl" onClick={e=>e.stopPropagation()}/>
+      <button onClick={onClose} className="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-all">
+        <X size={18}/>
+      </button>
+    </div>
+  )
+}
+
+// ─── filesToBase64 ─────────────────────────────────────────────────────────────
+async function filesToBase64(files: File[]): Promise<string[]> {
+  const results: string[] = []
+  for (const file of files.slice(0,10)) {
+    const b64 = await new Promise<string>(resolve => {
+      const img = new Image()
+      img.onload = () => {
+        const c = document.createElement('canvas')
+        let {width:w,height:h} = img
+        const max = 1200
+        if(w>max||h>max){const r=Math.min(max/w,max/h);w=Math.floor(w*r);h=Math.floor(h*r)}
+        c.width=w;c.height=h;c.getContext('2d')!.drawImage(img,0,0,w,h)
+        let q=0.8
+        const tryQ=()=>c.toBlob(blob=>{
+          if(!blob){resolve('');return}
+          if(blob.size<=250*1024||q<=0.3){const r=new FileReader();r.onload=()=>resolve(r.result as string);r.readAsDataURL(blob)}
+          else{q-=0.1;tryQ()}
+        },'image/jpeg',q)
+        tryQ()
+      }
+      img.onerror=()=>resolve('')
+      img.src=URL.createObjectURL(file)
+    })
+    if(b64)results.push(b64)
+  }
+  return results
+}
+
+// ─── FotoPicker ───────────────────────────────────────────────────────────────
+function FotoPicker({files,existing=[],onAdd,onRemove,onRemoveExisting,label='Tambah foto',small=false}:{
+  files:File[];existing?:string[];onAdd:(f:File[])=>void;onRemove:(i:number)=>void;onRemoveExisting?:(i:number)=>void;label?:string;small?:boolean
+}){
+  const [prev,setPrev]=useState<string[]>([])
+  const [lightbox,setLightbox]=useState<string|null>(null)
+  useEffect(()=>{const u=files.map(f=>URL.createObjectURL(f));setPrev(u);return()=>u.forEach(u=>URL.revokeObjectURL(u))},[files])
+  const s=small?'w-12 h-12':'w-16 h-16'
+  return(
+    <div className="space-y-2">
+      {lightbox&&<Lightbox url={lightbox} onClose={()=>setLightbox(null)}/>}
+      {(existing.length>0||prev.length>0)&&(
+        <div className="flex gap-2 flex-wrap">
+          {existing.map((u,i)=>(
+            <div key={`ex${i}`}className={`relative ${s} group`}>
+              <img src={u} onClick={()=>setLightbox(u)} className="w-full h-full object-cover rounded-xl border border-violet-200/50 cursor-pointer hover:scale-105 transition-transform"/>
+              {onRemoveExisting&&<button type="button" onClick={()=>onRemoveExisting(i)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><X size={9}/></button>}
+            </div>
+          ))}
+          {prev.map((u,i)=>(
+            <div key={`new${i}`}className={`relative ${s}`}>
+              <img src={u} onClick={()=>setLightbox(u)} className="w-full h-full object-cover rounded-xl border-2 border-violet-300 cursor-pointer hover:scale-105 transition-transform"/>
+              <button type="button" onClick={()=>onRemove(i)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center"><X size={9}/></button>
+              <div className="absolute bottom-0 inset-x-0 bg-violet-500/70 text-white text-[7px] text-center py-0.5 rounded-b-xl">BARU</div>
+            </div>
+          ))}
+        </div>
+      )}
+      <label className="flex items-center gap-2 px-3.5 py-2.5 border border-dashed border-violet-200 rounded-xl cursor-pointer hover:border-violet-400 hover:bg-violet-50/50 bg-white/40 transition-all">
+        <Camera size={13}className="text-violet-400 flex-shrink-0"/>
+        <span className={`text-gray-400 ${small?'text-[11px]':'text-xs'}`}>{files.length>0?`${files.length} foto baru — klik tambah`:label}</span>
+        <input type="file" accept="image/*" multiple className="hidden" onChange={e=>{onAdd(Array.from(e.target.files??[]));e.currentTarget.value=''}}/>
+      </label>
+      {files.length>0&&<button type="button"onClick={()=>onRemove(-1)}className="text-[11px] text-red-400 hover:underline">Hapus semua foto baru</button>}
+    </div>
+  )
+}
+
+// ─── Print View ───────────────────────────────────────────────────────────────
 function PrintView({p}:{p:any}){
-  const selisihAbs = Math.abs(Number(p.selisih_gram ?? 0))
-  const selisih = Number(p.selisih_gram ?? 0)
-  const target = parseFloat(p.gramasi||0) * (p.pcs_dipack||0)
-  return (
-    <div id={`print-${p.id}`} className="hidden">
+  return(
+    <div id={`print-${p.id}`}className="hidden">
       <div style={{fontFamily:'Arial,sans-serif',padding:'32px',maxWidth:'600px',margin:'0 auto',border:'2px solid #333'}}>
         <div style={{textAlign:'center',borderBottom:'2px solid #333',paddingBottom:'16px',marginBottom:'20px'}}>
           <h1 style={{fontSize:'20px',fontWeight:'900',margin:'0'}}>PT EMAS MURNI ASLI</h1>
@@ -42,17 +121,15 @@ function PrintView({p}:{p:any}){
             {[
               ['No. Packing', p.kode],
               ['Tanggal', formatDate(p.tanggal)],
-              ['Batch', p.batch_kode],
+              ['Item / Batch', `${p.produksi_item?.nama_item||p.produksi_item?.kode||'—'} · ${p.batch_kode}`],
               ['Gramasi', `${p.gramasi} gr`],
               ['PCS Dipack', `${p.pcs_dipack} PCS`],
-              ['Total Gram Target', `${target.toFixed(3)} gr`],
               ['Total Gram Aktual', `${Number(p.total_gram_aktual).toFixed(3)} gr`],
-              ['Selisih', selisihAbs < 0.001 ? 'Pas (0)' : `${selisih > 0 ? '+' : ''}${selisih.toFixed(3)} gr`],
-              ['PIC / Operator', p.pic_packing || '—'],
-              ['Catatan', p.catatan || '—'],
+              ['PIC / Operator', p.pic_packing||'—'],
+              ['Catatan', p.catatan||'—'],
             ].map(([k,v])=>(
               <tr key={k}>
-                <td style={{padding:'6px 12px',border:'1px solid #ddd',fontWeight:'600',background:'#f9f9f9',width:'45%'}}>{k}</td>
+                <td style={{padding:'6px 12px',border:'1px solid #ddd',fontWeight:'600',background:'#f9f9f9',width:'40%'}}>{k}</td>
                 <td style={{padding:'6px 12px',border:'1px solid #ddd'}}>{v}</td>
               </tr>
             ))}
@@ -60,11 +137,7 @@ function PrintView({p}:{p:any}){
         </table>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'40px',marginTop:'40px',textAlign:'center',fontSize:'12px'}}>
           {['Dibuat','Diperiksa','Disetujui'].map(l=>(
-            <div key={l}>
-              <p style={{fontWeight:'600',marginBottom:'50px'}}>{l}</p>
-              <div style={{borderTop:'1px solid #333'}}/>
-              <p style={{color:'#999',marginTop:'4px'}}>(................)</p>
-            </div>
+            <div key={l}><p style={{fontWeight:'600',marginBottom:'50px'}}>{l}</p><div style={{borderTop:'1px solid #333'}}/><p style={{color:'#999',marginTop:'4px'}}>(................)</p></div>
           ))}
         </div>
         <p style={{textAlign:'center',fontSize:'11px',color:'#999',marginTop:'20px'}}>Dicetak: {new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}</p>
@@ -78,13 +151,17 @@ function CreateModal({items,onClose,onSubmit,isPending,error}:{
   items:any[];onClose:()=>void;onSubmit:(fd:FormData)=>void;isPending:boolean;error:string
 }){
   const [selId,setSelId]=useState(String(items[0]?.id??''))
+  const [fotos,setFotos]=useState<File[]>([])
+  const [up,setUp]=useState(false)
   const sel=items.find(i=>i.id===parseInt(selId))
-  const gr=sel?parseFloat(sel.gramasi):0
-  const [pcs,setPcs]=useState('')
-  const [gram,setGram]=useState('')
-  const pcsN=parseInt(pcs)||0
-  const selisih=gram&&pcsN?parseFloat(gram)-(gr*pcsN):null
-  function submit(e:React.FormEvent){e.preventDefault();onSubmit(new FormData(e.currentTarget as HTMLFormElement))}
+
+  async function submit(e:React.FormEvent){
+    e.preventDefault()
+    setUp(true);const b64=fotos.length>0?await filesToBase64(fotos):[];setUp(false)
+    const fd=new FormData(e.currentTarget as HTMLFormElement)
+    fd.set('fotos_b64',JSON.stringify(b64))
+    onSubmit(fd)
+  }
   return(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"style={{background:'rgba(0,0,0,0.4)',backdropFilter:'blur(8px)'}}>
       <div className="w-full max-w-md rounded-3xl overflow-hidden"style={{background:'rgba(255,255,255,0.93)',backdropFilter:'blur(24px)',border:'1px solid rgba(255,255,255,0.6)',boxShadow:'0 32px 64px rgba(139,92,246,0.18)'}}>
@@ -92,7 +169,7 @@ function CreateModal({items,onClose,onSubmit,isPending,error}:{
           <h2 className="text-lg font-bold text-gray-900">Catat Packing Baru</h2>
           <button onClick={onClose}className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><X size={15}/></button>
         </div>
-        <form onSubmit={submit}className="px-6 py-5 space-y-4 overflow-y-auto max-h-[75vh]">
+        <form onSubmit={submit}className="px-6 py-5 space-y-4 overflow-y-auto max-h-[76vh]">
           <F label="Item Produksi (Siap Packing)" req>
             <select name="produksi_item_id" value={selId} onChange={e=>setSelId(e.target.value)} className={inp} required>
               {items.map(i=><option key={i.id} value={i.id}>{i.nama_item||i.kode} · {i.gramasi}gr · {i.pcs_tersisa} PCS tersisa</option>)}
@@ -103,29 +180,26 @@ function CreateModal({items,onClose,onSubmit,isPending,error}:{
           </div>}
           <div className="grid grid-cols-2 gap-3">
             <F label="PCS Dipack" req>
-              <input name="pcs_dipack" type="number" min="1" max={sel?.pcs_tersisa??999} value={pcs} onChange={e=>setPcs(e.target.value)} placeholder={`Max ${sel?.pcs_tersisa??0}`} className={inp} required/>
+              <input name="pcs_dipack" type="number" min="1" max={sel?.pcs_tersisa??999} placeholder={`Max ${sel?.pcs_tersisa??0}`} className={inp} required/>
             </F>
             <F label="Total Gram Aktual" req>
-              <input name="total_gram_aktual" type="number" step="0.001" value={gram} onChange={e=>setGram(e.target.value)} placeholder={pcsN>0?`Target: ${(gr*pcsN).toFixed(3)}`:'0.000'} className={inp} required/>
+              <input name="total_gram_aktual" type="number" step="0.001" placeholder="0.000" className={inp} required/>
             </F>
           </div>
-          {selisih!==null&&(
-            <div className={cn('px-3 py-2 rounded-xl text-xs font-semibold',Math.abs(selisih)<0.001?'text-emerald-700':'text-amber-700')}
-              style={{background:Math.abs(selisih)<0.001?'rgba(34,197,94,0.08)':'rgba(245,158,11,0.08)'}}>
-              {Math.abs(selisih)<0.001?'✓ Pas — berat sesuai target':`Selisih: ${selisih>0?'+':''}${selisih.toFixed(3)} gr dari target ${(gr*pcsN).toFixed(3)} gr`}
-            </div>
-          )}
           <div className="grid grid-cols-2 gap-3">
             <F label="Tanggal" req><input name="tanggal" type="date" defaultValue={today} className={inp} required/></F>
             <F label="PIC / Operator"><input name="pic" placeholder="Nama operator" className={inp}/></F>
           </div>
           <F label="Catatan"><input name="catatan" placeholder="Keterangan tambahan..." className={inp}/></F>
+          <F label="Foto Packing (max 10)">
+            <FotoPicker files={fotos} onAdd={ff=>setFotos(p=>[...p,...ff].slice(0,10))} onRemove={i=>i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))} label="Tambah foto packing"/>
+          </F>
           {error&&<div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600"><AlertTriangle size={14}/>{error}</div>}
           <div className="flex gap-3 justify-end pt-1 pb-2">
             <button type="button"onClick={onClose}className="px-5 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
-            <button type="submit" disabled={isPending}className="px-6 py-2.5 text-sm font-bold text-white rounded-2xl flex items-center gap-2 disabled:opacity-60"style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)',boxShadow:'0 4px 16px rgba(139,92,246,0.3)'}}>
-              {isPending&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
-              {isPending?'Menyimpan...':'Simpan Packing'}
+            <button type="submit" disabled={isPending||up}className="px-6 py-2.5 text-sm font-bold text-white rounded-2xl flex items-center gap-2 disabled:opacity-60"style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)',boxShadow:'0 4px 16px rgba(139,92,246,0.3)'}}>
+              {(isPending||up)&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
+              {up?'Kompres foto...':isPending?'Menyimpan...':'Simpan Packing'}
             </button>
           </div>
         </form>
@@ -136,12 +210,18 @@ function CreateModal({items,onClose,onSubmit,isPending,error}:{
 
 // ─── Edit Modal ───────────────────────────────────────────────────────────────
 function EditModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;onSubmit:(fd:FormData)=>void;isPending:boolean;error:string}){
-  const gr=parseFloat(p.gramasi||0)
-  const [pcs,setPcs]=useState(String(p.pcs_dipack??''))
-  const [gram,setGram]=useState(String(p.total_gram_aktual??''))
-  const pcsN=parseInt(pcs)||0
-  const selisih=gram&&pcsN?parseFloat(gram)-(gr*pcsN):null
-  function submit(e:React.FormEvent){e.preventDefault();onSubmit(new FormData(e.currentTarget as HTMLFormElement))}
+  const [fotos,setFotos]=useState<File[]>([])
+  const [existFotos,setExistFotos]=useState<string[]>(Array.isArray(p.fotos)?p.fotos:[])
+  const [up,setUp]=useState(false)
+
+  async function submit(e:React.FormEvent){
+    e.preventDefault()
+    setUp(true);const b64=fotos.length>0?await filesToBase64(fotos):[];setUp(false)
+    const fd=new FormData(e.currentTarget as HTMLFormElement)
+    fd.set('fotos_b64',JSON.stringify(b64))
+    fd.set('existing_fotos',JSON.stringify(existFotos))
+    onSubmit(fd)
+  }
   return(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"style={{background:'rgba(0,0,0,0.4)',backdropFilter:'blur(8px)'}}>
       <div className="w-full max-w-md rounded-3xl overflow-hidden"style={{background:'rgba(255,255,255,0.93)',backdropFilter:'blur(24px)',border:'1px solid rgba(255,255,255,0.6)',boxShadow:'0 32px 64px rgba(139,92,246,0.18)'}}>
@@ -149,28 +229,29 @@ function EditModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;
           <div><h2 className="text-lg font-bold text-gray-900">Edit Packing</h2><p className="text-xs text-violet-500 font-medium mt-0.5">{p.kode}</p></div>
           <button onClick={onClose}className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><X size={15}/></button>
         </div>
-        <form onSubmit={submit}className="px-6 py-5 space-y-4">
+        <form onSubmit={submit}className="px-6 py-5 space-y-4 overflow-y-auto max-h-[76vh]">
           <div className="grid grid-cols-2 gap-3">
-            <F label="PCS Dipack" req><input name="pcs_dipack" type="number" min="1" value={pcs} onChange={e=>setPcs(e.target.value)} className={inp} required/></F>
-            <F label="Total Gram Aktual" req><input name="total_gram_aktual" type="number" step="0.001" value={gram} onChange={e=>setGram(e.target.value)} placeholder={pcsN>0?`Target: ${(gr*pcsN).toFixed(3)}`:'0.000'} className={inp} required/></F>
+            <F label="PCS Dipack" req><input name="pcs_dipack" type="number" min="1" defaultValue={p.pcs_dipack} className={inp} required/></F>
+            <F label="Total Gram Aktual" req><input name="total_gram_aktual" type="number" step="0.001" defaultValue={p.total_gram_aktual} className={inp} required/></F>
           </div>
-          {selisih!==null&&(
-            <div className={cn('px-3 py-2 rounded-xl text-xs font-semibold',Math.abs(selisih)<0.001?'text-emerald-700':'text-amber-700')}
-              style={{background:Math.abs(selisih)<0.001?'rgba(34,197,94,0.08)':'rgba(245,158,11,0.08)'}}>
-              {Math.abs(selisih)<0.001?'✓ Pas':(`Selisih: ${selisih>0?'+':''}${selisih.toFixed(3)} gr`)}
-            </div>
-          )}
           <div className="grid grid-cols-2 gap-3">
             <F label="Tanggal" req><input name="tanggal" type="date" defaultValue={p.tanggal} className={inp} required/></F>
             <F label="PIC / Operator"><input name="pic" defaultValue={p.pic_packing??''} className={inp}/></F>
           </div>
           <F label="Catatan"><input name="catatan" defaultValue={p.catatan??''} className={inp}/></F>
+          <F label="Foto Packing (max 10)">
+            <FotoPicker files={fotos} existing={existFotos}
+              onAdd={ff=>setFotos(prev=>[...prev,...ff].slice(0,10))}
+              onRemove={i=>i===-1?setFotos([]):setFotos(prev=>prev.filter((_,j)=>j!==i))}
+              onRemoveExisting={i=>setExistFotos(prev=>prev.filter((_,j)=>j!==i))}
+              label="Tambah foto packing" small/>
+          </F>
           {error&&<div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600"><AlertTriangle size={14}/>{error}</div>}
           <div className="flex gap-3 justify-end pt-1">
             <button type="button"onClick={onClose}className="px-5 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
-            <button type="submit"disabled={isPending}className="px-6 py-2.5 text-sm font-bold text-white rounded-2xl flex items-center gap-2 disabled:opacity-60"style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
-              {isPending&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
-              {isPending?'Menyimpan...':'Simpan'}
+            <button type="submit"disabled={isPending||up}className="px-6 py-2.5 text-sm font-bold text-white rounded-2xl flex items-center gap-2 disabled:opacity-60"style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
+              {(isPending||up)&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
+              {up?'Kompres...':isPending?'Menyimpan...':'Simpan'}
             </button>
           </div>
         </form>
@@ -183,14 +264,13 @@ function EditModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;
 function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint}:{
   p:any;canManage:boolean;canDelete:boolean;onEdit:()=>void;onDelete:()=>void;onPrint:()=>void
 }){
-  const selisih=Number(p.selisih_gram??0)
-  const selisihAbs=Math.abs(selisih)
-  const fotoCount=Array.isArray(p.fotos)?p.fotos.length:0
+  const [lightbox,setLightbox]=useState<string|null>(null)
+  const fotos=Array.isArray(p.fotos)?p.fotos:[]
   const stCount=p.shieldtag_count??0
   const isPrinted=p.status_surat==='sudah_cetak'
   return(
     <div className="rounded-2xl p-4 space-y-3"style={{background:'rgba(255,255,255,0.8)',backdropFilter:'blur(16px)',border:'1px solid rgba(255,255,255,0.5)',boxShadow:'0 2px 12px rgba(139,92,246,0.06)'}}>
-      {/* Top row */}
+      {lightbox&&<Lightbox url={lightbox} onClose={()=>setLightbox(null)}/>}
       <div className="flex items-center justify-between">
         <span className="text-xs font-mono font-bold text-violet-600">{p.kode}</span>
         <div className="flex items-center gap-1.5">
@@ -200,30 +280,27 @@ function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint}:{
           {canDelete&&<button onClick={onDelete}className="w-7 h-7 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100"title="Hapus"><Trash2 size={11}/></button>}
         </div>
       </div>
-      {/* Info grid */}
       <div className="grid grid-cols-3 gap-2">
-        <div><p className="text-[10px] text-gray-400 font-medium">BATCH</p><p className="text-xs font-bold text-gray-700">{p.batch_kode}</p></div>
-        <div><p className="text-[10px] text-gray-400 font-medium">TANGGAL</p><p className="text-xs font-semibold text-gray-700">{formatDate(p.tanggal)}</p></div>
-        <div><p className="text-[10px] text-gray-400 font-medium">GRAMASI</p><p className="text-xs font-bold text-gray-700">{p.gramasi} gr</p></div>
-        <div><p className="text-[10px] text-gray-400 font-medium">DIPACK</p><p className="text-sm font-bold text-gray-800">{p.pcs_dipack} pcs</p></div>
-        <div><p className="text-[10px] text-gray-400 font-medium">TOTAL BERAT</p><p className="text-xs font-semibold text-gray-700">{Number(p.total_gram_aktual).toFixed(3)} gr</p></div>
+        <div><p className="text-[10px] text-gray-400">BATCH</p><p className="text-xs font-bold text-gray-700">{p.batch_kode}</p></div>
+        <div><p className="text-[10px] text-gray-400">TANGGAL</p><p className="text-xs font-semibold text-gray-700">{formatDate(p.tanggal)}</p></div>
+        <div><p className="text-[10px] text-gray-400">GRAMASI</p><p className="text-xs font-bold text-gray-700">{p.gramasi} gr</p></div>
+        <div><p className="text-[10px] text-gray-400">DIPACK</p><p className="text-sm font-bold text-gray-800">{p.pcs_dipack} pcs</p></div>
+        <div><p className="text-[10px] text-gray-400">TOTAL GRAM</p><p className="text-xs font-semibold text-gray-700">{Number(p.total_gram_aktual).toFixed(3)} gr</p></div>
         <div>
-          <p className="text-[10px] text-gray-400 font-medium">SELISIH</p>
-          <span className={cn('text-xs font-bold',selisihAbs<0.001?'text-emerald-600':selisihAbs<=0.05?'text-amber-600':'text-red-600')}>
-            {selisihAbs<0.001?'Pas':(selisih>0?'+':'')+selisih.toFixed(3)+' gr'}
-          </span>
+          <p className="text-[10px] text-gray-400">SHIELDTAG</p>
+          <span className={cn('text-xs font-bold',stCount>0?'text-emerald-600':'text-gray-400')}>🏷 {stCount}/{p.pcs_dipack}</span>
         </div>
       </div>
-      {/* Bottom row */}
-      <div className="flex items-center gap-3 pt-1 border-t border-gray-100">
+      <div className="flex items-center gap-3 pt-1 border-t border-gray-100 flex-wrap">
         <span className="text-xs text-gray-500"><span className="font-semibold">PIC:</span> {p.pic_packing||'—'}</span>
-        <span className="text-xs text-gray-400">
-          <Camera size={10} className="inline mr-1"/>{fotoCount>0?`${fotoCount} foto`:'—'}
-        </span>
-        <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full',stCount>0?'text-violet-700':'text-gray-400')}
-          style={{background:stCount>0?'rgba(139,92,246,0.1)':'rgba(107,114,128,0.08)'}}>
-          🏷 {stCount}/{p.pcs_dipack} terdaftar
-        </span>
+        {fotos.length>0&&(
+          <div className="flex gap-1.5">
+            {fotos.slice(0,4).map((u:string,i:number)=>(
+              <img key={i} src={u} onClick={()=>setLightbox(u)} className="w-8 h-8 rounded-lg object-cover cursor-pointer border border-gray-200 hover:scale-110 transition-transform"/>
+            ))}
+            {fotos.length>4&&<span className="text-xs text-gray-400 self-center">+{fotos.length-4}</span>}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -236,6 +313,7 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
   const [active,setActive]=useState<any|null>(null)
   const [err,setErr]=useState('')
   const [search,setSearch]=useState('')
+  const [lightbox,setLightbox]=useState<string|null>(null)
   const [toast,setToast]=useState<{msg:string;ok:boolean}|null>(null)
 
   function showToast(msg:string,ok=true){setToast({msg,ok});setTimeout(()=>setToast(null),3500)}
@@ -247,8 +325,10 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
     return!q||p.kode?.toLowerCase().includes(q)||p.batch_kode?.toLowerCase().includes(q)||p.gramasi?.includes(q)||p.pic_packing?.toLowerCase().includes(q)
   })
 
-  const totalPcs=filtered.reduce((s,p)=>s+(p.pcs_dipack||0),0)
-  const totalGram=filtered.reduce((s,p)=>s+(parseFloat(p.total_gram_aktual||0)),0)
+  // Summary
+  const totalRecord=packingList.length
+  const totalSiapPacking=siapPackingItems.length
+  const totalSudahPacking=packingList.filter(p=>p.produksi_item?.current_status==='Sudah Packing').length
 
   function handleCreate(fd:FormData){setErr('');startTransition(async()=>{const r=await createPacking(fd);if(r?.error){setErr(r.error);return}showToast(`✅ ${r?.kode} berhasil dicatat`);setModal(null)})}
   function handleEdit(fd:FormData){if(!active)return;setErr('');startTransition(async()=>{const r=await editPacking(active.id,active.kode,fd);if(r?.error){setErr(r.error);return}showToast('✅ Packing diperbarui');setModal(null)})}
@@ -266,9 +346,8 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
 
   return(
     <div className="min-h-screen pb-24"style={{background:'linear-gradient(160deg,#F5F5F7 0%,#EFEFF4 60%,#F5F5F7 100%)'}}>
-      {/* Print views - hidden */}
       {filtered.map(p=><PrintView key={p.id} p={p}/>)}
-
+      {lightbox&&<Lightbox url={lightbox} onClose={()=>setLightbox(null)}/>}
       {toast&&<div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-2xl text-sm font-semibold text-white shadow-2xl',toast.ok?'bg-gradient-to-r from-emerald-500 to-green-600':'bg-gradient-to-r from-red-500 to-rose-600')}>{toast.ok?<Check size={15}/>:<AlertTriangle size={15}/>}{toast.msg}</div>}
 
       <div className="p-4 lg:p-6 max-w-7xl mx-auto space-y-5">
@@ -276,12 +355,12 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold tracking-tight"style={{color:'#111827',fontFamily:"'SF Pro Display','Inter',sans-serif"}}>Packing Log</h1>
-            <p className="text-xs text-gray-400 mt-0.5 font-medium">Otomatis update status produksi & buka jalur registrasi Shieldtag</p>
+            <p className="text-xs text-gray-400 mt-0.5 font-medium">Kelola packing & registrasi Shieldtag</p>
           </div>
           {canManage&&siapPackingItems.length>0&&(
             <button onClick={()=>{setModal('create');setErr('')}}
-              className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white rounded-2xl transition-all hover:-translate-y-0.5 active:translate-y-0"
-              style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)',boxShadow:'0 4px 20px rgba(139,92,246,0.4)',fontFamily:"'SF Pro Text','Inter',sans-serif"}}>
+              className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white rounded-2xl transition-all hover:-translate-y-0.5"
+              style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)',boxShadow:'0 4px 20px rgba(139,92,246,0.4)'}}>
               <Plus size={15}/> Catat Packing
             </button>
           )}
@@ -290,26 +369,24 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
         {/* Search */}
         <div className="relative">
           <Search size={15}className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cari kode PKG, item, batch, PIC..."
-            className="w-full pl-10 pr-4 py-3 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40"
-            style={{background:'rgba(255,255,255,0.8)',backdropFilter:'blur(12px)',border:'1px solid rgba(209,213,219,0.5)',fontFamily:"'SF Pro Text','Inter',sans-serif"}}/>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cari kode PKG, batch, PIC..."
+            className="w-full pl-10 pr-4 py-3 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all"
+            style={{background:'rgba(255,255,255,0.8)',backdropFilter:'blur(12px)',border:'1px solid rgba(209,213,219,0.5)'}}/>
         </div>
 
-        {/* Summary */}
-        {filtered.length>0&&(
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              {label:'Total Record',val:String(filtered.length),color:'#8B5CF6'},
-              {label:'Total PCS Dipack',val:`${totalPcs} PCS`,color:'#3B82F6'},
-              {label:'Total Gram',val:`${totalGram.toFixed(3)} gr`,color:'#22C55E'},
-            ].map(c=>(
-              <div key={c.label}className="rounded-2xl p-3 text-center"style={{background:'rgba(255,255,255,0.8)',backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.6)'}}>
-                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">{c.label}</p>
-                <p className="text-base font-bold mt-0.5"style={{color:c.color,fontFamily:"'SF Pro Display','Inter',sans-serif"}}>{c.val}</p>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Summary cards */}
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            {label:'Total Record',val:String(totalRecord),color:'#8B5CF6',bg:'rgba(139,92,246,0.06)'},
+            {label:'Siap Packing',val:String(totalSiapPacking),color:'#22C55E',bg:'rgba(34,197,94,0.06)'},
+            {label:'Sudah Packing',val:String(totalSudahPacking),color:'#3B82F6',bg:'rgba(59,130,246,0.06)'},
+          ].map(c=>(
+            <div key={c.label}className="rounded-2xl p-4 text-center"style={{background:c.bg,backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.6)'}}>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{c.label}</p>
+              <p className="text-xl font-bold mt-0.5"style={{color:c.color,fontFamily:"'SF Pro Display','Inter',sans-serif"}}>{c.val}</p>
+            </div>
+          ))}
+        </div>
 
         {/* Mobile cards */}
         <div className="lg:hidden space-y-3">
@@ -317,7 +394,6 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
             <div className="text-center py-12 rounded-3xl"style={{background:'rgba(255,255,255,0.7)',border:'1px solid rgba(255,255,255,0.5)'}}>
               <Package size={32}className="mx-auto text-violet-200 mb-3"/>
               <p className="text-sm font-medium text-gray-400">Belum ada record packing</p>
-              {siapPackingItems.length>0&&<p className="text-xs text-violet-400 mt-1">Klik "Catat Packing" untuk mulai</p>}
             </div>
           ):filtered.map(p=>(
             <PackingCard key={p.id} p={p} canManage={canManage} canDelete={canDelete}
@@ -329,11 +405,11 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
 
         {/* Desktop table */}
         <div className="hidden lg:block rounded-3xl overflow-auto"style={{background:'rgba(255,255,255,0.72)',backdropFilter:'blur(24px)',border:'1px solid rgba(255,255,255,0.6)',boxShadow:'0 8px 40px rgba(139,92,246,0.08)'}}>
-          <table className="w-full min-w-[1100px] text-sm">
+          <table className="w-full min-w-[1000px] text-sm">
             <thead>
               <tr className="border-b"style={{borderColor:'rgba(243,244,246,0.9)',background:'rgba(249,250,251,0.6)'}}>
-                {['KODE','TANGGAL','BATCH','GRAMASI','PCS TOTAL','DIPACK','TOTAL BERAT','SELISIH','PIC','FOTO','SHIELDTAG','AKSI'].map(h=>(
-                  <th key={h} className="px-4 py-3 text-left text-[10px] font-bold text-gray-400 tracking-widest uppercase whitespace-nowrap">{h}</th>
+                {['KODE','TANGGAL','BATCH','GRAMASI','PCS TOTAL','DIPACK','TOTAL GRAM','PIC','FOTO','SHIELDTAG','STATUS','AKSI'].map(h=>(
+                  <th key={h}className="px-4 py-3 text-left text-[10px] font-bold text-gray-400 tracking-widest uppercase whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -344,14 +420,12 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
                   <p className="text-sm font-medium text-gray-400">Belum ada record packing</p>
                 </td></tr>
               ):filtered.map((p,idx)=>{
-                const selisih=Number(p.selisih_gram??0)
-                const selisihAbs=Math.abs(selisih)
-                const fotoCount=Array.isArray(p.fotos)?p.fotos.length:0
+                const fotos=Array.isArray(p.fotos)?p.fotos:[]
                 const stCount=p.shieldtag_count??0
                 const isPrinted=p.status_surat==='sudah_cetak'
                 const pcsGood=p.produksi_item?.pcs_good??p.produksi_item?.pcs??'—'
                 return(
-                  <tr key={p.id} className={cn('border-t transition-colors hover:bg-violet-50/20',idx===0?'border-transparent':'')}
+                  <tr key={p.id}className={cn('border-t transition-colors hover:bg-violet-50/20',idx===0?'border-transparent':'')}
                     style={{borderColor:'rgba(243,244,246,0.7)'}}>
                     <td className="px-4 py-3 font-mono text-xs font-bold text-violet-600 whitespace-nowrap">{p.kode}</td>
                     <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">{formatDate(p.tanggal)}</td>
@@ -359,33 +433,33 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
                     <td className="px-4 py-3"><span className="text-xs font-bold px-2 py-0.5 rounded-full text-amber-700"style={{background:'rgba(245,158,11,0.1)'}}>{p.gramasi} gr</span></td>
                     <td className="px-4 py-3 text-sm font-semibold text-gray-600">{pcsGood}</td>
                     <td className="px-4 py-3 text-sm font-bold text-gray-800">{p.pcs_dipack} pcs</td>
-                    <td className="px-4 py-3 text-sm font-semibold text-gray-700">{Number(p.total_gram_aktual).toFixed(3)} gr</td>
+                    <td className="px-4 py-3 text-sm font-semibold text-gray-700 whitespace-nowrap">{Number(p.total_gram_aktual).toFixed(3)} gr</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{p.pic_packing||'—'}</td>
                     <td className="px-4 py-3">
-                      <span className={cn('text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap',
-                        selisihAbs<0.001?'text-emerald-700':selisihAbs<=0.05?'text-amber-700':'text-red-700')}
-                        style={{background:selisihAbs<0.001?'rgba(34,197,94,0.1)':selisihAbs<=0.05?'rgba(245,158,11,0.1)':'rgba(239,68,68,0.1)'}}>
-                        {selisihAbs<0.001?'Pas':(selisih>0?'+':'')+selisih.toFixed(3)+' gr'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm font-semibold text-gray-700 whitespace-nowrap">{p.pic_packing||'—'}</td>
-                    <td className="px-4 py-3">
-                      {fotoCount>0
-                        ?<span className="text-xs font-semibold px-2 py-0.5 rounded-full text-blue-600"style={{background:'rgba(59,130,246,0.1)'}}><Camera size={10} className="inline mr-1"/>{fotoCount}</span>
-                        :<span className="text-xs text-gray-300">—</span>}
+                      {fotos.length>0?(
+                        <div className="flex gap-1">
+                          {fotos.slice(0,3).map((u:string,i:number)=>(
+                            <img key={i} src={u} onClick={()=>setLightbox(u)} className="w-8 h-8 rounded-lg object-cover cursor-pointer border border-gray-200 hover:scale-110 transition-transform"/>
+                          ))}
+                          {fotos.length>3&&<span className="text-xs text-gray-400 self-center">+{fotos.length-3}</span>}
+                        </div>
+                      ):<span className="text-xs text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={cn('text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap',stCount>0?'text-violet-700':'text-gray-400')}
-                        style={{background:stCount>0?'rgba(139,92,246,0.1)':'rgba(107,114,128,0.08)'}}>
+                      <span className={cn('text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap',stCount>0?'text-emerald-700':'text-gray-400')}
+                        style={{background:stCount>0?'rgba(34,197,94,0.1)':'rgba(107,114,128,0.08)'}}>
                         🏷 {stCount}/{p.pcs_dipack}
                       </span>
                     </td>
                     <td className="px-4 py-3">
+                      <span className={cn('text-[10px] font-bold px-2.5 py-1 rounded-full',isPrinted?'text-emerald-700':'text-gray-500')}
+                        style={{background:isPrinted?'rgba(34,197,94,0.1)':'rgba(107,114,128,0.1)'}}>
+                        {isPrinted?'✓ Cetak':'Belum Cetak'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">
-                        <button onClick={()=>handlePrint(p)}
-                          className={cn('w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110',isPrinted?'bg-emerald-50 text-emerald-500':'bg-violet-50 text-violet-500')}
-                          title="Print">
-                          <Printer size={13}/>
-                        </button>
+                        <button onClick={()=>handlePrint(p)} className={cn('w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110',isPrinted?'bg-emerald-50 text-emerald-500':'bg-violet-50 text-violet-500')} title="Print"><Printer size={13}/></button>
                         {canManage&&<button onClick={()=>{setActive(p);setErr('');setModal('edit')}}className="w-8 h-8 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center hover:scale-110 transition-all"title="Edit"><Edit2 size={13}/></button>}
                         {canDelete&&<button onClick={()=>{setActive(p);setModal('delete')}}className="w-8 h-8 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:scale-110 transition-all"title="Hapus"><Trash2 size={13}/></button>}
                       </div>
@@ -398,7 +472,6 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
         </div>
       </div>
 
-      {/* Modals */}
       {modal==='create'&&<CreateModal items={siapPackingItems} onClose={()=>setModal(null)} onSubmit={handleCreate} isPending={isPending} error={err}/>}
       {modal==='edit'&&active&&<EditModal p={active} onClose={()=>setModal(null)} onSubmit={handleEdit} isPending={isPending} error={err}/>}
       {modal==='delete'&&active&&(
@@ -406,7 +479,7 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
           <div className="w-full max-w-sm rounded-3xl p-6 text-center"style={{background:'rgba(255,255,255,0.92)',backdropFilter:'blur(24px)',boxShadow:'0 32px 64px rgba(239,68,68,0.15)'}}>
             <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><Trash2 size={24}className="text-red-500"/></div>
             <h2 className="text-lg font-bold text-gray-900">Hapus Packing?</h2>
-            <p className="text-sm text-gray-500 mt-2 mb-6"><span className="font-semibold">{active.kode}</span> akan dihapus. Status produksi kembali ke Siap Packing.</p>
+            <p className="text-sm text-gray-500 mt-2 mb-6"><span className="font-semibold">{active.kode}</span> dihapus. Status produksi kembali ke Siap Packing.</p>
             <div className="flex gap-3">
               <button onClick={()=>setModal(null)}className="flex-1 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
               <button onClick={handleDelete}disabled={isPending}className="flex-1 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2">
