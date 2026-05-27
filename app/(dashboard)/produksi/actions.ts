@@ -187,23 +187,45 @@ export async function inputReject(produksiId: number, produksiKode: string, form
 
   if (!pcsReject || pcsReject <= 0) return { error: 'PCS reject wajib diisi' }
   if (!beratReject || beratReject <= 0) return { error: 'Berat reject wajib diisi' }
-  if (pcsReject > (produksi.pcs_good ?? produksi.pcs)) {
-    return { error: `PCS reject melebihi PCS good (${produksi.pcs_good ?? produksi.pcs})` }
+
+  const pcsGoodNow = produksi.pcs_good ?? produksi.pcs ?? 0
+  if (pcsReject > pcsGoodNow) {
+    return { error: `PCS reject (${pcsReject}) melebihi PCS good (${pcsGoodNow})` }
   }
 
+  const newPcsGood = pcsGoodNow - pcsReject
+  const newTotalGram = Math.max(0, (produksi.total_gram ?? 0) - beratReject)
+
+  // Create reject event
+  await supabase.from('produksi_event').insert({
+    produksi_item_id: produksiId,
+    tanggal: formData.get('tanggal') as string || new Date().toISOString().split('T')[0],
+    status: 'Reject',
+    total_gram: newTotalGram,
+    berat_sebelumnya: produksi.total_gram ?? 0,
+    sisa_serbuk: 0,
+    losses: beratReject,
+    catatan: formData.get('catatan') as string || null,
+    user_name: profile?.name || null,
+    fotos: [],
+  })
+
+  // Update produksi_item: kurangi pcs dan berat
   await supabase.from('produksi_item').update({
-    pcs_good: (produksi.pcs_good ?? produksi.pcs) - pcsReject,
-    pcs: (produksi.pcs_good ?? produksi.pcs) - pcsReject,
+    pcs_good: newPcsGood,
+    pcs: newPcsGood,
     pcs_reject: (produksi.pcs_reject ?? 0) + pcsReject,
     berat_reject: (produksi.berat_reject ?? 0) + beratReject,
+    total_gram: newTotalGram,
     status_reject: 'belum_dilebur',
+    current_status: produksi.current_status, // tetap status saat ini
   }).eq('id', produksiId)
 
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'INPUT_REJECT', module: 'PRODUKSI',
     record_key: produksiKode, record_id: String(produksiId),
-    after_data: { pcs_reject: pcsReject, berat_reject: beratReject },
+    after_data: { pcs_reject: pcsReject, berat_reject: beratReject, pcs_good_remaining: newPcsGood },
   })
 
   revalidatePath('/produksi')
