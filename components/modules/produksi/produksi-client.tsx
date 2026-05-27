@@ -174,14 +174,11 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError('')
-    setUploading(false)
     setFotosUploading(true)
     const fotosB64 = formFotos.length > 0 ? await filesToBase64(formFotos) : []
     setFotosUploading(false)
     const fd = new FormData()
     Object.entries(form).forEach(([k, v]) => fd.set(k, v))
-    fd.set('fotos_b64', JSON.stringify(fotosB64))
-    const fotosB64 = formFotos.length > 0 ? await filesToBase64(formFotos) : []
     fd.set('fotos_b64', JSON.stringify(fotosB64))
     startTransition(async () => {
       const r = await createProduksi(fd)
