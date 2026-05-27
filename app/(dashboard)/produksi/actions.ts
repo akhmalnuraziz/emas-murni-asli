@@ -341,3 +341,43 @@ export async function voidPacking(packingId: number, packingKode: string) {
   revalidatePath('/produksi')
   return { success: true }
 }
+
+export async function editProduksi(produksiId: number, produksiKode: string, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+
+  const gramasi        = formData.get('gramasi') as string
+  const pcs            = parseInt(formData.get('pcs') as string)
+  const beratAwal      = parseFloat(formData.get('berat_awal') as string)
+  const operator       = formData.get('operator') as string
+  const catatan        = formData.get('catatan') as string
+  const tanggal        = formData.get('tanggal_produksi') as string
+  const memo           = formData.get('memo') as string
+
+  if (!gramasi) return { error: 'Gramasi wajib diisi' }
+  if (!pcs || pcs <= 0) return { error: 'PCS wajib diisi' }
+  if (!beratAwal || beratAwal <= 0) return { error: 'Total berat wajib diisi' }
+  if (!tanggal) return { error: 'Tanggal wajib diisi' }
+
+  const { data: before } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
+
+  const { error } = await supabase.from('produksi_item').update({
+    gramasi, pcs, pcs_awal: pcs, berat_awal: beratAwal, total_gram: beratAwal,
+    operator: operator || null, catatan: catatan || null,
+    tanggal_produksi: tanggal, tanggal, memo: memo || null,
+  }).eq('id', produksiId)
+
+  if (error) return { error: error.message }
+
+  await supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'EDIT', module: 'PRODUKSI',
+    record_key: produksiKode, record_id: String(produksiId),
+    before_data: before, after_data: { gramasi, pcs, berat_awal: beratAwal, operator, tanggal },
+  })
+
+  revalidatePath('/produksi')
+  return { success: true }
+}
