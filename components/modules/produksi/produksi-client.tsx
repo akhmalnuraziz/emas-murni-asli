@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useEffect, useTransition, useEffect } from 'react'
 import {
   Plus, Search, ChevronDown, ChevronUp, Edit2, Trash2,
   Check, AlertTriangle, X, Package, Flame, Clock,
@@ -12,6 +12,7 @@ import {
   leburReject, deleteProduksi, createPacking, voidPacking
 } from '@/app/(dashboard)/produksi/actions'
 import type { UserRole } from '@/lib/types/database'
+
 
 // ─── Base64 compress ──────────────────────────────────────────────────────────
 async function filesToBase64(files: File[]): Promise<string[]> {
@@ -67,9 +68,6 @@ function FotoPicker({ files, onAdd, onRemove, label = 'Tambah foto', small = fal
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
           onClick={() => setLightbox(null)}>
           <img src={lightbox} alt="" className="max-w-[95vw] max-h-[90vh] object-contain rounded-xl"/>
-          <button className="absolute top-4 right-4 w-9 h-9 bg-white/20 text-white rounded-full flex items-center justify-center">
-            <X size={18}/>
-          </button>
         </div>
       )}
       {previews.length > 0 && (
