@@ -10,6 +10,28 @@ async function generatePackingCode(supabase: any): Promise<string> {
   return `${PCKG_PREFIX}/${String((count ?? 0) + 1).padStart(4, '0')}`
 }
 
+
+async function uploadBase64Fotos(supabase: any, b64Array: string[], prefix: string): Promise<string[]> {
+  const urls: string[] = []
+  const safe = prefix.replace(/[^a-zA-Z0-9_-]/g, '_')
+  for (let i = 0; i < b64Array.length; i++) {
+    const b64 = b64Array[i]
+    if (!b64) continue
+    try {
+      const base64Data = b64.replace(/^data:image\/[^;]+;base64,/, '')
+      const buffer = Buffer.from(base64Data, 'base64')
+      const path = `packing/${safe}/${Date.now()}_${i}.jpg`
+      const { error } = await supabase.storage
+        .from('emas-fotos').upload(path, buffer, { contentType: 'image/jpeg', upsert: true })
+      if (!error) {
+        const { data } = supabase.storage.from('emas-fotos').getPublicUrl(path)
+        urls.push(data.publicUrl)
+      }
+    } catch {}
+  }
+  return urls
+}
+
 export async function createPacking(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -48,7 +70,10 @@ export async function createPacking(formData: FormData) {
   const totalGramTarget = gramasi * pcsDispack
   const selisih = totalGramAktual - totalGramTarget
 
+  const fotosB64Raw = formData.get('fotos_b64') as string
+  const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
   const kode = await generatePackingCode(supabase)
+  const fotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, kode) : []
 
   const { data: packing, error } = await supabase.from('packing').insert({
     kode,
@@ -66,6 +91,7 @@ export async function createPacking(formData: FormData) {
     catatan: catatan || null,
     status_surat: 'belum_cetak',
     shieldtag_count: 0,
+    fotos: fotoUrls,
     created_by: user.id,
   }).select().single()
 
@@ -99,6 +125,12 @@ export async function editPacking(packingId: number, packingKode: string, formDa
   const { data: existing } = await supabase.from('packing').select('*, produksi_item(*)').eq('id', packingId).single()
   if (!existing) return { error: 'Packing tidak ditemukan' }
 
+  const fotosB64RawEdit = formData.get('fotos_b64') as string
+  const fotosB64Edit = fotosB64RawEdit ? JSON.parse(fotosB64RawEdit) : []
+  const existingFotosEdit: string[] = formData.get('existing_fotos') ? JSON.parse(formData.get('existing_fotos') as string) : (existing.fotos ?? [])
+  const newFotoUrlsEdit = fotosB64Edit.length > 0 ? await uploadBase64Fotos(supabase, fotosB64Edit, packingKode) : []
+  const allFotosEdit = [...existingFotosEdit, ...newFotoUrlsEdit]
+
   const pcsDispack = parseInt(formData.get('pcs_dipack') as string)
   const totalGramAktual = parseFloat(formData.get('total_gram_aktual') as string)
   const tanggal = formData.get('tanggal') as string
@@ -115,6 +147,7 @@ export async function editPacking(packingId: number, packingKode: string, formDa
     selisih_gram: selisih, tanggal,
     pic: pic || null, pic_packing: pic || null,
     catatan: catatan || null,
+    fotos: allFotosEdit,
   }).eq('id', packingId)
 
   // Re-check status produksi
