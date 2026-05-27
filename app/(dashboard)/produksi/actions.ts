@@ -1,8 +1,32 @@
+SHA: 578ed3d1ba3bbdbc42c081f17f1708cd35509895
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
+
+async function uploadBase64Fotos(
+  supabase: any, b64Array: string[], prefix: string
+): Promise<string[]> {
+  const urls: string[] = []
+  const safe = prefix.replace(/[^a-zA-Z0-9_-]/g, '_')
+  for (let i = 0; i < b64Array.length; i++) {
+    const b64 = b64Array[i]
+    if (!b64) continue
+    try {
+      const base64Data = b64.replace(/^data:image\/[^;]+;base64,/, '')
+      const buffer = Buffer.from(base64Data, 'base64')
+      const path = `produksi/${safe}/${Date.now()}_${i}.jpg`
+      const { error } = await supabase.storage
+        .from('emas-fotos').upload(path, buffer, { contentType: 'image/jpeg', upsert: true })
+      if (!error) {
+        const { data } = supabase.storage.from('emas-fotos').getPublicUrl(path)
+        urls.push(data.publicUrl)
+      }
+    } catch {}
+  }
+  return urls
+}
 const PROD_PREFIX = 'PROD.GDCJ'
 const PCKG_PREFIX = 'PCKG.GDCJ'
 
@@ -73,12 +97,15 @@ export async function createProduksi(formData: FormData) {
 
   if (error) return { error: error.message }
 
+  const fotosB64 = formData.get('fotos_b64') ? JSON.parse(formData.get('fotos_b64') as string) : []
+  const fotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, kode) : []
+
   await supabase.from('produksi_event').insert({
     produksi_item_id: produksi.id, tanggal: tanggalProduksi,
     status: statusAwal, total_gram: beratAwal, berat_sebelumnya: beratAwal,
     sisa_serbuk: sisaSerbuk, losses: 0,
     catatan: formData.get('catatan') as string || null,
-    user_name: profile?.name || null, fotos_extra: [],
+    user_name: profile?.name || null, fotos: fotoUrls,
   })
 
   await updateBatchSisaSeharusnya(supabase, batchKode)
@@ -113,12 +140,18 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
   const beratSebelumnya = produksi.total_gram ?? 0
   const losses = Math.max(0, beratSebelumnya - totalGramBaru - sisaSerbuk)
 
+  const fotosB64 = formData.get('fotos_b64') ? JSON.parse(formData.get('fotos_b64') as string) : []
+  const fotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, `${produksiKode}-${statusBaru}`) : []
+  const fotosSerbukB64 = formData.get('fotos_serbuk_b64') ? JSON.parse(formData.get('fotos_serbuk_b64') as string) : []
+  const fotoSerbukUrls = fotosSerbukB64.length > 0 ? await uploadBase64Fotos(supabase, fotosSerbukB64, `${produksiKode}-serbuk`) : []
+
   await supabase.from('produksi_event').insert({
     produksi_item_id: produksiId, tanggal, status: statusBaru,
     total_gram: totalGramBaru, berat_sebelumnya: beratSebelumnya,
     sisa_serbuk: sisaSerbuk, losses,
     catatan: formData.get('catatan') as string || null,
-    user_name: profile?.name || null, fotos_extra: [],
+    user_name: profile?.name || null, fotos: fotoUrls,
+    fotos_sisa_serbuk: fotoSerbukUrls,
   })
 
   await supabase.from('produksi_item').update({
@@ -340,3 +373,4 @@ export async function voidPacking(packingId: number, packingKode: string) {
   revalidatePath('/produksi')
   return { success: true }
 }
+
