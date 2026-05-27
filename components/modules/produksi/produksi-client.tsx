@@ -167,7 +167,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     setToast({ msg, type }); setTimeout(() => setToast(null), 4000)
   }
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError('')
     setUploading(false)
@@ -186,7 +186,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     })
   }
 
-  const handleUpdateStatus = (fd: FormData) => {
+  const handleUpdateStatus = async (fd: FormData) => {
     if (!activeModal) return
     setFormError('')
     startTransition(async () => {
