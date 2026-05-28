@@ -215,3 +215,44 @@ export async function voidShieldtag(shieldtagId: number, reason: string) {
   revalidatePath('/packing-log')
   return { success: true }
 }
+
+export async function bulkVoidShieldtag(ids: number[], reason: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  if (!['owner','admin_pusat','spv'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat/SPV' }
+
+  const tanggal = new Date().toISOString().split('T')[0]
+  const histEntry = { tanggal, action: 'VOID (Bulk)', alasan: reason, oleh: profile?.name || 'System' }
+
+  const { data: existing } = await supabase.from('shieldtag').select('id, packing_id, shieldtag_history').in('id', ids)
+  if (!existing || existing.length === 0) return { error: 'Tidak ada Shieldtag ditemukan' }
+
+  for (const st of existing) {
+    const hist = Array.isArray(st.shieldtag_history) ? st.shieldtag_history : []
+    hist.push(histEntry)
+    await supabase.from('shieldtag').update({
+      status: 'VOID', voided_at: new Date().toISOString(),
+      void_reason: reason, shieldtag_history: hist,
+    }).eq('id', st.id)
+  }
+
+  const packingIds = [...new Set((existing ?? []).map((s: any) => s.packing_id).filter(Boolean))]
+  for (const pid of packingIds) {
+    const { count } = await supabase.from('shieldtag')
+      .select('*', { count: 'exact', head: true })
+      .eq('packing_id', pid).is('voided_at', null)
+    await supabase.from('packing').update({ shieldtag_count: count ?? 0 }).eq('id', pid)
+  }
+
+  await supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'BULK_VOID_SHIELDTAG', module: 'SHIELDTAG',
+    after_data: { count: ids.length, reason },
+  })
+
+  revalidatePath('/shieldtag')
+  revalidatePath('/packing-log')
+  return { success: true, count: ids.length }
+}
