@@ -23,7 +23,7 @@ function incrementCode(code: string): string {
   return code // overflow guard
 }
 
-export function generateRange(start: string, end: string): string[] {
+function generateRange(start: string, end: string): string[] {
   const s = start.toUpperCase().trim()
   const e = end.toUpperCase().trim()
   if (!s || !e) return []
@@ -40,7 +40,7 @@ export function generateRange(start: string, end: string): string[] {
   return codes
 }
 
-export function previewRange(start: string, end: string): { codes: string[]; count: number; error?: string } {
+function previewRange(start: string, end: string): { codes: string[]; count: number; error?: string } {
   try {
     if (!start || !end) return { codes: [], count: 0 }
     const codes = generateRange(start, end)
