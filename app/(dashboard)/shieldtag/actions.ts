@@ -3,55 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
-// ─── Increment algorithm ──────────────────────────────────────────────────────
-const CHARSET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
-function nextCode(code: string): string {
-  const chars = code.toUpperCase().split('')
-  let i = chars.length - 1
-  while (i >= 0) {
-    const idx = CHARSET.indexOf(chars[i])
-    if (idx === -1) return code // invalid char
-    if (idx < CHARSET.length - 1) {
-      chars[i] = CHARSET[idx + 1]
-      return chars.join('')
-    }
-    chars[i] = CHARSET[0]
-    i--
-  }
-  return CHARSET[1] + CHARSET[0].repeat(chars.length)
-}
-
-function compareCode(a: string, b: string): number {
-  const au = a.toUpperCase(), bu = b.toUpperCase()
-  const len = Math.max(au.length, bu.length)
-  for (let i = 0; i < len; i++) {
-    const ai = CHARSET.indexOf(au[i] ?? '0')
-    const bi = CHARSET.indexOf(bu[i] ?? '0')
-    if (ai !== bi) return ai - bi
-  }
-  return 0
-}
-
-export function generateRange(start: string, end: string): string[] | { error: string } {
-  const s = start.trim().toUpperCase()
-  const e = end.trim().toUpperCase()
-  if (!s || !e) return { error: 'Kode awal dan akhir wajib diisi' }
-  if (s.length !== e.length) return { error: `Panjang kode harus sama (${s.length} vs ${e.length} karakter)` }
-  if (compareCode(s, e) > 0) return { error: 'Kode awal harus lebih kecil dari kode akhir' }
-
-  const result: string[] = []
-  let cur = s
-  let safety = 0
-  while (safety < 2000) {
-    result.push(cur)
-    if (cur === e) break
-    cur = nextCode(cur)
-    safety++
-  }
-  if (safety >= 2000) return { error: 'Range terlalu besar (max 2000 kode)' }
-  return result
-}
+import { generateRange } from '@/lib/shieldtag-utils'
 
 export async function registerShieldtags(formData: FormData) {
   const supabase = await createClient()
