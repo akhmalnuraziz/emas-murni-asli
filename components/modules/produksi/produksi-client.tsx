@@ -111,51 +111,52 @@ function Sbadge({s}:{s:string}){
 
 // ─── Timeline dots ────────────────────────────────────────────────────────────
 function TLine({events}:{events:any[]}){
-  const [pop,setPop]=useState<{i:number;ev:any}|null>(null)
-  const ref=useRef<HTMLDivElement>(null)
+  const [pop,setPop]=useState<{i:number;ev:any;x:number;y:number}|null>(null)
   const sorted=[...events].sort((a,b)=>new Date(a.tanggal).getTime()-new Date(b.tanggal).getTime())
   const dots=sorted.slice(-5)
   useEffect(()=>{
-    const h=(e:MouseEvent)=>{if(ref.current&&!ref.current.contains(e.target as Node))setPop(null)}
-    document.addEventListener('mousedown',h);return()=>document.removeEventListener('mousedown',h)
+    const h=()=>setPop(null)
+    window.addEventListener('scroll',h,true);return()=>window.removeEventListener('scroll',h,true)
   },[])
   return(
-    <div ref={ref}className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5 relative">
       {dots.map((ev,i)=>{
         const c=STATUS_CFG[ev.status]??{dot:'#94A3B8'}
         const open=pop?.i===i
         return(
-          <div key={i}className="relative">
-            <button type="button"
-              onMouseEnter={()=>setPop({i,ev})} onMouseLeave={()=>setPop(null)}
-              onClick={()=>setPop(open?null:{i,ev})}
-              className="w-3 h-3 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-150"
-              style={{background:c.dot,boxShadow:`0 0 0 2px ${c.dot}35`}}/>
-            {open&&(
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-44"
-                onMouseEnter={()=>setPop({i,ev})} onMouseLeave={()=>setPop(null)}>
-                <div className="bg-white/95 backdrop-blur-xl border border-white/60 rounded-2xl shadow-xl p-3 text-left"
-                  style={{boxShadow:`0 8px 32px ${c.dot}25`}}>
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <div className="w-2 h-2 rounded-full"style={{background:c.dot}}/>
-                    <span className="text-xs font-bold text-gray-800">{ev.status}</span>
-                  </div>
-                  <div className="space-y-0.5 text-[11px] text-gray-500">
-                    <p>{formatDate(ev.tanggal)}</p>
-                    <p className="font-medium text-gray-700">{ev.total_gram} gr</p>
-                    {ev.losses>0&&<p className="text-orange-500">Losses: {ev.losses} gr</p>}
-                    {ev.sisa_serbuk>0&&<p className="text-violet-500">Serbuk: {ev.sisa_serbuk} gr</p>}
-                  </div>
-                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white/95 border-r border-b border-white/60 rotate-45"/>
-                </div>
-              </div>
-            )}
-          </div>
+          <button key={i} type="button"
+            onMouseEnter={e=>{const r=(e.currentTarget as HTMLElement).getBoundingClientRect();setPop({i,ev,x:r.left+r.width/2,y:r.top})}}
+            onMouseLeave={()=>setPop(null)}
+            onClick={e=>{const r=(e.currentTarget as HTMLElement).getBoundingClientRect();setPop(open?null:{i,ev,x:r.left+r.width/2,y:r.top})}}
+            className="w-3 h-3 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-150 flex-shrink-0"
+            style={{background:c.dot,boxShadow:`0 0 0 2px ${c.dot}35`}}/>
         )
       })}
       {Array.from({length:Math.max(0,5-dots.length)}).map((_,i)=>(
-        <div key={`e${i}`}className="w-3 h-3 rounded-full bg-gray-200 border-2 border-white shadow-sm"/>
+        <div key={`e${i}`}className="w-3 h-3 rounded-full bg-gray-200 border-2 border-white shadow-sm flex-shrink-0"/>
       ))}
+      {pop&&(()=>{
+        const c=STATUS_CFG[pop.ev.status]??{dot:'#94A3B8',bg:'rgba(148,163,184,0.1)',text:'#64748B'}
+        return(
+          <div className="fixed z-[500] w-48 pointer-events-none"
+            style={{top:pop.y-8,left:pop.x,transform:'translate(-50%,-100%)'}}>
+            <div className="bg-white border border-gray-200/80 rounded-2xl shadow-2xl p-3 text-left"
+              style={{boxShadow:`0 8px 32px ${c.dot}30`}}>
+              <div className="flex items-center gap-1.5 mb-2">
+                <div className="w-2 h-2 rounded-full flex-shrink-0"style={{background:c.dot}}/>
+                <span className="text-xs font-bold text-gray-800">{pop.ev.status}</span>
+              </div>
+              <div className="space-y-1 text-[11px] text-gray-500">
+                <p>{formatDate(pop.ev.tanggal)}</p>
+                <p className="font-semibold text-gray-700">{pop.ev.total_gram} gr</p>
+                {Number(pop.ev.sisa_serbuk)>0&&<p className="text-violet-600 font-medium">Serbuk: {pop.ev.sisa_serbuk} gr</p>}
+                {Number(pop.ev.losses)>0&&<p className="text-orange-500 font-medium">Losses: {pop.ev.losses} gr</p>}
+              </div>
+              <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r border-b border-gray-200/80 rotate-45"/>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
@@ -182,8 +183,8 @@ function EventHistory({events}:{events:any[]}){
                 <Sbadge s={ev.status}/>
                 <span className="text-xs text-gray-400">{formatDate(ev.tanggal)}</span>
                 <span className="text-xs font-semibold text-gray-700">{ev.total_gram} gr</span>
-                {ev.losses>0&&<span className="text-xs text-orange-500">losses {ev.losses} gr</span>}
-                {ev.sisa_serbuk>0&&<span className="text-xs text-violet-500">serbuk {ev.sisa_serbuk} gr</span>}
+                {Number(ev.sisa_serbuk)>0&&<span className="text-xs text-violet-500">serbuk {ev.sisa_serbuk} gr</span>}
+                {Number(ev.losses)>0&&<span className="text-xs text-orange-500">losses {ev.losses} gr</span>}
               </div>
               {ev.catatan&&<p className="text-xs text-gray-400 mt-0.5 italic truncate">{ev.catatan}</p>}
               {(fotos.length>0||serbuk.length>0)&&(
@@ -466,7 +467,7 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
   function handleDelete(){if(!active)return;startTransition(async()=>{const r=await deleteProduksi(active.id,active.kode);if(r?.error){showToast(r.error,false);return}showToast('🗑️ Batch dihapus');setModal(null)})}
 
   // Grid columns: BATCH | GRAMASI | PCS | TOTAL BERAT | SERBUK | LOSES | PACKING | SHIELDTAG | STATUS | TIMELINE | TGL | AKSI
-  const gridCols = '2fr 65px 55px 80px 70px 70px 105px 90px 110px 90px 80px 110px'
+  const gridCols = 'minmax(120px,2fr) 55px 45px 72px 62px 62px 100px 78px 78px 92px 88px 95px'
 
   return(
     <div className="min-h-screen pb-24"style={{background:'linear-gradient(160deg,#F5F5F7 0%,#EFEFF4 60%,#F5F5F7 100%)'}}>
@@ -515,7 +516,7 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
         {/* Table */}
         <div className="rounded-3xl overflow-auto"style={{background:'rgba(255,255,255,0.72)',backdropFilter:'blur(24px)',border:'1px solid rgba(255,255,255,0.6)',boxShadow:'0 8px 40px rgba(139,92,246,0.08)'}}>
           {/* Header */}
-          <div className="grid px-5 py-3.5 border-b min-w-[1100px]"
+          <div className="grid px-5 py-3.5 border-b min-w-[860px]"
             style={{gridTemplateColumns:gridCols,gap:'8px',borderColor:'rgba(243,244,246,0.9)',background:'rgba(249,250,251,0.6)'}}>
             {['BATCH','GRAMASI','PCS','TOTAL BERAT','SERBUK','LOSES','STATUS','TGL UPDATE','TIMELINE','PACKING','SHIELDTAG','AKSI'].map(h=>(
               <span key={h}className="text-[10px] font-bold text-gray-400 tracking-widest uppercase whitespace-nowrap">{h}</span>
@@ -542,12 +543,12 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
 
             return(
               <div key={item.id}>
-                <div className={cn('grid px-5 py-4 items-center transition-colors min-w-[1100px]',idx>0?'border-t':'',isExp?'':'hover:bg-gray-50/40')}
+                <div className={cn('grid px-5 py-4 items-start transition-colors min-w-[860px]',idx>0?'border-t':'',isExp?'':'hover:bg-gray-50/40')}
                   style={{gridTemplateColumns:gridCols,gap:'8px',borderColor:'rgba(243,244,246,0.7)',background:isExp?'rgba(139,92,246,0.03)':''}}>
                   {/* BATCH */}
                   <div className="min-w-0">
-                    <span className="text-sm font-bold text-gray-900 truncate block">{item.nama_item||item.kode}</span>
-                    <p className="text-[11px] text-gray-400 truncate">{item.kode} · {item.batch_kode}</p>
+                    <span className="text-sm font-bold text-gray-900 break-words leading-snug block">{item.nama_item||item.kode}</span>
+                    <p className="text-[11px] text-gray-400 break-words mt-0.5">{item.kode} · {item.batch_kode}</p>
                   </div>
                   {/* GRAMASI */}
                   <span className="text-sm font-semibold text-gray-700">{item.gramasi}gr</span>
@@ -575,17 +576,23 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
                   {/* TIMELINE */}
                   <div><TLine events={events}/></div>
                   {/* PACKING */}
-                  <div>
-                    <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap',totalPacked>0?totalPacked>=pcsGood?'text-violet-700':'text-blue-600':'text-gray-400')}
+                  <div className="flex flex-col gap-0.5">
+                    <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap self-start',totalPacked>0?totalPacked>=pcsGood?'text-violet-700':'text-blue-600':'text-gray-400')}
                       style={{background:totalPacked>0?totalPacked>=pcsGood?'rgba(139,92,246,0.1)':'rgba(59,130,246,0.1)':'rgba(107,114,128,0.08)'}}>
                       {totalPacked}/{pcsGood}
                     </span>
+                    <span className="text-[10px] text-gray-400 leading-tight px-0.5">
+                      {totalPacked===0?'Belum Dipacking':totalPacked>=pcsGood?'Sudah Dipacking Semua':'Sudah Dipacking Sebagian'}
+                    </span>
                   </div>
                   {/* SHIELDTAG */}
-                  <div>
-                    <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap',totalST>0?'text-emerald-600':'text-gray-400')}
+                  <div className="flex flex-col gap-0.5">
+                    <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap self-start',totalST>0?'text-emerald-600':'text-gray-400')}
                       style={{background:totalST>0?'rgba(34,197,94,0.1)':'rgba(107,114,128,0.08)'}}>
                       🏷 {totalST}/{totalPacked}
+                    </span>
+                    <span className="text-[10px] text-gray-400 leading-tight px-0.5">
+                      {totalST===0?'Belum Diregistrasi':totalST>=totalPacked&&totalPacked>0?'Semua Sudah Diregistrasi':'Sebagian Sudah Diregistrasi'}
                     </span>
                   </div>
                   {/* AKSI */}
@@ -641,3 +648,4 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
     </div>
   )
 }
+
