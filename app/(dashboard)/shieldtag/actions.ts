@@ -3,7 +3,54 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
-import { generateRange } from '@/lib/shieldtag-utils'
+// ─── Charset & Range Algorithm ────────────────────────────────────────────────
+const CHARSET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+function incrementCode(code: string): string {
+  const chars = code.toUpperCase().split('')
+  let i = chars.length - 1
+  while (i >= 0) {
+    const idx = CHARSET.indexOf(chars[i])
+    if (idx === -1) { i--; continue }
+    if (idx < CHARSET.length - 1) {
+      chars[i] = CHARSET[idx + 1]
+      return chars.join('')
+    } else {
+      chars[i] = CHARSET[0]
+      i--
+    }
+  }
+  return code // overflow guard
+}
+
+export function generateRange(start: string, end: string): string[] {
+  const s = start.toUpperCase().trim()
+  const e = end.toUpperCase().trim()
+  if (!s || !e) return []
+  const codes: string[] = []
+  let current = s
+  codes.push(current)
+  let guard = 0
+  while (current !== e && guard < 5000) {
+    current = incrementCode(current)
+    codes.push(current)
+    guard++
+    if (current === e) break
+  }
+  return codes
+}
+
+export function previewRange(start: string, end: string): { codes: string[]; count: number; error?: string } {
+  try {
+    if (!start || !end) return { codes: [], count: 0 }
+    const codes = generateRange(start, end)
+    if (codes.length > 5000) return { codes: [], count: 0, error: 'Range terlalu besar (max 5000 per range)' }
+    if (codes.length === 0) return { codes: [], count: 0, error: 'Range tidak valid' }
+    return { codes, count: codes.length }
+  } catch {
+    return { codes: [], count: 0, error: 'Format kode tidak valid' }
+  }
+}
 
 export async function registerShieldtags(formData: FormData) {
   const supabase = await createClient()
@@ -12,109 +59,156 @@ export async function registerShieldtags(formData: FormData) {
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
 
   const packingId = parseInt(formData.get('packing_id') as string)
-  const kodesRaw = formData.get('kodes') as string
   const tanggal = formData.get('tanggal') as string
+  const rangesRaw = formData.get('ranges') as string // JSON: [{start, end}]
+  const codesManualRaw = formData.get('codes_manual') as string // JSON: string[]
 
   if (!packingId) return { error: 'Packing wajib dipilih' }
-  if (!kodesRaw) return { error: 'Kode shieldtag wajib diisi' }
-  if (!tanggal) return { error: 'Tanggal wajib diisi' }
+  if (!tanggal) return { error: 'Tanggal registrasi wajib diisi' }
 
-  const kodes: string[] = JSON.parse(kodesRaw)
-  if (!kodes.length) return { error: 'Tidak ada kode shieldtag yang valid' }
-
-  // Get packing data
   const { data: packing } = await supabase.from('packing')
-    .select('*, produksi_item(gramasi, batch_kode)')
+    .select('*, produksi_item(gramasi, batch_kode, hpp_per_gram:batch(hpp_gr))')
     .eq('id', packingId).single()
   if (!packing) return { error: 'Packing tidak ditemukan' }
 
-  // Check PCS limit
-  const { count: existingCount } = await supabase.from('shieldtag')
-    .select('*', { count: 'exact', head: true })
-    .eq('packing_id', packingId)
-    .is('voided_at', null)
-  const alreadyRegistered = existingCount ?? 0
-  const remaining = packing.pcs_dipack - alreadyRegistered
-  if (kodes.length > remaining) {
-    return { error: `Packing ini masih bisa menerima ${remaining} shieldtag (sudah ${alreadyRegistered}/${packing.pcs_dipack})` }
+  // Build final list of codes
+  let allCodes: string[] = []
+
+  if (codesManualRaw) {
+    allCodes = JSON.parse(codesManualRaw) as string[]
+  } else if (rangesRaw) {
+    const ranges = JSON.parse(rangesRaw) as { start: string; end: string }[]
+    for (const r of ranges) {
+      const generated = generateRange(r.start, r.end)
+      allCodes = [...allCodes, ...generated]
+    }
   }
 
-  // Check duplicate kodes in this batch
-  const { data: existingKodes } = await supabase.from('shieldtag')
-    .select('kode').in('kode', kodes).is('voided_at', null)
-  if (existingKodes && existingKodes.length > 0) {
-    const dupes = existingKodes.map((k: any) => k.kode).join(', ')
-    return { error: `Kode sudah terdaftar: ${dupes}` }
+  if (allCodes.length === 0) return { error: 'Tidak ada kode Shieldtag yang akan diregistrasi' }
+
+  // Check existing packing shieldtag count
+  const { count: existingCount } = await supabase
+    .from('shieldtag').select('*', { count: 'exact', head: true })
+    .eq('packing_id', packingId).is('voided_at', null)
+
+  const remaining = packing.pcs_dipack - (existingCount ?? 0)
+  if (allCodes.length > remaining) {
+    return { error: `Hanya bisa registrasi ${remaining} Shieldtag lagi untuk packing ini (${existingCount} sudah terdaftar dari ${packing.pcs_dipack} PCS)` }
+  }
+
+  // Check for duplicate codes globally
+  const { data: dupes } = await supabase
+    .from('shieldtag').select('kode').in('kode', allCodes).is('voided_at', null)
+  if (dupes && dupes.length > 0) {
+    return { error: `Kode sudah terdaftar: ${dupes.map((d: any) => d.kode).join(', ')}` }
   }
 
   // Get HPP from batch
-  const { data: batch } = await supabase.from('batch')
-    .select('hpp_gr').eq('kode', packing.batch_kode ?? packing.produksi_item?.batch_kode).single()
-  const hppGr = batch?.hpp_gr ?? 0
+  const { data: batchData } = await supabase
+    .from('batch').select('hpp_gr').eq('kode', packing.batch_kode).single()
+  const hppGr = batchData?.hpp_gr ?? 0
 
-  // Insert shieldtags
-  const insertData = kodes.map((kode: string) => ({
-    kode: kode.toUpperCase(),
+  // Insert all shieldtags
+  const insertData = allCodes.map(kode => ({
+    kode,
     packing_id: packingId,
-    batch_kode: packing.batch_kode ?? packing.produksi_item?.batch_kode,
-    gramasi: packing.gramasi ?? packing.produksi_item?.gramasi,
+    batch_kode: packing.batch_kode,
+    gramasi: packing.gramasi,
     hpp: hppGr,
     status: 'Aktif',
     lokasi: 'Gudang Pusat',
     tgl_regis: tanggal,
-    registered_by: profile?.name ?? null,
+    registered_by: profile?.name || null,
     shieldtag_history: JSON.stringify([{
-      tanggal, status: 'Aktif', lokasi: 'Gudang Pusat',
-      catatan: `Registrasi oleh ${profile?.name ?? 'sistem'}`, user: profile?.name
-    }])
+      tanggal,
+      action: 'Registrasi',
+      status: 'Aktif',
+      lokasi: 'Gudang Pusat',
+      oleh: profile?.name || 'System',
+    }]),
   }))
 
   const { error } = await supabase.from('shieldtag').insert(insertData)
   if (error) return { error: error.message }
 
-  // Update packing shieldtag_count
-  await supabase.from('packing').update({
-    shieldtag_count: alreadyRegistered + kodes.length
-  }).eq('id', packingId)
+  // Update packing.shieldtag_count
+  await supabase.from('packing')
+    .update({ shieldtag_count: (existingCount ?? 0) + allCodes.length })
+    .eq('id', packingId)
 
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'REGISTER_SHIELDTAG', module: 'SHIELDTAG',
-    record_key: `PACKING-${packingId}`,
-    after_data: { count: kodes.length, kodes: kodes.slice(0, 5) }
+    record_key: `PKG-${packingId}`,
+    after_data: { count: allCodes.length, kodes: allCodes.slice(0, 10) },
   })
 
   revalidatePath('/shieldtag')
   revalidatePath('/packing-log')
-  return { success: true, count: kodes.length }
+  return { success: true, count: allCodes.length }
 }
 
-export async function voidShieldtag(shieldtagId: number, kode: string, reason: string) {
+export async function editShieldtagKode(shieldtagId: number, newKode: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
+
+  const newKodeUp = newKode.toUpperCase().trim()
+  if (!newKodeUp) return { error: 'Kode tidak boleh kosong' }
+
+  // Check duplicate
+  const { data: existing } = await supabase
+    .from('shieldtag').select('kode').eq('kode', newKodeUp).is('voided_at', null).neq('id', shieldtagId).single()
+  if (existing) return { error: `Kode ${newKodeUp} sudah terdaftar` }
+
+  const { data: st } = await supabase.from('shieldtag').select('kode, shieldtag_history').eq('id', shieldtagId).single()
+  if (!st) return { error: 'Shieldtag tidak ditemukan' }
+
+  const history = Array.isArray(st.shieldtag_history) ? st.shieldtag_history : []
+  history.push({
+    tanggal: new Date().toISOString().split('T')[0],
+    action: `Edit kode: ${st.kode} → ${newKodeUp}`,
+    oleh: profile?.name || 'System',
+  })
+
+  await supabase.from('shieldtag').update({ kode: newKodeUp, shieldtag_history: history }).eq('id', shieldtagId)
+
+  revalidatePath('/shieldtag')
+  return { success: true }
+}
+
+export async function voidShieldtag(shieldtagId: number, reason: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  if (!['owner','admin_pusat','spv'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat/SPV' }
 
   const { data: st } = await supabase.from('shieldtag').select('*').eq('id', shieldtagId).single()
   if (!st) return { error: 'Shieldtag tidak ditemukan' }
 
   const history = Array.isArray(st.shieldtag_history) ? st.shieldtag_history : []
-  history.push({ tanggal: new Date().toISOString().split('T')[0], status: 'VOID', catatan: reason, user: profile?.name })
+  history.push({
+    tanggal: new Date().toISOString().split('T')[0],
+    action: 'VOID',
+    alasan: reason,
+    oleh: profile?.name || 'System',
+  })
 
   await supabase.from('shieldtag').update({
-    status: 'VOID', voided_at: new Date().toISOString(), void_reason: reason,
-    shieldtag_history: history
+    status: 'VOID',
+    voided_at: new Date().toISOString(),
+    void_reason: reason,
+    shieldtag_history: history,
   }).eq('id', shieldtagId)
 
-  // Reduce packing shieldtag_count
+  // Update packing shieldtag_count
   if (st.packing_id) {
-    const { data: packing } = await supabase.from('packing').select('shieldtag_count').eq('id', st.packing_id).single()
-    if (packing) {
-      await supabase.from('packing').update({
-        shieldtag_count: Math.max(0, (packing.shieldtag_count ?? 0) - 1)
-      }).eq('id', st.packing_id)
-    }
+    const { count } = await supabase.from('shieldtag')
+      .select('*', { count: 'exact', head: true })
+      .eq('packing_id', st.packing_id).is('voided_at', null)
+    await supabase.from('packing').update({ shieldtag_count: count ?? 0 }).eq('id', st.packing_id)
   }
 
   revalidatePath('/shieldtag')
