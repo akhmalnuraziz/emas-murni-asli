@@ -13,7 +13,6 @@ export default async function ShieldtagPage() {
     supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
     supabase.from('shieldtag')
       .select('*')
-      .is('voided_at', null)
       .order('created_at', { ascending: false }),
     // Packings that still have unregistered slots
     supabase.from('packing')
