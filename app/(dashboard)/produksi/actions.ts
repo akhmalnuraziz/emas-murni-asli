@@ -72,7 +72,7 @@ export async function createProduksi(formData: FormData) {
 
   const { data: batch } = await supabase.from('batch').select('*').eq('kode', batchKode).single()
   if (!batch) return { error: 'Batch tidak ditemukan' }
-  if (batch.voided_at && batch.void_reason === 'LOCKED_BY_USER') return { error: 'Batch terkunci' }
+  if (batch.status === 'terkunci') return { error: 'Batch terkunci — tidak bisa dipakai untuk produksi baru' }
 
   const sisaSeharusnya = batch.sisa_bahan_seharusnya ?? batch.timbangan_akhir ?? 0
   if (beratAwal > sisaSeharusnya + 0.01) {
@@ -201,7 +201,7 @@ export async function inputReject(produksiId: number, produksiKode: string, form
     total_gram: newTotalGram,
     berat_sebelumnya: produksi.total_gram ?? 0,
     sisa_serbuk: 0,
-    losses: beratReject,
+    losses: 0, // reject BUKAN losses permanen — emas akan dilebur kembali
     catatan: formData.get('catatan') as string || null,
     user_name: profile?.name || null,
     fotos: [],
@@ -235,28 +235,24 @@ export async function leburReject(produksiId: number, produksiKode: string, batc
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
   if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
 
-  const { data: produksi } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
-  if (!produksi || produksi.status_reject !== 'belum_dilebur') return { error: 'Tidak ada reject yang perlu dilebur' }
-
-  const { data: batch } = await supabase.from('batch').select('sisa_fisik').eq('kode', batchKode).single()
-  if (batch) {
-    await supabase.from('batch').update({
-      sisa_fisik: (batch.sisa_fisik ?? 0) + (produksi.berat_reject ?? 0)
-    }).eq('kode', batchKode)
-  }
-
-  await supabase.from('produksi_item').update({ status_reject: 'sudah_dilebur' }).eq('id', produksiId)
+  // Atomic RPC: prevents race condition + double-lebur in one transaction
+  const { data: rpcResult, error: rpcError } = await supabase.rpc('lebur_reject_atomic', {
+    p_produksi_id: produksiId,
+    p_batch_kode:  batchKode,
+  })
+  if (rpcError) return { error: rpcError.message }
+  if (rpcResult?.error) return { error: rpcResult.error }
 
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'LEBUR_REJECT', module: 'PRODUKSI',
     record_key: produksiKode, record_id: String(produksiId),
-    after_data: { berat_kembali: produksi.berat_reject, batch_kode: batchKode },
+    after_data: { berat_kembali: rpcResult?.berat_kembali, batch_kode: batchKode },
   })
 
   revalidatePath('/produksi')
   revalidatePath('/bahan-baku')
-  return { success: true }
+  return { success: true, berat_kembali: rpcResult?.berat_kembali }
 }
 
 export async function deleteProduksi(produksiId: number, produksiKode: string) {
@@ -384,13 +380,13 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
 
-  const gramasi        = formData.get('gramasi') as string
-  const pcs            = parseInt(formData.get('pcs') as string)
-  const beratAwal      = parseFloat(formData.get('berat_awal') as string)
-  const operator       = formData.get('operator') as string
-  const catatan        = formData.get('catatan') as string
-  const tanggal        = formData.get('tanggal_produksi') as string
-  const memo           = formData.get('memo') as string
+  const gramasi   = formData.get('gramasi') as string
+  const pcs       = parseInt(formData.get('pcs') as string)
+  const beratAwal = parseFloat(formData.get('berat_awal') as string)
+  const operator  = formData.get('operator') as string
+  const catatan   = formData.get('catatan') as string
+  const tanggal   = formData.get('tanggal_produksi') as string
+  const memo      = formData.get('memo') as string
 
   if (!gramasi) return { error: 'Gramasi wajib diisi' }
   if (!pcs || pcs <= 0) return { error: 'PCS wajib diisi' }
@@ -398,9 +394,32 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   if (!tanggal) return { error: 'Tanggal wajib diisi' }
 
   const { data: before } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
+  if (!before) return { error: 'Item produksi tidak ditemukan' }
+
+  // Block edit jika ada packing aktif
+  const { count: packingCount } = await supabase.from('packing')
+    .select('*', { count: 'exact', head: true })
+    .eq('produksi_item_id', produksiId).is('voided_at', null)
+  if ((packingCount ?? 0) > 0)
+    return { error: `Tidak bisa edit: ada ${packingCount} packing aktif. Void packing terlebih dahulu.` }
+
+  // Recalculate pcs_good: new pcs minus existing rejects
+  const existingReject = before.pcs_reject ?? 0
+  const newPcsGood = pcs - existingReject
+  if (newPcsGood < 0)
+    return { error: `PCS baru (${pcs}) tidak boleh kurang dari jumlah reject yang sudah ada (${existingReject})` }
+
+  // total_gram: reset ke beratAwal HANYA jika belum ada event proses
+  // (lebih dari 1 event berarti sudah ada proses setelah CREATE)
+  const { count: eventCount } = await supabase.from('produksi_event')
+    .select('*', { count: 'exact', head: true })
+    .eq('produksi_item_id', produksiId)
+  const hasProcessEvents = (eventCount ?? 0) > 1
+  const newTotalGram = hasProcessEvents ? before.total_gram : beratAwal
 
   const { error } = await supabase.from('produksi_item').update({
-    gramasi, pcs, pcs_awal: pcs, berat_awal: beratAwal, total_gram: beratAwal,
+    gramasi, pcs, pcs_awal: pcs, pcs_good: newPcsGood,
+    berat_awal: beratAwal, total_gram: newTotalGram,
     operator: operator || null, catatan: catatan || null,
     tanggal_produksi: tanggal, tanggal, memo: memo || null,
   }).eq('id', produksiId)
@@ -411,9 +430,11 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'EDIT', module: 'PRODUKSI',
     record_key: produksiKode, record_id: String(produksiId),
-    before_data: before, after_data: { gramasi, pcs, berat_awal: beratAwal, operator, tanggal },
+    before_data: before,
+    after_data: { gramasi, pcs, pcs_good: newPcsGood, berat_awal: beratAwal, operator, tanggal },
   })
 
   revalidatePath('/produksi')
   return { success: true }
 }
+
