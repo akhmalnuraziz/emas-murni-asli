@@ -12,7 +12,7 @@ import {
 } from '@/app/(dashboard)/bahan-baku/actions'
 import type { UserRole } from '@/lib/types/database'
 
-interface Props { batches: any[]; userRole: UserRole; userName: string }
+interface Props { batches: any[]; rejectCountMap: Record<string, number>; userRole: UserRole; userName: string }
 
 // ─── Selisih helper ──────────────────────────────────────────────────────────
 function hitungSelisih(pusat: number, gudang: number) {
@@ -39,7 +39,7 @@ function hitungSelisih(pusat: number, gudang: number) {
 
 function getBatchStatus(b: any) {
   if (b.voided_at && b.void_reason === 'DELETED_BY_USER') return 'dihapus'
-  if (b.voided_at) return 'terkunci'
+  if (b.status === 'terkunci') return 'terkunci'   // use batch.status column
   return 'aktif'
 }
 
@@ -134,31 +134,17 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
   const totalHpp = hargaNum+totalBiaya
   const hppGr = parseFloat(gudang)>0 ? totalHpp/parseFloat(gudang) : 0
 
-  async function submit(e: React.FormEvent<HTMLFormElement>) {
+  async function submit(e:React.FormEvent<HTMLFormElement>){
     e.preventDefault()
     setUploading(true)
-    try {
-      const b64s = newFotos.length > 0 ? await filesToBase64(newFotos) : []
-
-      // Defensive: in some browsers/builds, handlers can be triggered from a non-form target.
-      // Always resolve the closest <form> to construct FormData safely.
-      const maybeTarget = (e.target ?? e.currentTarget) as unknown as HTMLElement | null
-      const formEl =
-        e.currentTarget instanceof HTMLFormElement
-          ? e.currentTarget
-          : (maybeTarget?.closest?.('form') as HTMLFormElement | null)
-
-      if (!formEl) {
-        onSubmit(new FormData())
-        return
-      }
-
-      const fd = new FormData(formEl)
+    try{
+      const b64s=newFotos.length>0?await filesToBase64(newFotos):[]
+      const fd=new FormData(e.currentTarget)
       fd.set('biaya_tbh',JSON.stringify(biaya))
       fd.set('existing_fotos',JSON.stringify(existingFotos))
       fd.set('new_fotos_b64',JSON.stringify(b64s))
       onSubmit(fd)
-    } finally { setUploading(false) }
+    }finally{setUploading(false)}
   }
 
   return(
@@ -252,7 +238,7 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
-export default function BahanBakuClient({batches,userRole,userName}:Props){
+export default function BahanBakuClient({batches,rejectCountMap,userRole,userName}:Props){
   const [filter,setFilter]=useState<'semua'|'aktif'|'terkunci'>('semua')
   const [search,setSearch]=useState('')
   const [expanded,setExpanded]=useState<number|null>(null)
@@ -499,6 +485,18 @@ export default function BahanBakuClient({batches,userRole,userName}:Props){
                         </div>
                       )}
 
+                      {/* Reject belum dilebur alert */}
+                      {(()=>{
+                        const rCount = rejectCountMap[batch.kode] ?? 0
+                        return rCount > 0 ? (
+                          <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold"
+                            style={{background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',color:'#DC2626'}}>
+                            <span>⚠️</span>
+                            <span>{rCount} item reject belum dilebur</span>
+                          </div>
+                        ) : null
+                      })()}
+
                       {status==='aktif'&&(
                         !isEditSF?(
                           <button onClick={()=>{setEditingSF(batch.id);setSfInput(p=>({...p,[batch.id]:String(sisaFisik??'')}));setSfExisting(p=>({...p,[batch.id]:[...fotoSF]}))}}
@@ -609,3 +607,4 @@ export default function BahanBakuClient({batches,userRole,userName}:Props){
     </div>
   )
 }
+
