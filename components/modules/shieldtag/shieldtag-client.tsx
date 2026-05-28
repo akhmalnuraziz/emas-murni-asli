@@ -6,7 +6,7 @@ import {
   Edit2, Trash2, ChevronDown, ChevronUp, Eye, EyeOff, Shield
 } from 'lucide-react'
 import { cn, formatDate, formatRupiah } from '@/lib/utils'
-import { registerShieldtags, editShieldtagKode, voidShieldtag, generateRange, previewRange } from '@/app/(dashboard)/shieldtag/actions'
+import { registerShieldtags, editShieldtagKode, voidShieldtag } from '@/app/(dashboard)/shieldtag/actions'
 import type { UserRole } from '@/lib/types/database'
 
 interface Props {
@@ -14,6 +14,34 @@ interface Props {
   packingsWithSlots: any[]
   userRole: UserRole
   userName: string
+}
+
+
+// ─── Client-side Range Algorithm (mirrors server) ────────────────────────────
+const CHARSET_CLIENT = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+function incrementCode(code: string): string {
+  const chars = code.toUpperCase().split('')
+  let i = chars.length - 1
+  while (i >= 0) {
+    const idx = CHARSET_CLIENT.indexOf(chars[i])
+    if (idx === -1) { i--; continue }
+    if (idx < CHARSET_CLIENT.length - 1) { chars[i] = CHARSET_CLIENT[idx + 1]; return chars.join('') }
+    else { chars[i] = CHARSET_CLIENT[0]; i-- }
+  }
+  return code
+}
+
+function generateRangeClient(start: string, end: string): { codes: string[]; error?: string } {
+  const s = start.toUpperCase().trim()
+  const e = end.toUpperCase().trim()
+  if (!s || !e) return { codes: [] }
+  const codes: string[] = []
+  let current = s; let guard = 0
+  codes.push(current)
+  while (current !== e && guard < 5000) { current = incrementCode(current); codes.push(current); guard++ }
+  if (guard >= 5000) return { codes: [], error: 'Range terlalu besar (max 5000 per range)' }
+  return { codes }
 }
 
 const STATUS_CFG: Record<string,{bg:string;text:string;dot:string}> = {
@@ -79,7 +107,7 @@ function RegisterModal({ packings, onClose, onSubmit, isPending, error }: {
     let err = ''
     for (const r of newRanges) {
       if (!r.start || !r.end) continue
-      const result = previewRange(r.start, r.end)
+      const result = generateRangeClient(r.start, r.end)
       if (result.error) { err = result.error; break }
       all = [...all, ...result.codes]
     }
