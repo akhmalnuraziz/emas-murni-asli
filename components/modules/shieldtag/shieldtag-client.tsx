@@ -7,7 +7,8 @@ import {
   Clock, MapPin, Package
 } from 'lucide-react'
 import { cn, formatDate } from '@/lib/utils'
-import { registerShieldtags, generateRange, voidShieldtag } from '@/app/(dashboard)/shieldtag/actions'
+import { registerShieldtags, voidShieldtag } from '@/app/(dashboard)/shieldtag/actions'
+import { generateRange } from '@/lib/shieldtag-utils'
 import type { UserRole } from '@/lib/types/database'
 
 interface Props {
@@ -102,7 +103,7 @@ function RegisterModal({packings,onClose,onSubmit,isPending,error}:{
   useEffect(()=>{
     const newPreviews=ranges.map(r=>{
       if(!r.start||!r.end)return{codes:[]}
-      const result=generateRangeClient(r.start,r.end)
+      const result=generateRange(r.start,r.end)
       if('error' in result)return{codes:[],error:result.error}
       return{codes:result}
     })
@@ -274,42 +275,7 @@ function HistoryPanel({history}:{history:any[]}){
   )
 }
 
-// ─── Client-side range generator (mirror of server) ──────────────────────────
-const CS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-function nextCodeClient(code: string): string {
-  const chars = code.toUpperCase().split('')
-  let i = chars.length - 1
-  while (i >= 0) {
-    const idx = CS.indexOf(chars[i])
-    if (idx === -1) return code
-    if (idx < CS.length - 1) { chars[i] = CS[idx + 1]; return chars.join('') }
-    chars[i] = CS[0]; i--
-  }
-  return CS[1] + CS[0].repeat(chars.length)
-}
-function compareCodeClient(a: string, b: string): number {
-  const au = a.toUpperCase(), bu = b.toUpperCase()
-  for (let i = 0; i < Math.max(au.length, bu.length); i++) {
-    const ai = CS.indexOf(au[i] ?? '0'), bi = CS.indexOf(bu[i] ?? '0')
-    if (ai !== bi) return ai - bi
-  }
-  return 0
-}
-function generateRangeClient(start: string, end: string): string[] | {error: string} {
-  const s = start.trim().toUpperCase(), e = end.trim().toUpperCase()
-  if (!s || !e) return { error: 'Kode awal dan akhir wajib diisi' }
-  if (s.length !== e.length) return { error: `Panjang harus sama (${s.length} vs ${e.length} karakter)` }
-  if (compareCodeClient(s, e) > 0) return { error: 'Kode awal harus ≤ kode akhir' }
-  const result: string[] = []
-  let cur = s, safety = 0
-  while (safety < 2000) {
-    result.push(cur)
-    if (cur === e) break
-    cur = nextCodeClient(cur); safety++
-  }
-  if (safety >= 2000) return { error: 'Range terlalu besar (max 2000)' }
-  return result
-}
+// Range generator imported from utils
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ShieldtagClient({shieldtags,packingsForReg,userRole,userName}:Props){
