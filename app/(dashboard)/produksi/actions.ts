@@ -95,7 +95,6 @@ export async function createProduksi(formData: FormData) {
 
   if (error) return { error: error.message }
 
-  // Upload fotos
   const fotosB64Raw = formData.get('fotos_b64') as string
   const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
   const fotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, kode) : []
@@ -139,7 +138,6 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
   const beratSebelumnya = produksi.total_gram ?? 0
   const losses = Math.max(0, beratSebelumnya - totalGramBaru - sisaSerbuk)
 
-  // Upload fotos
   const fotosB64Raw = formData.get('fotos_b64') as string
   const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
   const fotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, `${produksiKode}-${statusBaru}`) : []
@@ -196,7 +194,6 @@ export async function inputReject(produksiId: number, produksiKode: string, form
   const newPcsGood = pcsGoodNow - pcsReject
   const newTotalGram = Math.max(0, (produksi.total_gram ?? 0) - beratReject)
 
-  // Create reject event
   await supabase.from('produksi_event').insert({
     produksi_item_id: produksiId,
     tanggal: formData.get('tanggal') as string || new Date().toISOString().split('T')[0],
@@ -210,7 +207,6 @@ export async function inputReject(produksiId: number, produksiKode: string, form
     fotos: [],
   })
 
-  // Update produksi_item: kurangi pcs dan berat
   await supabase.from('produksi_item').update({
     pcs_good: newPcsGood,
     pcs: newPcsGood,
@@ -218,7 +214,7 @@ export async function inputReject(produksiId: number, produksiKode: string, form
     berat_reject: (produksi.berat_reject ?? 0) + beratReject,
     total_gram: newTotalGram,
     status_reject: 'belum_dilebur',
-    current_status: produksi.current_status, // tetap status saat ini
+    current_status: produksi.current_status,
   }).eq('id', produksiId)
 
   await supabase.from('audit_log').insert({
@@ -399,4 +395,25 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   if (!gramasi) return { error: 'Gramasi wajib diisi' }
   if (!pcs || pcs <= 0) return { error: 'PCS wajib diisi' }
   if (!beratAwal || beratAwal <= 0) return { error: 'Total berat wajib diisi' }
-  if (!tanggal) return { error: 'Tanggal wajib diisi' 
+  if (!tanggal) return { error: 'Tanggal wajib diisi' }
+
+  const { data: before } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
+
+  const { error } = await supabase.from('produksi_item').update({
+    gramasi, pcs, pcs_awal: pcs, berat_awal: beratAwal, total_gram: beratAwal,
+    operator: operator || null, catatan: catatan || null,
+    tanggal_produksi: tanggal, tanggal, memo: memo || null,
+  }).eq('id', produksiId)
+
+  if (error) return { error: error.message }
+
+  await supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'EDIT', module: 'PRODUKSI',
+    record_key: produksiKode, record_id: String(produksiId),
+    before_data: before, after_data: { gramasi, pcs, berat_awal: beratAwal, operator, tanggal },
+  })
+
+  revalidatePath('/produksi')
+  return { success: true }
+}
