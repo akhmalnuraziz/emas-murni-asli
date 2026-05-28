@@ -134,17 +134,31 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
   const totalHpp = hargaNum+totalBiaya
   const hppGr = parseFloat(gudang)>0 ? totalHpp/parseFloat(gudang) : 0
 
-  async function submit(e:React.FormEvent<HTMLFormElement>){
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setUploading(true)
-    try{
-      const b64s=newFotos.length>0?await filesToBase64(newFotos):[]
-      const fd=new FormData(e.currentTarget)
+    try {
+      const b64s = newFotos.length > 0 ? await filesToBase64(newFotos) : []
+
+      // Defensive: in some browsers/builds, handlers can be triggered from a non-form target.
+      // Always resolve the closest <form> to construct FormData safely.
+      const maybeTarget = (e.target ?? e.currentTarget) as unknown as HTMLElement | null
+      const formEl =
+        e.currentTarget instanceof HTMLFormElement
+          ? e.currentTarget
+          : (maybeTarget?.closest?.('form') as HTMLFormElement | null)
+
+      if (!formEl) {
+        onSubmit(new FormData())
+        return
+      }
+
+      const fd = new FormData(formEl)
       fd.set('biaya_tbh',JSON.stringify(biaya))
       fd.set('existing_fotos',JSON.stringify(existingFotos))
       fd.set('new_fotos_b64',JSON.stringify(b64s))
       onSubmit(fd)
-    }finally{setUploading(false)}
+    } finally { setUploading(false) }
   }
 
   return(
