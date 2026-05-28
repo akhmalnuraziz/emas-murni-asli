@@ -14,6 +14,13 @@ import type { UserRole } from '@/lib/types/database'
 
 interface Props { produksiList: any[]; batches: any[]; userRole: UserRole; userName: string }
 
+// ─── Comma number format (Indonesian) ───────────────────────────────────────
+function formatGr(n: number | null | undefined, dec = 3): string {
+  if (n === null || n === undefined || isNaN(Number(n))) return '—'
+  const r = parseFloat(Number(n).toFixed(dec))
+  return r.toLocaleString('id-ID', { minimumFractionDigits: dec, maximumFractionDigits: dec })
+}
+
 const GRAMASI_OPTIONS = ['0.1','0.5','1','2','5','10','20','25','50','100','250','500','1000']
 const STATUS_FLOW = ['Cutting','Pas Berat','Annealing','Siap Packing']
 const STATUS_NEXT: Record<string,string> = {
@@ -238,7 +245,7 @@ function CreateModal({batches,onClose,onSubmit,isPending,error}:{
           <button onClick={onClose}className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><X size={15}/></button>
         </div>
         <form onSubmit={submit}className="px-6 py-5 space-y-4 overflow-y-auto max-h-[72vh]">
-          <F label="Nama / Label Batch"><input name="nama_item" value={f.nama_item} onChange={e=>s('nama_item',e.target.value)} placeholder="cth: LM REI 10GR BATCH 26" className={inp}/></F>
+          <F label="Nama / Label Batch" req><input name="nama_item" value={f.nama_item} onChange={e=>s('nama_item',e.target.value)} placeholder="cth: LM REI 10GR BATCH 26" className={inp} required/></F>
           <F label="Batch Bahan Baku" req>
             <select name="batch_kode" value={f.batch_kode} onChange={e=>s('batch_kode',e.target.value)} className={inp} required>
               {batches.map(b=><option key={b.kode} value={b.kode}>{b.kode} — {b.nama_batch} (Sisa: {(b.sisa_bahan_seharusnya??b.timbangan_akhir??0).toFixed(2)} gr)</option>)}
@@ -628,6 +635,39 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
                   <div className="px-5 pb-5 border-t"style={{borderColor:'rgba(139,92,246,0.1)',background:'rgba(139,92,246,0.02)'}}>
                     <div className="pt-4">
                       {item.operator&&<p className="text-xs text-gray-400 mb-3">Operator: <span className="font-semibold text-gray-600">{item.operator}</span></p>}
+
+                      {/* Batch data */}
+                      {item.batch&&(()=>{
+                        const b=Array.isArray(item.batch)?item.batch[0]:item.batch
+                        if(!b)return null
+                        const totalDispakai=Number(b.timbangan_akhir||0)-Number(b.sisa_bahan_seharusnya||0)
+                        const sisaS=Number(b.sisa_bahan_seharusnya||0)
+                        const sisaF=b.sisa_fisik!==null&&b.sisa_fisik!==undefined?Number(b.sisa_fisik):null
+                        const selisih=sisaF!==null?sisaF-sisaS:null
+                        return(
+                          <div className="mb-4 p-4 rounded-2xl grid grid-cols-2 sm:grid-cols-4 gap-3"style={{background:'rgba(139,92,246,0.04)',border:'1px solid rgba(139,92,246,0.12)'}}>
+                            <div>
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Total Digunakan</p>
+                              <p className="text-sm font-bold text-gray-700 mt-0.5">{formatGr(totalDispakai)} gr</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Sisa Seharusnya</p>
+                              <p className="text-sm font-bold text-gray-700 mt-0.5">{formatGr(sisaS)} gr</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Sisa Fisik</p>
+                              <p className="text-sm font-bold mt-0.5"style={{color:sisaF!==null?'#374151':'#9CA3AF'}}>{sisaF!==null?formatGr(sisaF)+' gr':'Belum diisi'}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Selisih</p>
+                              <p className="text-sm font-bold mt-0.5"style={{color:selisih===null?'#9CA3AF':selisih<0?'#EF4444':selisih>0?'#F97316':'#22C55E'}}>
+                                {selisih===null?'—':selisih===0?'Sesuai':(selisih>0?'+':'')+formatGr(selisih)+' gr'}
+                              </p>
+                            </div>
+                          </div>
+                        )
+                      })()}
+
                       <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-3">Riwayat Proses</p>
                       {events.length===0
                         ?<p className="text-xs text-gray-400 italic">Belum ada event tercatat</p>
