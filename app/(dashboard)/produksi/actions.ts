@@ -365,6 +365,23 @@ export async function voidPacking(packingId: number, packingKode: string) {
   return { success: true }
 }
 
+export async function updateSisaFisikBatch(batchKode: string, sisaFisik: number | null) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  const { error } = await supabase.from('batch').update({ sisa_fisik: sisaFisik }).eq('kode', batchKode)
+  if (error) return { error: error.message }
+  await supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'UPDATE_SISA_FISIK', module: 'PRODUKSI',
+    record_key: batchKode, after_data: { sisa_fisik: sisaFisik },
+  })
+  revalidatePath('/produksi')
+  revalidatePath('/bahan-baku')
+  return { success: true }
+}
+
 export async function editProduksi(produksiId: number, produksiKode: string, formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -382,25 +399,4 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   if (!gramasi) return { error: 'Gramasi wajib diisi' }
   if (!pcs || pcs <= 0) return { error: 'PCS wajib diisi' }
   if (!beratAwal || beratAwal <= 0) return { error: 'Total berat wajib diisi' }
-  if (!tanggal) return { error: 'Tanggal wajib diisi' }
-
-  const { data: before } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
-
-  const { error } = await supabase.from('produksi_item').update({
-    gramasi, pcs, pcs_awal: pcs, berat_awal: beratAwal, total_gram: beratAwal,
-    operator: operator || null, catatan: catatan || null,
-    tanggal_produksi: tanggal, tanggal, memo: memo || null,
-  }).eq('id', produksiId)
-
-  if (error) return { error: error.message }
-
-  await supabase.from('audit_log').insert({
-    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
-    action: 'EDIT', module: 'PRODUKSI',
-    record_key: produksiKode, record_id: String(produksiId),
-    before_data: before, after_data: { gramasi, pcs, berat_awal: beratAwal, operator, tanggal },
-  })
-
-  revalidatePath('/produksi')
-  return { success: true }
-}
+  if (!tanggal) return { error: 'Tanggal wajib diisi' 
