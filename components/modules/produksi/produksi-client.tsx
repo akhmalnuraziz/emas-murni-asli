@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useTransition, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Plus, Search, Edit2, Trash2, Check, AlertTriangle,
   X, Camera, ChevronDown, ChevronUp, Package, ZoomIn
@@ -117,79 +118,79 @@ function Sbadge({s}:{s:string}){
 }
 
 // ─── Timeline dots ────────────────────────────────────────────────────────────
+// FIX: Tooltip di-render via createPortal ke document.body agar tidak
+// terpengaruh backdrop-filter pada parent container (backdrop-filter membuat
+// position:fixed anak diposisikan relatif terhadap container, bukan viewport).
 function TLine({events}:{events:any[]}){
-  const [hover,setHover]=useState<{i:number;x:number;y:number;dot:string}|null>(null)
+  const [hover,setHover]=useState<{ev:any;x:number;y:number;dot:string}|null>(null)
   const timerRef=useRef<ReturnType<typeof setTimeout>|null>(null)
+  const [mounted,setMounted]=useState(false)
   const sorted=[...events].sort((a,b)=>new Date(a.tanggal).getTime()-new Date(b.tanggal).getTime())
   const dots=sorted.slice(-5)
-  function enterDot(i:number, el?:HTMLElement|null, dotColor?:string){
+
+  useEffect(()=>{setMounted(true)},[])
+  useEffect(()=>()=>{if(timerRef.current)clearTimeout(timerRef.current)},[])
+
+  function enterDot(ev:any, el:HTMLElement, dotColor:string){
     if(timerRef.current)clearTimeout(timerRef.current)
-    if(el){
-      const r = el.getBoundingClientRect()
-      setHover({ i, x: r.left + r.width/2, y: r.top, dot: dotColor ?? '#94A3B8' })
-      return
-    }
-    setHover({ i, x: 0, y: 0, dot: dotColor ?? '#94A3B8' })
+    const r=el.getBoundingClientRect()
+    setHover({ev, x:r.left+r.width/2, y:r.top, dot:dotColor})
   }
   function leaveDot(){
     // Short delay prevents micro-flicker when moving between dots.
     timerRef.current=setTimeout(()=>setHover(null),120)
   }
-  useEffect(()=>()=>{if(timerRef.current)clearTimeout(timerRef.current)},[])
+
+  // Clamp x so tooltip stays within viewport
+  const tipLeft=hover&&mounted
+    ?Math.min(Math.max(hover.x,108),window.innerWidth-108)
+    :0
+
   return(
-    <div className="flex items-center gap-1.5">
-      {dots.map((ev,i)=>{
-        const cfg=STATUS_CFG[ev.status]??{dot:'#94A3B8'}
-        const isOpen=hover?.i===i
-        const left = (() => {
-          if (!hover || typeof window === 'undefined') return hover?.x ?? 0
-          const half = 96 // tooltip width (w-48) / 2
-          const min = 12 + half
-          const max = window.innerWidth - 12 - half
-          return Math.min(Math.max(hover.x, min), max)
-        })()
-        return(
-          <div key={i} className="relative flex-shrink-0">
-            <button type="button"
-              onMouseEnter={(e)=>enterDot(i, e.currentTarget, cfg.dot)} onMouseLeave={leaveDot}
-              onPointerEnter={(e)=>enterDot(i, e.currentTarget as any, cfg.dot)} onPointerLeave={leaveDot}
-              onClick={()=>setHover(isOpen?null:hover)}
-              className="w-4 h-4 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-150 block"
-              style={{background:cfg.dot,boxShadow:`0 0 0 2px ${cfg.dot}35`}}/>
-            {isOpen&&(
-              <div
-                className="fixed z-[999] w-48 pointer-events-none"
-                style={{
-                  left,
-                  top: (hover?.y ?? 0),
-                  transform: 'translate(-50%, -12px)',
-                }}
-              >
-                <div
-                  className="bg-white/92 backdrop-blur-2xl border border-white/70 rounded-2xl shadow-xl p-3 text-left"
-                  style={{boxShadow:`0 14px 42px ${(hover?.dot ?? cfg.dot)}25`}}
-                >
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <div className="w-2 h-2 rounded-full"style={{background:cfg.dot}}/>
-                    <span className="text-xs font-bold text-gray-800">{ev.status}</span>
-                  </div>
-                  <div className="space-y-0.5 text-[11px] text-gray-500">
-                    <p>{formatDate(ev.tanggal)}</p>
-                    <p className="font-semibold text-gray-700">{ev.total_gram} gr</p>
-                    {Number(ev.sisa_serbuk)>0&&<p className="text-violet-600">Serbuk: {ev.sisa_serbuk} gr</p>}
-                    {Number(ev.losses)>0&&<p className="text-orange-500">Losses: {ev.losses} gr</p>}
-                  </div>
-                  <div className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-3 h-3 bg-white/92 border-r border-b border-white/70 rotate-45"/>
-                </div>
-              </div>
-            )}
+    <>
+      <div className="flex items-center gap-1.5">
+        {dots.map((ev,i)=>{
+          const cfg=STATUS_CFG[ev.status]??{dot:'#94A3B8'}
+          return(
+            <div key={i} className="relative flex-shrink-0">
+              <button type="button"
+                onMouseEnter={(e)=>enterDot(ev,e.currentTarget,cfg.dot)}
+                onMouseLeave={leaveDot}
+                onPointerEnter={(e)=>enterDot(ev,e.currentTarget as HTMLElement,cfg.dot)}
+                onPointerLeave={leaveDot}
+                className="w-4 h-4 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-150 block"
+                style={{background:cfg.dot,boxShadow:`0 0 0 2px ${cfg.dot}35`}}/>
+            </div>
+          )
+        })}
+        {Array.from({length:Math.max(0,5-dots.length)}).map((_,i)=>(
+          <div key={`e${i}`}className="w-3 h-3 rounded-full bg-gray-200 border-2 border-white shadow-sm flex-shrink-0"/>
+        ))}
+      </div>
+
+      {/* Portal: dirender langsung di document.body, melewati semua stacking context */}
+      {hover&&mounted&&createPortal(
+        <div className="fixed z-[9999] w-48 pointer-events-none"
+          style={{left:tipLeft,top:hover.y,transform:'translate(-50%,calc(-100% - 8px))'}}>
+          <div className="bg-white/92 backdrop-blur-2xl border border-white/70 rounded-2xl shadow-xl p-3 text-left"
+            style={{boxShadow:`0 14px 42px ${hover.dot}25`}}>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <div className="w-2 h-2 rounded-full" style={{background:hover.dot}}/>
+              <span className="text-xs font-bold text-gray-800">{hover.ev.status}</span>
+            </div>
+            <div className="space-y-0.5 text-[11px] text-gray-500">
+              <p>{formatDate(hover.ev.tanggal)}</p>
+              <p className="font-semibold text-gray-700">{hover.ev.total_gram} gr</p>
+              {Number(hover.ev.sisa_serbuk)>0&&<p className="text-violet-600">Serbuk: {hover.ev.sisa_serbuk} gr</p>}
+              {Number(hover.ev.losses)>0&&<p className="text-orange-500">Losses: {hover.ev.losses} gr</p>}
+            </div>
+            {/* Arrow pointing down toward the dot */}
+            <div className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-3 h-3 bg-white/92 border-r border-b border-white/70 rotate-45"/>
           </div>
-        )
-      })}
-      {Array.from({length:Math.max(0,5-dots.length)}).map((_,i)=>(
-        <div key={`e${i}`}className="w-3 h-3 rounded-full bg-gray-200 border-2 border-white shadow-sm flex-shrink-0"/>
-      ))}
-    </div>
+        </div>,
+        document.body
+      )}
+    </>
   )
 }
 
