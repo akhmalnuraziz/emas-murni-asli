@@ -6,7 +6,7 @@ import {
   Edit2, Trash2, ChevronDown, ChevronUp, Eye, EyeOff, Shield
 } from 'lucide-react'
 import { cn, formatDate, formatRupiah } from '@/lib/utils'
-import { registerShieldtags, editShieldtagKode, voidShieldtag } from '@/app/(dashboard)/shieldtag/actions'
+import { registerShieldtags, editShieldtagKode, voidShieldtag, bulkVoidShieldtag } from '@/app/(dashboard)/shieldtag/actions'
 import type { UserRole } from '@/lib/types/database'
 
 interface Props {
@@ -388,7 +388,9 @@ function DetailDrawer({ st, onClose, showHPP, userRole }: {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRole, userName }: Props) {
   const [isPending, startTransition] = useTransition()
-  const [modal, setModal] = useState<'register' | 'edit' | 'void' | null>(null)
+  const [modal, setModal] = useState<'register' | 'edit' | 'void' | 'bulk_void' | null>(null)
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [bulkVoidReason, setBulkVoidReason] = useState('')
   const [activeItem, setActiveItem] = useState<any | null>(null)
   const [detailItem, setDetailItem] = useState<any | null>(null)
   const [err, setErr] = useState('')
@@ -399,6 +401,14 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
   const [voidReason, setVoidReason] = useState('')
 
   function showToast(msg: string, ok = true) { setToast({ msg, ok }); setTimeout(() => setToast(null), 3500) }
+
+  function toggleSelect(id: number) {
+    setSelected(prev => { const s = new Set(prev); if (s.has(id)) s.delete(id); else s.add(id); return s })
+  }
+  function toggleAll() {
+    if (selected.size === filtered.length) setSelected(new Set())
+    else setSelected(new Set(filtered.map(st => st.id)))
+  }
 
   const canRegister = ['owner', 'admin_pusat', 'spv', 'operator_produksi'].includes(userRole)
   const canVoid = ['owner', 'admin_pusat', 'spv'].includes(userRole)
@@ -432,6 +442,16 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
       if (r?.error) { setErr(r.error); return }
       showToast('✅ Kode Shieldtag diperbarui')
       setModal(null)
+    })
+  }
+
+  function handleBulkVoid() {
+    if (selected.size === 0 || !bulkVoidReason.trim()) return
+    startTransition(async () => {
+      const r = await bulkVoidShieldtag(Array.from(selected), bulkVoidReason)
+      if (r?.error) { showToast(r.error, false); return }
+      showToast('🚫 ' + r?.count + ' Shieldtag di-VOID')
+      setModal(null); setSelected(new Set()); setBulkVoidReason('')
     })
   }
 
@@ -474,6 +494,13 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
                   : { background: 'rgba(255,255,255,0.8)', color: '#6B7280', borderColor: 'rgba(209,213,219,0.5)' }}>
                 {showHPP ? <Eye size={14}/> : <EyeOff size={14}/>}
                 HPP
+              </button>
+            )}
+            {selected.size > 0 && canVoid && (
+              <button onClick={() => { setModal('bulk_void'); setBulkVoidReason('') }}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white rounded-2xl transition-all"
+                style={{ background: 'linear-gradient(135deg,#EF4444,#DC2626)', boxShadow: '0 4px 20px rgba(239,68,68,0.4)' }}>
+                <Trash2 size={14}/> VOID {selected.size} dipilih
               </button>
             )}
             {canRegister && packingsWithSlots.length > 0 && (
@@ -539,7 +566,12 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
             <thead>
               <tr className="border-b"
                 style={{ borderColor: 'rgba(243,244,246,0.9)', background: 'rgba(249,250,251,0.6)' }}>
-                {['KODE SHIELDTAG', 'BATCH', 'GRAMASI', 'STATUS', 'LOKASI', 'TGL REGIS', 'AKSI'].map(h => (
+                <th className="px-4 py-3.5 w-10">
+                <input type="checkbox" className="w-4 h-4 rounded cursor-pointer accent-violet-500"
+                  checked={filtered.length > 0 && selected.size === filtered.length}
+                  onChange={toggleAll}/>
+              </th>
+              {['KODE SHIELDTAG', 'BATCH', 'GRAMASI', 'STATUS', 'LOKASI', 'TGL REGIS', 'AKSI'].map(h => (
                   <th key={h} className="px-4 py-3.5 text-left text-[10px] font-bold text-gray-400 tracking-widest uppercase whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -565,9 +597,13 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
                 const cfg = STATUS_CFG[st.status] ?? STATUS_CFG['Aktif']
                 return (
                   <tr key={st.id}
-                    className={cn('border-t transition-colors hover:bg-violet-50/20 cursor-pointer', idx === 0 ? 'border-transparent' : '')}
+                    className={cn('border-t transition-colors hover:bg-violet-50/20 cursor-pointer', idx === 0 ? 'border-transparent' : '', selected.has(st.id) ? 'bg-violet-50/40' : '')}
                     style={{ borderColor: 'rgba(243,244,246,0.7)' }}
                     onClick={() => setDetailItem(st)}>
+                    <td className="px-4 py-3" onClick={e => { e.stopPropagation(); toggleSelect(st.id) }}>
+                      <input type="checkbox" className="w-4 h-4 rounded cursor-pointer accent-violet-500"
+                        checked={selected.has(st.id)} onChange={() => {}}/>
+                    </td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-sm font-black tracking-wider text-gray-900">{st.kode}</span>
                     </td>
@@ -643,6 +679,32 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
                 className="flex-1 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2">
                 {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
                 {isPending ? 'Memproses...' : 'VOID'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {modal === 'bulk_void' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
+          <div className="w-full max-w-sm rounded-3xl p-6"
+            style={{ background: 'rgba(255,255,255,0.93)', backdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 32px 64px rgba(239,68,68,0.15)' }}>
+            <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Trash2 size={24} className="text-red-500"/>
+            </div>
+            <h2 className="text-lg font-bold text-gray-900 text-center">VOID {selected.size} Shieldtag?</h2>
+            <p className="text-sm text-gray-500 text-center mt-1 mb-4">Semua yang dipilih akan di-VOID dan tidak bisa digunakan.</p>
+            <F label="Alasan VOID" req>
+              <input value={bulkVoidReason} onChange={e => setBulkVoidReason(e.target.value)}
+                placeholder="Contoh: stiker rusak, batch recall, dll" className="w-full px-4 py-3 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white/80 border border-gray-200/70"/>
+            </F>
+            <div className="flex gap-3 mt-4">
+              <button onClick={() => setModal(null)} className="flex-1 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
+              <button onClick={handleBulkVoid} disabled={isPending || !bulkVoidReason.trim()}
+                className="flex-1 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2">
+                {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
+                {isPending ? 'Memproses...' : 'VOID Semua'}
               </button>
             </div>
           </div>
