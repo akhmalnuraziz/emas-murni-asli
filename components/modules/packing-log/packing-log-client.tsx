@@ -317,6 +317,14 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
   const [search,setSearch]=useState('')
   const [lightbox,setLightbox]=useState<string|null>(null)
   const [toast,setToast]=useState<{msg:string;ok:boolean}|null>(null)
+  const [selectedIds,setSelectedIds]=useState<Set<number>>(new Set())
+
+  function toggleSelect(id:number){setSelectedIds(prev=>{const s=new Set(prev);s.has(id)?s.delete(id):s.add(id);return s})}
+  function toggleSelectAll(records:any[]){
+    const ids=records.map((p:any)=>p.id)
+    const allSel=ids.every((id:number)=>selectedIds.has(id))
+    setSelectedIds(allSel?new Set():new Set(ids))
+  }
 
   function showToast(msg:string,ok=true){setToast({msg,ok});setTimeout(()=>setToast(null),3500)}
   const canManage=['owner','admin_pusat','spv','operator_produksi'].includes(userRole)
@@ -353,8 +361,25 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
     if(!el)return
     const w=window.open('','_blank')
     if(!w)return
-    w.document.write(`<!DOCTYPE html><html><head><title>${p.kode}</title></head><body>${el.innerHTML}<script>window.onload=()=>{window.print();window.close()}<\/script></body></html>`)
+    w.document.write(`<!DOCTYPE html><html><head><title>${p.kode}</title><style>@media print{.pagebreak{page-break-after:always}}</style></head><body>${el.innerHTML}<script>window.onload=()=>{window.print();window.close()}<\/script></body></html>`)
     w.document.close()
+  }
+
+  function handlePrintMulti(records:any[]){
+    const selected=records.filter(p=>selectedIds.has(p.id))
+    if(selected.length===0){showToast('Pilih minimal 1 item untuk diprint',false);return}
+    selected.forEach(p=>markPrinted(p.id).catch(console.error))
+    const parts=selected.map((p,i)=>{
+      const el=document.getElementById(`print-${p.id}`)
+      const html=el?el.innerHTML:''
+      return i<selected.length-1?`${html}<div class="pagebreak"></div>`:html
+    }).join('')
+    const w=window.open('','_blank')
+    if(!w)return
+    w.document.write(`<!DOCTYPE html><html><head><title>Print Packing — ${selected.length} item</title><style>@media print{.pagebreak{page-break-after:always}body{margin:0;padding:0}}</style></head><body>${parts}<script>window.onload=()=>{window.print();window.close()}<\/script></body></html>`)
+    w.document.close()
+    setSelectedIds(new Set())
+    showToast(`✅ ${selected.length} surat dicetak`)
   }
 
   return(
@@ -370,13 +395,22 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
             <h1 className="text-2xl font-bold tracking-tight"style={{color:'#111827',fontFamily:"'SF Pro Display','Inter',sans-serif"}}>Packing Log</h1>
             <p className="text-xs text-gray-400 mt-0.5 font-medium">Kelola packing & registrasi Shieldtag</p>
           </div>
-          {canManage&&siapPackingItems.length>0&&(
-            <button onClick={()=>{setModal('create');setErr('')}}
-              className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white rounded-2xl transition-all hover:-translate-y-0.5"
-              style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)',boxShadow:'0 4px 20px rgba(139,92,246,0.4)'}}>
-              <Plus size={15}/> Catat Packing
-            </button>
-          )}
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            {selectedIds.size>0&&(
+              <button onClick={()=>handlePrintMulti(filteredByDate(filtered))}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white rounded-2xl transition-all hover:-translate-y-0.5"
+                style={{background:'linear-gradient(135deg,#0EA5E9,#0284C7)',boxShadow:'0 4px 16px rgba(14,165,233,0.4)'}}>
+                <Printer size={14}/> Print {selectedIds.size} Item
+              </button>
+            )}
+            {canManage&&siapPackingItems.length>0&&(
+              <button onClick={()=>{setModal('create');setErr('')}}
+                className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white rounded-2xl transition-all hover:-translate-y-0.5"
+                style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)',boxShadow:'0 4px 20px rgba(139,92,246,0.4)'}}>
+                <Plus size={15}/> Catat Packing
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Search */}
@@ -431,9 +465,16 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
 
         {/* Desktop table */}
         <div className="hidden lg:block rounded-3xl overflow-auto"style={{background:'rgba(255,255,255,0.72)',backdropFilter:'blur(24px)',border:'1px solid rgba(255,255,255,0.6)',boxShadow:'0 8px 40px rgba(139,92,246,0.08)'}}>
-          <table className="w-full min-w-[1000px] text-sm">
+          <table className="w-full min-w-[860px] text-sm">
             <thead>
               <tr className="border-b"style={{borderColor:'rgba(243,244,246,0.9)',background:'rgba(249,250,251,0.6)'}}>
+                <th className="px-4 py-3 w-10">
+                  {filteredByDate(filtered).length>0&&(
+                    <input type="checkbox" className="rounded accent-violet-600 cursor-pointer"
+                      checked={filteredByDate(filtered).length>0&&filteredByDate(filtered).every(p=>selectedIds.has(p.id))}
+                      onChange={()=>toggleSelectAll(filteredByDate(filtered))}/>
+                  )}
+                </th>
                 {['KODE','TANGGAL','BATCH','GRAMASI','PCS TOTAL','DIPACK','TOTAL GRAM','PIC','FOTO','SHIELDTAG','STATUS','AKSI'].map(h=>(
                   <th key={h}className="px-4 py-3 text-left text-[10px] font-bold text-gray-400 tracking-widest uppercase whitespace-nowrap">{h}</th>
                 ))}
@@ -441,7 +482,7 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
             </thead>
             <tbody>
               {filtered.length===0?(
-                <tr><td colSpan={12}className="text-center py-16">
+                <tr><td colSpan={13}className="text-center py-16">
                   <Package size={28}className="mx-auto text-violet-200 mb-3"/>
                   <p className="text-sm font-medium text-gray-400">Belum ada record packing</p>
                 </td></tr>
@@ -451,8 +492,13 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
                 const isPrinted=p.status_surat==='sudah_cetak'
                 const pcsGood=p.produksi_item?.pcs_good??p.produksi_item?.pcs??'—'
                 return(
-                  <tr key={p.id}className={cn('border-t transition-colors hover:bg-violet-50/20',idx===0?'border-transparent':'')}
+                  <tr key={p.id}className={cn('border-t transition-colors hover:bg-violet-50/20',idx===0?'border-transparent':'',selectedIds.has(p.id)?'bg-violet-50/40':'')}
                     style={{borderColor:'rgba(243,244,246,0.7)'}}>
+                    <td className="px-4 py-3 w-10">
+                      <input type="checkbox" className="rounded accent-violet-600 cursor-pointer"
+                        checked={selectedIds.has(p.id)}
+                        onChange={()=>toggleSelect(p.id)}/>
+                    </td>
                     <td className="px-4 py-3 font-mono text-xs font-bold text-violet-600 whitespace-nowrap">{p.kode}</td>
                     <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">{formatDate(p.tanggal)}</td>
                     <td className="px-4 py-3"><span className="text-xs font-bold px-2 py-0.5 rounded-full text-violet-700"style={{background:'rgba(139,92,246,0.1)'}}>{p.batch_kode}</span></td>
@@ -519,3 +565,4 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
     </div>
   )
 }
+
