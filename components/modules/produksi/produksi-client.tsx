@@ -131,8 +131,14 @@ function TLine({events}:{events:any[]}){
       setPos({ x: r.left + r.width/2, y: r.top, dot: dotColor ?? '#94A3B8' })
     }
   }
+  function keepOpen(i:number){
+    if(timerRef.current)clearTimeout(timerRef.current)
+    setPop(i)
+  }
   function leaveDot(){
-    timerRef.current=setTimeout(()=>setPop(null),150)
+    // Slightly longer delay prevents flicker when moving
+    // from the dot to the tooltip (which is rendered elsewhere).
+    timerRef.current=setTimeout(()=>setPop(null),350)
   }
   useEffect(()=>()=>{if(timerRef.current)clearTimeout(timerRef.current)},[])
   return(
@@ -144,8 +150,9 @@ function TLine({events}:{events:any[]}){
           <div key={i} className="relative flex-shrink-0">
             <button type="button"
               onMouseEnter={(e)=>enterDot(i, e.currentTarget, cfg.dot)} onMouseLeave={leaveDot}
+              onPointerEnter={(e)=>enterDot(i, e.currentTarget as any, cfg.dot)} onPointerLeave={leaveDot}
               onClick={()=>setPop(isOpen?null:i)}
-              className="w-3 h-3 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-150 block"
+              className="w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-150 block"
               style={{background:cfg.dot,boxShadow:`0 0 0 2px ${cfg.dot}35`}}/>
             {isOpen&&(
               <div
@@ -156,8 +163,10 @@ function TLine({events}:{events:any[]}){
                   transform: 'translate(-50%, -12px)',
                   pointerEvents: 'auto',
                 }}
-                onMouseEnter={(e)=>enterDot(i, e.currentTarget as any, cfg.dot)}
+                onMouseEnter={()=>keepOpen(i)}
                 onMouseLeave={leaveDot}
+                onPointerEnter={()=>keepOpen(i)}
+                onPointerLeave={leaveDot}
               >
                 <div
                   className="bg-white/92 backdrop-blur-2xl border border-white/70 rounded-2xl shadow-xl p-3 text-left"
