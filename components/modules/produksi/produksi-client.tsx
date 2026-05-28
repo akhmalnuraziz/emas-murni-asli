@@ -118,52 +118,55 @@ function Sbadge({s}:{s:string}){
 
 // ─── Timeline dots ────────────────────────────────────────────────────────────
 function TLine({events}:{events:any[]}){
-  const [pop,setPop]=useState<{i:number;ev:any;x:number;y:number}|null>(null)
+  const [pop,setPop]=useState<number|null>(null)
+  const timerRef=useRef<ReturnType<typeof setTimeout>|null>(null)
   const sorted=[...events].sort((a,b)=>new Date(a.tanggal).getTime()-new Date(b.tanggal).getTime())
   const dots=sorted.slice(-5)
-  useEffect(()=>{
-    const h=()=>setPop(null)
-    window.addEventListener('scroll',h,true);return()=>window.removeEventListener('scroll',h,true)
-  },[])
+  function enterDot(i:number){
+    if(timerRef.current)clearTimeout(timerRef.current)
+    setPop(i)
+  }
+  function leaveDot(){
+    timerRef.current=setTimeout(()=>setPop(null),150)
+  }
+  useEffect(()=>()=>{if(timerRef.current)clearTimeout(timerRef.current)},[])
   return(
-    <div className="flex items-center gap-1.5 relative">
+    <div className="flex items-center gap-1.5">
       {dots.map((ev,i)=>{
-        const c=STATUS_CFG[ev.status]??{dot:'#94A3B8'}
-        const open=pop?.i===i
+        const cfg=STATUS_CFG[ev.status]??{dot:'#94A3B8'}
+        const isOpen=pop===i
         return(
-          <button key={i} type="button"
-            onMouseEnter={e=>{const r=(e.currentTarget as HTMLElement).getBoundingClientRect();setPop({i,ev,x:r.left+r.width/2,y:r.top})}}
-            onMouseLeave={()=>setPop(null)}
-            onClick={e=>{const r=(e.currentTarget as HTMLElement).getBoundingClientRect();setPop(open?null:{i,ev,x:r.left+r.width/2,y:r.top})}}
-            className="w-3 h-3 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-150 flex-shrink-0"
-            style={{background:c.dot,boxShadow:`0 0 0 2px ${c.dot}35`}}/>
+          <div key={i} className="relative flex-shrink-0">
+            <button type="button"
+              onMouseEnter={()=>enterDot(i)} onMouseLeave={leaveDot}
+              onClick={()=>setPop(isOpen?null:i)}
+              className="w-3 h-3 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-150 block"
+              style={{background:cfg.dot,boxShadow:`0 0 0 2px ${cfg.dot}35`}}/>
+            {isOpen&&(
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-44"
+                onMouseEnter={()=>enterDot(i)} onMouseLeave={leaveDot}>
+                <div className="bg-white/95 backdrop-blur-xl border border-white/60 rounded-2xl shadow-xl p-3 text-left"
+                  style={{boxShadow:`0 8px 32px ${cfg.dot}25`}}>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <div className="w-2 h-2 rounded-full"style={{background:cfg.dot}}/>
+                    <span className="text-xs font-bold text-gray-800">{ev.status}</span>
+                  </div>
+                  <div className="space-y-0.5 text-[11px] text-gray-500">
+                    <p>{formatDate(ev.tanggal)}</p>
+                    <p className="font-semibold text-gray-700">{ev.total_gram} gr</p>
+                    {Number(ev.sisa_serbuk)>0&&<p className="text-violet-600">Serbuk: {ev.sisa_serbuk} gr</p>}
+                    {Number(ev.losses)>0&&<p className="text-orange-500">Losses: {ev.losses} gr</p>}
+                  </div>
+                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white/95 border-r border-b border-white/60 rotate-45"/>
+                </div>
+              </div>
+            )}
+          </div>
         )
       })}
       {Array.from({length:Math.max(0,5-dots.length)}).map((_,i)=>(
         <div key={`e${i}`}className="w-3 h-3 rounded-full bg-gray-200 border-2 border-white shadow-sm flex-shrink-0"/>
       ))}
-      {pop&&(()=>{
-        const c=STATUS_CFG[pop.ev.status]??{dot:'#94A3B8',bg:'rgba(148,163,184,0.1)',text:'#64748B'}
-        return(
-          <div className="fixed z-[500] w-48 pointer-events-none"
-            style={{top:pop.y-8,left:pop.x,transform:'translate(-50%,-100%)'}}>
-            <div className="bg-white border border-gray-200/80 rounded-2xl shadow-2xl p-3 text-left"
-              style={{boxShadow:`0 8px 32px ${c.dot}30`}}>
-              <div className="flex items-center gap-1.5 mb-2">
-                <div className="w-2 h-2 rounded-full flex-shrink-0"style={{background:c.dot}}/>
-                <span className="text-xs font-bold text-gray-800">{pop.ev.status}</span>
-              </div>
-              <div className="space-y-1 text-[11px] text-gray-500">
-                <p>{formatDate(pop.ev.tanggal)}</p>
-                <p className="font-semibold text-gray-700">{pop.ev.total_gram} gr</p>
-                {Number(pop.ev.sisa_serbuk)>0&&<p className="text-violet-600 font-medium">Serbuk: {pop.ev.sisa_serbuk} gr</p>}
-                {Number(pop.ev.losses)>0&&<p className="text-orange-500 font-medium">Losses: {pop.ev.losses} gr</p>}
-              </div>
-              <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r border-b border-gray-200/80 rotate-45"/>
-            </div>
-          </div>
-        )
-      })()}
     </div>
   )
 }
