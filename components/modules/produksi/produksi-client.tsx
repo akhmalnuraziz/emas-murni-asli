@@ -119,12 +119,17 @@ function Sbadge({s}:{s:string}){
 // ─── Timeline dots ────────────────────────────────────────────────────────────
 function TLine({events}:{events:any[]}){
   const [pop,setPop]=useState<number|null>(null)
+  const [pos,setPos]=useState<{x:number;y:number;dot:string}|null>(null)
   const timerRef=useRef<ReturnType<typeof setTimeout>|null>(null)
   const sorted=[...events].sort((a,b)=>new Date(a.tanggal).getTime()-new Date(b.tanggal).getTime())
   const dots=sorted.slice(-5)
-  function enterDot(i:number){
+  function enterDot(i:number, el?:HTMLElement|null, dotColor?:string){
     if(timerRef.current)clearTimeout(timerRef.current)
     setPop(i)
+    if(el){
+      const r = el.getBoundingClientRect()
+      setPos({ x: r.left + r.width/2, y: r.top, dot: dotColor ?? '#94A3B8' })
+    }
   }
   function leaveDot(){
     timerRef.current=setTimeout(()=>setPop(null),150)
@@ -138,15 +143,26 @@ function TLine({events}:{events:any[]}){
         return(
           <div key={i} className="relative flex-shrink-0">
             <button type="button"
-              onMouseEnter={()=>enterDot(i)} onMouseLeave={leaveDot}
+              onMouseEnter={(e)=>enterDot(i, e.currentTarget, cfg.dot)} onMouseLeave={leaveDot}
               onClick={()=>setPop(isOpen?null:i)}
               className="w-3 h-3 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-150 block"
               style={{background:cfg.dot,boxShadow:`0 0 0 2px ${cfg.dot}35`}}/>
             {isOpen&&(
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-44"
-                onMouseEnter={()=>enterDot(i)} onMouseLeave={leaveDot}>
-                <div className="bg-white/95 backdrop-blur-xl border border-white/60 rounded-2xl shadow-xl p-3 text-left"
-                  style={{boxShadow:`0 8px 32px ${cfg.dot}25`}}>
+              <div
+                className="fixed z-[200] w-48"
+                style={{
+                  left: (pos?.x ?? 0),
+                  top: (pos?.y ?? 0),
+                  transform: 'translate(-50%, -12px)',
+                  pointerEvents: 'auto',
+                }}
+                onMouseEnter={(e)=>enterDot(i, e.currentTarget as any, cfg.dot)}
+                onMouseLeave={leaveDot}
+              >
+                <div
+                  className="bg-white/92 backdrop-blur-2xl border border-white/70 rounded-2xl shadow-xl p-3 text-left"
+                  style={{boxShadow:`0 14px 42px ${(pos?.dot ?? cfg.dot)}25`}}
+                >
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <div className="w-2 h-2 rounded-full"style={{background:cfg.dot}}/>
                     <span className="text-xs font-bold text-gray-800">{ev.status}</span>
@@ -157,7 +173,7 @@ function TLine({events}:{events:any[]}){
                     {Number(ev.sisa_serbuk)>0&&<p className="text-violet-600">Serbuk: {ev.sisa_serbuk} gr</p>}
                     {Number(ev.losses)>0&&<p className="text-orange-500">Losses: {ev.losses} gr</p>}
                   </div>
-                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white/95 border-r border-b border-white/60 rotate-45"/>
+                  <div className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-3 h-3 bg-white/92 border-r border-b border-white/70 rotate-45"/>
                 </div>
               </div>
             )}
@@ -477,7 +493,8 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
   function handleDelete(){if(!active)return;startTransition(async()=>{const r=await deleteProduksi(active.id,active.kode);if(r?.error){showToast(r.error,false);return}showToast('🗑️ Batch dihapus');setModal(null)})}
 
   // Grid columns: BATCH | GRAMASI | PCS | TOTAL BERAT | SERBUK | LOSES | PACKING | SHIELDTAG | STATUS | TIMELINE | TGL | AKSI
-  const gridCols = 'minmax(120px,2fr) 55px 45px 72px 62px 62px 100px 78px 78px 92px 88px 95px'
+  // Keep the first column from stretching too wide (fixes huge gap to gramasi).
+  const gridCols = 'minmax(260px,340px) 70px 56px 96px 78px 78px 104px 96px 96px 110px 100px 106px'
 
   return(
     <div className="min-h-screen pb-24"style={{background:'linear-gradient(160deg,#F5F5F7 0%,#EFEFF4 60%,#F5F5F7 100%)'}}>
@@ -523,10 +540,111 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
           })}
         </div>
 
-        {/* Table */}
-        <div className="rounded-3xl overflow-auto"style={{background:'rgba(255,255,255,0.72)',backdropFilter:'blur(24px)',border:'1px solid rgba(255,255,255,0.6)',boxShadow:'0 8px 40px rgba(139,92,246,0.08)'}}>
+        {/* Mobile cards */}
+        <div className="space-y-3 md:hidden">
+          {filtered.length===0?(
+            <div className="rounded-3xl p-10 text-center"style={{background:'rgba(255,255,255,0.72)',backdropFilter:'blur(24px)',border:'1px solid rgba(255,255,255,0.6)'}}>
+              <div className="w-14 h-14 rounded-3xl flex items-center justify-center mx-auto mb-3"style={{background:'rgba(139,92,246,0.08)'}}>
+                <Package size={26}className="text-violet-300"/>
+              </div>
+              <p className="text-sm font-medium text-gray-400">Tidak ada batch produksi</p>
+            </div>
+          ):filtered.map((item,idx)=>{
+            const events=Array.isArray(item.produksi_event)?item.produksi_event:[]
+            const packings=Array.isArray(item.packing)?(item.packing as any[]).filter((p:any)=>!p.voided_at):[]
+            const lastEv=events.length>0?[...events].sort((a:any,b:any)=>new Date(b.tanggal).getTime()-new Date(a.tanggal).getTime())[0]:null
+            const isExp=exp===item.id
+            const pcsGood=item.pcs_good??item.pcs??0
+            const totalPacked=packings.reduce((s:number,p:any)=>s+(p.pcs_dipack||0),0)
+            const totalST=packings.reduce((s:number,p:any)=>s+(p.shieldtag_count||0),0)
+            const totalSerbuk=events.reduce((s:number,ev:any)=>s+(Number(ev.sisa_serbuk)||0),0)
+            const totalLoses=events.reduce((s:number,ev:any)=>s+(Number(ev.losses)||0),0)
+            return(
+              <div key={item.id} className="rounded-3xl overflow-hidden"
+                style={{background:'rgba(255,255,255,0.72)',backdropFilter:'blur(24px)',border:'1px solid rgba(255,255,255,0.6)',boxShadow:'0 8px 40px rgba(139,92,246,0.08)'}}>
+                <button type="button" onClick={()=>setExp(isExp?null:item.id)}
+                  className="w-full text-left px-4 py-4 active:scale-[0.99] transition-transform">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-gray-900 leading-snug break-words">{item.nama_item||item.kode}</p>
+                      <p className="text-[11px] text-gray-400 mt-0.5 break-words">{item.kode} · {item.batch_kode}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                      <Sbadge s={item.current_status}/>
+                      <div className="text-[10px] text-gray-400 font-medium">{lastEv?formatDate(lastEv.tanggal):formatDate(item.tanggal_produksi??item.tanggal)}</div>
+                    </div>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="rounded-2xl px-3 py-2"style={{background:'rgba(17,24,39,0.03)'}}>
+                      <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase">Gramasi / PCS</p>
+                      <p className="text-sm font-semibold text-gray-700 mt-0.5">{item.gramasi}gr · {pcsGood} pcs</p>
+                    </div>
+                    <div className="rounded-2xl px-3 py-2"style={{background:'rgba(17,24,39,0.03)'}}>
+                      <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase">Total Berat</p>
+                      <p className="text-sm font-semibold text-gray-700 mt-0.5">{item.total_gram}gr</p>
+                    </div>
+                    <div className="rounded-2xl px-3 py-2"style={{background:'rgba(139,92,246,0.06)'}}>
+                      <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase">Serbuk / Loses</p>
+                      <p className="text-sm font-semibold mt-0.5"style={{color:'#6D28D9'}}>
+                        {totalSerbuk>0?`${formatGr(totalSerbuk)}gr`:'—'}
+                        <span className="text-gray-300 mx-1">·</span>
+                        <span style={{color: totalLoses>0 ? '#EA580C' : '#9CA3AF'}}>{totalLoses>0?`${formatGr(totalLoses)}gr`:'0 gr'}</span>
+                      </p>
+                    </div>
+                    <div className="rounded-2xl px-3 py-2"style={{background:'rgba(34,197,94,0.06)'}}>
+                      <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase">Packing / Shieldtag</p>
+                      <p className="text-sm font-semibold text-gray-700 mt-0.5">{totalPacked}/{pcsGood} · 🏷 {totalST}/{totalPacked}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-gray-400 tracking-widest uppercase">Timeline</span>
+                      <TLine events={events}/>
+                    </div>
+                    <span className="text-xs text-gray-400 font-medium">{isExp?'Tutup':'Detail'}</span>
+                  </div>
+                </button>
+
+                {isExp&&(
+                  <div className="px-4 pb-4 border-t"style={{borderColor:'rgba(139,92,246,0.10)',background:'rgba(139,92,246,0.02)'}}>
+                    <div className="pt-4 flex items-center justify-between gap-2">
+                      <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase">Aksi</p>
+                      <div className="flex items-center gap-2">
+                        {canEdit&&item.current_status!=='Sudah Packing'&&(
+                          <button onClick={()=>openModal('update',item)}
+                            className="h-9 px-3 rounded-2xl text-xs font-bold text-violet-700"
+                            style={{background:'rgba(139,92,246,0.10)'}}><Plus size={14} className="inline -mt-0.5 mr-1"/>Update</button>
+                        )}
+                        {canEdit&&(
+                          <button onClick={()=>openModal('edit',item)}
+                            className="h-9 px-3 rounded-2xl text-xs font-bold text-blue-600"
+                            style={{background:'rgba(59,130,246,0.10)'}}><Edit2 size={14} className="inline -mt-0.5 mr-1"/>Edit</button>
+                        )}
+                        {canDelete&&(
+                          <button onClick={()=>openModal('delete',item)}
+                            className="h-9 px-3 rounded-2xl text-xs font-bold text-red-600"
+                            style={{background:'rgba(239,68,68,0.10)'}}><Trash2 size={14} className="inline -mt-0.5 mr-1"/>Hapus</button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="pt-4">
+                      <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-3">Riwayat Proses</p>
+                      {events.length===0
+                        ?<p className="text-xs text-gray-400 italic">Belum ada event tercatat</p>
+                        :<EventHistory events={events}/>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block rounded-3xl overflow-x-auto"
+          style={{background:'rgba(255,255,255,0.72)',backdropFilter:'blur(24px)',border:'1px solid rgba(255,255,255,0.6)',boxShadow:'0 8px 40px rgba(139,92,246,0.08)'}}>
           {/* Header */}
-          <div className="grid px-5 py-3.5 border-b min-w-[860px]"
+          <div className="grid px-5 py-3.5 border-b min-w-[980px]"
             style={{gridTemplateColumns:gridCols,gap:'8px',borderColor:'rgba(243,244,246,0.9)',background:'rgba(249,250,251,0.6)'}}>
             {['BATCH','GRAMASI','PCS','TOTAL BERAT','SERBUK','LOSES','STATUS','TGL UPDATE','TIMELINE','PACKING','SHIELDTAG','AKSI'].map(h=>(
               <span key={h}className="text-[10px] font-bold text-gray-400 tracking-widest uppercase whitespace-nowrap">{h}</span>
@@ -553,7 +671,7 @@ export default function ProduksiClient({produksiList,batches,userRole,userName}:
 
             return(
               <div key={item.id}>
-                <div className={cn('grid px-5 py-4 items-start transition-colors min-w-[860px]',idx>0?'border-t':'',isExp?'':'hover:bg-gray-50/40')}
+                <div className={cn('grid px-5 py-4 items-start transition-colors min-w-[980px]',idx>0?'border-t':'',isExp?'':'hover:bg-gray-50/40')}
                   style={{gridTemplateColumns:gridCols,gap:'8px',borderColor:'rgba(243,244,246,0.7)',background:isExp?'rgba(139,92,246,0.03)':''}}>
                   {/* BATCH */}
                   <div className="min-w-0">
