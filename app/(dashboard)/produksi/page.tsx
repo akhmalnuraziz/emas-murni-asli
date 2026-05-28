@@ -17,6 +17,7 @@ export default async function ProduksiPage() {
       .order('created_at', { ascending: false }),
     supabase.from('batch')
       .select('kode, nama_batch, sisa_bahan_seharusnya, timbangan_akhir')
+      .eq('status', 'aktif')          // Only aktif batches in produksi dropdown
       .is('voided_at', null)
       .order('created_at', { ascending: false }),
   ])
@@ -30,3 +31,4 @@ export default async function ProduksiPage() {
     />
   )
 }
+
