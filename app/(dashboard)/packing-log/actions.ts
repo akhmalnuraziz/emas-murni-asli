@@ -178,6 +178,14 @@ export async function voidPacking(packingId: number, packingKode: string) {
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
   if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
 
+  // Block if shieldtags already registered
+  const { count: stCount } = await supabase.from('shieldtag')
+    .select('*', { count: 'exact', head: true })
+    .eq('packing_id', packingId).is('voided_at', null)
+  if ((stCount ?? 0) > 0) {
+    return { error: `Tidak bisa hapus — ada ${stCount} Shieldtag terdaftar. VOID semua Shieldtag terlebih dahulu.` }
+  }
+
   const { data: existing } = await supabase.from('packing').select('produksi_item_id').eq('id', packingId).single()
 
   await supabase.from('packing').update({
