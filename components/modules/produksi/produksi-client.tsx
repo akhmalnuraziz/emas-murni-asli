@@ -595,6 +595,15 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
   }
   function handleDelete() { if (!active) return; startTransition(async () => { const r = await deleteProduksi(active.id, active.kode); if (r?.error) { showToast(r.error, false); return }; showToast('🗑️ Batch dihapus'); setModal(null) }) }
 
+  function handleLebur(item: any) {
+    startTransition(async () => {
+      const r = await leburReject(item.id, item.kode, item.batch_kode)
+      if (r?.error) { showToast(r.error, false); return }
+      const berat = (r as any)?.berat_kembali ?? item.berat_reject ?? 0
+      showToast(`🔥 ${berat}gr reject dilebur — kembali ke sisa fisik batch ${item.batch_kode}`)
+    })
+  }
+
   return (
     <div className="min-h-screen pb-24" style={{ background: 'linear-gradient(160deg,#F2F2F7 0%,#EBEBF0 50%,#F2F2F7 100%)' }}>
 
@@ -825,3 +834,4 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     </div>
   )
 }
+
