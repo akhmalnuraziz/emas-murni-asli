@@ -220,7 +220,13 @@ export async function lockBatch(batchId: number, batchKode: string) {
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
 
-  await supabase.from('batch').update({ voided_at: new Date().toISOString(), void_reason: 'LOCKED_BY_USER' }).eq('id', batchId)
+  await supabase.from('batch').update({
+    status:      'terkunci',
+    locked_at:   new Date().toISOString(),
+    locked_by:   user.id,
+    lock_reason: 'LOCKED_BY_USER',
+  }).eq('id', batchId)
+
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'LOCK_BATCH', module: 'BAHAN_BAKU', record_key: batchKode, record_id: String(batchId),
@@ -236,7 +242,7 @@ export async function unlockBatch(batchId: number, batchKode: string) {
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
   if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
 
-  await supabase.from('batch').update({ voided_at: null, void_reason: null }).eq('id', batchId)
+  await supabase.from('batch').update({ status: 'aktif', locked_at: null, locked_by: null, lock_reason: null }).eq('id', batchId)
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'UNLOCK_BATCH', module: 'BAHAN_BAKU', record_key: batchKode, record_id: String(batchId),
