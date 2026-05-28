@@ -131,14 +131,9 @@ function TLine({events}:{events:any[]}){
       setPos({ x: r.left + r.width/2, y: r.top, dot: dotColor ?? '#94A3B8' })
     }
   }
-  function keepOpen(i:number){
-    if(timerRef.current)clearTimeout(timerRef.current)
-    setPop(i)
-  }
   function leaveDot(){
-    // Slightly longer delay prevents flicker when moving
-    // from the dot to the tooltip (which is rendered elsewhere).
-    timerRef.current=setTimeout(()=>setPop(null),350)
+    // Short delay prevents micro-flicker when moving between dots.
+    timerRef.current=setTimeout(()=>setPop(null),120)
   }
   useEffect(()=>()=>{if(timerRef.current)clearTimeout(timerRef.current)},[])
   return(
@@ -146,27 +141,29 @@ function TLine({events}:{events:any[]}){
       {dots.map((ev,i)=>{
         const cfg=STATUS_CFG[ev.status]??{dot:'#94A3B8'}
         const isOpen=pop===i
+        const left = (() => {
+          if (!pos || typeof window === 'undefined') return pos?.x ?? 0
+          const half = 96 // tooltip width (w-48) / 2
+          const min = 12 + half
+          const max = window.innerWidth - 12 - half
+          return Math.min(Math.max(pos.x, min), max)
+        })()
         return(
           <div key={i} className="relative flex-shrink-0">
             <button type="button"
               onMouseEnter={(e)=>enterDot(i, e.currentTarget, cfg.dot)} onMouseLeave={leaveDot}
               onPointerEnter={(e)=>enterDot(i, e.currentTarget as any, cfg.dot)} onPointerLeave={leaveDot}
               onClick={()=>setPop(isOpen?null:i)}
-              className="w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-150 block"
+              className="w-4 h-4 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-150 block"
               style={{background:cfg.dot,boxShadow:`0 0 0 2px ${cfg.dot}35`}}/>
             {isOpen&&(
               <div
-                className="fixed z-[200] w-48"
+                className="fixed z-[999] w-48 pointer-events-none"
                 style={{
-                  left: (pos?.x ?? 0),
+                  left,
                   top: (pos?.y ?? 0),
                   transform: 'translate(-50%, -12px)',
-                  pointerEvents: 'auto',
                 }}
-                onMouseEnter={()=>keepOpen(i)}
-                onMouseLeave={leaveDot}
-                onPointerEnter={()=>keepOpen(i)}
-                onPointerLeave={leaveDot}
               >
                 <div
                   className="bg-white/92 backdrop-blur-2xl border border-white/70 rounded-2xl shadow-xl p-3 text-left"
