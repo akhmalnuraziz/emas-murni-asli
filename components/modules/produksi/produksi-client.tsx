@@ -118,42 +118,42 @@ function Sbadge({s}:{s:string}){
 
 // ─── Timeline dots ────────────────────────────────────────────────────────────
 function TLine({events}:{events:any[]}){
-  const [pop,setPop]=useState<number|null>(null)
-  const [pos,setPos]=useState<{x:number;y:number;dot:string}|null>(null)
+  const [hover,setHover]=useState<{i:number;x:number;y:number;dot:string}|null>(null)
   const timerRef=useRef<ReturnType<typeof setTimeout>|null>(null)
   const sorted=[...events].sort((a,b)=>new Date(a.tanggal).getTime()-new Date(b.tanggal).getTime())
   const dots=sorted.slice(-5)
   function enterDot(i:number, el?:HTMLElement|null, dotColor?:string){
     if(timerRef.current)clearTimeout(timerRef.current)
-    setPop(i)
     if(el){
       const r = el.getBoundingClientRect()
-      setPos({ x: r.left + r.width/2, y: r.top, dot: dotColor ?? '#94A3B8' })
+      setHover({ i, x: r.left + r.width/2, y: r.top, dot: dotColor ?? '#94A3B8' })
+      return
     }
+    setHover({ i, x: 0, y: 0, dot: dotColor ?? '#94A3B8' })
   }
   function leaveDot(){
     // Short delay prevents micro-flicker when moving between dots.
-    timerRef.current=setTimeout(()=>setPop(null),120)
+    timerRef.current=setTimeout(()=>setHover(null),120)
   }
   useEffect(()=>()=>{if(timerRef.current)clearTimeout(timerRef.current)},[])
   return(
     <div className="flex items-center gap-1.5">
       {dots.map((ev,i)=>{
         const cfg=STATUS_CFG[ev.status]??{dot:'#94A3B8'}
-        const isOpen=pop===i
+        const isOpen=hover?.i===i
         const left = (() => {
-          if (!pos || typeof window === 'undefined') return pos?.x ?? 0
+          if (!hover || typeof window === 'undefined') return hover?.x ?? 0
           const half = 96 // tooltip width (w-48) / 2
           const min = 12 + half
           const max = window.innerWidth - 12 - half
-          return Math.min(Math.max(pos.x, min), max)
+          return Math.min(Math.max(hover.x, min), max)
         })()
         return(
           <div key={i} className="relative flex-shrink-0">
             <button type="button"
               onMouseEnter={(e)=>enterDot(i, e.currentTarget, cfg.dot)} onMouseLeave={leaveDot}
               onPointerEnter={(e)=>enterDot(i, e.currentTarget as any, cfg.dot)} onPointerLeave={leaveDot}
-              onClick={()=>setPop(isOpen?null:i)}
+              onClick={()=>setHover(isOpen?null:hover)}
               className="w-4 h-4 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-150 block"
               style={{background:cfg.dot,boxShadow:`0 0 0 2px ${cfg.dot}35`}}/>
             {isOpen&&(
@@ -161,13 +161,13 @@ function TLine({events}:{events:any[]}){
                 className="fixed z-[999] w-48 pointer-events-none"
                 style={{
                   left,
-                  top: (pos?.y ?? 0),
+                  top: (hover?.y ?? 0),
                   transform: 'translate(-50%, -12px)',
                 }}
               >
                 <div
                   className="bg-white/92 backdrop-blur-2xl border border-white/70 rounded-2xl shadow-xl p-3 text-left"
-                  style={{boxShadow:`0 14px 42px ${(pos?.dot ?? cfg.dot)}25`}}
+                  style={{boxShadow:`0 14px 42px ${(hover?.dot ?? cfg.dot)}25`}}
                 >
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <div className="w-2 h-2 rounded-full"style={{background:cfg.dot}}/>
