@@ -4,12 +4,12 @@ import { useState, useEffect, useTransition, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Plus, Search, Edit2, Trash2, Check, AlertTriangle,
-  X, Camera, ChevronDown, ChevronUp, Package, Pencil, ZoomIn
+  X, Camera, ChevronDown, ChevronUp, Package, Pencil, ZoomIn, Flame
 } from 'lucide-react'
 import { cn, formatDate } from '@/lib/utils'
 import {
   createProduksi, updateStatusProduksi, editProduksi,
-  inputReject, leburReject, deleteProduksi, updateSisaFisikBatch
+  inputReject, leburReject, deleteProduksi
 } from '@/app/(dashboard)/produksi/actions'
 import type { UserRole } from '@/lib/types/database'
 
@@ -225,52 +225,6 @@ function TLine({ events }: { events: any[] }) {
         document.body,
       )}
     </>
-  )
-}
-
-// ─── Sisa Fisik Inline Edit ────────────────────────────────────────────────────
-function SisaFisikInput({ batchKode, initialValue }: { batchKode: string; initialValue: number | null }) {
-  const [val,     setVal]     = useState<number | null>(initialValue)
-  const [editing, setEditing] = useState(false)
-  const [draft,   setDraft]   = useState('')
-  const [saving,  setSaving]  = useState(false)
-  const ref = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (editing) { setDraft(val !== null ? String(val) : ''); setTimeout(() => ref.current?.select(), 10) }
-  }, [editing])
-
-  async function save() {
-    const parsed = draft.trim() === '' ? null : parseFloat(draft)
-    setSaving(true)
-    await updateSisaFisikBatch(batchKode, parsed)
-    setVal(parsed)
-    setSaving(false)
-    setEditing(false)
-  }
-
-  if (saving) return <span className="text-[11px] text-violet-500 font-medium">Menyimpan…</span>
-
-  if (editing) return (
-    <input
-      ref={ref}
-      type="number" step="0.001" value={draft}
-      onChange={e => setDraft(e.target.value)}
-      onBlur={save}
-      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); save() } if (e.key === 'Escape') setEditing(false) }}
-      className="w-20 text-[11px] font-semibold px-2 py-1 rounded-lg border border-violet-300 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white"
-      placeholder="0.000"
-    />
-  )
-
-  return (
-    <button type="button" onClick={() => setEditing(true)}
-      className={cn('flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg transition-colors group',
-        val !== null ? 'text-gray-700 hover:bg-gray-100' : 'text-violet-500 hover:bg-violet-50'
-      )}>
-      {val !== null ? `${fgr(val)}gr` : '+ Isi fisik'}
-      <Pencil size={9} className="opacity-0 group-hover:opacity-50 transition-opacity flex-shrink-0" />
-    </button>
   )
 }
 
@@ -674,7 +628,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
               const totalPacked = packings.reduce((s: number, p: any) => s + (p.pcs_dipack || 0), 0)
               const totalST    = packings.reduce((s: number, p: any) => s + (p.shieldtag_count || 0), 0)
               const totalSerbuk = events.reduce((s: number, ev: any) => s + (Number(ev.sisa_serbuk) || 0), 0)
-              const totalLoses  = events.reduce((s: number, ev: any) => s + (Number(ev.losses)      || 0), 0)
+              const totalLoses  = events.reduce((s: number, ev: any) => ev.status === 'Reject' ? s : s + (Number(ev.losses) || 0), 0)  // reject ≠ losses
 
               // Bahan baku data
               const b          = item.batch ? (Array.isArray(item.batch) ? item.batch[0] : item.batch) : null
@@ -699,6 +653,18 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                               👤 {item.operator}
                             </span>
                           )}
+                          {item.status_reject === 'belum_dilebur' && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse"
+                              style={{background:'rgba(239,68,68,0.1)',color:'#DC2626'}}>
+                              🔥 Reject Belum Dilebur
+                            </span>
+                          )}
+                          {item.status_reject === 'sudah_dilebur' && (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                              style={{background:'rgba(34,197,94,0.1)',color:'#16A34A'}}>
+                              ✓ Reject Sudah Dilebur
+                            </span>
+                          )}
                         </div>
                         <h3 className="text-[15px] font-bold text-gray-900 leading-snug break-words">{item.nama_item || item.kode}</h3>
                         <p className="text-[11px] text-gray-400 mt-0.5 font-medium">{item.kode} · {item.batch_kode}</p>
@@ -710,6 +676,14 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                             className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 transition-all hover:scale-105"
                             style={{ background: 'rgba(139,92,246,0.1)', color: '#7C3AED' }}>
                             <Plus size={11} /> Update
+                          </button>
+                        )}
+                        {item.status_reject === 'belum_dilebur' && ['owner','admin_pusat','spv'].includes(userRole) && (
+                          <button onClick={() => handleLebur(item)} disabled={isPending}
+                            className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 transition-all hover:scale-105 disabled:opacity-50"
+                            style={{ background: 'rgba(239,68,68,0.1)', color: '#DC2626' }}
+                            title={`Lebur ${item.berat_reject ?? 0}gr → kembali ke sisa fisik batch`}>
+                            <Flame size={11} /> Lebur
                           </button>
                         )}
                         {canEdit && (
@@ -779,12 +753,11 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                           <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Sisa (Seharusnya)</p>
                           <p className="text-[12px] font-bold text-gray-700 mt-0.5">{fgr(sisaS)} gr</p>
                         </div>
-                        {/* Sisa Fisik — editable */}
-                        <div className="rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,0.7)' }}>
+                                                <div className="rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,0.7)' }}>
                           <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Sisa Fisik</p>
-                          <div className="mt-0.5">
-                            <SisaFisikInput batchKode={item.batch_kode} initialValue={sisaF} />
-                          </div>
+                          <p className="text-[12px] font-bold text-gray-700 mt-0.5">
+                            {sisaF !== null ? `${fgr(sisaF)} gr` : <span className="text-[10px] text-gray-300 italic">— input di Bahan Baku</span>}
+                          </p>
                         </div>
                         {/* Loses Bahan */}
                         <div className="rounded-xl px-3 py-2" style={{ background: losesBahan !== null && losesBahan > 0 ? 'rgba(239,68,68,0.06)' : losesBahan === 0 ? 'rgba(34,197,94,0.06)' : 'rgba(255,255,255,0.7)' }}>
@@ -834,4 +807,5 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     </div>
   )
 }
+
 
