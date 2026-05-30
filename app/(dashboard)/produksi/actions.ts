@@ -256,15 +256,15 @@ export async function editEvent(eventId: number, produksiId: number, produksiKod
   const pcsRaw = formData.get('pcs_good_snapshot')
   const pcsGoodSnap = pcsRaw !== null && pcsRaw !== '' ? parseInt(pcsRaw as string) : null
 
-  // Fotos: gabungan existing yang disimpan + new uploads dari base64
+  // Fotos: gabungan existing + new uploads
   const existingFotosRaw = formData.get('existing_fotos') as string
   const newFotosB64Raw   = formData.get('new_fotos_b64') as string
   const existingFotos: string[] = existingFotosRaw ? JSON.parse(existingFotosRaw) : []
   const newFotosB64: string[]   = newFotosB64Raw   ? JSON.parse(newFotosB64Raw)   : []
   let finalFotos = [...existingFotos]
   if (newFotosB64.length > 0) {
-    const { urls: uploadedUrls } = await uploadBase64Fotos(supabase, newFotosB64, eventId.toString(), existingFotos)
-    finalFotos = uploadedUrls
+    const uploadedUrls = await uploadBase64Fotos(supabase, newFotosB64, `event-${eventId}`)
+    finalFotos = [...existingFotos, ...uploadedUrls]
   }
 
   await supabase.from('produksi_event').update({
@@ -695,6 +695,7 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
