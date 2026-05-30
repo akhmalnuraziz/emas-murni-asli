@@ -498,61 +498,64 @@ function CreateModal({ batches, onClose, onSubmit, isPending, error }: {
   )
 }
 
-// ─── Edit Modal (2 tabs: Data Dasar + Riwayat Proses) ─────────────────────────
+// ─── Edit Modal — Riwayat Proses langsung, 1 tombol edit ─────────────────────
 function EditModal({ item, onClose, onSubmit, isPending, error }: {
   item: any; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
 }) {
-  const [tab, setTab] = useState<'data'|'proses'>('data')
-
-  // ── Tab Data Dasar ──
-  const [f, setF] = useState({
-    nama_item: item.nama_item ?? '', gramasi: item.gramasi ?? '',
-    pcs: String(item.pcs ?? ''), berat_awal: String(item.berat_awal ?? item.total_gram ?? ''),
-    operator: item.operator ?? '', catatan: item.catatan ?? '',
-    tanggal_produksi: item.tanggal_produksi ?? item.tanggal ?? today,
-  })
-  const s = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
-  function submitBase(e: React.FormEvent) {
-    e.preventDefault(); const fd = new FormData()
-    Object.entries(f).forEach(([k, v]) => fd.set(k, v)); onSubmit(fd)
-  }
-
-  // ── Tab Riwayat Proses ──
   const evs = Array.isArray(item.produksi_event)
     ? [...item.produksi_event].filter((e:any)=>!e.voided_at)
         .sort((a:any,b:any)=>new Date(a.tanggal).getTime()-new Date(b.tanggal).getTime())
     : []
-  const latestEvId = evs.length > 0 ? evs[evs.length-1].id : null
+  const latestEvId  = evs.length > 0 ? evs[evs.length-1].id : null
   const [evEditId,  setEvEditId]  = useState<number|null>(null)
   const [evDraft,   setEvDraft]   = useState<Record<string,any>>({})
   const [evDelConf, setEvDelConf] = useState<number|null>(null)
   const [evPend,    startEvPend]  = useTransition()
   const [evMsg,     setEvMsg]     = useState<{text:string;ok:boolean}|null>(null)
+  const [newFotos,  setNewFotos]  = useState<File[]>([])
+  const [lightbox,  setLightbox]  = useState<string|null>(null)
+  const [operator,  setOperator]  = useState(item.operator ?? '')
+  const [gramasi,   setGramasi]   = useState(item.gramasi ?? '')
 
   function openEvEdit(ev:any){
-    setEvEditId(ev.id)
+    setEvEditId(ev.id); setNewFotos([])
     setEvDraft({
-      total_gram: ev.total_gram,
+      total_gram:        ev.total_gram,
       pcs_good_snapshot: ev.pcs_good_snapshot ?? item.pcs_good ?? item.pcs ?? '',
-      sisa_serbuk: ev.sisa_serbuk ?? 0,
-      catatan: ev.catatan ?? '',
-      tanggal: ev.tanggal,
+      sisa_serbuk:       ev.sisa_serbuk ?? 0,
+      catatan:           ev.catatan ?? '',
+      tanggal:           ev.tanggal,
+      existing_fotos:    Array.isArray(ev.fotos) ? ev.fotos : [],
     })
   }
 
   function saveEv(evId:number){
     startEvPend(async()=>{
+      const formEl = document.getElementById(`ev-form-${evId}`) as HTMLFormElement|null
+      const b64s = newFotos.length > 0 ? await filesToBase64(newFotos) : []
       const fd=new FormData()
       fd.set('total_gram',        String(evDraft.total_gram))
       fd.set('pcs_good_snapshot', String(evDraft.pcs_good_snapshot ?? ''))
       fd.set('sisa_serbuk',       String(evDraft.sisa_serbuk ?? 0))
       fd.set('catatan',           evDraft.catatan ?? '')
       fd.set('tanggal',           evDraft.tanggal)
+      fd.set('existing_fotos',    JSON.stringify(evDraft.existing_fotos ?? []))
+      fd.set('new_fotos_b64',     JSON.stringify(b64s))
       const r=await editEvent(evId, item.id, item.kode, fd)
       if(r?.error){setEvMsg({text:r.error,ok:false});return}
-      setEvMsg({text:'✅ Event diperbarui',ok:true})
-      setEvEditId(null)
+      setEvMsg({text:'✅ Disimpan',ok:true}); setEvEditId(null); setNewFotos([])
       setTimeout(()=>setEvMsg(null),3000)
+    })
+  }
+
+  function saveBase(){
+    startEvPend(async()=>{
+      const fd=new FormData()
+      fd.set('gramasi',gramasi); fd.set('operator',operator)
+      fd.set('pcs',String(item.pcs??'')); fd.set('berat_awal',String(item.berat_awal??item.total_gram??''))
+      fd.set('tanggal_produksi',item.tanggal_produksi??item.tanggal??today)
+      fd.set('catatan',item.catatan??''); fd.set('nama_item',item.nama_item??'')
+      onSubmit(fd)
     })
   }
 
@@ -560,146 +563,118 @@ function EditModal({ item, onClose, onSubmit, isPending, error }: {
     startEvPend(async()=>{
       const r=await deleteEvent(evId, item.id, item.kode)
       if(r?.error){setEvMsg({text:r.error,ok:false});return}
-      setEvMsg({text:'🗑️ Event dihapus',ok:true})
-      setEvDelConf(null)
+      setEvMsg({text:'🗑️ Event dihapus',ok:true}); setEvDelConf(null)
       setTimeout(()=>setEvMsg(null),3000)
     })
   }
 
-  return (
+  return(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.4)',backdropFilter:'blur(8px)'}}>
+      {lightbox&&<Lightbox url={lightbox} onClose={()=>setLightbox(null)}/>}
       <div className="w-full max-w-md rounded-3xl overflow-hidden" style={{background:'rgba(255,255,255,0.97)',backdropFilter:'blur(24px)',border:'1px solid rgba(255,255,255,0.6)',boxShadow:'0 32px 64px rgba(139,92,246,0.2)'}}>
 
-        {/* ─ Header ─ */}
-        <div className="px-6 pt-5 pb-0">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">Edit Produksi</h2>
-              <p className="text-xs text-violet-500 font-medium mt-0.5">{item.kode} — {item.nama_item || item.gramasi}</p>
-            </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 flex-shrink-0"><X size={15}/></button>
+        <div className="px-5 pt-5 pb-3 border-b border-gray-100 flex items-start justify-between">
+          <div>
+            <h2 className="text-base font-bold text-gray-900">Edit Produksi</h2>
+            <p className="text-xs text-violet-500 font-medium">{item.kode} — {item.nama_item||item.gramasi}</p>
           </div>
-
-          {/* ─ Tab bar ─ */}
-          <div className="flex rounded-2xl p-1 gap-1" style={{background:'rgba(139,92,246,0.06)'}}>
-            {([['data','Data Dasar'],['proses',`Riwayat Proses${evs.length>0?' ('+evs.length+')':''}`]] as [string,string][]).map(([key,label])=>(
-              <button key={key} onClick={()=>setTab(key as any)}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all ${tab===key?'bg-white text-violet-700 shadow-sm':'text-gray-400 hover:text-gray-600'}`}>
-                {label}
-              </button>
-            ))}
-          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 flex-shrink-0"><X size={14}/></button>
         </div>
 
-        {/* ─ Tab: Data Dasar ─ */}
-        {tab==='data' && (
-          <form onSubmit={submitBase} className="px-6 pt-4 pb-5 space-y-4 overflow-y-auto max-h-[68vh]">
-            <F label="Nama / Label Batch"><input value={f.nama_item} onChange={e=>s('nama_item',e.target.value)} placeholder="cth: LM REI 10GR BATCH 26" className={inp}/></F>
-            <div className="grid grid-cols-2 gap-3">
-              <F label="Gramasi" req><select value={f.gramasi} onChange={e=>s('gramasi',e.target.value)} className={inp}>{GRAMASI_OPTIONS.map(g=><option key={g} value={g}>{g} Gram</option>)}</select></F>
-              <F label="PCS" req><input type="number" min="1" value={f.pcs} onChange={e=>s('pcs',e.target.value)} className={inp}/></F>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <F label="Total Berat (gr)" req><input type="number" step="0.01" value={f.berat_awal} onChange={e=>s('berat_awal',e.target.value)} className={inp}/></F>
-              <F label="Tanggal"><input type="date" value={f.tanggal_produksi} onChange={e=>s('tanggal_produksi',e.target.value)} className={inp}/></F>
-            </div>
-            <F label="Operator / PIC"><input value={f.operator} onChange={e=>s('operator',e.target.value)} placeholder="Nama operator" className={inp}/></F>
-            <F label="Catatan"><input value={f.catatan} onChange={e=>s('catatan',e.target.value)} placeholder="Catatan tambahan…" className={inp}/></F>
-            {error&&<div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600"><AlertTriangle size={14}/>{error}</div>}
-            <div className="flex gap-3 justify-end pt-1">
-              <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
-              <button type="submit" disabled={isPending} className="px-6 py-2.5 text-sm font-bold text-white rounded-2xl flex items-center gap-2 disabled:opacity-60" style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
-                {isPending&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
-                {isPending?'Menyimpan…':'Simpan Perubahan'}
-              </button>
-            </div>
-          </form>
-        )}
+        {/* Gramasi + Operator */}
+        <div className="px-5 py-3 flex gap-2 items-end border-b border-gray-100" style={{background:'rgba(139,92,246,0.03)'}}>
+          <div className="flex-1">
+            <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Gramasi</p>
+            <select value={gramasi} onChange={e=>setGramasi(e.target.value)}
+              className="w-full text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30">
+              {GRAMASI_OPTIONS.map(g=><option key={g} value={g}>{g} Gram</option>)}
+            </select>
+          </div>
+          <div className="flex-1">
+            <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Operator</p>
+            <input value={operator} onChange={e=>setOperator(e.target.value)} placeholder="Nama operator"
+              className="w-full text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30"/>
+          </div>
+          <button onClick={saveBase} disabled={isPending||evPend}
+            className="px-3 py-1.5 text-[10px] font-bold text-white rounded-xl disabled:opacity-50 whitespace-nowrap"
+            style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
+            {isPending?'...':'Simpan'}
+          </button>
+        </div>
 
-        {/* ─ Tab: Riwayat Proses ─ */}
-        {tab==='proses' && (
-          <div className="px-6 pt-4 pb-5 overflow-y-auto max-h-[68vh] space-y-2">
-            {evMsg&&(
-              <div className={`px-3 py-2 rounded-xl text-xs font-semibold ${evMsg.ok?'bg-emerald-50 text-emerald-700':'bg-red-50 text-red-600'}`}>
-                {evMsg.text}
-              </div>
-            )}
-            {evs.length===0?(
-              <p className="text-sm text-gray-400 text-center py-8">Belum ada riwayat proses</p>
-            ):evs.map((ev:any)=>{
+        {/* Event list */}
+        <div className="px-5 py-3 overflow-y-auto max-h-[60vh] space-y-2">
+          {evMsg&&<div className={`px-3 py-2 rounded-xl text-xs font-semibold ${evMsg.ok?'bg-emerald-50 text-emerald-700':'bg-red-50 text-red-600'}`}>{evMsg.text}</div>}
+          {evs.length===0
+            ?<p className="text-sm text-gray-400 text-center py-6">Belum ada riwayat proses</p>
+            :evs.map((ev:any)=>{
               const cfg=STATUS_CFG[ev.status]??{dot:'#94A3B8'}
               const isLast=ev.id===latestEvId
               const isEditing=evEditId===ev.id
               const hasSerbuk=ev.status==='Pas Berat'||ev.status==='Annealing'
+              const evFotos:string[]=Array.isArray(ev.fotos)?ev.fotos:[]
               return(
-                <div key={ev.id} className="rounded-2xl border overflow-hidden" style={{borderColor:'rgba(0,0,0,0.06)'}}>
-                  {/* ── Event row header ── */}
+                <div key={ev.id} className="rounded-2xl border overflow-hidden" style={{borderColor:'rgba(0,0,0,0.07)'}}>
                   <div className="flex items-center justify-between px-3 py-2.5"
-                    style={{background:isEditing?'rgba(139,92,246,0.04)':'rgba(0,0,0,0.015)'}}>
-                    <div className="flex items-center gap-2 flex-wrap">
+                    style={{background:isEditing?'rgba(139,92,246,0.05)':'rgba(0,0,0,0.02)'}}>
+                    <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                       <div className="w-2 h-2 rounded-full flex-shrink-0" style={{background:cfg.dot}}/>
                       <Sbadge s={ev.status}/>
                       <span className="text-[11px] text-gray-400">{formatDate(ev.tanggal)}</span>
                       <span className="text-xs font-bold text-gray-700">
-                        {ev.status==='Reject'
-                          ? `−${fgr((ev.berat_sebelumnya??0)-(ev.total_gram??0))}gr`
-                          : `${ev.total_gram}gr`}
+                        {ev.status==='Reject'?`−${fgr((ev.berat_sebelumnya??0)-(ev.total_gram??0))}gr`:`${ev.total_gram}gr`}
                       </span>
                       {ev.pcs_good_snapshot!=null&&(
                         <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-md">
-                          {ev.status==='Reject'
-                            ?`−${ev.pcs_reject_snapshot??'?'} pcs`
-                            :`${ev.pcs_good_snapshot} pcs`}
+                          {ev.status==='Reject'?`−${ev.pcs_reject_snapshot??'?'}pcs`:`${ev.pcs_good_snapshot}pcs`}
                         </span>
                       )}
+                      {evFotos.length>0&&<span className="text-[10px] text-gray-300 ml-0.5">📷{evFotos.length}</span>}
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
                       {ev.status!=='Reject'&&!isEditing&&(
                         <button onClick={()=>openEvEdit(ev)} disabled={evPend}
-                          className="w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-colors">
-                          <Pencil size={11}/>
+                          className="w-7 h-7 rounded-xl flex items-center justify-center text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-colors">
+                          <Pencil size={12}/>
                         </button>
                       )}
                       {isLast&&!isEditing&&(
                         evDelConf===ev.id?(
                           <div className="flex gap-1">
                             <button onClick={()=>delEv(ev.id)} disabled={evPend}
-                              className="px-2 h-6 text-[10px] font-bold rounded-lg bg-red-500 text-white disabled:opacity-50">
-                              {evPend?'...':'Hapus'}
-                            </button>
-                            <button onClick={()=>setEvDelConf(null)} className="px-2 h-6 text-[10px] font-semibold rounded-lg bg-gray-100 text-gray-600">Batal</button>
+                              className="px-2 h-7 text-[10px] font-bold rounded-xl bg-red-500 text-white disabled:opacity-50">{evPend?'...':'Hapus'}</button>
+                            <button onClick={()=>setEvDelConf(null)} className="px-2 h-7 text-[10px] font-semibold rounded-xl bg-gray-100 text-gray-600">Batal</button>
                           </div>
                         ):(
                           <button onClick={()=>setEvDelConf(ev.id)} disabled={evPend}
-                            className="w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
-                            <Trash2 size={11}/>
+                            className="w-7 h-7 rounded-xl flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                            <Trash2 size={12}/>
                           </button>
                         )
                       )}
                     </div>
                   </div>
-                  {/* ── Inline edit form ── */}
                   {isEditing&&(
-                    <div className="px-3 pb-3 pt-2 space-y-2" style={{background:'rgba(139,92,246,0.03)'}}>
-                      <div className="grid grid-cols-3 gap-2">
+                    <div className="px-3 pb-3 pt-2 space-y-2.5" style={{background:'rgba(139,92,246,0.02)'}}>
+                      <div className={`grid gap-2 ${hasSerbuk?'grid-cols-3':'grid-cols-2'}`}>
                         <div>
-                          <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Berat (gr)</p>
+                          <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Total Berat (gr)</p>
                           <input type="number" step="0.001" value={evDraft.total_gram}
                             onChange={e=>setEvDraft(d=>({...d,total_gram:e.target.value}))}
-                            className="w-full text-xs font-semibold px-2 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white"/>
+                            className="w-full text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white"/>
                         </div>
                         <div>
                           <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">PCS Good</p>
                           <input type="number" min="1" value={evDraft.pcs_good_snapshot}
                             onChange={e=>setEvDraft(d=>({...d,pcs_good_snapshot:e.target.value}))}
-                            className="w-full text-xs font-semibold px-2 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white"/>
+                            className="w-full text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white"/>
                         </div>
                         {hasSerbuk&&(
                           <div>
                             <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Serbuk (gr)</p>
                             <input type="number" step="0.001" value={evDraft.sisa_serbuk}
                               onChange={e=>setEvDraft(d=>({...d,sisa_serbuk:e.target.value}))}
-                              className="w-full text-xs font-semibold px-2 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white"/>
+                              className="w-full text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white"/>
                           </div>
                         )}
                       </div>
@@ -708,139 +683,66 @@ function EditModal({ item, onClose, onSubmit, isPending, error }: {
                           <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Tanggal</p>
                           <input type="date" value={evDraft.tanggal}
                             onChange={e=>setEvDraft(d=>({...d,tanggal:e.target.value}))}
-                            className="w-full text-xs px-2 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white"/>
+                            className="w-full text-xs px-2.5 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white"/>
                         </div>
                         <div>
                           <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Catatan</p>
-                          <input type="text" value={evDraft.catatan}
-                            onChange={e=>setEvDraft(d=>({...d,catatan:e.target.value}))}
+                          <input type="text" value={evDraft.catatan} onChange={e=>setEvDraft(d=>({...d,catatan:e.target.value}))}
                             placeholder="Opsional…"
-                            className="w-full text-xs px-2 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white"/>
+                            className="w-full text-xs px-2.5 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white"/>
+                        </div>
+                      </div>
+                      {/* Foto */}
+                      <div>
+                        <p className="text-[9px] font-bold text-gray-400 uppercase mb-1.5">Foto ({(evDraft.existing_fotos??[]).length+newFotos.length}/10)</p>
+                        <div className="flex flex-wrap gap-2">
+                          {(evDraft.existing_fotos??[]).map((url:string,fi:number)=>(
+                            <div key={fi} className="relative">
+                              <img src={url} onClick={()=>setLightbox(url)}
+                                className="w-12 h-12 rounded-xl object-cover cursor-pointer border border-gray-100 hover:scale-105 transition-transform"/>
+                              <button onClick={()=>setEvDraft(d=>({...d,existing_fotos:d.existing_fotos.filter((_:any,i:number)=>i!==fi)}))}
+                                className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-[9px] flex items-center justify-center">×</button>
+                            </div>
+                          ))}
+                          {newFotos.map((f,fi)=>(
+                            <div key={`n${fi}`} className="relative">
+                              <img src={URL.createObjectURL(f)} className="w-12 h-12 rounded-xl object-cover border-2 border-violet-300"/>
+                              <button onClick={()=>setNewFotos(p=>p.filter((_,i)=>i!==fi))}
+                                className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-[9px] flex items-center justify-center">×</button>
+                            </div>
+                          ))}
+                          {(evDraft.existing_fotos??[]).length+newFotos.length<10&&(
+                            <label className="w-12 h-12 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-violet-400 hover:bg-violet-50 transition-colors">
+                              <Camera size={16} className="text-gray-400"/>
+                              <input type="file" accept="image/*" multiple className="hidden"
+                                onChange={e=>{
+                                  const files=Array.from(e.target.files??[])
+                                  const rem=10-((evDraft.existing_fotos??[]).length+newFotos.length)
+                                  setNewFotos(p=>[...p,...files.slice(0,rem)])
+                                  e.target.value=''
+                                }}/>
+                            </label>
+                          )}
                         </div>
                       </div>
                       <div className="flex gap-2 pt-0.5">
                         <button onClick={()=>saveEv(ev.id)} disabled={evPend}
-                          className="flex-1 py-1.5 text-xs font-bold text-white rounded-xl disabled:opacity-50"
+                          className="flex-1 py-2 text-xs font-bold text-white rounded-xl disabled:opacity-50 flex items-center justify-center gap-1.5"
                           style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
+                          {evPend&&<span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
                           {evPend?'Menyimpan...':'Simpan'}
                         </button>
                         <button onClick={()=>setEvEditId(null)}
-                          className="px-4 py-1.5 text-xs font-semibold bg-gray-100 text-gray-600 rounded-xl">
-                          Batal
-                        </button>
+                          className="px-4 py-2 text-xs font-semibold bg-gray-100 text-gray-600 rounded-xl">Batal</button>
                       </div>
                     </div>
                   )}
                 </div>
               )
             })}
-            <p className="text-[10px] text-gray-400 text-center pt-2">Hanya event terakhir yang bisa dihapus • Reject tidak bisa diedit</p>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ─── Update Status Modal ───────────────────────────────────────────────────────
-function UpdateModal({ item, onClose, onSubmit, isPending, error }: {
-  item: any; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
-}) {
-  const next = STATUS_NEXT[item.current_status] ?? 'Siap Packing'
-  const [status, setStatus] = useState(next)
-  const [fotos,  setFotos]  = useState<File[]>([])
-  const [serbuk, setSerbuk] = useState<File[]>([])
-  const [up, setUp] = useState(false)
-  const isPB = status === 'Pas Berat'
-  async function submit(e: React.FormEvent) {
-    e.preventDefault(); const el = e.currentTarget as HTMLFormElement
-    setUp(true)
-    const fb64 = fotos.length  > 0 ? await filesToBase64(fotos)  : []
-    const sb64 = isPB && serbuk.length > 0 ? await filesToBase64(serbuk) : []
-    setUp(false)
-    const fd = new FormData(el)
-    fd.set('fotos_b64',       JSON.stringify(fb64))
-    fd.set('fotos_serbuk_b64',JSON.stringify(sb64))
-    fd.set('is_reject', status === 'Reject' ? '1' : '0')
-    onSubmit(fd)
-  }
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
-      <div className="w-full max-w-md rounded-3xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 32px 64px rgba(139,92,246,0.18)' }}>
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100/80 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-gray-900">Update Status Produksi</h2>
-            <p className="text-xs font-semibold text-violet-500 mt-0.5">{item.kode} — {item.nama_item || item.gramasi}</p>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><X size={15} /></button>
+          {error&&<div className="flex items-center gap-2 px-3 py-2.5 bg-red-50 border border-red-100 rounded-2xl text-xs text-red-600 mt-2"><AlertTriangle size={12}/>{error}</div>}
+          <p className="text-[10px] text-gray-300 text-center py-1">Hanya event terakhir yang bisa dihapus • Reject tidak bisa diedit</p>
         </div>
-        {/* ─── Context bar: info PCS + berat sebelumnya ─── */}
-        {(()=>{
-          const pcsGood   = item.pcs_good ?? item.pcs ?? 0
-          const gramasi   = parseFloat(item.gramasi) || 0
-          const expected  = Math.round(pcsGood * gramasi * 1000) / 1000
-          return (
-            <div className="grid grid-cols-3 divide-x" style={{background:'rgba(139,92,246,0.04)',borderBottom:'1px solid rgba(139,92,246,0.08)'}}>
-              <div className="px-4 py-3 text-center">
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">PCS Good</p>
-                <p className="text-base font-bold text-gray-800 mt-0.5">{pcsGood} <span className="text-xs font-normal text-gray-400">pcs</span></p>
-              </div>
-              <div className="px-4 py-3 text-center">
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Berat Sebelumnya</p>
-                <p className="text-base font-bold text-gray-800 mt-0.5">{item.total_gram} <span className="text-xs font-normal text-gray-400">gr</span></p>
-              </div>
-              <div className="px-4 py-3 text-center">
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Expected ≈</p>
-                <p className="text-base font-bold mt-0.5" style={{color:'#8B5CF6'}}>{expected} <span className="text-xs font-normal text-gray-400">gr</span></p>
-                <p className="text-[9px] text-gray-300 mt-0.5">{gramasi}gr × {pcsGood}pcs</p>
-              </div>
-            </div>
-          )
-        })()}
-        <form onSubmit={submit} className="px-6 py-5 space-y-4 overflow-y-auto max-h-[65vh]">
-          <F label="Status Baru" req>
-            <select name="status" value={status} onChange={e => setStatus(e.target.value)} className={inp} required>
-              {STATUS_FLOW.map(st => <option key={st} value={st}>{st}</option>)}
-              <option value="Reject">Reject</option>
-            </select>
-          </F>
-          {status === 'Reject' ? (
-            <div className="grid grid-cols-2 gap-3">
-              <F label="PCS Reject" req><input name="pcs_reject" type="number" min="1" max={item.pcs_good ?? item.pcs} className={inp} placeholder={`Max: ${item.pcs_good ?? item.pcs} PCS`} required /></F>
-              <F label="Berat Reject (gr)" req><input name="berat_reject" type="number" step="0.001" className={inp} placeholder="Berat total reject" required /></F>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-3">
-              <F label="Total Berat Sekarang (gr)" req>
-                <input name="total_gram" type="number" step="0.001" className={inp}
-                  placeholder={`Sebelumnya: ${item.total_gram} gr`} required />
-              </F>
-              {isPB && <F label="Sisa Serbuk (gr)"><input name="sisa_serbuk" type="number" step="0.001" className={inp} placeholder="0.000" defaultValue="0" /></F>}
-            </div>
-          )}
-          <F label="Tanggal" req><input name="tanggal" type="date" defaultValue={today} className={inp} required /></F>
-          {status !== 'Reject' && (
-            <>
-              <F label="Foto Proses (opsional)">
-                <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Foto proses di status ini" small />
-              </F>
-              {isPB && (
-                <F label="Foto Sisa Serbuk (opsional)">
-                  <FotoPicker files={serbuk} onAdd={ff => setSerbuk(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setSerbuk([]) : setSerbuk(p => p.filter((_, j) => j !== i))} label="Foto sisa serbuk emas" small />
-                </F>
-              )}
-            </>
-          )}
-          <F label="Catatan"><input name="catatan" className={inp} placeholder="Keterangan…" /></F>
-          {error && <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600"><AlertTriangle size={14} />{error}</div>}
-          <div className="flex gap-3 justify-end pt-1 pb-2">
-            <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
-            <button type="submit" disabled={isPending || up} className="px-6 py-2.5 text-sm font-bold text-white rounded-2xl flex items-center gap-2 disabled:opacity-60" style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', boxShadow: '0 4px 16px rgba(139,92,246,0.3)' }}>
-              {(isPending || up) && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-              {up ? 'Kompres…' : isPending ? 'Menyimpan…' : 'Simpan Status'}
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   )
@@ -1261,6 +1163,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     </div>
   )
 }
+
 
 
 
