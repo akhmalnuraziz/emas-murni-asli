@@ -6,8 +6,8 @@ import { revalidatePath } from 'next/cache'
 const PCKG_PREFIX = 'PCKG.GDCJ'
 
 async function generatePackingCode(supabase: any): Promise<string> {
-  const { count } = await supabase.from('packing').select('*', { count: 'exact', head: true })
-  return `${PCKG_PREFIX}/${String((count ?? 0) + 1).padStart(4, '0')}`
+  const { data } = await supabase.rpc('get_next_code', { p_name: 'packing' })
+  return `${PCKG_PREFIX}/${String(data ?? 1).padStart(4, '0')}`
 }
 
 
@@ -122,8 +122,11 @@ export async function editPacking(packingId: number, packingKode: string, formDa
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
 
+  if (!['owner','admin_pusat','spv'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin/SPV yang bisa edit packing' }
+
   const { data: existing } = await supabase.from('packing').select('*, produksi_item(*)').eq('id', packingId).single()
   if (!existing) return { error: 'Packing tidak ditemukan' }
+  if (existing.voided_at) return { error: 'Packing sudah VOID, tidak bisa diedit' }
 
   const fotosB64RawEdit = formData.get('fotos_b64') as string
   const fotosB64Edit = fotosB64RawEdit ? JSON.parse(fotosB64RawEdit) : []
@@ -136,6 +139,15 @@ export async function editPacking(packingId: number, packingKode: string, formDa
   const tanggal = formData.get('tanggal') as string
   const pic = formData.get('pic') as string
   const catatan = formData.get('catatan') as string
+
+  // Validate pcs won't exceed pcs_good when combined with other active packings
+  const { data: otherPackings } = await supabase.from('packing')
+    .select('pcs_dipack').eq('produksi_item_id', existing.produksi_item_id)
+    .is('voided_at', null).neq('id', packingId)
+  const otherPacked = (otherPackings ?? []).reduce((s: number, p: any) => s + (p.pcs_dipack || 0), 0)
+  const pcsGoodItem = existing.produksi_item?.pcs_good ?? existing.produksi_item?.pcs ?? 0
+  if (pcsDispack + otherPacked > pcsGoodItem)
+    return { error: `PCS tidak valid: edit ini (${pcsDispack}) + packing lain (${otherPacked}) = ${pcsDispack + otherPacked} melebihi PCS good (${pcsGoodItem})` }
 
   const gramasi = parseFloat(existing.gramasi)
   const totalGramTarget = gramasi * pcsDispack
@@ -193,10 +205,19 @@ export async function voidPacking(packingId: number, packingKode: string) {
     void_reason: 'VOIDED_BY_USER',
   }).eq('id', packingId)
 
-  // Revert status produksi ke Siap Packing
+  // Revert status: cek sisa packing aktif setelah void ini
   if (existing?.produksi_item_id) {
+    const { data: remPack } = await supabase.from('packing')
+      .select('pcs_dipack').eq('produksi_item_id', existing.produksi_item_id)
+      .is('voided_at', null).neq('id', packingId)
+    const remTotal = (remPack ?? []).reduce((s: number, p: any) => s + (p.pcs_dipack || 0), 0)
+    const { data: prodItem } = await supabase.from('produksi_item')
+      .select('pcs_good, pcs').eq('id', existing.produksi_item_id).single()
+    const pcsGood = prodItem?.pcs_good ?? prodItem?.pcs ?? 0
+    // Only revert to Siap Packing if remaining packings don't cover all pcs
+    const correctStatus = remTotal >= pcsGood ? 'Sudah Packing' : 'Siap Packing'
     await supabase.from('produksi_item')
-      .update({ current_status: 'Siap Packing' })
+      .update({ current_status: correctStatus })
       .eq('id', existing.produksi_item_id)
   }
 
@@ -213,7 +234,18 @@ export async function voidPacking(packingId: number, packingKode: string) {
 
 export async function markPrinted(packingId: number) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  if (!['owner','admin_pusat','spv','operator_packing','operator_produksi'].includes(profile?.role ?? ''))
+    return { error: 'Tidak memiliki izin' }
+
   await supabase.from('packing').update({ status_surat: 'sudah_cetak' }).eq('id', packingId)
+  await supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'MARK_PRINTED', module: 'PACKING', record_id: String(packingId),
+  })
   revalidatePath('/packing-log')
   return { success: true }
 }
+
