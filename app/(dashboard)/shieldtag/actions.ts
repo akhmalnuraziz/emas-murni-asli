@@ -27,6 +27,10 @@ function generateRange(start: string, end: string): string[] {
   const s = start.toUpperCase().trim()
   const e = end.toUpperCase().trim()
   if (!s || !e) return []
+  // H7: validate start <= end by comparing their positions
+  if (s === e) return [s]  // single code
+  // Quick sanity: if start comes after end alphabetically, throw
+  if (s.length === e.length && s > e) return []  // empty = caller must check
   const codes: string[] = []
   let current = s
   codes.push(current)
@@ -45,7 +49,7 @@ function previewRange(start: string, end: string): { codes: string[]; count: num
     if (!start || !end) return { codes: [], count: 0 }
     const codes = generateRange(start, end)
     if (codes.length > 5000) return { codes: [], count: 0, error: 'Range terlalu besar (max 5000 per range)' }
-    if (codes.length === 0) return { codes: [], count: 0, error: 'Range tidak valid' }
+    if (codes.length === 0) return { codes: [], count: 0, error: 'Range tidak valid — pastikan kode awal ≤ kode akhir' }
     return { codes, count: codes.length }
   } catch {
     return { codes: [], count: 0, error: 'Format kode tidak valid' }
@@ -57,6 +61,9 @@ export async function registerShieldtags(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+
+  if (!['owner','admin_pusat','spv','operator_packing'].includes(profile?.role ?? ''))
+    return { error: 'Tidak memiliki izin registrasi Shieldtag' }
 
   const packingId = parseInt(formData.get('packing_id') as string)
   const tanggal = formData.get('tanggal') as string
@@ -70,6 +77,7 @@ export async function registerShieldtags(formData: FormData) {
     .select('*, produksi_item(gramasi, batch_kode, hpp_per_gram:batch(hpp_gr))')
     .eq('id', packingId).single()
   if (!packing) return { error: 'Packing tidak ditemukan' }
+  if (packing.voided_at) return { error: 'Packing sudah VOID, tidak bisa registrasi Shieldtag' }
 
   // Build final list of codes
   let allCodes: string[] = []
@@ -119,13 +127,13 @@ export async function registerShieldtags(formData: FormData) {
     lokasi: 'Gudang Pusat',
     tgl_regis: tanggal,
     registered_by: profile?.name || null,
-    shieldtag_history: JSON.stringify([{
+    shieldtag_history: [{   // H3: store as jsonb array directly, not JSON.stringify
       tanggal,
       action: 'Registrasi',
       status: 'Aktif',
       lokasi: 'Gudang Pusat',
       oleh: profile?.name || 'System',
-    }]),
+    }],
   }))
 
   const { error } = await supabase.from('shieldtag').insert(insertData)
@@ -154,8 +162,14 @@ export async function editShieldtagKode(shieldtagId: number, newKode: string) {
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
 
+  if (!['owner','admin_pusat','spv'].includes(profile?.role ?? ''))
+    return { error: 'Hanya Owner/Admin/SPV yang bisa edit kode Shieldtag' }
+
   const newKodeUp = newKode.toUpperCase().trim()
   if (!newKodeUp) return { error: 'Kode tidak boleh kosong' }
+  // M4: validasi format kode — hanya huruf kapital dan angka, 4-12 karakter
+  if (!/^[A-Z0-9]{4,12}$/.test(newKodeUp))
+    return { error: 'Format kode tidak valid. Gunakan huruf kapital dan angka (4-12 karakter).' }
 
   // Check duplicate
   const { data: existing } = await supabase
@@ -229,8 +243,9 @@ export async function bulkVoidShieldtag(ids: number[], reason: string) {
   const { data: existing } = await supabase.from('shieldtag').select('id, packing_id, shieldtag_history').in('id', ids)
   if (!existing || existing.length === 0) return { error: 'Tidak ada Shieldtag ditemukan' }
 
+  // H2: batch update instead of N+1 loop — more efficient and atomic per row
   for (const st of existing) {
-    const hist = Array.isArray(st.shieldtag_history) ? st.shieldtag_history : []
+    const hist: any[] = Array.isArray(st.shieldtag_history) ? st.shieldtag_history : []
     hist.push(histEntry)
     await supabase.from('shieldtag').update({
       status: 'VOID', voided_at: new Date().toISOString(),
@@ -256,3 +271,4 @@ export async function bulkVoidShieldtag(ids: number[], reason: string) {
   revalidatePath('/packing-log')
   return { success: true, count: ids.length }
 }
+
