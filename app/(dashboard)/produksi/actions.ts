@@ -258,6 +258,32 @@ export async function leburReject(produksiId: number, produksiKode: string, batc
   return { success: true, berat_kembali: rpcResult?.berat_kembali }
 }
 
+export async function batalLeburReject(produksiId: number, produksiKode: string, batchKode: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
+
+  const { data: rpcResult, error: rpcError } = await supabase.rpc('batal_lebur_reject_atomic', {
+    p_produksi_id: produksiId,
+    p_batch_kode:  batchKode,
+  })
+  if (rpcError) return { error: rpcError.message }
+  if (rpcResult?.error) return { error: rpcResult.error }
+
+  await supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'BATAL_LEBUR_REJECT', module: 'PRODUKSI',
+    record_key: produksiKode, record_id: String(produksiId),
+    after_data: { berat_dikembalikan: rpcResult?.berat_dikembalikan, batch_kode: batchKode },
+  })
+
+  revalidatePath('/produksi')
+  revalidatePath('/bahan-baku')
+  return { success: true }
+}
+
 export async function deleteProduksi(produksiId: number, produksiKode: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -440,5 +466,6 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
