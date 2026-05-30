@@ -204,7 +204,8 @@ export async function inputReject(produksiId: number, produksiKode: string, form
     berat_sebelumnya: produksi.total_gram ?? 0,
     sisa_serbuk: 0,
     losses: 0, // reject BUKAN losses permanen — emas akan dilebur kembali
-    pcs_good_snapshot: newPcsGood,  // pcs good SETELAH reject dikurangi
+    pcs_good_snapshot: newPcsGood,    // pcs good SETELAH reject
+    pcs_reject_snapshot: pcsReject,   // berapa pcs yg di-reject di event ini
     catatan: formData.get('catatan') as string || null,
     user_name: profile?.name || null,
     fotos: [],
@@ -466,6 +467,7 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
