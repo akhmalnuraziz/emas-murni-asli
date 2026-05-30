@@ -58,6 +58,8 @@ export async function createBatch(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat'].includes(profile?.role ?? ''))
+    return { error: 'Hanya Owner/Admin Pusat yang bisa membuat batch bahan baku' }
 
   const kodeInput = (formData.get('kode') as string)?.trim()
   const kode = kodeInput || await generateBatchCode(supabase)
@@ -79,9 +81,11 @@ export async function createBatch(formData: FormData) {
 
   const selisih    = beratPusat - beratGudang
   const catatan    = formData.get('catatan') as string
-  if (Math.abs(selisih) > 0.05 && !catatan?.trim()) {
-    return { error: 'Selisih berat melewati batas toleransi (>0.05gr) — catatan wajib diisi' }
-  }
+  const selisihPersen = beratGudang > 0 ? Math.abs(selisih) / beratGudang * 100 : 0
+  if (selisihPersen > 5)
+    return { error: `Selisih (${selisih.toFixed(3)}gr = ${selisihPersen.toFixed(2)}%) melebihi batas 5%. Periksa data timbangan.` }
+  if (Math.abs(selisih) > 0.05 && !catatan?.trim())
+    return { error: 'Selisih melebihi toleransi — catatan wajib diisi' }
 
   const hargaBeli     = parseFloat(formData.get('harga_beli') as string) || 0
   const biayaTbhRaw   = formData.get('biaya_tbh') as string
@@ -134,15 +138,18 @@ export async function updateBatch(batchId: number, batchKode: string, formData: 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat'].includes(profile?.role ?? ''))
+    return { error: 'Hanya Owner/Admin Pusat yang bisa update batch bahan baku' }
 
   const beratPusat  = parseFloat(formData.get('bahan_dari_pusat') as string)
   const beratGudang = parseFloat(formData.get('timbangan_akhir') as string)
   const selisih     = beratPusat - beratGudang
   const catatan     = formData.get('catatan') as string
-
-  if (Math.abs(selisih) > 0.05 && !catatan?.trim()) {
-    return { error: 'Selisih berat melewati batas toleransi — catatan wajib diisi' }
-  }
+  const selisihPct  = beratGudang > 0 ? Math.abs(selisih) / beratGudang * 100 : 0
+  if (selisihPct > 5)
+    return { error: `Selisih (${selisih.toFixed(3)}gr = ${selisihPct.toFixed(2)}%) melebihi batas 5%. Periksa data timbangan.` }
+  if (Math.abs(selisih) > 0.05 && !catatan?.trim())
+    return { error: 'Selisih melebihi toleransi — catatan wajib diisi' }
 
   const hargaBeli     = parseFloat(formData.get('harga_beli') as string) || 0
   const biayaTbhRaw   = formData.get('biaya_tbh') as string
@@ -291,3 +298,4 @@ export async function updateSisaFisik(formData: FormData) {
   revalidatePath('/bahan-baku')
   return { success: true, fotosCount: fotoUrls.length }
 }
+
