@@ -252,9 +252,13 @@ export async function editEvent(eventId: number, produksiId: number, produksiKod
   // Losses dihitung ulang dari berat sebelumnya event ini
   const losses = Math.max(0, (ev.berat_sebelumnya ?? 0) - totalGram - sisaSerbuk)
 
+  // pcs_good_snapshot bisa diedit — update snapshot event
+  const pcsRaw = formData.get('pcs_good_snapshot')
+  const pcsGoodSnap = pcsRaw !== null && pcsRaw !== '' ? parseInt(pcsRaw as string) : null
+
   await supabase.from('produksi_event').update({
-    total_gram: totalGram, sisa_serbuk: sisaSerbuk,
-    losses, catatan, tanggal,
+    total_gram: totalGram, sisa_serbuk: sisaSerbuk, losses, catatan, tanggal,
+    ...(pcsGoodSnap !== null ? { pcs_good_snapshot: pcsGoodSnap } : {}),
   }).eq('id', eventId)
 
   // Jika event ini adalah event TERBARU → update produksi_item juga
@@ -263,7 +267,9 @@ export async function editEvent(eventId: number, produksiId: number, produksiKod
     .order('created_at', { ascending: false }).limit(1).single()
 
   if (latest?.id === eventId) {
-    await supabase.from('produksi_item').update({ total_gram: totalGram }).eq('id', produksiId)
+    const itemUpdate: Record<string, any> = { total_gram: totalGram }
+    if (pcsGoodSnap !== null) itemUpdate.pcs_good = pcsGoodSnap
+    await supabase.from('produksi_item').update(itemUpdate).eq('id', produksiId)
   }
 
   await supabase.from('audit_log').insert({
@@ -638,6 +644,7 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
