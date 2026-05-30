@@ -531,7 +531,6 @@ function EditModal({ item, onClose, onSubmit, isPending, error }: {
 
   function saveEv(evId:number){
     startEvPend(async()=>{
-      const formEl = document.getElementById(`ev-form-${evId}`) as HTMLFormElement|null
       const b64s = newFotos.length > 0 ? await filesToBase64(newFotos) : []
       const fd=new FormData()
       fd.set('total_gram',        String(evDraft.total_gram))
@@ -1163,6 +1162,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     </div>
   )
 }
+
 
 
 
