@@ -670,13 +670,32 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
   function openModal(type: 'create'|'edit'|'update'|'delete', item?: any) { setActive(item ?? null); setErr(''); setModal(type) }
   function handleCreate(fd: FormData) { setErr(''); startTransition(async () => { const r = await createProduksi(fd); if (r?.error) { setErr(r.error); return }; showToast(`✅ ${r?.kode} berhasil dibuat`); setModal(null) }) }
   function handleEdit(fd: FormData)   { if (!active) return; setErr(''); startTransition(async () => { const r = await editProduksi(active.id, active.kode, fd); if (r?.error) { setErr(r.error); return }; showToast('✅ Data diperbarui'); setModal(null) }) }
+  const [confirmLosses, setConfirmLosses] = useState<{lossesPercent:number;totalLosses:number;beratAwal:number;pendingFd:FormData}|null>(null)
+  const [overrideReason, setOverrideReason] = useState('')
+
   function handleUpdate(fd: FormData) {
     if (!active) return; setErr('')
     const isReject = fd.get('is_reject') === '1'
     startTransition(async () => {
       const r = isReject ? await inputReject(active.id, active.kode, fd) : await updateStatusProduksi(active.id, active.kode, fd)
+      if ((r as any)?.requiresConfirmation) {
+        setConfirmLosses({lossesPercent:(r as any).lossesPercent,totalLosses:(r as any).totalLosses,beratAwal:(r as any).beratAwal,pendingFd:fd})
+        setOverrideReason(''); return
+      }
       if (r?.error) { setErr(r.error); return }
       showToast(isReject ? '✅ Reject dicatat' : '✅ Status diperbarui'); setModal(null)
+    })
+  }
+
+  function handleConfirmLosses() {
+    if (!active || !confirmLosses) return
+    const fd = confirmLosses.pendingFd
+    fd.set('override_reason', overrideReason.trim() || 'Dikonfirmasi')
+    startTransition(async () => {
+      const r = await updateStatusProduksi(active.id, active.kode, fd)
+      if (r?.error) { showToast(r.error, false); return }
+      showToast('✅ Status diupdate — override losses dikonfirmasi & dicatat')
+      setConfirmLosses(null); setOverrideReason(''); setModal(null)
     })
   }
   function handleDelete() { if (!active) return; startTransition(async () => { const r = await deleteProduksi(active.id, active.kode); if (r?.error) { showToast(r.error, false); return }; showToast('🗑️ Batch dihapus'); setModal(null) }) }
@@ -959,9 +978,51 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
       {modal === 'edit'   && active           && <EditModal   item={active}      onClose={() => setModal(null)} onSubmit={handleEdit}   isPending={isPending} error={err} />}
       {modal === 'update' && active           && <UpdateModal item={active}      onClose={() => setModal(null)} onSubmit={handleUpdate} isPending={isPending} error={err} />}
       {modal === 'delete' && active           && <DelModal    item={active}      onClose={() => setModal(null)} onConfirm={handleDelete} isPending={isPending} />}
+
+      {/* ─── 3% Losses Confirmation Overlay ─── */}
+      {confirmLosses && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.55)'}}>
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div className="px-5 pt-5 pb-3" style={{background:'rgba(239,68,68,0.05)'}}>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded-2xl flex items-center justify-center" style={{background:'rgba(239,68,68,0.1)'}}>
+                  <AlertTriangle size={18} className="text-red-500"/>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-red-600">Losses &gt; 3% Bahan Awal</p>
+                  <p className="text-[11px] text-gray-400">Butuh konfirmasi Owner / Manager</p>
+                </div>
+              </div>
+              <div className="rounded-2xl p-3 text-xs space-y-1.5 bg-white border border-red-100">
+                <div className="flex justify-between"><span className="text-gray-500">Total losses</span><span className="font-bold text-red-600">{confirmLosses.totalLosses} gr</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Bahan awal</span><span className="font-semibold">{confirmLosses.beratAwal} gr</span></div>
+                <div className="flex justify-between pt-1 border-t"><span className="font-bold text-gray-600">Persentase losses</span><span className="font-bold text-red-600 text-sm">{confirmLosses.lossesPercent}%</span></div>
+              </div>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Alasan Konfirmasi <span className="text-red-500">*</span></p>
+                <textarea value={overrideReason} onChange={e=>setOverrideReason(e.target.value)}
+                  placeholder="Contoh: Losses tinggi karena bahan kadar rendah — sudah dicek supervisor..."
+                  rows={3} className="w-full text-xs px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-400/30 resize-none"/>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={()=>{setConfirmLosses(null);setOverrideReason('')}} className="flex-1 py-2 text-xs font-semibold bg-gray-100 text-gray-600 rounded-2xl">Batalkan</button>
+                <button onClick={handleConfirmLosses} disabled={!overrideReason.trim()||isPending}
+                  className="flex-1 py-2 text-xs font-bold text-white rounded-2xl disabled:opacity-40"
+                  style={{background:'linear-gradient(135deg,#DC2626,#B91C1C)'}}>
+                  {isPending?'Menyimpan...':'Konfirmasi & Simpan'}
+                </button>
+              </div>
+              <p className="text-[9px] text-center text-gray-400">Override dicatat di audit log beserta nama konfirmator</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
 
 
 
