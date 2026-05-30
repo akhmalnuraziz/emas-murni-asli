@@ -254,9 +254,19 @@ function EventHistory({ events, fallbackPcs }: { events: any[]; fallbackPcs?: nu
                   : <span className="text-xs font-semibold text-red-500">−{fgr((ev.berat_sebelumnya ?? 0) - (ev.total_gram ?? 0))} gr</span>
                 }
                 {(()=>{
+                  if (ev.status === 'Reject') {
+                    // Tampilkan berapa pcs yg di-reject, bukan sisa
+                    const rejected = ev.pcs_reject_snapshot
+                    return rejected != null ? (
+                      <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-md text-red-600 bg-red-50">
+                        −{rejected} pcs
+                      </span>
+                    ) : null
+                  }
+                  // Non-reject: tampilkan pcs good saat ini
                   const pcs = ev.pcs_good_snapshot ?? fallbackPcs
                   return pcs != null ? (
-                    <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-md ${ev.status === 'Reject' ? 'text-red-600 bg-red-50' : 'text-gray-500 bg-gray-100'}`}>
+                    <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-md text-gray-500 bg-gray-100">
                       {pcs} pcs
                     </span>
                   ) : null
@@ -841,6 +851,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     </div>
   )
 }
+
 
 
 
