@@ -9,7 +9,7 @@ import {
 import { cn, formatDate } from '@/lib/utils'
 import {
   createProduksi, updateStatusProduksi, editProduksi,
-  inputReject, leburReject, deleteProduksi
+  inputReject, leburReject, batalLeburReject, deleteProduksi
 } from '@/app/(dashboard)/produksi/actions'
 import type { UserRole } from '@/lib/types/database'
 
@@ -229,7 +229,7 @@ function TLine({ events }: { events: any[] }) {
 }
 
 // ─── Event History ─────────────────────────────────────────────────────────────
-function EventHistory({ events }: { events: any[] }) {
+function EventHistory({ events, fallbackPcs }: { events: any[]; fallbackPcs?: number }) {
   const sorted = [...events].sort((a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime())
   const [lightbox, setLightbox] = useState<string | null>(null)
   return (
@@ -253,11 +253,14 @@ function EventHistory({ events }: { events: any[] }) {
                   ? <span className="text-xs font-semibold text-gray-700">{ev.total_gram} gr</span>
                   : <span className="text-xs font-semibold text-red-500">−{fgr((ev.berat_sebelumnya ?? 0) - (ev.total_gram ?? 0))} gr</span>
                 }
-                {ev.pcs_good_snapshot != null && (
-                  <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-md ${ev.status === 'Reject' ? 'text-red-600 bg-red-50' : 'text-gray-500 bg-gray-100'}`}>
-                    {ev.pcs_good_snapshot} pcs
-                  </span>
-                )}
+                {(()=>{
+                  const pcs = ev.pcs_good_snapshot ?? fallbackPcs
+                  return pcs != null ? (
+                    <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-md ${ev.status === 'Reject' ? 'text-red-600 bg-red-50' : 'text-gray-500 bg-gray-100'}`}>
+                      {pcs} pcs
+                    </span>
+                  ) : null
+                })()}
                 {Number(ev.sisa_serbuk) > 0 && <span className="text-xs text-violet-500">serbuk {ev.sisa_serbuk} gr</span>}
                 {Number(ev.losses)      > 0 && <span className="text-xs text-orange-500">losses {ev.losses} gr</span>}
               </div>
@@ -562,7 +565,15 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
       const r = await leburReject(item.id, item.kode, item.batch_kode)
       if (r?.error) { showToast(r.error, false); return }
       const berat = (r as any)?.berat_kembali ?? item.berat_reject ?? 0
-      showToast(`🔥 ${berat}gr reject dilebur — kembali ke sisa fisik batch ${item.batch_kode}`)
+      showToast(`🔥 ${berat}gr reject dilebur — kembali ke pool batch ${item.batch_kode}`)
+    })
+  }
+
+  function handleBatalLebur(item: any) {
+    startTransition(async () => {
+      const r = await batalLeburReject(item.id, item.kode, item.batch_kode)
+      if (r?.error) { showToast(r.error, false); return }
+      showToast(`↩ Lebur dibatalkan — ${item.berat_reject ?? 0}gr dikembalikan ke status belum dilebur`)
     })
   }
 
@@ -674,6 +685,14 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                               style={{background:'rgba(34,197,94,0.1)',color:'#16A34A'}}>
                               ✓ Reject Sudah Dilebur
                             </span>
+                          )}
+                          {item.status_reject === 'sudah_dilebur' && ['owner','admin_pusat','spv'].includes(userRole) && (
+                            <button onClick={() => handleBatalLebur(item)} disabled={isPending}
+                              className="text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all hover:bg-gray-50 disabled:opacity-40"
+                              style={{borderColor:'rgba(107,114,128,0.3)',color:'#6B7280'}}
+                              title="Batalkan lebur — kembalikan ke status belum dilebur">
+                              ↩ Batal Lebur
+                            </button>
                           )}
                         </div>
                         <h3 className="text-[15px] font-bold text-gray-900 leading-snug break-words">{item.nama_item || item.kode}</h3>
@@ -803,7 +822,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                       <p className="text-[9.5px] font-bold text-gray-400 tracking-widest uppercase mb-3">Riwayat Proses</p>
                       {events.length === 0
                         ? <p className="text-xs text-gray-400 italic">Belum ada event tercatat</p>
-                        : <EventHistory events={events} />
+                        : <EventHistory events={events} fallbackPcs={item.pcs_good ?? item.pcs} />
                       }
                     </div>
                   )}
@@ -822,6 +841,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     </div>
   )
 }
+
 
 
 
