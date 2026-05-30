@@ -154,15 +154,15 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
   if (incomingOrder > 0 && incomingOrder < currentOrder)
     return { error: `Tidak bisa mundur ke status "${statusBaru}". Status saat ini: "${produksi.current_status}". Hapus event terakhir jika perlu mengulang.` }
 
-  // H5+M5: block Siap Packing jika ada reject belum dilebur
-  if (statusBaru === 'Siap Packing' && produksi.status_reject === 'belum_dilebur')
-    return { error: `Ada ${produksi.pcs_reject} pcs reject belum dilebur. Lebur terlebih dahulu sebelum Siap Packing.` }
+  // Reject belum dilebur: warning saja di UI, tidak memblokir Siap Packing
+  // Karena pcs good dan reject adalah proses terpisah
 
   const beratSebelumnya = produksi.total_gram ?? 0
 
-  // H4: berat tidak boleh naik dalam proses (kecuali Cutting yang bisa sama)
-  if (totalGramBaru > beratSebelumnya + 0.001 && statusBaru !== 'Cutting')
-    return { error: `Berat baru (${totalGramBaru}gr) tidak boleh lebih tinggi dari berat sebelumnya (${beratSebelumnya}gr). Periksa kembali data.` }
+  // H4: berat tidak boleh naik melebihi toleransi timbangan ±0.05gr
+  const SCALE_TOLERANCE = 0.05
+  if (totalGramBaru > beratSebelumnya + SCALE_TOLERANCE && statusBaru !== 'Cutting')
+    return { error: `Berat baru (${totalGramBaru}gr) jauh lebih tinggi dari berat sebelumnya (${beratSebelumnya}gr). Periksa kembali data. Toleransi timbangan: ±${SCALE_TOLERANCE}gr.` }
 
   const losses = Math.max(0, beratSebelumnya - totalGramBaru - sisaSerbuk)
 
@@ -252,12 +252,24 @@ export async function editEvent(eventId: number, produksiId: number, produksiKod
   // Losses dihitung ulang dari berat sebelumnya event ini
   const losses = Math.max(0, (ev.berat_sebelumnya ?? 0) - totalGram - sisaSerbuk)
 
-  // pcs_good_snapshot bisa diedit — update snapshot event
+  // pcs_good_snapshot + fotos bisa diedit
   const pcsRaw = formData.get('pcs_good_snapshot')
   const pcsGoodSnap = pcsRaw !== null && pcsRaw !== '' ? parseInt(pcsRaw as string) : null
 
+  // Fotos: gabungan existing yang disimpan + new uploads dari base64
+  const existingFotosRaw = formData.get('existing_fotos') as string
+  const newFotosB64Raw   = formData.get('new_fotos_b64') as string
+  const existingFotos: string[] = existingFotosRaw ? JSON.parse(existingFotosRaw) : []
+  const newFotosB64: string[]   = newFotosB64Raw   ? JSON.parse(newFotosB64Raw)   : []
+  let finalFotos = [...existingFotos]
+  if (newFotosB64.length > 0) {
+    const { urls: uploadedUrls } = await uploadBase64Fotos(supabase, newFotosB64, eventId.toString(), existingFotos)
+    finalFotos = uploadedUrls
+  }
+
   await supabase.from('produksi_event').update({
     total_gram: totalGram, sisa_serbuk: sisaSerbuk, losses, catatan, tanggal,
+    fotos: finalFotos,
     ...(pcsGoodSnap !== null ? { pcs_good_snapshot: pcsGoodSnap } : {}),
   }).eq('id', eventId)
 
@@ -683,6 +695,7 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
