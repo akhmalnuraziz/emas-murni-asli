@@ -498,10 +498,13 @@ function CreateModal({ batches, onClose, onSubmit, isPending, error }: {
   )
 }
 
-// ─── Edit Modal ────────────────────────────────────────────────────────────────
+// ─── Edit Modal (2 tabs: Data Dasar + Riwayat Proses) ─────────────────────────
 function EditModal({ item, onClose, onSubmit, isPending, error }: {
   item: any; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
 }) {
+  const [tab, setTab] = useState<'data'|'proses'>('data')
+
+  // ── Tab Data Dasar ──
   const [f, setF] = useState({
     nama_item: item.nama_item ?? '', gramasi: item.gramasi ?? '',
     pcs: String(item.pcs ?? ''), berat_awal: String(item.berat_awal ?? item.total_gram ?? ''),
@@ -509,38 +512,231 @@ function EditModal({ item, onClose, onSubmit, isPending, error }: {
     tanggal_produksi: item.tanggal_produksi ?? item.tanggal ?? today,
   })
   const s = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
-  function submit(e: React.FormEvent) {
+  function submitBase(e: React.FormEvent) {
     e.preventDefault(); const fd = new FormData()
     Object.entries(f).forEach(([k, v]) => fd.set(k, v)); onSubmit(fd)
   }
+
+  // ── Tab Riwayat Proses ──
+  const evs = Array.isArray(item.produksi_event)
+    ? [...item.produksi_event].filter((e:any)=>!e.voided_at)
+        .sort((a:any,b:any)=>new Date(a.tanggal).getTime()-new Date(b.tanggal).getTime())
+    : []
+  const latestEvId = evs.length > 0 ? evs[evs.length-1].id : null
+  const [evEditId,  setEvEditId]  = useState<number|null>(null)
+  const [evDraft,   setEvDraft]   = useState<Record<string,any>>({})
+  const [evDelConf, setEvDelConf] = useState<number|null>(null)
+  const [evPend,    startEvPend]  = useTransition()
+  const [evMsg,     setEvMsg]     = useState<{text:string;ok:boolean}|null>(null)
+
+  function openEvEdit(ev:any){
+    setEvEditId(ev.id)
+    setEvDraft({
+      total_gram: ev.total_gram,
+      pcs_good_snapshot: ev.pcs_good_snapshot ?? item.pcs_good ?? item.pcs ?? '',
+      sisa_serbuk: ev.sisa_serbuk ?? 0,
+      catatan: ev.catatan ?? '',
+      tanggal: ev.tanggal,
+    })
+  }
+
+  function saveEv(evId:number){
+    startEvPend(async()=>{
+      const fd=new FormData()
+      fd.set('total_gram',        String(evDraft.total_gram))
+      fd.set('pcs_good_snapshot', String(evDraft.pcs_good_snapshot ?? ''))
+      fd.set('sisa_serbuk',       String(evDraft.sisa_serbuk ?? 0))
+      fd.set('catatan',           evDraft.catatan ?? '')
+      fd.set('tanggal',           evDraft.tanggal)
+      const r=await editEvent(evId, item.id, item.kode, fd)
+      if(r?.error){setEvMsg({text:r.error,ok:false});return}
+      setEvMsg({text:'✅ Event diperbarui',ok:true})
+      setEvEditId(null)
+      setTimeout(()=>setEvMsg(null),3000)
+    })
+  }
+
+  function delEv(evId:number){
+    startEvPend(async()=>{
+      const r=await deleteEvent(evId, item.id, item.kode)
+      if(r?.error){setEvMsg({text:r.error,ok:false});return}
+      setEvMsg({text:'🗑️ Event dihapus',ok:true})
+      setEvDelConf(null)
+      setTimeout(()=>setEvMsg(null),3000)
+    })
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
-      <div className="w-full max-w-md rounded-3xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 32px 64px rgba(139,92,246,0.18)' }}>
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100/80 flex items-center justify-between">
-          <div><h2 className="text-lg font-bold text-gray-900">Edit Batch Produksi</h2><p className="text-xs text-violet-500 font-medium mt-0.5">{item.kode}</p></div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><X size={15} /></button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.4)',backdropFilter:'blur(8px)'}}>
+      <div className="w-full max-w-md rounded-3xl overflow-hidden" style={{background:'rgba(255,255,255,0.97)',backdropFilter:'blur(24px)',border:'1px solid rgba(255,255,255,0.6)',boxShadow:'0 32px 64px rgba(139,92,246,0.2)'}}>
+
+        {/* ─ Header ─ */}
+        <div className="px-6 pt-5 pb-0">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Edit Produksi</h2>
+              <p className="text-xs text-violet-500 font-medium mt-0.5">{item.kode} — {item.nama_item || item.gramasi}</p>
+            </div>
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 flex-shrink-0"><X size={15}/></button>
+          </div>
+
+          {/* ─ Tab bar ─ */}
+          <div className="flex rounded-2xl p-1 gap-1" style={{background:'rgba(139,92,246,0.06)'}}>
+            {([['data','Data Dasar'],['proses',`Riwayat Proses${evs.length>0?' ('+evs.length+')':''}`]] as [string,string][]).map(([key,label])=>(
+              <button key={key} onClick={()=>setTab(key as any)}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-xl transition-all ${tab===key?'bg-white text-violet-700 shadow-sm':'text-gray-400 hover:text-gray-600'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
-        <form onSubmit={submit} className="px-6 py-5 space-y-4 overflow-y-auto max-h-[75vh]">
-          <F label="Nama / Label Batch"><input value={f.nama_item} onChange={e => s('nama_item', e.target.value)} placeholder="cth: LM REI 10GR BATCH 26" className={inp} /></F>
-          <div className="grid grid-cols-2 gap-3">
-            <F label="Gramasi" req><select value={f.gramasi} onChange={e => s('gramasi', e.target.value)} className={inp}>{GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} Gram</option>)}</select></F>
-            <F label="PCS" req><input type="number" min="1" value={f.pcs} onChange={e => s('pcs', e.target.value)} className={inp} /></F>
+
+        {/* ─ Tab: Data Dasar ─ */}
+        {tab==='data' && (
+          <form onSubmit={submitBase} className="px-6 pt-4 pb-5 space-y-4 overflow-y-auto max-h-[68vh]">
+            <F label="Nama / Label Batch"><input value={f.nama_item} onChange={e=>s('nama_item',e.target.value)} placeholder="cth: LM REI 10GR BATCH 26" className={inp}/></F>
+            <div className="grid grid-cols-2 gap-3">
+              <F label="Gramasi" req><select value={f.gramasi} onChange={e=>s('gramasi',e.target.value)} className={inp}>{GRAMASI_OPTIONS.map(g=><option key={g} value={g}>{g} Gram</option>)}</select></F>
+              <F label="PCS" req><input type="number" min="1" value={f.pcs} onChange={e=>s('pcs',e.target.value)} className={inp}/></F>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <F label="Total Berat (gr)" req><input type="number" step="0.01" value={f.berat_awal} onChange={e=>s('berat_awal',e.target.value)} className={inp}/></F>
+              <F label="Tanggal"><input type="date" value={f.tanggal_produksi} onChange={e=>s('tanggal_produksi',e.target.value)} className={inp}/></F>
+            </div>
+            <F label="Operator / PIC"><input value={f.operator} onChange={e=>s('operator',e.target.value)} placeholder="Nama operator" className={inp}/></F>
+            <F label="Catatan"><input value={f.catatan} onChange={e=>s('catatan',e.target.value)} placeholder="Catatan tambahan…" className={inp}/></F>
+            {error&&<div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600"><AlertTriangle size={14}/>{error}</div>}
+            <div className="flex gap-3 justify-end pt-1">
+              <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
+              <button type="submit" disabled={isPending} className="px-6 py-2.5 text-sm font-bold text-white rounded-2xl flex items-center gap-2 disabled:opacity-60" style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
+                {isPending&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
+                {isPending?'Menyimpan…':'Simpan Perubahan'}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ─ Tab: Riwayat Proses ─ */}
+        {tab==='proses' && (
+          <div className="px-6 pt-4 pb-5 overflow-y-auto max-h-[68vh] space-y-2">
+            {evMsg&&(
+              <div className={`px-3 py-2 rounded-xl text-xs font-semibold ${evMsg.ok?'bg-emerald-50 text-emerald-700':'bg-red-50 text-red-600'}`}>
+                {evMsg.text}
+              </div>
+            )}
+            {evs.length===0?(
+              <p className="text-sm text-gray-400 text-center py-8">Belum ada riwayat proses</p>
+            ):evs.map((ev:any)=>{
+              const cfg=STATUS_CFG[ev.status]??{dot:'#94A3B8'}
+              const isLast=ev.id===latestEvId
+              const isEditing=evEditId===ev.id
+              const hasSerbuk=ev.status==='Pas Berat'||ev.status==='Annealing'
+              return(
+                <div key={ev.id} className="rounded-2xl border overflow-hidden" style={{borderColor:'rgba(0,0,0,0.06)'}}>
+                  {/* ── Event row header ── */}
+                  <div className="flex items-center justify-between px-3 py-2.5"
+                    style={{background:isEditing?'rgba(139,92,246,0.04)':'rgba(0,0,0,0.015)'}}>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{background:cfg.dot}}/>
+                      <Sbadge s={ev.status}/>
+                      <span className="text-[11px] text-gray-400">{formatDate(ev.tanggal)}</span>
+                      <span className="text-xs font-bold text-gray-700">
+                        {ev.status==='Reject'
+                          ? `−${fgr((ev.berat_sebelumnya??0)-(ev.total_gram??0))}gr`
+                          : `${ev.total_gram}gr`}
+                      </span>
+                      {ev.pcs_good_snapshot!=null&&(
+                        <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-md">
+                          {ev.status==='Reject'
+                            ?`−${ev.pcs_reject_snapshot??'?'} pcs`
+                            :`${ev.pcs_good_snapshot} pcs`}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      {ev.status!=='Reject'&&!isEditing&&(
+                        <button onClick={()=>openEvEdit(ev)} disabled={evPend}
+                          className="w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-colors">
+                          <Pencil size={11}/>
+                        </button>
+                      )}
+                      {isLast&&!isEditing&&(
+                        evDelConf===ev.id?(
+                          <div className="flex gap-1">
+                            <button onClick={()=>delEv(ev.id)} disabled={evPend}
+                              className="px-2 h-6 text-[10px] font-bold rounded-lg bg-red-500 text-white disabled:opacity-50">
+                              {evPend?'...':'Hapus'}
+                            </button>
+                            <button onClick={()=>setEvDelConf(null)} className="px-2 h-6 text-[10px] font-semibold rounded-lg bg-gray-100 text-gray-600">Batal</button>
+                          </div>
+                        ):(
+                          <button onClick={()=>setEvDelConf(ev.id)} disabled={evPend}
+                            className="w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                            <Trash2 size={11}/>
+                          </button>
+                        )
+                      )}
+                    </div>
+                  </div>
+                  {/* ── Inline edit form ── */}
+                  {isEditing&&(
+                    <div className="px-3 pb-3 pt-2 space-y-2" style={{background:'rgba(139,92,246,0.03)'}}>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Berat (gr)</p>
+                          <input type="number" step="0.001" value={evDraft.total_gram}
+                            onChange={e=>setEvDraft(d=>({...d,total_gram:e.target.value}))}
+                            className="w-full text-xs font-semibold px-2 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white"/>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">PCS Good</p>
+                          <input type="number" min="1" value={evDraft.pcs_good_snapshot}
+                            onChange={e=>setEvDraft(d=>({...d,pcs_good_snapshot:e.target.value}))}
+                            className="w-full text-xs font-semibold px-2 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white"/>
+                        </div>
+                        {hasSerbuk&&(
+                          <div>
+                            <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Serbuk (gr)</p>
+                            <input type="number" step="0.001" value={evDraft.sisa_serbuk}
+                              onChange={e=>setEvDraft(d=>({...d,sisa_serbuk:e.target.value}))}
+                              className="w-full text-xs font-semibold px-2 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white"/>
+                          </div>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Tanggal</p>
+                          <input type="date" value={evDraft.tanggal}
+                            onChange={e=>setEvDraft(d=>({...d,tanggal:e.target.value}))}
+                            className="w-full text-xs px-2 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white"/>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Catatan</p>
+                          <input type="text" value={evDraft.catatan}
+                            onChange={e=>setEvDraft(d=>({...d,catatan:e.target.value}))}
+                            placeholder="Opsional…"
+                            className="w-full text-xs px-2 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white"/>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 pt-0.5">
+                        <button onClick={()=>saveEv(ev.id)} disabled={evPend}
+                          className="flex-1 py-1.5 text-xs font-bold text-white rounded-xl disabled:opacity-50"
+                          style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
+                          {evPend?'Menyimpan...':'Simpan'}
+                        </button>
+                        <button onClick={()=>setEvEditId(null)}
+                          className="px-4 py-1.5 text-xs font-semibold bg-gray-100 text-gray-600 rounded-xl">
+                          Batal
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+            <p className="text-[10px] text-gray-400 text-center pt-2">Hanya event terakhir yang bisa dihapus • Reject tidak bisa diedit</p>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <F label="Total Berat (gr)" req><input type="number" step="0.01" value={f.berat_awal} onChange={e => s('berat_awal', e.target.value)} className={inp} /></F>
-            <F label="Tanggal"><input type="date" value={f.tanggal_produksi} onChange={e => s('tanggal_produksi', e.target.value)} className={inp} /></F>
-          </div>
-          <F label="Operator / PIC"><input value={f.operator} onChange={e => s('operator', e.target.value)} placeholder="Nama operator" className={inp} /></F>
-          <F label="Catatan"><input value={f.catatan} onChange={e => s('catatan', e.target.value)} placeholder="Catatan tambahan…" className={inp} /></F>
-          {error && <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600"><AlertTriangle size={14} />{error}</div>}
-          <div className="flex gap-3 justify-end pt-1">
-            <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
-            <button type="submit" disabled={isPending} className="px-6 py-2.5 text-sm font-bold text-white rounded-2xl flex items-center gap-2 disabled:opacity-60" style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
-              {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-              {isPending ? 'Menyimpan…' : 'Simpan Perubahan'}
-            </button>
-          </div>
-        </form>
+        )}
       </div>
     </div>
   )
@@ -1064,6 +1260,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     </div>
   )
 }
+
 
 
 
