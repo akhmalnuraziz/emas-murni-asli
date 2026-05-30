@@ -7,8 +7,8 @@ const PROD_PREFIX = 'PROD.GDCJ'
 const PCKG_PREFIX = 'PCKG.GDCJ'
 
 async function generateProduksiCode(supabase: any): Promise<string> {
-  const { count } = await supabase.from('produksi_item').select('*', { count: 'exact', head: true })
-  return `${PROD_PREFIX}/${String((count ?? 0) + 1).padStart(4, '0')}`
+  const { data } = await supabase.rpc('get_next_code', { p_name: 'produksi' })
+  return `${PROD_PREFIX}/${String(data ?? 1).padStart(4, '0')}`
 }
 
 async function generatePackingCode(supabase: any): Promise<string> {
@@ -154,8 +154,46 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
   if (incomingOrder > 0 && incomingOrder < currentOrder)
     return { error: `Tidak bisa mundur ke status "${statusBaru}". Status saat ini: "${produksi.current_status}". Hapus event terakhir jika perlu mengulang.` }
 
+  // H5+M5: block Siap Packing jika ada reject belum dilebur
+  if (statusBaru === 'Siap Packing' && produksi.status_reject === 'belum_dilebur')
+    return { error: `Ada ${produksi.pcs_reject} pcs reject belum dilebur. Lebur terlebih dahulu sebelum Siap Packing.` }
+
   const beratSebelumnya = produksi.total_gram ?? 0
+
+  // H4: berat tidak boleh naik dalam proses (kecuali Cutting yang bisa sama)
+  if (totalGramBaru > beratSebelumnya + 0.001 && statusBaru !== 'Cutting')
+    return { error: `Berat baru (${totalGramBaru}gr) tidak boleh lebih tinggi dari berat sebelumnya (${beratSebelumnya}gr). Periksa kembali data.` }
+
   const losses = Math.max(0, beratSebelumnya - totalGramBaru - sisaSerbuk)
+
+  // ─── 3% Losses Threshold Confirmation ──────────────────────────────────────
+  const overrideReason = (formData.get('override_reason') as string | null)?.trim() ?? ''
+  if (losses > 0) {
+    const { data: prevEvs } = await supabase.from('produksi_event')
+      .select('losses, status').eq('produksi_item_id', produksiId).is('voided_at', null)
+    const prevLosses    = (prevEvs ?? []).filter((e: any) => e.status !== 'Reject')
+      .reduce((s: number, e: any) => s + (Number(e.losses) || 0), 0)
+    const totalLosses   = prevLosses + losses
+    const lossesPercent = produksi.berat_awal > 0 ? (totalLosses / produksi.berat_awal) * 100 : 0
+
+    if (lossesPercent > 3 && !overrideReason) {
+      return {
+        requiresConfirmation: true,
+        lossesPercent: Math.round(lossesPercent * 100) / 100,
+        totalLosses: Math.round(totalLosses * 1000) / 1000,
+        beratAwal: produksi.berat_awal,
+        message: `Total losses ${lossesPercent.toFixed(2)}% (${totalLosses.toFixed(3)}gr dari ${produksi.berat_awal}gr) melebihi batas 3%. Butuh konfirmasi Owner/Manager.`,
+      }
+    }
+    if (lossesPercent > 3 && overrideReason) {
+      await supabase.from('losses_override_log').insert({
+        produksi_id: produksiId, produksi_kode: produksiKode, event_status: statusBaru,
+        losses_gram: totalLosses, berat_awal: produksi.berat_awal, losses_percent: lossesPercent,
+        override_by: user.id, override_name: profile?.name, override_role: profile?.role,
+        override_reason: overrideReason,
+      })
+    }
+  }
 
   const fotosB64Raw = formData.get('fotos_b64') as string
   const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
@@ -308,6 +346,12 @@ export async function inputReject(produksiId: number, produksiKode: string, form
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
   const { data: produksi } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
   if (!produksi) return { error: 'Item produksi tidak ditemukan' }
+  if (produksi.current_status === 'Sudah Packing')
+    return { error: 'Item sudah selesai packing, tidak bisa menambah reject' }
+
+  const { data: activePack } = await supabase.from('packing')
+    .select('pcs_dipack').eq('produksi_item_id', produksiId).is('voided_at', null)
+  const pcsAlreadyPacked = (activePack ?? []).reduce((s: number, p: any) => s + (p.pcs_dipack || 0), 0)
 
   const pcsReject = parseInt(formData.get('pcs_reject') as string)
   const beratReject = parseFloat(formData.get('berat_reject') as string)
@@ -315,10 +359,10 @@ export async function inputReject(produksiId: number, produksiKode: string, form
   if (!pcsReject || pcsReject <= 0) return { error: 'PCS reject wajib diisi' }
   if (!beratReject || beratReject <= 0) return { error: 'Berat reject wajib diisi' }
 
-  const pcsGoodNow = produksi.pcs_good ?? produksi.pcs ?? 0
-  if (pcsReject > pcsGoodNow) {
-    return { error: `PCS reject (${pcsReject}) melebihi PCS good (${pcsGoodNow})` }
-  }
+  const pcsGoodNow    = produksi.pcs_good ?? produksi.pcs ?? 0
+  const pcsAvailable  = pcsGoodNow - pcsAlreadyPacked
+  if (pcsReject > pcsAvailable)
+    return { error: `Reject (${pcsReject}) melebihi PCS tersedia (${pcsAvailable} = ${pcsGoodNow} good − ${pcsAlreadyPacked} sudah dipacking)` }
 
   const newPcsGood = pcsGoodNow - pcsReject
   const newTotalGram = Math.max(0, (produksi.total_gram ?? 0) - beratReject)
@@ -594,6 +638,7 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
