@@ -790,8 +790,9 @@ function UpdateModal({ item, onClose, onSubmit, isPending, error }: {
                 <p className="text-base font-bold text-gray-800 mt-0.5">{item.total_gram} <span className="text-xs font-normal text-gray-400">gr</span></p>
               </div>
               <div className="px-4 py-3 text-center">
-                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Expected ({gramasi}gr×{pcsGood})</p>
+                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Expected ≈</p>
                 <p className="text-base font-bold mt-0.5" style={{color:'#8B5CF6'}}>{expected} <span className="text-xs font-normal text-gray-400">gr</span></p>
+                <p className="text-[9px] text-gray-300 mt-0.5">{gramasi}gr × {pcsGood}pcs</p>
               </div>
             </div>
           )
@@ -810,7 +811,7 @@ function UpdateModal({ item, onClose, onSubmit, isPending, error }: {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              <F label={`Total Berat Sekarang (gr) — expected: ${Math.round((item.pcs_good??item.pcs??0)*parseFloat(item.gramasi||'0')*1000)/1000}gr`} req>
+              <F label="Total Berat Sekarang (gr)" req>
                 <input name="total_gram" type="number" step="0.001" className={inp}
                   placeholder={`Sebelumnya: ${item.total_gram} gr`} required />
               </F>
@@ -1260,6 +1261,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     </div>
   )
 }
+
 
 
 
