@@ -261,14 +261,39 @@ export async function editEvent(eventId: number, produksiId: number, produksiKod
     ...(pcsGoodSnap !== null ? { pcs_good_snapshot: pcsGoodSnap } : {}),
   }).eq('id', eventId)
 
-  // Jika event ini adalah event TERBARU → update produksi_item juga
-  const { data: latest } = await supabase.from('produksi_event')
-    .select('id').eq('produksi_item_id', produksiId).is('voided_at', null)
-    .order('created_at', { ascending: false }).limit(1).single()
+  // ── Bidirectional sync: first event ↔ base data, latest event → current ──
+  const { data: allMeta } = await supabase.from('produksi_event')
+    .select('id, status').eq('produksi_item_id', produksiId).is('voided_at', null)
+    .order('created_at', { ascending: true })
+  const firstEvId  = allMeta?.[0]?.id
+  const latestEvId = allMeta?.[allMeta.length - 1]?.id
+  const isFirst    = eventId === firstEvId
+  const isLatest   = eventId === latestEvId
 
-  if (latest?.id === eventId) {
-    const itemUpdate: Record<string, any> = { total_gram: totalGram }
+  const itemUpdate: Record<string, any> = {}
+
+  if (isFirst) {
+    // Editing first event → sync back to base data
+    itemUpdate.berat_awal       = totalGram
+    itemUpdate.tanggal_produksi = tanggal
+    itemUpdate.tanggal          = tanggal
+    itemUpdate.catatan          = catatan || null
+    if (pcsGoodSnap !== null) {
+      itemUpdate.pcs      = pcsGoodSnap
+      itemUpdate.pcs_awal = pcsGoodSnap
+      // Only update pcs_good if no reject events exist
+      const hasReject = allMeta?.some((e: any) => e.status === 'Reject') ?? false
+      if (!hasReject) itemUpdate.pcs_good = pcsGoodSnap
+    }
+  }
+
+  // Latest event always updates current total_gram
+  if (isLatest) {
+    itemUpdate.total_gram = totalGram
     if (pcsGoodSnap !== null) itemUpdate.pcs_good = pcsGoodSnap
+  }
+
+  if (Object.keys(itemUpdate).length > 0) {
     await supabase.from('produksi_item').update(itemUpdate).eq('id', produksiId)
   }
 
@@ -633,6 +658,20 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
 
   if (error) return { error: error.message }
 
+  // ── Bidirectional sync: update first event to match new base data ──────────
+  const { data: firstEvForSync } = await supabase.from('produksi_event')
+    .select('id').eq('produksi_item_id', produksiId).is('voided_at', null)
+    .order('created_at', { ascending: true }).limit(1).single()
+  if (firstEvForSync) {
+    await supabase.from('produksi_event').update({
+      total_gram:        beratAwal,
+      berat_sebelumnya:  beratAwal,
+      pcs_good_snapshot: newPcsGood,
+      tanggal:           tanggal,
+      catatan:           catatan || null,
+    }).eq('id', firstEvForSync.id)
+  }
+
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'EDIT', module: 'PRODUKSI',
@@ -644,6 +683,7 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
