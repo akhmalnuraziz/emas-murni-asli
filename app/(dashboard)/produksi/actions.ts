@@ -136,6 +136,24 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
   if (!totalGramBaru || totalGramBaru <= 0) return { error: 'Total berat wajib diisi' }
   if (!tanggal) return { error: 'Tanggal wajib diisi' }
 
+  // ─── Guard: status non-Reject tidak boleh duplikat ─────────────────────────
+  if (statusBaru !== 'Reject') {
+    const { count: dupCount } = await supabase.from('produksi_event')
+      .select('*', { count: 'exact', head: true })
+      .eq('produksi_item_id', produksiId)
+      .eq('status', statusBaru)
+      .is('voided_at', null)
+    if ((dupCount ?? 0) > 0)
+      return { error: `Status "${statusBaru}" sudah diinput. Gunakan tombol Edit pada event yang ada jika perlu mengubah data.` }
+  }
+
+  // ─── Guard: urutan status harus benar ───────────────────────────────────────
+  const STATUS_ORDER: Record<string, number> = { Cutting:1, 'Pas Berat':2, Annealing:3, 'Siap Packing':4, 'Sudah Packing':5 }
+  const currentOrder  = STATUS_ORDER[produksi.current_status ?? ''] ?? 0
+  const incomingOrder = STATUS_ORDER[statusBaru] ?? 0
+  if (incomingOrder > 0 && incomingOrder < currentOrder)
+    return { error: `Tidak bisa mundur ke status "${statusBaru}". Status saat ini: "${produksi.current_status}". Hapus event terakhir jika perlu mengulang.` }
+
   const beratSebelumnya = produksi.total_gram ?? 0
   const losses = Math.max(0, beratSebelumnya - totalGramBaru - sisaSerbuk)
 
@@ -168,6 +186,115 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
     record_key: produksiKode, record_id: String(produksiId),
     before_data: { status: produksi.current_status, total_gram: beratSebelumnya },
     after_data: { status: statusBaru, total_gram: totalGramBaru, losses },
+  })
+
+  revalidatePath('/produksi')
+  return { success: true }
+}
+
+export async function editEvent(eventId: number, produksiId: number, produksiKode: string, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+
+  const { data: ev } = await supabase.from('produksi_event').select('*').eq('id', eventId).single()
+  if (!ev) return { error: 'Event tidak ditemukan' }
+  if (ev.voided_at) return { error: 'Event sudah dihapus, tidak bisa diedit' }
+  if (ev.status === 'Reject') return { error: 'Event Reject tidak bisa diedit. Void event jika perlu mengulang.' }
+
+  const totalGram  = parseFloat(formData.get('total_gram') as string)
+  const sisaSerbuk = parseFloat(formData.get('sisa_serbuk') as string || '0')
+  const catatan    = formData.get('catatan') as string || null
+  const tanggal    = formData.get('tanggal') as string
+
+  if (!totalGram || totalGram <= 0) return { error: 'Berat wajib diisi' }
+  if (!tanggal) return { error: 'Tanggal wajib diisi' }
+
+  // Losses dihitung ulang dari berat sebelumnya event ini
+  const losses = Math.max(0, (ev.berat_sebelumnya ?? 0) - totalGram - sisaSerbuk)
+
+  await supabase.from('produksi_event').update({
+    total_gram: totalGram, sisa_serbuk: sisaSerbuk,
+    losses, catatan, tanggal,
+  }).eq('id', eventId)
+
+  // Jika event ini adalah event TERBARU → update produksi_item juga
+  const { data: latest } = await supabase.from('produksi_event')
+    .select('id').eq('produksi_item_id', produksiId).is('voided_at', null)
+    .order('created_at', { ascending: false }).limit(1).single()
+
+  if (latest?.id === eventId) {
+    await supabase.from('produksi_item').update({ total_gram: totalGram }).eq('id', produksiId)
+  }
+
+  await supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'EDIT_EVENT', module: 'PRODUKSI',
+    record_key: produksiKode, record_id: String(produksiId),
+    before_data: { total_gram: ev.total_gram, sisa_serbuk: ev.sisa_serbuk, losses: ev.losses },
+    after_data:  { total_gram: totalGram, sisa_serbuk: sisaSerbuk, losses, catatan, tanggal },
+  })
+
+  revalidatePath('/produksi')
+  return { success: true }
+}
+
+export async function deleteEvent(eventId: number, produksiId: number, produksiKode: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
+
+  // Ambil semua event aktif, diurutkan dari terbaru
+  const { data: allEvs } = await supabase.from('produksi_event')
+    .select('*').eq('produksi_item_id', produksiId).is('voided_at', null)
+    .order('created_at', { ascending: false })
+  if (!allEvs || allEvs.length === 0) return { error: 'Tidak ada event' }
+
+  // Hanya event TERAKHIR yang bisa dihapus (jaga integritas chain)
+  if (allEvs[0].id !== eventId)
+    return { error: 'Hanya event terakhir yang bisa dihapus. Edit event jika perlu mengubah data di tengah.' }
+
+  // Jangan hapus event pertama (CREATE) — hapus item produksi jika mau
+  if (allEvs.length === 1)
+    return { error: 'Tidak bisa hapus event pertama. Hapus item produksi jika mau membatalkan sepenuhnya.' }
+
+  const evToDelete = allEvs[0]
+
+  // Khusus Reject: cek sudah lebur atau belum
+  if (evToDelete.status === 'Reject') {
+    const { data: item } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
+    if (item?.status_reject === 'sudah_dilebur')
+      return { error: 'Reject sudah dilebur, tidak bisa dihapus. Batalkan lebur terlebih dahulu.' }
+    // Revert pcs & berat
+    const rejectPcs  = evToDelete.pcs_reject_snapshot ?? 0
+    const rejectBerat = (evToDelete.berat_sebelumnya ?? 0) - (evToDelete.total_gram ?? 0)
+    await supabase.from('produksi_item').update({
+      pcs_good:     (item?.pcs_good   ?? 0) + rejectPcs,
+      pcs_reject:   Math.max(0, (item?.pcs_reject  ?? 0) - rejectPcs),
+      berat_reject: Math.max(0, (item?.berat_reject ?? 0) - rejectBerat),
+      status_reject: (item?.pcs_reject ?? 0) - rejectPcs > 0 ? item?.status_reject : null,
+    }).eq('id', produksiId)
+  }
+
+  // Soft-delete event
+  await supabase.from('produksi_event')
+    .update({ voided_at: new Date().toISOString() }).eq('id', eventId)
+
+  // Kembalikan total_gram + current_status ke event sebelumnya
+  const prev = allEvs[1]
+  await supabase.from('produksi_item').update({
+    total_gram:     prev.total_gram,
+    current_status: prev.status,
+  }).eq('id', produksiId)
+
+  await supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'DELETE_EVENT', module: 'PRODUKSI',
+    record_key: produksiKode, record_id: String(produksiId),
+    before_data: evToDelete,
   })
 
   revalidatePath('/produksi')
@@ -467,6 +594,7 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
