@@ -249,7 +249,15 @@ function EventHistory({ events }: { events: any[] }) {
               <div className="flex items-center gap-2 flex-wrap">
                 <Sbadge s={ev.status} />
                 <span className="text-xs text-gray-400">{formatDate(ev.tanggal)}</span>
-                <span className="text-xs font-semibold text-gray-700">{ev.total_gram} gr</span>
+                {ev.status !== 'Reject'
+                  ? <span className="text-xs font-semibold text-gray-700">{ev.total_gram} gr</span>
+                  : <span className="text-xs font-semibold text-red-500">−{fgr((ev.berat_sebelumnya ?? 0) - (ev.total_gram ?? 0))} gr</span>
+                }
+                {ev.pcs_good_snapshot != null && (
+                  <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-md ${ev.status === 'Reject' ? 'text-red-600 bg-red-50' : 'text-gray-500 bg-gray-100'}`}>
+                    {ev.pcs_good_snapshot} pcs
+                  </span>
+                )}
                 {Number(ev.sisa_serbuk) > 0 && <span className="text-xs text-violet-500">serbuk {ev.sisa_serbuk} gr</span>}
                 {Number(ev.losses)      > 0 && <span className="text-xs text-orange-500">losses {ev.losses} gr</span>}
               </div>
@@ -633,10 +641,12 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
               // Bahan baku data
               const b          = item.batch ? (Array.isArray(item.batch) ? item.batch[0] : item.batch) : null
               const bahanAwal  = b ? Number(b.timbangan_akhir || 0) : 0
-              const sisaS      = b ? Number(b.sisa_bahan_seharusnya || 0) : 0
-              const terpakai   = bahanAwal - sisaS
-              const sisaF      = b && b.sisa_fisik !== null && b.sisa_fisik !== undefined ? Number(b.sisa_fisik) : null
-              const losesBahan = sisaF !== null ? sisaS - sisaF : null   // positif = ada kehilangan
+              const sisaS        = b ? Number(b.sisa_bahan_seharusnya || 0) : 0
+              const terpakai     = bahanAwal - sisaS
+              const sisaF        = b && b.sisa_fisik !== null && b.sisa_fisik !== undefined ? Number(b.sisa_fisik) : null
+              const totalDilebur = b ? Number(b.total_berat_dilebur || 0) : 0
+              // losesBahan: (sisa seharusnya + reject yg sudah dilebur) vs sisa fisik actual
+              const losesBahan   = sisaF !== null ? (sisaS + totalDilebur) - sisaF : null
 
               return (
                 <div key={item.id} className="rounded-3xl overflow-hidden transition-shadow hover:shadow-md"
@@ -758,6 +768,11 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                           <p className="text-[12px] font-bold text-gray-700 mt-0.5">
                             {sisaF !== null ? `${fgr(sisaF)} gr` : <span className="text-[10px] text-gray-300 italic">— input di Bahan Baku</span>}
                           </p>
+                          {totalDilebur > 0 && (
+                            <p className="text-[9px] text-emerald-600 font-semibold mt-0.5" title="Hasil lebur reject sudah kembali ke pool bahan">
+                              +{fgr(totalDilebur)} gr dilebur
+                            </p>
+                          )}
                         </div>
                         {/* Loses Bahan */}
                         <div className="rounded-xl px-3 py-2" style={{ background: losesBahan !== null && losesBahan > 0 ? 'rgba(239,68,68,0.06)' : losesBahan === 0 ? 'rgba(34,197,94,0.06)' : 'rgba(255,255,255,0.7)' }}>
@@ -807,5 +822,6 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     </div>
   )
 }
+
 
 
