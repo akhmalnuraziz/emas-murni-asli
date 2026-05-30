@@ -321,7 +321,9 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
 
   function toggleSelect(id:number){setSelectedIds(prev=>{const s=new Set(prev);s.has(id)?s.delete(id):s.add(id);return s})}
   function toggleSelectAll(records:any[]){
-    const ids=records.map((p:any)=>p.id)
+    // M1: exclude voided packings from multi-select
+    const validRecords=records.filter((p:any)=>!p.voided_at)
+    const ids=validRecords.map((p:any)=>p.id)
     const allSel=ids.every((id:number)=>selectedIds.has(id))
     setSelectedIds(allSel?new Set():new Set(ids))
   }
@@ -401,6 +403,7 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
                 className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white rounded-2xl transition-all hover:-translate-y-0.5"
                 style={{background:'linear-gradient(135deg,#0EA5E9,#0284C7)',boxShadow:'0 4px 16px rgba(14,165,233,0.4)'}}>
                 <Printer size={14}/> Print {selectedIds.size} Item
+                {(()=>{const n=filteredByDate(filtered).filter((p:any)=>selectedIds.has(p.id)&&p.status_surat==='sudah_cetak').length;return n>0?<span className="text-[10px] opacity-75 font-normal ml-0.5">({n} sudah cetak)</span>:null})()}
               </button>
             )}
             {canManage&&siapPackingItems.length>0&&(
@@ -471,7 +474,7 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
                 <th className="px-4 py-3 w-10">
                   {filteredByDate(filtered).length>0&&(
                     <input type="checkbox" className="rounded accent-violet-600 cursor-pointer"
-                      checked={filteredByDate(filtered).length>0&&filteredByDate(filtered).every(p=>selectedIds.has(p.id))}
+                      checked={(()=>{const v=filteredByDate(filtered).filter(p=>!p.voided_at);return v.length>0&&v.every(p=>selectedIds.has(p.id))})()}
                       onChange={()=>toggleSelectAll(filteredByDate(filtered))}/>
                   )}
                 </th>
@@ -565,4 +568,5 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
     </div>
   )
 }
+
 
