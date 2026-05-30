@@ -345,7 +345,13 @@ function EventHistory({ events, fallbackPcs, produksiId, produksiKode, userRole,
                 <div className="mt-2 p-3 rounded-2xl space-y-2 border" style={{background:'rgba(139,92,246,0.04)',borderColor:'rgba(139,92,246,0.15)'}}>
                   <div className="flex gap-2">
                     <div className="flex-1">
-                      <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Berat (gr)</p>
+                      <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">
+                        Berat (gr)
+                        {fallbackPcs && (() => {
+                          const exp = Math.round((fallbackPcs ?? 0) * parseFloat(String(ev.gramasi ?? 0)) * 1000) / 1000
+                          return exp > 0 ? <span className="text-violet-400 ml-1 normal-case font-normal">expected ≈{exp}gr</span> : null
+                        })()}
+                      </p>
                       <input type="number" step="0.001" value={draft.total_gram}
                         onChange={e => setDraft(d => ({...d, total_gram: e.target.value}))}
                         className="w-full text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white" />
@@ -365,7 +371,18 @@ function EventHistory({ events, fallbackPcs, produksiId, produksiKode, userRole,
                         className="w-full text-xs px-2.5 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white" />
                     </div>
                   </div>
-                  <div>
+                  {/* PCS info — read-only context dalam form edit event */}
+                  {(()=>{
+                    const pcs = ev.pcs_good_snapshot ?? fallbackPcs
+                    return pcs != null ? (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs" style={{background:'rgba(139,92,246,0.05)',border:'1px solid rgba(139,92,246,0.1)'}}>
+                        <span className="font-bold text-violet-600">{pcs} pcs</span>
+                        <span className="text-gray-400">—</span>
+                        <span className="text-gray-500">PCS tidak berubah di tahap ini. Edit PCS via tombol ✏️ di header kartu.</span>
+                      </div>
+                    ) : null
+                  })()}
+              <div>
                     <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Catatan</p>
                     <input type="text" value={draft.catatan}
                       onChange={e => setDraft(d => ({...d, catatan: e.target.value}))}
@@ -557,11 +574,33 @@ function UpdateModal({ item, onClose, onSubmit, isPending, error }: {
         <div className="px-6 pt-5 pb-4 border-b border-gray-100/80 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-bold text-gray-900">Update Status Produksi</h2>
-            <p className="text-xs font-semibold text-violet-500 mt-0.5">{item.kode} — {item.nama_item || `${item.gramasi}gr × ${item.pcs} PCS`}</p>
+            <p className="text-xs font-semibold text-violet-500 mt-0.5">{item.kode} — {item.nama_item || item.gramasi}</p>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><X size={15} /></button>
         </div>
-        <form onSubmit={submit} className="px-6 py-5 space-y-4 overflow-y-auto max-h-[76vh]">
+        {/* ─── Context bar: info PCS + berat sebelumnya ─── */}
+        {(()=>{
+          const pcsGood   = item.pcs_good ?? item.pcs ?? 0
+          const gramasi   = parseFloat(item.gramasi) || 0
+          const expected  = Math.round(pcsGood * gramasi * 1000) / 1000
+          return (
+            <div className="grid grid-cols-3 divide-x" style={{background:'rgba(139,92,246,0.04)',borderBottom:'1px solid rgba(139,92,246,0.08)'}}>
+              <div className="px-4 py-3 text-center">
+                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">PCS Good</p>
+                <p className="text-base font-bold text-gray-800 mt-0.5">{pcsGood} <span className="text-xs font-normal text-gray-400">pcs</span></p>
+              </div>
+              <div className="px-4 py-3 text-center">
+                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Berat Sebelumnya</p>
+                <p className="text-base font-bold text-gray-800 mt-0.5">{item.total_gram} <span className="text-xs font-normal text-gray-400">gr</span></p>
+              </div>
+              <div className="px-4 py-3 text-center">
+                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Expected ({gramasi}gr×{pcsGood})</p>
+                <p className="text-base font-bold mt-0.5" style={{color:'#8B5CF6'}}>{expected} <span className="text-xs font-normal text-gray-400">gr</span></p>
+              </div>
+            </div>
+          )
+        })()}
+        <form onSubmit={submit} className="px-6 py-5 space-y-4 overflow-y-auto max-h-[65vh]">
           <F label="Status Baru" req>
             <select name="status" value={status} onChange={e => setStatus(e.target.value)} className={inp} required>
               {STATUS_FLOW.map(st => <option key={st} value={st}>{st}</option>)}
@@ -575,7 +614,10 @@ function UpdateModal({ item, onClose, onSubmit, isPending, error }: {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              <F label="Total Berat Sekarang (gr)" req><input name="total_gram" type="number" step="0.001" className={inp} placeholder={`Sblm: ${item.total_gram} gr`} required /></F>
+              <F label={`Total Berat Sekarang (gr) — expected: ${Math.round((item.pcs_good??item.pcs??0)*parseFloat(item.gramasi||'0')*1000)/1000}gr`} req>
+                <input name="total_gram" type="number" step="0.001" className={inp}
+                  placeholder={`Sebelumnya: ${item.total_gram} gr`} required />
+              </F>
               {isPB && <F label="Sisa Serbuk (gr)"><input name="sisa_serbuk" type="number" step="0.001" className={inp} placeholder="0.000" defaultValue="0" /></F>}
             </div>
           )}
@@ -1022,6 +1064,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     </div>
   )
 }
+
 
 
 
