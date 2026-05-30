@@ -228,59 +228,21 @@ function TLine({ events }: { events: any[] }) {
   )
 }
 
-// ─── Event History ─────────────────────────────────────────────────────────────
-function EventHistory({ events, fallbackPcs, produksiId, produksiKode, userRole, showToast }: {
-  events: any[]; fallbackPcs?: number
-  produksiId: number; produksiKode: string
-  userRole: string; showToast: (msg: string, ok?: boolean) => void
-}) {
-  const sorted    = [...events].sort((a, b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime())
-  const latestId  = sorted.length > 0 ? sorted[sorted.length - 1].id : null
-  const [lightbox, setLightbox]     = useState<string | null>(null)
-  const [editId,   setEditId]       = useState<number | null>(null)
-  const [draft,    setDraft]        = useState<Record<string, any>>({})
-  const [confirmDel, setConfirmDel] = useState<number | null>(null)
-  const [isPend,   startPend]       = useTransition()
-  const canManage = ['owner', 'admin_pusat', 'spv'].includes(userRole)
-
-  function openEdit(ev: any) {
-    setEditId(ev.id)
-    setDraft({ total_gram: ev.total_gram, sisa_serbuk: ev.sisa_serbuk ?? 0, catatan: ev.catatan ?? '', tanggal: ev.tanggal })
-  }
-
-  function handleSaveEdit(evId: number) {
-    startPend(async () => {
-      const fd = new FormData()
-      fd.set('total_gram',  String(draft.total_gram))
-      fd.set('sisa_serbuk', String(draft.sisa_serbuk ?? 0))
-      fd.set('catatan',     draft.catatan ?? '')
-      fd.set('tanggal',     draft.tanggal)
-      const r = await editEvent(evId, produksiId, produksiKode, fd)
-      if (r?.error) { showToast(r.error, false); return }
-      showToast('✅ Event berhasil diedit')
-      setEditId(null)
-    })
-  }
-
-  function handleDeleteEvent(evId: number) {
-    startPend(async () => {
-      const r = await deleteEvent(evId, produksiId, produksiKode)
-      if (r?.error) { showToast(r.error, false); return }
-      showToast('🗑️ Event dihapus — status kembali ke sebelumnya')
-      setConfirmDel(null)
-    })
-  }
-
+// ─── Event History (read-only, edit via modal) ────────────────────────────────
+function EventHistory({ events, fallbackPcs }: { events: any[]; fallbackPcs?: number }) {
+  const sorted = [...events].sort((a,b) => new Date(a.tanggal).getTime() - new Date(b.tanggal).getTime())
+  const [lightbox, setLightbox] = useState<string|null>(null)
   return (
     <div className="space-y-1">
       {lightbox && <Lightbox url={lightbox} onClose={() => setLightbox(null)} />}
       {sorted.map((ev, i) => {
-        const cfg   = STATUS_CFG[ev.status] ?? { dot: '#94A3B8', bg: 'rgba(148,163,184,0.1)', text: '#64748B' }
-        const fotos  = Array.isArray(ev.fotos) ? ev.fotos : []
-        const serbuk = Array.isArray(ev.fotos_sisa_serbuk) ? ev.fotos_sisa_serbuk : []
-        const isLast = ev.id === latestId
-        const isEditingThis = editId === ev.id
-        const hasSerbuk = ev.status === 'Pas Berat' || ev.status === 'Annealing'
+        const cfg   = STATUS_CFG[ev.status] ?? { dot: '#94A3B8' }
+        const fotos:string[]  = Array.isArray(ev.fotos) ? ev.fotos : []
+        const serbuk:string[] = Array.isArray(ev.fotos_sisa_serbuk) ? ev.fotos_sisa_serbuk : []
+        // Losses atau Lebih (timbangan naik = lebih)
+        const rawDiff = (ev.berat_sebelumnya ?? 0) - (ev.total_gram ?? 0) - (ev.sisa_serbuk ?? 0)
+        const isLebih = ev.status !== 'Reject' && rawDiff < -0.001
+        const diffVal = Math.abs(rawDiff)
         return (
           <div key={ev.id ?? i} className="flex gap-3">
             <div className="flex flex-col items-center pt-1">
@@ -288,129 +250,39 @@ function EventHistory({ events, fallbackPcs, produksiId, produksiKode, userRole,
               {i < sorted.length - 1 && <div className="w-px flex-1 mt-1 opacity-20" style={{ background: cfg.dot }} />}
             </div>
             <div className="flex-1 pb-3 min-w-0">
-              {/* ── Event header row ── */}
-              <div className="flex items-start justify-between gap-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Sbadge s={ev.status} />
-                  <span className="text-xs text-gray-400">{formatDate(ev.tanggal)}</span>
-                  {ev.status !== 'Reject'
-                    ? <span className="text-xs font-semibold text-gray-700">{ev.total_gram} gr</span>
-                    : <span className="text-xs font-semibold text-red-500">−{fgr((ev.berat_sebelumnya ?? 0) - (ev.total_gram ?? 0))} gr</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Sbadge s={ev.status} />
+                <span className="text-xs text-gray-400">{formatDate(ev.tanggal)}</span>
+                {ev.status !== 'Reject'
+                  ? <span className="text-xs font-semibold text-gray-700">{ev.total_gram} gr</span>
+                  : <span className="text-xs font-semibold text-red-500">−{fgr((ev.berat_sebelumnya ?? 0) - (ev.total_gram ?? 0))} gr</span>
+                }
+                {(()=>{
+                  if (ev.status === 'Reject') {
+                    const r = ev.pcs_reject_snapshot
+                    return r != null ? <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-md text-red-600 bg-red-50">−{r} pcs</span> : null
                   }
-                  {(()=>{
-                    if (ev.status === 'Reject') {
-                      const rejected = ev.pcs_reject_snapshot
-                      return rejected != null ? <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-md text-red-600 bg-red-50">−{rejected} pcs</span> : null
-                    }
-                    const pcs = ev.pcs_good_snapshot ?? fallbackPcs
-                    return pcs != null ? <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-md text-gray-500 bg-gray-100">{pcs} pcs</span> : null
-                  })()}
-                  {Number(ev.sisa_serbuk) > 0 && <span className="text-xs text-violet-500">serbuk {ev.sisa_serbuk} gr</span>}
-                  {Number(ev.losses)      > 0 && <span className="text-xs text-orange-500">losses {ev.losses} gr</span>}
-                </div>
-                {/* ── Edit / Delete buttons ── */}
-                {canManage && !isEditingThis && (
-                  <div className="flex gap-1 flex-shrink-0">
-                    {ev.status !== 'Reject' && (
-                      <button onClick={() => openEdit(ev)} disabled={isPend}
-                        className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-violet-600 transition-colors" title="Edit event ini">
-                        <Pencil size={11} />
-                      </button>
-                    )}
-                    {isLast && (
-                      confirmDel === ev.id ? (
-                        <div className="flex gap-1">
-                          <button onClick={() => handleDeleteEvent(ev.id)} disabled={isPend}
-                            className="px-2 h-6 text-[10px] font-bold rounded-lg bg-red-500 text-white disabled:opacity-50">
-                            {isPend ? '...' : 'Hapus'}
-                          </button>
-                          <button onClick={() => setConfirmDel(null)}
-                            className="px-2 h-6 text-[10px] font-semibold rounded-lg bg-gray-100 text-gray-600">
-                            Batal
-                          </button>
-                        </div>
-                      ) : (
-                        <button onClick={() => setConfirmDel(ev.id)} disabled={isPend}
-                          className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors" title="Hapus event terakhir ini">
-                          <Trash2 size={11} />
-                        </button>
-                      )
-                    )}
-                  </div>
+                  const pcs = ev.pcs_good_snapshot ?? fallbackPcs
+                  return pcs != null ? <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-md text-gray-500 bg-gray-100">{pcs} pcs</span> : null
+                })()}
+                {Number(ev.sisa_serbuk) > 0 && <span className="text-xs text-violet-500">serbuk {ev.sisa_serbuk} gr</span>}
+                {ev.status !== 'Reject' && diffVal > 0.001 && (
+                  isLebih
+                    ? <span className="text-xs font-semibold text-emerald-600">lebih +{fgr(diffVal)} gr</span>
+                    : <span className="text-xs text-orange-500">losses {fgr(diffVal)} gr</span>
                 )}
               </div>
-              {ev.catatan && !isEditingThis && <p className="text-xs text-gray-400 mt-0.5 italic truncate">{ev.catatan}</p>}
-              {/* ── Inline edit form ── */}
-              {isEditingThis && (
-                <div className="mt-2 p-3 rounded-2xl space-y-2 border" style={{background:'rgba(139,92,246,0.04)',borderColor:'rgba(139,92,246,0.15)'}}>
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">
-                        Berat (gr)
-                        {fallbackPcs && (() => {
-                          const exp = Math.round((fallbackPcs ?? 0) * parseFloat(String(ev.gramasi ?? 0)) * 1000) / 1000
-                          return exp > 0 ? <span className="text-violet-400 ml-1 normal-case font-normal">expected ≈{exp}gr</span> : null
-                        })()}
-                      </p>
-                      <input type="number" step="0.001" value={draft.total_gram}
-                        onChange={e => setDraft(d => ({...d, total_gram: e.target.value}))}
-                        className="w-full text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white" />
-                    </div>
-                    {hasSerbuk && (
-                      <div className="flex-1">
-                        <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Serbuk (gr)</p>
-                        <input type="number" step="0.001" value={draft.sisa_serbuk}
-                          onChange={e => setDraft(d => ({...d, sisa_serbuk: e.target.value}))}
-                          className="w-full text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white" />
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Tanggal</p>
-                      <input type="date" value={draft.tanggal}
-                        onChange={e => setDraft(d => ({...d, tanggal: e.target.value}))}
-                        className="w-full text-xs px-2.5 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white" />
-                    </div>
-                  </div>
-                  {/* PCS info — read-only context dalam form edit event */}
-                  {(()=>{
-                    const pcs = ev.pcs_good_snapshot ?? fallbackPcs
-                    return pcs != null ? (
-                      <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs" style={{background:'rgba(139,92,246,0.05)',border:'1px solid rgba(139,92,246,0.1)'}}>
-                        <span className="font-bold text-violet-600">{pcs} pcs</span>
-                        <span className="text-gray-400">—</span>
-                        <span className="text-gray-500">PCS tidak berubah di tahap ini. Edit PCS via tombol ✏️ di header kartu.</span>
-                      </div>
-                    ) : null
-                  })()}
-              <div>
-                    <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Catatan</p>
-                    <input type="text" value={draft.catatan}
-                      onChange={e => setDraft(d => ({...d, catatan: e.target.value}))}
-                      placeholder="Opsional..." maxLength={200}
-                      className="w-full text-xs px-2.5 py-1.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white" />
-                  </div>
-                  <div className="flex gap-2 pt-0.5">
-                    <button onClick={() => handleSaveEdit(ev.id)} disabled={isPend}
-                      className="flex-1 py-1.5 text-xs font-bold text-white rounded-xl disabled:opacity-50 transition-all"
-                      style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
-                      {isPend ? 'Menyimpan...' : 'Simpan Perubahan'}
-                    </button>
-                    <button onClick={() => setEditId(null)}
-                      className="px-4 py-1.5 text-xs font-semibold bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200">
-                      Batal
-                    </button>
-                  </div>
-                </div>
-              )}
-              {/* ── Foto thumbnails ── */}
-              {(fotos.length > 0 || serbuk.length > 0) && !isEditingThis && (
+              {ev.catatan && <p className="text-xs text-gray-400 mt-0.5 italic">{ev.catatan}</p>}
+              {(fotos.length > 0 || serbuk.length > 0) && (
                 <div className="flex gap-1.5 flex-wrap mt-2">
-                  {fotos.map((u: string, fi: number) => (
-                    <img key={fi} src={u} onClick={() => setLightbox(u)} className="w-10 h-10 rounded-xl object-cover cursor-pointer border border-gray-100 hover:scale-110 transition-transform" />
+                  {fotos.map((u:string, fi:number) => (
+                    <img key={fi} src={u} onClick={() => setLightbox(u)}
+                      className="w-10 h-10 rounded-xl object-cover cursor-pointer border border-gray-100 hover:scale-110 transition-transform" />
                   ))}
-                  {serbuk.map((u: string, fi: number) => (
-                    <div key={`s${fi}`} className="relative">
-                      <img src={u} onClick={() => setLightbox(u)} className="w-10 h-10 rounded-xl object-cover cursor-pointer border-2 border-violet-300 hover:scale-110 transition-transform" />
+                  {serbuk.map((u:string, fi:number) => (
+                    <div key={'s'+fi} className="relative">
+                      <img src={u} onClick={() => setLightbox(u)}
+                        className="w-10 h-10 rounded-xl object-cover cursor-pointer border-2 border-violet-300 hover:scale-110 transition-transform" />
                       <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-violet-500 rounded-full text-[8px] text-white flex items-center justify-center font-bold">S</div>
                     </div>
                   ))}
@@ -423,7 +295,6 @@ function EventHistory({ events, fallbackPcs, produksiId, produksiKode, userRole,
     </div>
   )
 }
-
 // ─── Form helpers ──────────────────────────────────────────────────────────────
 const inp = "w-full px-4 py-3 text-sm bg-white/80 border border-gray-200/70 rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all placeholder:text-gray-400"
 const F = ({ label, req, children }: { label: string; req?: boolean; children: React.ReactNode }) => (
@@ -1102,7 +973,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                       <p className="text-[9.5px] font-bold text-gray-400 tracking-widest uppercase mb-3">Riwayat Proses</p>
                       {events.length === 0
                         ? <p className="text-xs text-gray-400 italic">Belum ada event tercatat</p>
-                        : <EventHistory events={events} fallbackPcs={item.pcs_good ?? item.pcs} produksiId={item.id} produksiKode={item.kode} userRole={userRole} showToast={showToast} />
+                        : <EventHistory events={events} fallbackPcs={item.pcs_good ?? item.pcs} />
                       }
                     </div>
                   )}
@@ -1162,6 +1033,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     </div>
   )
 }
+
 
 
 
