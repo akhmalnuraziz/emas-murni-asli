@@ -12,12 +12,12 @@ export default async function ProduksiPage() {
   ] = await Promise.all([
     supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
     supabase.from('produksi_item')
-      .select(`*, produksi_event(*), packing!left(pcs_dipack, shieldtag_count, voided_at), batch!left(sisa_bahan_seharusnya, sisa_fisik, timbangan_akhir, bahan_dari_pusat)`)
+      .select('*, produksi_event(*), packing!left(pcs_dipack, shieldtag_count, voided_at), batch!left(kode, nama_batch, timbangan_akhir, sisa_bahan_seharusnya, sisa_fisik, bahan_dari_pusat, tanggal)')
       .is('voided_at', null)
       .order('created_at', { ascending: false }),
     supabase.from('batch')
-      .select('kode, nama_batch, sisa_bahan_seharusnya, timbangan_akhir')
-      .eq('status', 'aktif')          // Only aktif batches in produksi dropdown
+      .select('kode, nama_batch, status, tanggal, timbangan_akhir, sisa_bahan_seharusnya, sisa_fisik, bahan_dari_pusat')
+      .eq('status', 'aktif')
       .is('voided_at', null)
       .order('created_at', { ascending: false }),
   ])
