@@ -15,7 +15,7 @@ import {
   editEvent, deleteEvent,
   leburReject, batalLeburReject,
   updateSisaFisikBatch,
-} from './actions'
+} from '@/app/(dashboard)/produksi/actions'
 import type { UserRole } from '@/lib/types/database'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
