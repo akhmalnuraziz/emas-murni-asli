@@ -724,6 +724,16 @@ function ItemRow({ item, canManage, onUpdate, onEdit, showToast }: {
 }) {
   const [expanded, setExpanded] = useState(false)
   const [pend, start] = useTransition()
+  const [delConf, setDelConf] = useState(false)
+
+  function doDelete() {
+    start(async () => {
+      const r = await deleteProduksi(item.id, item.kode)
+      if (r?.error) { showToast(r.error, false); return }
+      showToast('Item dihapus')
+      setDelConf(false)
+    })
+  }
   const events = (Array.isArray(item.produksi_event) ? item.produksi_event : [])
     .filter((e: any) => !e.voided_at)
   const cfg = S[item.status] ?? { color: '#6B7280', bg: '#F3F4F6' }
@@ -786,6 +796,23 @@ function ItemRow({ item, canManage, onUpdate, onEdit, showToast }: {
                   className="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-colors">
                   <Pencil size={13} />
                 </button>
+                {delConf ? (
+                  <div className="flex gap-1">
+                    <button onClick={doDelete} disabled={pend}
+                      className="h-8 px-2.5 rounded-xl text-[10px] font-bold text-white bg-red-500 disabled:opacity-50">
+                      {pend ? '...' : 'Hapus'}
+                    </button>
+                    <button onClick={() => setDelConf(false)}
+                      className="h-8 px-2 rounded-xl text-[10px] font-semibold bg-gray-100 text-gray-600">
+                      Batal
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => setDelConf(true)}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                    <Trash2 size={13} />
+                  </button>
+                )}
                 <button onClick={onUpdate}
                   className="h-8 px-3 rounded-xl text-[11px] font-bold text-white flex items-center gap-1 active:scale-95 transition-transform"
                   style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
@@ -1066,3 +1093,4 @@ export default function ProduksiClient({
     </div>
   )
 }
+
