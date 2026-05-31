@@ -646,16 +646,26 @@ function EditModal({ item, onClose, showToast }: {
 }
 
 // ─── Add Item Modal (bottom sheet) ────────────────────────────────────────────
-function AddItemModal({ batchKode, batchNama, onClose, showToast }: {
-  batchKode: string; batchNama: string; onClose: () => void; showToast: (m: string, ok?: boolean) => void
+function AddItemModal({ batchKode, batchNama, produkList, onClose, showToast }: {
+  batchKode: string; batchNama: string; produkList: any[]
+  onClose: () => void; showToast: (m: string, ok?: boolean) => void
 }) {
   const [pend, start] = useTransition()
   const [err, setErr] = useState('')
+  const [selectedProdukId, setSelectedProdukId] = useState('')
+
+  // Auto-fill gramasi from selected produk
+  const selectedProduk = produkList.find(p => String(p.id) === selectedProdukId)
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
     const fd = new FormData(e.currentTarget as HTMLFormElement)
     fd.set('batch_kode', batchKode)
+    if (selectedProduk) {
+      fd.set('gramasi', selectedProduk.gramasi)
+      fd.set('nama_item', selectedProduk.nama)
+      fd.set('produk_id', String(selectedProduk.id))
+    }
     start(async () => {
       const r = await createProduksi(fd)
       if (r?.error) { setErr(r.error); return }
@@ -664,11 +674,19 @@ function AddItemModal({ batchKode, batchNama, onClose, showToast }: {
     })
   }
 
+  // Group produk by series
+  const grouped: Record<string, any[]> = {}
+  produkList.filter(p => p.aktif !== false).forEach(p => {
+    const s = p.series?.nama ?? 'Lainnya'
+    if (!grouped[s]) grouped[s] = []
+    grouped[s].push(p)
+  })
+
   return (
     <Sheet onClose={onClose}>
       <div className="flex items-start justify-between px-5 pt-2 pb-3 flex-shrink-0">
         <div>
-          <h2 className="text-lg font-bold text-gray-900">Tambah Gramasi</h2>
+          <h2 className="text-lg font-bold text-gray-900">Tambah Item Produksi</h2>
           <p className="text-xs text-violet-500 font-semibold">{batchNama || batchKode}</p>
         </div>
         <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
@@ -676,16 +694,37 @@ function AddItemModal({ batchKode, batchNama, onClose, showToast }: {
         </button>
       </div>
       <form onSubmit={submit} className="px-5 pb-8 space-y-4 overflow-y-auto">
-        <div className="grid grid-cols-2 gap-3">
-          <FL label="Gramasi" req>
-            <select name="gramasi" className={INP} required>
-              {GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} Gram</option>)}
-            </select>
-          </FL>
-          <FL label="PCS" req>
-            <input name="pcs" type="number" min="1" className={INP} placeholder="cth: 50" required />
-          </FL>
-        </div>
+        {/* Produk dropdown */}
+        <FL label="Produk" req>
+          <select
+            value={selectedProdukId}
+            onChange={e => setSelectedProdukId(e.target.value)}
+            className={INP} required>
+            <option value="">Pilih produk…</option>
+            {Object.entries(grouped).map(([seriesNama, items]) => (
+              <optgroup key={seriesNama} label={`── ${seriesNama} ──`}>
+                {items.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.nama} ({p.gramasi} gr)
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </FL>
+
+        {/* Show selected produk info */}
+        {selectedProduk && (
+          <div className="px-3 py-2 rounded-xl flex items-center gap-2 text-xs" style={{background:'rgba(139,92,246,0.06)'}}>
+            <span className="font-bold text-violet-600">{selectedProduk.gramasi} gr</span>
+            <span className="text-gray-400">·</span>
+            <span className="text-gray-600">{selectedProduk.series?.nama}</span>
+          </div>
+        )}
+
+        <FL label="PCS" req>
+          <input name="pcs" type="number" min="1" className={INP} placeholder="cth: 50" required />
+        </FL>
         <FL label="Total Berat Awal (gr)" req>
           <input name="berat_awal" type="number" step="0.001" className={INP} placeholder="cth: 500.15" required />
         </FL>
@@ -706,7 +745,7 @@ function AddItemModal({ batchKode, batchNama, onClose, showToast }: {
             <span>{err}</span>
           </div>
         )}
-        <button type="submit" disabled={pend}
+        <button type="submit" disabled={pend || !selectedProdukId}
           className="w-full h-12 rounded-2xl text-sm font-bold text-white disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
           style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
           {pend && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
@@ -765,7 +804,10 @@ function ItemRow({ item, canManage, onUpdate, onEdit, showToast }: {
           {/* Left: info */}
           <div className="flex-1 min-w-0" onClick={() => setExpanded(!expanded)}>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-bold text-gray-900">{item.gramasi} gr</span>
+              {item.nama_item
+                ? <span className="text-sm font-bold text-gray-900">{item.nama_item}</span>
+                : <span className="text-sm font-bold text-gray-900">{item.gramasi} gr</span>
+              }
               <span className="text-xs text-gray-300">×</span>
               <span className="text-sm font-semibold text-gray-600">{item.pcs_good} pcs</span>
               <Pill status={item.status} />
@@ -841,8 +883,8 @@ function ItemRow({ item, canManage, onUpdate, onEdit, showToast }: {
 }
 
 // ─── Batch Card ───────────────────────────────────────────────────────────────
-function BatchCard({ batch, canManage, showToast }: {
-  batch: any; canManage: boolean; showToast: (m: string, ok?: boolean) => void
+function BatchCard({ batch, canManage, produkList, showToast }: {
+  batch: any; canManage: boolean; produkList: any[]; showToast: (m: string, ok?: boolean) => void
 }) {
   const items = (Array.isArray(batch.produksi_item) ? batch.produksi_item : [])
     .filter((i: any) => !i.voided_at)
@@ -874,6 +916,7 @@ function BatchCard({ batch, canManage, showToast }: {
     <>
       {addOpen && (
         <AddItemModal batchKode={batch.kode} batchNama={batch.nama_batch}
+          produkList={produkList}
           onClose={() => setAddOpen(false)} showToast={showToast} />
       )}
       {updateItem && (
@@ -1009,9 +1052,9 @@ function Toast({ msg }: { msg: { text: string; ok: boolean } | null }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function ProduksiClient({
-  produksiList, batches: batchList, userRole, userName
+  produksiList, batches: batchList, produkList, userRole, userName
 }: {
-  produksiList: any[]; batches: any[]; userRole: UserRole; userName: string
+  produksiList: any[]; batches: any[]; produkList: any[]; userRole: UserRole; userName: string
 }) {
   const [search, setSearch] = useState('')
   const [toast, setToast] = useState<{ text: string; ok: boolean } | null>(null)
@@ -1100,12 +1143,13 @@ export default function ProduksiClient({
           </div>
         )}
         {filtered.map(batch => (
-          <BatchCard key={batch.kode} batch={batch} canManage={canManage} showToast={showToast} />
+          <BatchCard key={batch.kode} batch={batch} canManage={canManage} produkList={produkList} showToast={showToast} />
         ))}
       </div>
     </div>
   )
 }
+
 
 
 
