@@ -198,7 +198,7 @@ function UpdateModal({ item, onClose, showToast }: {
   const [lossesConfirm, setLossesConfirm] = useState<{ pct: number; total: number; fd: FormData } | null>(null)
   const [reason, setReason] = useState('')
   const isReject = status === 'Reject'
-  const hasSerbuk = status === 'Pas Berat' || status === 'Annealing'
+  const hasSerbuk = status === 'Pas Berat' // Annealing: proses panas, tidak ada serbuk
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -299,7 +299,8 @@ function UpdateModal({ item, onClose, showToast }: {
       <form onSubmit={submit} className="px-5 pb-8 space-y-4 overflow-y-auto">
         <FL label="Status Baru" req>
           <select name="status_baru" value={status} onChange={e => setStatus(e.target.value)} className={INP}>
-            {['Cutting','Pas Berat','Annealing','Siap Packing','Sudah Packing','Reject'].map(s => (
+            {/* 'Sudah Packing' dihapus — otomatis dari Packing Log */}
+            {['Cutting','Pas Berat','Annealing','Siap Packing','Reject'].map(s => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
@@ -1105,5 +1106,6 @@ export default function ProduksiClient({
     </div>
   )
 }
+
 
 
