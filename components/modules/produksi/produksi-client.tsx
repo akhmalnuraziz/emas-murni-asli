@@ -736,6 +736,14 @@ function AddItemModal({ batchKode, batchNama, produkList, onClose, showToast }: 
             <input name="operator" type="text" className={INP} placeholder="Nama operator" />
           </FL>
         </div>
+        <FL label="Status Awal" req>
+          <select name="status_awal" className={INP} required>
+            <option value="">Pilih status awal…</option>
+            {['Cutting','Pas Berat','Annealing','Siap Packing'].map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </FL>
         <FL label="Catatan">
           <input name="catatan" type="text" className={INP} placeholder="Keterangan opsional…" />
         </FL>
@@ -1149,6 +1157,7 @@ export default function ProduksiClient({
     </div>
   )
 }
+
 
 
 
