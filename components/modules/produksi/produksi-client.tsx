@@ -618,6 +618,153 @@ function EditModal({ item, onClose, onSubmit, isPending, error }: {
   )
 }
 
+// ─── Update Status Modal ────────────────────────────────────────────────────────
+function UpdateModal({ item, onClose, onSubmit, isPending, error }: {
+  item: any; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
+}) {
+  const pcsGood  = item.pcs_good ?? item.pcs ?? 0
+  const gramasi  = parseFloat(item.gramasi) || 0
+  const expected = Math.round(pcsGood * gramasi * 1000) / 1000
+
+  const ALL_STATUSES = ['Cutting','Pas Berat','Annealing','Siap Packing','Reject']
+  const [status, setStatus]       = useState('Pas Berat')
+  const [fotos,  setFotos]        = useState<File[]>([])
+  const [fSerbuk,setFSerbuk]      = useState<File[]>([])
+  const [setUp,  setSetUp]        = useState(false)
+  const isReject = status === 'Reject'
+  const hasSerbuk = status === 'Pas Berat' || status === 'Annealing'
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    const form = e.currentTarget as HTMLFormElement
+    const fd   = new FormData(form)
+    fd.set('is_reject', isReject ? '1' : '0')
+    if (!isReject && fotos.length > 0) {
+      setSetUp(true)
+      const b64 = await filesToBase64(fotos)
+      setSetUp(false)
+      fd.set('fotos_b64', JSON.stringify(b64))
+    }
+    if (hasSerbuk && fSerbuk.length > 0) {
+      setSetUp(true)
+      const b64s = await filesToBase64(fSerbuk)
+      setSetUp(false)
+      fd.set('fotos_sisa_serbuk_b64', JSON.stringify(b64s))
+    }
+    onSubmit(fd)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
+      <div className="w-full max-w-md rounded-3xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 32px 64px rgba(139,92,246,0.18)' }}>
+
+        {/* Header */}
+        <div className="px-6 pt-5 pb-4 border-b border-gray-100/80 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Update Status Produksi</h2>
+            <p className="text-xs font-semibold text-violet-500 mt-0.5">{item.kode} — {item.nama_item || item.gramasi}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><X size={15} /></button>
+        </div>
+
+        {/* Context bar */}
+        <div className="grid grid-cols-3 divide-x" style={{ background: 'rgba(139,92,246,0.04)', borderBottom: '1px solid rgba(139,92,246,0.08)' }}>
+          <div className="px-4 py-3 text-center">
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">PCS Good</p>
+            <p className="text-base font-bold text-gray-800 mt-0.5">{pcsGood} <span className="text-xs font-normal text-gray-400">pcs</span></p>
+          </div>
+          <div className="px-4 py-3 text-center">
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Berat Sebelumnya</p>
+            <p className="text-base font-bold text-gray-800 mt-0.5">{item.total_gram} <span className="text-xs font-normal text-gray-400">gr</span></p>
+          </div>
+          <div className="px-4 py-3 text-center">
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Expected ≈</p>
+            <p className="text-base font-bold mt-0.5" style={{ color: '#8B5CF6' }}>{expected} <span className="text-xs font-normal text-gray-400">gr</span></p>
+            <p className="text-[9px] text-gray-300 mt-0.5">{gramasi}gr × {pcsGood}pcs</p>
+          </div>
+        </div>
+
+        <form onSubmit={submit} className="px-6 py-5 space-y-4 overflow-y-auto max-h-[60vh]">
+          {/* Status */}
+          <F label="Status Baru" req>
+            <select name="status_baru" value={status} onChange={e => setStatus(e.target.value)} className={inp}>
+              {ALL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </F>
+
+          {!isReject && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <F label="Total Berat Sekarang (gr)" req>
+                  <input name="total_gram_baru" type="number" step="0.001"
+                    className={inp} placeholder={`Sblm: ${item.total_gram} gr`} required />
+                </F>
+                {hasSerbuk && (
+                  <F label="Sisa Serbuk (gr)">
+                    <input name="sisa_serbuk" type="number" step="0.001" defaultValue="0" className={inp} />
+                  </F>
+                )}
+              </div>
+              <F label="Tanggal" req>
+                <input name="tanggal" type="date" defaultValue={today} className={inp} required />
+              </F>
+              <F label="Foto Proses (Opsional)">
+                <label className="flex items-center gap-3 px-4 py-3 bg-gray-50 border border-dashed border-gray-200 rounded-2xl cursor-pointer hover:border-violet-400 hover:bg-violet-50/50 transition-all">
+                  <Camera size={16} className="text-gray-400 flex-shrink-0" />
+                  <span className="text-sm text-gray-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Foto proses di status ini'}</span>
+                  <input type="file" accept="image/*" multiple className="hidden"
+                    onChange={e => setFotos(Array.from(e.target.files ?? []).slice(0, 10))} />
+                </label>
+              </F>
+              {hasSerbuk && (
+                <F label="Foto Sisa Serbuk (Opsional)">
+                  <label className="flex items-center gap-3 px-4 py-3 bg-gray-50 border border-dashed border-gray-200 rounded-2xl cursor-pointer hover:border-violet-400 hover:bg-violet-50/50 transition-all">
+                    <Camera size={16} className="text-gray-400 flex-shrink-0" />
+                    <span className="text-sm text-gray-400">{fSerbuk.length > 0 ? `${fSerbuk.length} foto dipilih` : 'Foto sisa serbuk emas'}</span>
+                    <input type="file" accept="image/*" multiple className="hidden"
+                      onChange={e => setFSerbuk(Array.from(e.target.files ?? []).slice(0, 5))} />
+                  </label>
+                </F>
+              )}
+            </>
+          )}
+
+          {isReject && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <F label="PCS Reject" req>
+                  <input name="pcs_reject" type="number" min="1" max={pcsGood} className={inp} required />
+                </F>
+                <F label="Berat Reject (gr)" req>
+                  <input name="berat_reject" type="number" step="0.001" className={inp} required />
+                </F>
+              </div>
+              <F label="Tanggal" req>
+                <input name="tanggal" type="date" defaultValue={today} className={inp} required />
+              </F>
+            </>
+          )}
+
+          <F label="Catatan">
+            <input name="catatan" type="text" placeholder="Keterangan…" className={inp} />
+          </F>
+
+          {error && <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600"><AlertTriangle size={14} />{error}</div>}
+
+          <div className="flex gap-3 justify-end pt-1">
+            <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
+            <button type="submit" disabled={isPending || setUp} className="px-6 py-2.5 text-sm font-bold text-white rounded-2xl flex items-center gap-2 disabled:opacity-60" style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+              {(isPending || setUp) && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+              {isPending || setUp ? 'Menyimpan…' : 'Simpan Status'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+
 function DelModal({ item, onClose, onConfirm, isPending }: { item: any; onClose: () => void; onConfirm: () => void; isPending: boolean }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
@@ -1033,6 +1180,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     </div>
   )
 }
+
 
 
 
