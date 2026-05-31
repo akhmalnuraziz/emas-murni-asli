@@ -97,12 +97,19 @@ export async function createPacking(formData: FormData) {
 
   if (error) return { error: error.message }
 
-  // Jika semua PCS sudah dipacking → update status ke Sudah Packing
+  // Jika semua PCS sudah dipacking → insert event 'Sudah Packing' (DB trigger sync current_status)
   const newTotalPacked = totalSudahDipack + pcsDispack
   if (newTotalPacked >= (produksi.pcs_good ?? produksi.pcs)) {
-    await supabase.from('produksi_item')
-      .update({ current_status: 'Sudah Packing' })
-      .eq('id', produksiItemId)
+    await supabase.from('produksi_event').insert({
+      produksi_item_id: produksiItemId,
+      tanggal: new Date().toISOString().split('T')[0],
+      status: 'Sudah Packing',
+      total_gram: produksi.total_gram,
+      berat_sebelumnya: produksi.total_gram,
+      losses: 0,
+      pcs_good_snapshot: produksi.pcs_good ?? produksi.pcs,
+      user_name: profile?.name || 'System',
+    })
   }
 
   await supabase.from('audit_log').insert({
@@ -257,5 +264,6 @@ export async function markPrinted(packingId: number) {
   revalidatePath('/packing-log')
   return { success: true }
 }
+
 
 
