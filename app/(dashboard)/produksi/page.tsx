@@ -9,6 +9,7 @@ export default async function ProduksiPage() {
     { data: profile },
     { data: produksiList },
     { data: batches },
+    { data: produkList },
   ] = await Promise.all([
     supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
     supabase.from('produksi_item')
@@ -20,15 +21,20 @@ export default async function ProduksiPage() {
       .eq('status', 'aktif')
       .is('voided_at', null)
       .order('created_at', { ascending: false }),
+    supabase.from('produk')
+      .select('id, kode, nama, gramasi, aktif, series:series_id(nama)')
+      .eq('aktif', true)
+      .order('series_id')
+      .order('urutan'),
   ])
 
   return (
     <ProduksiClient
       produksiList={produksiList ?? []}
       batches={batches ?? []}
+      produkList={produkList ?? []}
       userRole={profile?.role ?? 'operator_produksi'}
       userName={profile?.name ?? ''}
     />
   )
 }
-
