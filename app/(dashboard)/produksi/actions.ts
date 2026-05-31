@@ -603,6 +603,15 @@ export async function voidPacking(packingId: number, packingKode: string) {
 
 export async function updateSisaFisikBatch(batchKode: string, sisaFisik: number | null, fotosB64: string[] = []) {
   const supabase = await createClient()
+
+  // BUG 4 FIX: Validasi range sisa fisik
+  if (sisaFisik !== null) {
+    if (sisaFisik < 0) return { error: 'Sisa fisik tidak boleh negatif' }
+    const { data: batchCheck } = await supabase.from('batch').select('timbangan_akhir').eq('kode', batchKode).single()
+    if (batchCheck && sisaFisik > batchCheck.timbangan_akhir) {
+      return { error: `Sisa fisik (${sisaFisik}gr) tidak boleh melebihi bahan masuk (${batchCheck.timbangan_akhir}gr)` }
+    }
+  }
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
@@ -704,6 +713,7 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
