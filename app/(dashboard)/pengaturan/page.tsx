@@ -1,7 +1,28 @@
-export default function Page() {
+import { createClient } from '@/lib/supabase/server'
+import PengaturanClient from '@/components/modules/pengaturan/pengaturan-client'
+
+export default async function PengaturanPage() {
+  const supabase = await createClient()
+
+  const [
+    { data: settings },
+    { data: series },
+    { data: produk },
+    { data: cabang },
+  ] = await Promise.all([
+    supabase.from('pengaturan').select('*').order('key'),
+    supabase.from('series').select('*').order('urutan'),
+    supabase.from('produk').select('*, series(nama)').order('series_id').order('urutan'),
+    supabase.from('cabang').select('*').is('voided_at', null).order('kode'),
+  ])
+
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 text-center py-20">
-      <p className="text-slate-400 text-sm">Modul pengaturan — sedang dibangun</p>
-    </div>
+    <PengaturanClient
+      settings={settings ?? []}
+      series={series ?? []}
+      produk={produk ?? []}
+      cabang={cabang ?? []}
+    />
   )
 }
+
