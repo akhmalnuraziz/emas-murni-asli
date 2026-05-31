@@ -601,12 +601,21 @@ export async function voidPacking(packingId: number, packingKode: string) {
   return { success: true }
 }
 
-export async function updateSisaFisikBatch(batchKode: string, sisaFisik: number | null) {
+export async function updateSisaFisikBatch(batchKode: string, sisaFisik: number | null, fotosB64: string[] = []) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  const { error } = await supabase.from('batch').update({ sisa_fisik: sisaFisik }).eq('kode', batchKode)
+  // Upload fotos jika ada
+  let fotoUrls: string[] = []
+  if (fotosB64.length > 0) {
+    fotoUrls = await uploadBase64Fotos(supabase, fotosB64, `sisa-fisik-${batchKode}`)
+  }
+
+  const { error } = await supabase.from('batch').update({
+    sisa_fisik: sisaFisik,
+    ...(fotoUrls.length > 0 ? { fotos_sisa_fisik: fotoUrls } : {}),
+  }).eq('kode', batchKode)
   if (error) return { error: error.message }
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
@@ -695,6 +704,7 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
