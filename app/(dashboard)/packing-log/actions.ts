@@ -240,6 +240,15 @@ export async function markPrinted(packingId: number) {
   if (!['owner','admin_pusat','spv','operator_packing','operator_produksi'].includes(profile?.role ?? ''))
     return { error: 'Tidak memiliki izin' }
 
+  // BUG 1 FIX: Validasi shieldtag terdaftar harus = pcs_dipack sebelum print
+  const { data: pk } = await supabase.from('packing').select('pcs_dipack').eq('id', packingId).single()
+  const { count: stCount } = await supabase.from('shieldtag')
+    .select('*', { count: 'exact', head: true })
+    .eq('packing_id', packingId).is('voided_at', null)
+  if (pk && (stCount ?? 0) < pk.pcs_dipack) {
+    return { error: `Shieldtag belum lengkap: ${stCount ?? 0} terdaftar dari ${pk.pcs_dipack} PCS. Registrasi semua Shieldtag dulu sebelum print.` }
+  }
+
   await supabase.from('packing').update({ status_surat: 'sudah_cetak' }).eq('id', packingId)
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
@@ -248,4 +257,5 @@ export async function markPrinted(packingId: number) {
   revalidatePath('/packing-log')
   return { success: true }
 }
+
 
