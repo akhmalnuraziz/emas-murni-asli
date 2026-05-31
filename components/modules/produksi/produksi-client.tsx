@@ -847,6 +847,7 @@ function BatchCard({ batch, canManage, showToast }: {
     .filter((i: any) => !i.voided_at)
   const [collapsed, setCollapsed] = useState(false)
   const [sisaFisik, setSisaFisik] = useState<string>(batch.sisa_fisik != null ? String(batch.sisa_fisik) : '')
+  const [sfFoto, setSfFoto] = useState<File[]>([])
   const [sfPend, startSF] = useTransition()
   const [addOpen, setAddOpen] = useState(false)
   const [updateItem, setUpdateItem] = useState<any>(null)
@@ -859,9 +860,12 @@ function BatchCard({ batch, canManage, showToast }: {
 
   function saveSisaFisik() {
     startSF(async () => {
-      const r = await updateSisaFisikBatch(batch.kode, sisaFisikNum)
+      let fotoB64: string[] = []
+      if (sfFoto.length > 0) fotoB64 = await toB64(sfFoto)
+      const r = await updateSisaFisikBatch(batch.kode, sisaFisikNum, fotoB64)
       if (r?.error) { showToast(r.error, false); return }
       showToast('Sisa fisik disimpan ✓')
+      setSfFoto([])
     })
   }
 
@@ -930,6 +934,14 @@ function BatchCard({ batch, canManage, showToast }: {
                   style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
                   {sfPend ? '…' : 'Simpan'}
                 </button>
+              </div>
+              <div className="flex-shrink-0 pt-4">
+                <label className="w-8 h-8 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-violet-400 hover:bg-violet-50 transition-colors relative">
+                  <Camera size={13} className={sfFoto.length > 0 ? 'text-violet-500' : 'text-gray-400'} />
+                  {sfFoto.length > 0 && <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-violet-500 rounded-full text-[9px] text-white flex items-center justify-center font-bold">{sfFoto.length}</span>}
+                  <input type="file" accept="image/*" multiple className="hidden"
+                    onChange={e => { setSfFoto(Array.from(e.target.files ?? []).slice(0,5)); e.target.value='' }} />
+                </label>
               </div>
               {losesBahan != null && (
                 <div className="flex-shrink-0 pt-4 text-right">
@@ -1093,4 +1105,5 @@ export default function ProduksiClient({
     </div>
   )
 }
+
 
