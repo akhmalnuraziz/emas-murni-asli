@@ -1,7 +1,125 @@
-export default function Page() {
+import { createClient } from '@/lib/supabase/server'
+import InventoryClient from '@/components/modules/inventory/inventory-client'
+
+export default async function InventoryPage() {
+  const supabase = await createClient()
+
+  // ── Nama gudang dari pengaturan ──────────────────────────────────────────
+  const { data: settingGudang } = await supabase
+    .from('pengaturan').select('value').eq('key', 'nama_gudang').single()
+  const namaGudang = settingGudang?.value ?? 'Gudang CJ'
+
+  // ── Stok Gudang CJ ───────────────────────────────────────────────────────
+  // Sumber: packing dengan status_surat = 'sudah_cetak' (surat dicetak)
+  // Per produk: total pcs, ST aktif, ST pending
+  const { data: packingData } = await supabase
+    .from('packing')
+    .select(`
+      id, pcs_dipack, gramasi, batch_kode, status_surat,
+      produksi_item:produksi_item_id (
+        nama_item, gramasi,
+        produk:produk_id ( id, nama, gramasi, series:series_id(nama) )
+      ),
+      shieldtag (kode, status, lokasi, tgl_regis, hpp, voided_at)
+    `)
+    .eq('status_surat', 'sudah_cetak')
+    .is('voided_at', null)
+
+  // Agregasi per produk
+  const produkMap: Record<string, any> = {}
+  for (const pk of (packingData ?? [])) {
+    const pi = pk.produksi_item as any
+    const pd = pi?.produk as any
+    const key = pd ? String(pd.id) : (pi?.gramasi ?? pk.gramasi)
+    const produkNama = pd?.nama ?? pi?.nama_item ?? `${pk.gramasi} gr`
+    const gramasi = pd?.gramasi ?? pi?.gramasi ?? pk.gramasi
+    const seriesNama = pd?.series?.nama ?? 'Reguler'
+
+    if (!produkMap[key]) {
+      produkMap[key] = {
+        produk_nama: produkNama,
+        gramasi,
+        series_nama: seriesNama,
+        total_pcs: 0,
+        st_aktif: 0,
+        st_pending: 0,
+        shieldtags: [],
+      }
+    }
+
+    const tags = (pk.shieldtag as any[]).filter(st => !st.voided_at)
+    const stAktif = tags.filter(st => st.status === 'Aktif').length
+
+    produkMap[key].total_pcs  += pk.pcs_dipack
+    produkMap[key].st_aktif   += stAktif
+    produkMap[key].st_pending += pk.pcs_dipack - stAktif
+    produkMap[key].shieldtags.push(...tags.filter(st => st.status === 'Aktif').map(st => ({
+      kode: st.kode,
+      gramasi,
+      status: st.status,
+      lokasi: st.lokasi,
+      tgl_regis: st.tgl_regis,
+      hpp: st.hpp,
+    })))
+  }
+
+  // Sort by gramasi numeric
+  const gudangItems = Object.values(produkMap).sort((a: any, b: any) =>
+    parseFloat(a.gramasi) - parseFloat(b.gramasi)
+  )
+
+  // ── Stok Cabang ──────────────────────────────────────────────────────────
+  // Sumber: shieldtag status = 'Terdistribusi' grouped by lokasi
+  const { data: cabangList } = await supabase
+    .from('cabang').select('kode, nama').eq('aktif', true).order('kode')
+
+  const { data: cabangTags } = await supabase
+    .from('shieldtag')
+    .select(`
+      kode, gramasi, status, lokasi, tgl_regis, hpp, voided_at,
+      packing:packing_id (
+        produksi_item:produksi_item_id (
+          nama_item, gramasi,
+          produk:produk_id ( nama, gramasi, series:series_id(nama) )
+        )
+      )
+    `)
+    .eq('status', 'Terdistribusi')
+    .is('voided_at', null)
+
+  // Build cabang stok
+  const cabangStok = (cabangList ?? []).map(cab => {
+    const tags = (cabangTags ?? []).filter(st => st.lokasi === cab.nama || st.lokasi === cab.kode)
+
+    // Group by produk
+    const itemMap: Record<string, any> = {}
+    for (const st of tags) {
+      const pi = (st.packing as any)?.produksi_item as any
+      const pd = pi?.produk as any
+      const key = pd?.nama ?? pi?.nama_item ?? `${st.gramasi} gr`
+      if (!itemMap[key]) {
+        itemMap[key] = {
+          produk_nama: pd?.nama ?? pi?.nama_item ?? `${st.gramasi} gr`,
+          gramasi: pd?.gramasi ?? pi?.gramasi ?? st.gramasi,
+          pcs: 0,
+          shieldtags: [],
+        }
+      }
+      itemMap[key].pcs++
+      itemMap[key].shieldtags.push({ kode: st.kode, gramasi: st.gramasi, status: st.status, lokasi: st.lokasi, tgl_regis: st.tgl_regis, hpp: st.hpp })
+    }
+
+    return {
+      kode: cab.kode,
+      nama: cab.nama,
+      items: Object.values(itemMap).sort((a: any, b: any) => parseFloat(a.gramasi) - parseFloat(b.gramasi)),
+    }
+  })
+
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 text-center py-20">
-      <p className="text-slate-400 text-sm">Modul inventory — sedang dibangun</p>
-    </div>
+    <InventoryClient
+      gudangItems={gudangItems}
+      cabangStok={cabangStok}
+    />
   )
 }
