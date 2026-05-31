@@ -1084,7 +1084,7 @@ export default function ProduksiClient({
   })
 
   const allBatches = Array.from(batchMap.values())
-    .filter(b => b.produksi_item.length > 0)
+    // Tampilkan SEMUA batch aktif, termasuk yang belum ada item produksi
     .sort((a, b) => {
       const da = new Date(a.tanggal ?? a.created_at ?? 0).getTime()
       const db = new Date(b.tanggal ?? b.created_at ?? 0).getTime()
@@ -1149,6 +1149,7 @@ export default function ProduksiClient({
     </div>
   )
 }
+
 
 
 
