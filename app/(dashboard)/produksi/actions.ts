@@ -85,6 +85,7 @@ export async function createProduksi(formData: FormData) {
   const { data: produksi, error } = await supabase.from('produksi_item').insert({
     kode, batch_kode: batchKode, gramasi, pcs, pcs_awal: pcs, pcs_good: pcs, pcs_reject: 0,
     nama_item: formData.get('nama_item') as string || null,
+    produk_id: formData.get('produk_id') ? parseInt(formData.get('produk_id') as string) : null,
     berat_awal: beratAwal, total_gram: beratAwal, current_status: statusAwal,
     tanggal_produksi: tanggalProduksi, tanggal: tanggalProduksi,
     memo: formData.get('memo') as string || null,
@@ -713,6 +714,7 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
