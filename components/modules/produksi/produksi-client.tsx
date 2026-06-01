@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { createPortal } from 'react-dom'
 import {
   Plus, Search, Pencil, Trash2, ChevronDown, Camera,
@@ -227,6 +228,7 @@ function UpdateModal({ item, onClose, showToast }: {
         return
       }
       if (r?.error) { showToast(r.error, false) }
+      else { router.refresh() }
     })
   }
 
@@ -657,6 +659,7 @@ function AddItemModal({ batchKode, batchNama, produkList, onClose, showToast }: 
   const [err, setErr]           = useState('')
   const [selectedProdukId, setSelectedProdukId] = useState('')
   const [fotoAwal, setFotoAwal] = useState<File[]>([])
+  const router = useRouter()
 
   const selectedProduk = produkList.find(p => String(p.id) === selectedProdukId)
 
@@ -678,6 +681,7 @@ function AddItemModal({ batchKode, batchNama, produkList, onClose, showToast }: 
       }
       const r = await createProduksi(fd)
       if (r?.error) { showToast(r.error, false) }
+      else { router.refresh() }
     })
   }
 
@@ -1194,6 +1198,7 @@ export default function ProduksiClient({
     </div>
   )
 }
+
 
 
 
