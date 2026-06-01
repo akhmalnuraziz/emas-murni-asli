@@ -653,11 +653,11 @@ function AddItemModal({ batchKode, batchNama, produkList, onClose, showToast }: 
   batchKode: string; batchNama: string; produkList: any[]
   onClose: () => void; showToast: (m: string, ok?: boolean) => void
 }) {
-  const [pend, start] = useTransition()
-  const [err, setErr] = useState('')
+  const [pend, start]         = useTransition()
+  const [err, setErr]           = useState('')
   const [selectedProdukId, setSelectedProdukId] = useState('')
+  const [fotoAwal, setFotoAwal] = useState<File[]>([])
 
-  // Auto-fill gramasi from selected produk
   const selectedProduk = produkList.find(p => String(p.id) === selectedProdukId)
 
   function submit(e: React.FormEvent) {
@@ -672,6 +672,10 @@ function AddItemModal({ batchKode, batchNama, produkList, onClose, showToast }: 
     showToast('Item ditambahkan ✓')
     onClose()
     start(async () => {
+      if (fotoAwal.length > 0) {
+        const b64s = await toB64(fotoAwal)
+        fd.set('fotos_b64', JSON.stringify(b64s))
+      }
       const r = await createProduksi(fd)
       if (r?.error) { showToast(r.error, false) }
     })
@@ -750,6 +754,36 @@ function AddItemModal({ batchKode, batchNama, produkList, onClose, showToast }: 
         <FL label="Catatan">
           <input name="catatan" type="text" className={INP} placeholder="Keterangan opsional…" />
         </FL>
+
+        <FL label="Foto Proses Awal">
+          <label className="flex items-center gap-3 h-11 px-3.5 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-violet-50 transition-colors">
+            <Camera size={15} className={fotoAwal.length > 0 ? 'text-violet-500' : 'text-gray-400'} />
+            <span className={`text-sm ${fotoAwal.length > 0 ? 'text-violet-600 font-semibold' : 'text-gray-400'}`}>
+              {fotoAwal.length > 0 ? `${fotoAwal.length} foto dipilih` : 'Tambah foto proses awal (opsional)'}
+            </span>
+            {fotoAwal.length > 0 && (
+              <span className="ml-auto text-[10px] bg-violet-100 text-violet-600 px-2 py-0.5 rounded-full font-bold">
+                {fotoAwal.length}/5
+              </span>
+            )}
+            <input type="file" accept="image/*" multiple className="hidden"
+              onChange={e => { setFotoAwal(Array.from(e.target.files ?? []).slice(0,5)); e.target.value='' }} />
+          </label>
+          {fotoAwal.length > 0 && (
+            <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
+              {fotoAwal.map((f, i) => (
+                <div key={i} className="relative flex-shrink-0">
+                  <img src={URL.createObjectURL(f)} className="w-14 h-14 rounded-xl object-cover" />
+                  <button type="button" onClick={() => setFotoAwal(prev => prev.filter((_,j) => j !== i))}
+                    className="absolute -top-1 -right-1 w-4 h-4 bg-red-400 rounded-full flex items-center justify-center">
+                    <X size={8} className="text-white" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </FL>
+
         {err && (
           <div className="flex items-start gap-2.5 px-4 py-3 bg-red-50 rounded-2xl text-sm text-red-600">
             <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
@@ -1160,6 +1194,7 @@ export default function ProduksiClient({
     </div>
   )
 }
+
 
 
 
