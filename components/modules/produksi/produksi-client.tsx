@@ -37,17 +37,19 @@ function fgr(n: number | null | undefined, d = 3) {
 }
 
 async function toB64(files: File[]): Promise<string[]> {
+  // Compress agresif: max 800px, quality 0.72 — drastis kurangi ukuran
+  const MAX = 800, QUALITY = 0.72
   return Promise.all(files.map(f => new Promise<string>((res, rej) => {
     const reader = new FileReader()
     reader.onload = () => {
-      const img = new Image(); const MAX = 1200
+      const img = new Image()
       img.onload = () => {
         let { width: w, height: h } = img
         if (w > MAX) { h = Math.round(h * MAX / w); w = MAX }
         if (h > MAX) { w = Math.round(w * MAX / h); h = MAX }
-        const c = document.createElement('canvas'); c.width = w; c.height = h
-        c.getContext('2d')!.drawImage(img, 0, 0, w, h)
-        res(c.toDataURL('image/jpeg', 0.82).split(',')[1])
+        const cv = document.createElement('canvas'); cv.width = w; cv.height = h
+        cv.getContext('2d')!.drawImage(img, 0, 0, w, h)
+        res(cv.toDataURL('image/jpeg', QUALITY).split(',')[1])
       }
       img.src = reader.result as string
     }
@@ -1157,6 +1159,7 @@ export default function ProduksiClient({
     </div>
   )
 }
+
 
 
 
