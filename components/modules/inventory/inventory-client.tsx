@@ -223,11 +223,11 @@ function TabCabang({ cabangStok }) {
 }
 
 const TABS = [
-  { key: 'gudang', label: 'Gudang CJ', icon: Warehouse },
+  { key: 'gudang', label: namaGudang, icon: Warehouse },
   { key: 'cabang', label: 'Cabang',    icon: Building2 },
 ]
 
-export default function InventoryClient({ gudangItems, cabangStok }) {
+export default function InventoryClient({ namaGudang = 'Gudang CJ', gudangItems, cabangStok }) {
   const [tab, setTab] = useState('gudang')
   const totalGudang = gudangItems.reduce((s, i) => s + i.total_pcs, 0)
   const totalCabang = cabangStok.reduce((s, c) => s + c.items.reduce((ss, i) => ss + i.pcs, 0), 0)
@@ -258,3 +258,4 @@ export default function InventoryClient({ gudangItems, cabangStok }) {
     </div>
   )
 }
+
