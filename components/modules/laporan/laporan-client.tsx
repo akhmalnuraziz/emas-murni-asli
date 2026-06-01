@@ -2,372 +2,617 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { FileText, TrendingUp, TrendingDown, Printer, ChevronDown, ChevronRight, BarChart2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts'
 import { getLaporanBatch, getLaporanLabaRugi } from '@/app/(dashboard)/laporan/actions'
+import { TrendingUp, TrendingDown, Printer } from 'lucide-react'
 
-const fmt  = (n: number) => 'Rp ' + Math.round(n).toLocaleString('id-ID')
-const fmtg = (n: number) => Number(n).toFixed(3) + ' gr'
-const fmtp = (n: number) => n.toLocaleString('id-ID') + ' pcs'
-
-const CH_LABEL: Record<string, string> = {
-  toko:'Toko Fisik', shopee:'Shopee', tiktok:'TikTok', raja_emas:'Raja Emas', lainnya:'Lainnya'
+// ── iOS Design Tokens ─────────────────────────────────────────────────────────
+const iOS = {
+  bg:'#F2F2F7', card:'#FFFFFF', fill3:'rgba(118,118,128,0.12)',
+  sep:'rgba(60,60,67,0.29)', sepO:'#C6C6C8',
+  label:'#000000', label2:'#3C3C43', label3:'rgba(60,60,67,0.6)', label4:'rgba(60,60,67,0.18)',
+  blue:'#007AFF', green:'#34C759', indigo:'#5856D6', orange:'#FF9500',
+  red:'#FF3B30', purple:'#AF52DE', gray:'#8E8E93', gray3:'#C7C7CC', gray5:'#E5E5EA',
+  accent:'#7C3AED', accentL:'#F5F0FF',
 }
 
-// ── Laporan Per Batch ─────────────────────────────────────────────────────────
-function TabBatch({ batchList, namaGudang, cabangList }) {
-  const [selectedBatch, setSelectedBatch] = useState('')
-  const [data, setData]                   = useState<any>(null)
-  const [loading, setLoading]             = useState(false)
-  const [expandedItem, setExpandedItem]   = useState<string|null>(null)
+const STATUS_STYLE = {
+  'Cutting':       { color:'#007AFF', bg:'#EBF4FF' },
+  'Pas Berat':     { color:'#FF9500', bg:'#FFF8ED' },
+  'Siap Packing':  { color:'#34C759', bg:'#EDFAF1' },
+  'Sudah Packing': { color:'#AF52DE', bg:'#F9EEFF' },
+  'Annealing':     { color:'#5AC8FA', bg:'#EAF8FF' },
+  'Reject':        { color:'#FF3B30', bg:'#FFF0EF' },
+}
+
+const GRAMASI_STD = ['0.1','0.5','1','2','5','10','20','25','50','100','250','500','1000']
+const CH_LABEL = { toko:'Toko Fisik', shopee:'Shopee', tiktok:'TikTok', raja_emas:'Raja Emas', lainnya:'Lainnya' }
+
+const fmt  = (n:number) => 'Rp ' + Math.round(n).toLocaleString('id-ID')
+const fmtg = (n:number) => Number(n).toFixed(3) + ' gr'
+
+// ── Reusable iOS Components ───────────────────────────────────────────────────
+function IOSSectionHeader({ title }) {
+  return (
+    <p style={{ fontSize:13, fontWeight:400, color:iOS.label3, textTransform:'uppercase', letterSpacing:0.4, padding:'0 20px', marginBottom:8, marginTop:28 }}>
+      {title}
+    </p>
+  )
+}
+
+function IOSCard({ children, style={}}) {
+  return <div style={{ background:iOS.card, borderRadius:16, overflow:'hidden', ...style }}>{children}</div>
+}
+
+function IOSSep({ left=16 }) {
+  return <div style={{ height:'0.5px', background:iOS.sepO, opacity:0.6, marginLeft:left }} />
+}
+
+function IOSListRow({ left, right, subleft, accentColor, last }) {
+  return (
+    <div>
+      <div style={{ padding:'11px 16px', display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12 }}>
+        <div>
+          <p style={{ fontSize:17, color:accentColor||iOS.label, fontWeight:accentColor?500:400 }}>{left}</p>
+          {subleft && <p style={{ fontSize:13, color:iOS.label3, marginTop:1 }}>{subleft}</p>}
+        </div>
+        <p style={{ fontSize:17, fontWeight:600, color:accentColor||iOS.label, flexShrink:0 }}>{right}</p>
+      </div>
+      {!last && <IOSSep />}
+    </div>
+  )
+}
+
+function IOSBadge({ label, color }) {
+  return <span style={{ fontSize:11, fontWeight:600, color, background:color+'18', borderRadius:99, padding:'3px 8px' }}>{label}</span>
+}
+
+function IOSProgressBar({ label, pct, color, sublabel }) {
+  return (
+    <div style={{ padding:'10px 0' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
+        <p style={{ fontSize:15, color:iOS.label }}>{label}</p>
+        <p style={{ fontSize:13, color:iOS.label3 }}>{sublabel}</p>
+      </div>
+      <div style={{ height:6, background:iOS.gray5, borderRadius:99, overflow:'hidden' }}>
+        <div style={{ height:'100%', width:`${Math.min(pct,100)}%`, background:color, borderRadius:99 }} />
+      </div>
+    </div>
+  )
+}
+
+function KPICard({ label, value, sub, color, icon }) {
+  return (
+    <div style={{ background:iOS.card, borderRadius:16, padding:16, flex:1, minWidth:0 }}>
+      <div style={{ width:32, height:32, background:color+'18', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, marginBottom:10 }}>
+        {icon}
+      </div>
+      <p style={{ fontSize:26, fontWeight:700, color, lineHeight:1, letterSpacing:-0.5 }}>{value}</p>
+      <p style={{ fontSize:11, fontWeight:500, color:iOS.label3, marginTop:4, textTransform:'uppercase', letterSpacing:0.3 }}>{label}</p>
+      {sub && <p style={{ fontSize:11, color:iOS.label3, marginTop:2 }}>{sub}</p>}
+    </div>
+  )
+}
+
+// ── TAB BATCH ─────────────────────────────────────────────────────────────────
+function TabBatch({ batchList }) {
+  const [selBatch, setSelBatch]   = useState('')
+  const [data, setData]           = useState<any>(null)
+  const [loading, setLoading]     = useState(false)
+  const [activeTab, setActiveTab] = useState('ringkasan')
+  const [expandedItem, setExpandedItem] = useState<string|null>(null)
 
   async function load(kode: string) {
-    setSelectedBatch(kode); setLoading(true)
+    setSelBatch(kode); setLoading(true); setData(null)
     const r = await getLaporanBatch(kode)
-    setData(r); setLoading(false)
+    setData(r); setLoading(false); setActiveTab('ringkasan')
   }
-
-  function printBatch() { window.print() }
 
   const b = data?.batch
   const s = data?.summary
+  const statusCounts = data ? (() => {
+    const m: Record<string,number> = {}
+    ;(data.items||[]).forEach((item:any) => {
+      m[item.current_status] = (m[item.current_status]||0) + (item.pcs_good||0)
+    })
+    return m
+  })() : {}
+
+  const totalPcs = Object.values(statusCounts).reduce((a:any,b:any)=>a+b,0)
+
+  const pieData = Object.entries(statusCounts)
+    .filter(([,v]:any) => v > 0)
+    .map(([k,v]:any) => ({ name:k, pcs:v, color:(STATUS_STYLE[k]||{color:iOS.gray}).color }))
+
+  const gramasiMap: Record<string,any> = {}
+  ;(data?.items||[]).forEach((item:any) => {
+    const g = item.gramasi
+    if (!gramasiMap[g]) gramasiMap[g] = { pcs:0, gram:0 }
+    gramasiMap[g].pcs  += item.pcs_good || 0
+    gramasiMap[g].gram += parseFloat(item.total_gram||0)
+  })
+
+  const barData = Object.entries(gramasiMap)
+    .sort(([a],[b]) => parseFloat(a)-parseFloat(b))
+    .map(([g,d]:any) => ({ gr:g+'gr', pcs:d.pcs }))
+
+  const eff = b && s ? Math.round(s.totalBeratAkhir / parseFloat(b.timbangan_akhir||1) * 1000)/10 : 0
 
   return (
-    <div className="p-4 space-y-4 pb-20">
-      {/* Pilih batch */}
-      <div>
-        <p className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Pilih Batch</p>
-        <select value={selectedBatch} onChange={e => load(e.target.value)}
-          className="w-full h-11 px-3.5 bg-white rounded-xl text-sm focus:outline-none shadow-sm">
-          <option value="">-- Pilih batch --</option>
-          {batchList.map((b: any) => (
+    <div style={{ fontFamily:'-apple-system,"SF Pro Display",BlinkMacSystemFont,system-ui,sans-serif', background:iOS.bg, minHeight:'100vh', WebkitFontSmoothing:'antialiased' }}>
+
+      {/* Batch selector */}
+      <div style={{ padding:'16px 16px 0' }}>
+        <select value={selBatch} onChange={e => load(e.target.value)}
+          style={{ width:'100%', padding:'13px 16px', background:iOS.card, border:'none', borderRadius:14, fontSize:15, color:selBatch?iOS.label:iOS.label3, fontFamily:'inherit', outline:'none', boxShadow:'0 1px 4px rgba(0,0,0,0.08)' }}>
+          <option value="">Pilih batch untuk lihat laporan…</option>
+          {batchList.map((b:any) => (
             <option key={b.kode} value={b.kode}>{b.kode} — {b.nama_batch} ({b.tanggal})</option>
           ))}
         </select>
       </div>
 
-      {loading && <div className="text-center py-8 text-gray-400 text-sm">Memuat data…</div>}
+      {loading && (
+        <div style={{ textAlign:'center', padding:'48px 0', color:iOS.label3, fontSize:15 }}>Memuat data…</div>
+      )}
 
       {data && b && s && (
-        <div className="space-y-4" id="print-area">
-
-          {/* Header batch */}
-          <div className="bg-white rounded-2xl p-4" style={{boxShadow:'0 1px 4px rgba(0,0,0,0.07)'}}>
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <p className="text-base font-black text-gray-900">{b.kode}</p>
-                <p className="text-xs text-gray-500">{b.nama_batch} · {b.tanggal}</p>
-                <p className="text-xs text-gray-400">Supplier: {b.supplier ?? '—'}</p>
-              </div>
-              <button onClick={printBatch}
-                className="h-8 px-3 rounded-xl text-xs font-bold bg-violet-600 text-white flex items-center gap-1.5">
-                <Printer size={12}/>Print
-              </button>
-            </div>
-
-            {/* Summary 3x2 */}
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { label:'Bahan Masuk',   val: fmtg(b.timbangan_akhir ?? 0), color:'text-gray-900' },
-                { label:'Total Produksi',val: fmtg(s.totalBeratAwal),       color:'text-gray-900' },
-                { label:'Sisa Seharusnya',val:fmtg(s.sisaBahan),            color:'text-blue-600' },
-                { label:'Sisa Fisik',    val: s.sisaFisik != null ? fmtg(s.sisaFisik) : '—', color:'text-violet-600' },
-                { label:'Total Losses',  val: fmtg(s.totalLosses),          color:'text-red-500' },
-                { label:'Total Serbuk',  val: fmtg(s.totalSerbuk),          color:'text-amber-600' },
-              ].map(({ label, val, color }) => (
-                <div key={label} className="bg-[#F9F9FB] rounded-xl p-2.5 text-center">
-                  <p className={`text-sm font-black ${color}`}>{val}</p>
-                  <p className="text-[9px] text-gray-400 mt-0.5 leading-tight">{label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Status produksi */}
-          <div className="bg-white rounded-2xl p-4" style={{boxShadow:'0 1px 4px rgba(0,0,0,0.07)'}}>
-            <p className="text-xs font-bold text-gray-700 mb-2.5">Status Produksi (pcs)</p>
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { label:'PCS Good',  val: s.totalPcsGood,   color:'text-emerald-600', bg:'bg-emerald-50' },
-                { label:'PCS Reject',val: s.totalPcsReject, color:'text-red-500',     bg:'bg-red-50' },
-                { label:'Sudah Pack',val: s.totalPcsPacked, color:'text-blue-600',    bg:'bg-blue-50' },
-                { label:'HPP/gr',    val: 'Rp '+Math.round(s.hpp_gr).toLocaleString('id-ID'), color:'text-violet-600', bg:'bg-violet-50' },
-              ].map(({ label, val, color, bg }) => (
-                <div key={label} className={`${bg} rounded-xl p-2 text-center`}>
-                  <p className={`text-sm font-black ${color}`}>{val}</p>
-                  <p className="text-[9px] text-gray-500 mt-0.5">{label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Breakdown per gramasi */}
-          <div className="bg-white rounded-2xl overflow-hidden" style={{boxShadow:'0 1px 4px rgba(0,0,0,0.07)'}}>
-            <div className="px-4 py-3 border-b border-gray-50">
-              <p className="text-xs font-bold text-gray-700">Breakdown per Gramasi</p>
-            </div>
-            <div className="grid px-4 py-2 bg-gray-50 text-[9px] font-bold text-gray-400 uppercase"
-              style={{gridTemplateColumns:'1fr 0.6fr 0.6fr 0.6fr 0.8fr'}}>
-              <span>Produk</span><span className="text-center">PCS</span><span className="text-center">Reject</span><span className="text-center">Pack</span><span className="text-right">Berat</span>
-            </div>
-            {data.gramasiBreakdown.map((g: any) => (
-              <div key={g.gramasi} className="grid px-4 py-2.5 border-t border-gray-50 items-center"
-                style={{gridTemplateColumns:'1fr 0.6fr 0.6fr 0.6fr 0.8fr'}}>
+        <>
+          {/* Batch banner */}
+          <div style={{ padding:'12px 16px 0' }}>
+            <div style={{ background:`linear-gradient(145deg,${iOS.accent},#6D28D9)`, borderRadius:16, padding:'14px 16px', boxShadow:`0 4px 20px ${iOS.accent}40` }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
                 <div>
-                  <p className="text-xs font-semibold text-gray-800">{g.nama_item ?? `${g.gramasi} gr`}</p>
-                  <p className="text-[10px] text-gray-400">{g.gramasi} gr</p>
+                  <p style={{ fontSize:11, color:'rgba(255,255,255,.65)', letterSpacing:0.5, textTransform:'uppercase', fontWeight:500 }}>Batch</p>
+                  <p style={{ fontSize:20, fontWeight:700, color:'white', marginTop:2, letterSpacing:-0.3 }}>{b.kode}</p>
+                  <div style={{ display:'flex', gap:6, marginTop:8, flexWrap:'wrap' }}>
+                    {[b.tanggal, b.supplier||'—', `${Number(b.timbangan_akhir||0).toFixed(2)} gr`].map((t,i) => (
+                      <span key={i} style={{ fontSize:11, color:'rgba(255,255,255,.8)', background:'rgba(255,255,255,.15)', borderRadius:99, padding:'3px 9px', fontWeight:500 }}>{t}</span>
+                    ))}
+                  </div>
                 </div>
-                <p className="text-xs font-bold text-gray-700 text-center">{g.pcs_good}</p>
-                <p className="text-xs font-bold text-red-400 text-center">{g.pcs_reject || '—'}</p>
-                <p className="text-xs text-gray-500 text-center">—</p>
-                <p className="text-xs font-semibold text-gray-700 text-right">{Number(g.total_gram).toFixed(2)} gr</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Rincian entry produksi */}
-          <div className="bg-white rounded-2xl overflow-hidden" style={{boxShadow:'0 1px 4px rgba(0,0,0,0.07)'}}>
-            <div className="px-4 py-3 border-b border-gray-50">
-              <p className="text-xs font-bold text-gray-700">Rincian Entry Produksi ({data.items.length})</p>
-            </div>
-            {data.items.map((item: any, i: number) => {
-              const isExpanded = expandedItem === item.kode
-              const itemEvents = data.events.filter((e: any) => e.produksi_item_id === item.id)
-              return (
-                <div key={item.kode} className="border-t border-gray-50">
-                  <button onClick={() => setExpandedItem(isExpanded ? null : item.kode)}
-                    className="w-full grid px-4 py-3 items-center"
-                    style={{gridTemplateColumns:'0.4fr 1fr 0.6fr 0.6fr 1fr 1fr'}}>
-                    <span className="text-[10px] text-gray-400">{i+1}</span>
-                    <div className="text-left">
-                      <p className="text-xs font-bold text-violet-600">{item.kode}</p>
-                      <p className="text-[10px] text-gray-400">{item.tanggal}</p>
-                    </div>
-                    <p className="text-xs text-gray-600">{item.gramasi} gr</p>
-                    <p className="text-xs font-semibold text-gray-800">{item.pcs_good} pcs</p>
-                    <p className="text-[10px] text-gray-500">{Number(item.total_gram).toFixed(3)} gr</p>
-                    <div className="flex items-center justify-end gap-1">
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                        item.current_status==='Siap Packing'||item.current_status==='Sudah Packing' ? 'bg-emerald-100 text-emerald-600' :
-                        item.current_status==='Reject' ? 'bg-red-100 text-red-500' : 'bg-amber-100 text-amber-600'
-                      }`}>{item.current_status}</span>
-                      {isExpanded ? <ChevronDown size={11} className="text-gray-400"/> : <ChevronRight size={11} className="text-gray-400"/>}
-                    </div>
-                  </button>
-                  {isExpanded && itemEvents.length > 0 && (
-                    <div className="px-4 pb-3 bg-gray-50 space-y-1">
-                      {itemEvents.map((e: any, j: number) => (
-                        <div key={j} className="flex items-center justify-between text-[11px] py-1 border-b border-gray-100 last:border-0">
-                          <span className="text-gray-500">{e.tanggal}</span>
-                          <span className="font-semibold text-gray-700">{e.status}</span>
-                          <span className="text-gray-500">{Number(e.total_gram).toFixed(3)} gr</span>
-                          <span className="text-red-400">-{Number(e.losses ?? 0).toFixed(4)} gr</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── Laporan Laba Rugi ─────────────────────────────────────────────────────────
-function TabLabaRugi({ cabangList, namaGudang }) {
-  const today     = new Date().toISOString().split('T')[0]
-  const monthStart = today.slice(0,7)+'-01'
-  const [dateFrom, setDateFrom]   = useState(monthStart)
-  const [dateTo, setDateTo]       = useState(today)
-  const [lokasi, setLokasi]       = useState('')
-  const [data, setData]           = useState<any>(null)
-  const [loading, setLoading]     = useState(false)
-  const [showPengeluaran, setShowPengeluaran] = useState(false)
-
-  async function load() {
-    setLoading(true)
-    const r = await getLaporanLabaRugi(dateFrom, dateTo, lokasi || undefined)
-    setData(r); setLoading(false)
-  }
-
-  const lokasiOptions = [{ val:'', label:'Semua Lokasi' }, { val:namaGudang, label:namaGudang }, ...cabangList.map((c: any) => ({val:c.nama, label:c.nama}))]
-
-  return (
-    <div className="p-4 space-y-4 pb-20">
-      {/* Filter */}
-      <div className="bg-white rounded-2xl p-4 space-y-3" style={{boxShadow:'0 1px 4px rgba(0,0,0,0.07)'}}>
-        <p className="text-xs font-bold text-gray-700">Filter Periode</p>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1">Dari</p>
-            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-              className="w-full h-10 px-3 bg-[#F2F2F7] rounded-xl text-sm focus:outline-none"/>
-          </div>
-          <div>
-            <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1">Sampai</p>
-            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-              className="w-full h-10 px-3 bg-[#F2F2F7] rounded-xl text-sm focus:outline-none"/>
-          </div>
-        </div>
-        <div>
-          <p className="text-[10px] font-semibold text-gray-400 uppercase mb-1">Lokasi</p>
-          <select value={lokasi} onChange={e => setLokasi(e.target.value)}
-            className="w-full h-10 px-3 bg-[#F2F2F7] rounded-xl text-sm focus:outline-none">
-            {lokasiOptions.map(o => <option key={o.val} value={o.val}>{o.label}</option>)}
-          </select>
-        </div>
-        <button onClick={load} disabled={loading}
-          className="w-full h-11 rounded-xl text-sm font-bold text-white disabled:opacity-50"
-          style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
-          {loading ? 'Memuat…' : 'Tampilkan Laporan'}
-        </button>
-      </div>
-
-      {data && (
-        <div className="space-y-4">
-          {/* Print button */}
-          <div className="flex justify-end">
-            <button onClick={() => window.print()}
-              className="h-8 px-3 rounded-xl text-xs font-bold bg-violet-600 text-white flex items-center gap-1.5">
-              <Printer size={12}/>Print Laporan
-            </button>
-          </div>
-
-          {/* Ringkasan P&L */}
-          <div className="bg-white rounded-2xl p-4 space-y-3" style={{boxShadow:'0 1px 4px rgba(0,0,0,0.07)'}}>
-            <p className="text-sm font-black text-gray-900">Laporan Laba Rugi</p>
-            <p className="text-xs text-gray-400">{data.periode.from} — {data.periode.to}{lokasi ? ` · ${lokasi}` : ' · Semua Lokasi'}</p>
-
-            {/* Pendapatan */}
-            <div className="space-y-1.5">
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Pendapatan</p>
-              {[
-                ['Total Penjualan',    fmt(data.pendapatan.totalHJ),      'text-gray-900'],
-                ['HPP Terjual',       `(${fmt(data.pendapatan.totalHPP)})`, 'text-red-500'],
-                ['Fee Marketplace',   `(${fmt(data.pendapatan.totalFee)})`, 'text-orange-500'],
-              ].map(([k,v,c]) => (
-                <div key={k} className="flex justify-between text-xs">
-                  <span className="text-gray-600">{k}</span>
-                  <span className={`font-bold ${c}`}>{v}</span>
-                </div>
-              ))}
-              <div className="flex justify-between text-sm font-black border-t border-gray-100 pt-2">
-                <span className="text-gray-700">Gross Profit</span>
-                <span className={data.pendapatan.grossProfit >= 0 ? 'text-emerald-600' : 'text-red-500'}>
-                  {fmt(data.pendapatan.grossProfit)}
-                </span>
-              </div>
-            </div>
-
-            {/* Pengeluaran */}
-            <div className="space-y-1.5 border-t border-gray-100 pt-3">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Pengeluaran Operasional</p>
-                <button onClick={() => setShowPengeluaran(!showPengeluaran)}
-                  className="text-[10px] text-violet-500 font-semibold">
-                  {showPengeluaran ? 'Sembunyikan' : 'Detail'}
+                <button onClick={()=>window.print()}
+                  style={{ background:'rgba(255,255,255,.18)', border:'none', borderRadius:10, padding:'6px 12px', fontSize:12, color:'white', fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                  🖨 Print
                 </button>
               </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-600">Total Pengeluaran</span>
-                <span className="font-bold text-red-500">({fmt(data.pengeluaran.total)})</span>
-              </div>
-              {showPengeluaran && Object.entries(data.pengeluaran.perKategori).map(([k,v]: any) => (
-                <div key={k} className="flex justify-between text-[11px] pl-3">
-                  <span className="text-gray-500">{k}</span>
-                  <span className="text-gray-600">{fmt(v)}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Net Profit */}
-            <div className={`rounded-2xl px-4 py-3 flex items-center justify-between ${data.netProfit >= 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>
-              <div className="flex items-center gap-2">
-                {data.netProfit >= 0 ? <TrendingUp size={18} className="text-emerald-500"/> : <TrendingDown size={18} className="text-red-500"/>}
-                <div>
-                  <p className="text-sm font-black text-gray-900">Net Profit</p>
-                  <p className={`text-[10px] font-semibold ${data.netProfit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                    Margin {data.marginPct}%
-                  </p>
-                </div>
-              </div>
-              <p className={`text-lg font-black ${data.netProfit >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                {fmt(data.netProfit)}
-              </p>
             </div>
           </div>
 
-          {/* Per Channel */}
-          {Object.keys(data.pendapatan.perChannel).length > 0 && (
-            <div className="bg-white rounded-2xl p-4" style={{boxShadow:'0 1px 4px rgba(0,0,0,0.07)'}}>
-              <p className="text-xs font-bold text-gray-700 mb-3">Penjualan per Channel</p>
-              <div className="space-y-2">
-                {Object.entries(data.pendapatan.perChannel).map(([ch, d]: any) => {
-                  const pct = data.pendapatan.totalHJ > 0 ? Math.round(d.hj / data.pendapatan.totalHJ * 100) : 0
+          {/* Segmented control */}
+          <div style={{ padding:'12px 16px 0' }}>
+            <div style={{ display:'flex', background:iOS.fill3, borderRadius:9, padding:2 }}>
+              {[['ringkasan','Ringkasan'],['gramasi','Gramasi'],['packing','Packing'],['items','Items']].map(([k,l]) => (
+                <button key={k} onClick={()=>setActiveTab(k)}
+                  style={{ flex:1, padding:'6px 4px', background:activeTab===k?'white':'transparent', border:'none', borderRadius:7, fontSize:12, fontWeight:activeTab===k?600:400, color:activeTab===k?iOS.label:iOS.label3, cursor:'pointer', fontFamily:'inherit', boxShadow:activeTab===k?'0 1px 3px rgba(0,0,0,0.12)':'none', transition:'all .2s', letterSpacing:-0.2 }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── TAB: RINGKASAN ──────────────────────────── */}
+          {activeTab==='ringkasan' && (
+            <div style={{ paddingBottom:80 }}>
+              <IOSSectionHeader title="Metrik Utama" />
+              <div style={{ padding:'0 16px', display:'flex', flexDirection:'column', gap:10 }}>
+                {[
+                  [{ label:'Bahan Baku', value:fmtg(b.timbangan_akhir||0), sub:'timbangan akhir gudang', color:iOS.accent, icon:'⚖️' },
+                   { label:'Gram Jadi',  value:fmtg(s.totalBeratAkhir),    sub:`dari ${s.totalPcsGood} pcs`, color:iOS.blue, icon:'💎' }],
+                  [{ label:'Efisiensi', value:`${eff}%`, sub:'Gram Jadi ÷ Bahan Baku', color:iOS.green,  icon:'📊' },
+                   { label:'Sisa Serbuk', value:fmtg(s.totalSerbuk), sub:'total semua event', color:iOS.orange, icon:'✨' }],
+                  [{ label:'Loses',     value:fmtg(s.totalLosses),  sub:'Seharusnya − Fisik', color:s.totalLosses>0?iOS.red:iOS.gray, icon:'⚠️' },
+                   { label:'Total PCS', value:String(s.totalPcsGood), sub:`${s.totalPcsReject} reject`, color:iOS.indigo, icon:'📦' }],
+                ].map((row,ri) => (
+                  <div key={ri} style={{ display:'flex', gap:10 }}>
+                    {row.map((k,ki) => <KPICard key={ki} {...k}/>)}
+                  </div>
+                ))}
+              </div>
+
+              <IOSSectionHeader title="Ringkasan Batch" />
+              <IOSCard style={{ margin:'0 16px' }}>
+                {[
+                  { left:'Bahan Baku', right:fmtg(b.timbangan_akhir||0) },
+                  { left:'Gramasi Jadi', right:fmtg(s.totalBeratAkhir) },
+                  { left:'Sisa Serbuk', right:fmtg(s.totalSerbuk) },
+                  { left:'Sisa Seharusnya', subleft:'Auto: Bahan − Jadi − Serbuk', right:fmtg(s.sisaBahan), accentColor:iOS.blue },
+                  { left:'Sisa Fisik (input manual)', right: s.sisaFisik!=null ? fmtg(s.sisaFisik) : '— belum diisi' },
+                  { left:'Loses Produksi', subleft: s.totalLosses===0?'✓ Tidak ada loses':null, right:fmtg(s.totalLosses), accentColor: s.totalLosses>0?iOS.red:iOS.green },
+                  { left:'HPP / gram', right:`Rp ${Math.round(s.hpp_gr||0).toLocaleString('id-ID')}`, last:true },
+                ].map((r,i) => <IOSListRow key={i} {...r}/>)}
+              </IOSCard>
+
+              {/* Status produksi */}
+              <IOSSectionHeader title="Status Produksi" />
+              <IOSCard style={{ margin:'0 16px' }}>
+                {Object.keys(STATUS_STYLE).map((status, i, arr) => {
+                  const cnt = statusCounts[status]||0
+                  const st = STATUS_STYLE[status]
                   return (
-                    <div key={ch}>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="font-semibold text-gray-700">{CH_LABEL[ch] ?? ch}</span>
-                        <span className="text-gray-600">{fmt(d.hj)} · {d.pcs} pcs</span>
+                    <div key={status}>
+                      <div style={{ padding:'12px 16px', display:'flex', alignItems:'center', gap:12 }}>
+                        <div style={{ width:32, height:32, background:st.bg, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                          <div style={{ width:10, height:10, borderRadius:99, background:st.color }}/>
+                        </div>
+                        <p style={{ flex:1, fontSize:17, color:iOS.label }}>{status}</p>
+                        <p style={{ fontSize:17, fontWeight:600, color:cnt>0?st.color:iOS.label4 }}>{cnt}</p>
                       </div>
-                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-violet-400 rounded-full" style={{width:`${pct}%`}}/>
+                      {i < arr.length-1 && <IOSSep left={60}/>}
+                    </div>
+                  )
+                })}
+              </IOSCard>
+              <div style={{ margin:'8px 16px 0' }}>
+                <IOSCard>
+                  <div style={{ padding:'12px 16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                    <p style={{ fontSize:17, fontWeight:600, color:iOS.label }}>Total</p>
+                    <p style={{ fontSize:20, fontWeight:700, color:iOS.accent }}>{totalPcs} pcs</p>
+                  </div>
+                </IOSCard>
+              </div>
+
+              {/* Donut */}
+              {pieData.length > 0 && (
+                <>
+                  <IOSSectionHeader title="Distribusi Status" />
+                  <IOSCard style={{ margin:'0 16px', padding:16 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:16 }}>
+                      <div style={{ position:'relative', width:120, height:120, flexShrink:0 }}>
+                        <ResponsiveContainer width={120} height={120}>
+                          <PieChart>
+                            <Pie data={pieData} dataKey="pcs" cx="50%" cy="50%" innerRadius={38} outerRadius={56} paddingAngle={2}>
+                              {pieData.map((e,i) => <Cell key={i} fill={e.color}/>)}
+                            </Pie>
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', pointerEvents:'none' }}>
+                          <p style={{ fontSize:20, fontWeight:700, color:iOS.label, lineHeight:1 }}>{totalPcs}</p>
+                          <p style={{ fontSize:10, color:iOS.label3 }}>pcs</p>
+                        </div>
+                      </div>
+                      <div style={{ flex:1 }}>
+                        {pieData.map(d => (
+                          <div key={d.name} style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
+                            <div style={{ width:10, height:10, borderRadius:99, background:d.color, flexShrink:0 }}/>
+                            <p style={{ flex:1, fontSize:13, color:iOS.label }}>{d.name}</p>
+                            <p style={{ fontSize:15, fontWeight:600, color:d.color }}>{d.pcs}</p>
+                          </div>
+                        ))}
                       </div>
                     </div>
+                  </IOSCard>
+                </>
+              )}
+
+              {/* Progress */}
+              <IOSSectionHeader title="Progress Batch" />
+              <IOSCard style={{ margin:'0 16px', padding:'4px 16px 8px' }}>
+                <IOSProgressBar label="Efisiensi Produksi" pct={eff} color={iOS.green} sublabel={`${eff}% — ${fmtg(s.totalBeratAkhir)}/${fmtg(b.timbangan_akhir||0)}`}/>
+                <IOSSep/>
+                <IOSProgressBar label="Siap Packing" pct={totalPcs>0?(statusCounts['Siap Packing']||0)/totalPcs*100:0} color={iOS.green} sublabel={`${statusCounts['Siap Packing']||0} / ${totalPcs} pcs`}/>
+                <IOSSep/>
+                <IOSProgressBar label="Sudah Packing" pct={totalPcs>0?(statusCounts['Sudah Packing']||0)/totalPcs*100:0} color={iOS.purple} sublabel={`${statusCounts['Sudah Packing']||0} / ${totalPcs} pcs`}/>
+              </IOSCard>
+            </div>
+          )}
+
+          {/* ── TAB: GRAMASI ──────────────────────────── */}
+          {activeTab==='gramasi' && (
+            <div style={{ paddingBottom:80 }}>
+              {barData.length > 0 && (
+                <>
+                  <IOSSectionHeader title="Visualisasi Pcs per Gramasi" />
+                  <IOSCard style={{ margin:'0 16px', padding:'16px 12px 8px' }}>
+                    <p style={{ fontSize:13, color:iOS.label3, marginBottom:12, paddingLeft:4 }}>Distribusi pcs berdasarkan gramasi</p>
+                    <ResponsiveContainer width="100%" height={160}>
+                      <BarChart data={barData} margin={{ top:8, right:4, left:-24, bottom:0 }}>
+                        <XAxis dataKey="gr" tick={{ fontSize:11, fill:iOS.label3, fontFamily:'system-ui' }} axisLine={false} tickLine={false}/>
+                        <YAxis tick={{ fontSize:10, fill:iOS.label3 }} axisLine={false} tickLine={false}/>
+                        <Tooltip contentStyle={{ borderRadius:12, border:`0.5px solid ${iOS.sepO}`, fontSize:13, fontFamily:'system-ui', boxShadow:'0 4px 20px rgba(0,0,0,.12)' }}/>
+                        <Bar dataKey="pcs" radius={[6,6,3,3]} fill={iOS.accent}/>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </IOSCard>
+                </>
+              )}
+
+              <IOSSectionHeader title="Breakdown per Gramasi" />
+              <IOSCard style={{ margin:'0 16px' }}>
+                <div style={{ display:'grid', gridTemplateColumns:'1.2fr 0.8fr 1fr 0.6fr', padding:'8px 16px', background:iOS.fill3, borderBottom:`0.5px solid ${iOS.sepO}` }}>
+                  {['Gramasi','Pcs','Total Gr','%'].map(h => <p key={h} style={{ fontSize:12, fontWeight:600, color:iOS.label3, letterSpacing:0.2 }}>{h}</p>)}
+                </div>
+                {GRAMASI_STD.map((g, i) => {
+                  const d = gramasiMap[g]
+                  const pct = d && s.totalBeratAkhir > 0 ? (d.gram/s.totalBeratAkhir*100).toFixed(1) : null
+                  return (
+                    <div key={g} style={{ display:'grid', gridTemplateColumns:'1.2fr 0.8fr 1fr 0.6fr', padding:'11px 16px', borderBottom:i<GRAMASI_STD.length-1?`0.5px solid rgba(0,0,0,.06)`:undefined }}>
+                      <p style={{ fontSize:17, fontWeight:d?500:400, color:d?iOS.label:iOS.label4 }}>{g} gr</p>
+                      <p style={{ fontSize:17, color:d?iOS.label:iOS.label4 }}>{d?d.pcs:'—'}</p>
+                      <p style={{ fontSize:17, color:d?iOS.label:iOS.label4 }}>{d?Number(d.gram).toFixed(2):'—'}</p>
+                      <p style={{ fontSize:15, fontWeight:600, color:d?iOS.orange:iOS.label4 }}>{d?pct+'%':'—'}</p>
+                    </div>
+                  )
+                })}
+                <div style={{ display:'grid', gridTemplateColumns:'1.2fr 0.8fr 1fr 0.6fr', padding:'12px 16px', background:'rgba(124,58,237,.06)', borderTop:`0.5px solid ${iOS.sepO}` }}>
+                  {['TOTAL',String(totalPcs),Number(s.totalBeratAkhir).toFixed(2),'100%'].map((v,i) => (
+                    <p key={i} style={{ fontSize:15, fontWeight:700, color:iOS.accent }}>{v}</p>
+                  ))}
+                </div>
+              </IOSCard>
+            </div>
+          )}
+
+          {/* ── TAB: PACKING ──────────────────────────── */}
+          {activeTab==='packing' && (
+            <div style={{ paddingBottom:80 }}>
+              <IOSSectionHeader title="Ringkasan Packing" />
+              <div style={{ padding:'0 16px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                {[
+                  { label:'Total Records', value:String(data.packings.length), sub:'dari batch ini', color:iOS.accent },
+                  { label:'Total PCS', value:String(data.packings.reduce((s:any,p:any)=>s+(p.pcs_dipack||0),0)), sub:'pcs dipack', color:iOS.green },
+                  { label:'Total Gram Packing', value:Number(data.packings.reduce((s:any,p:any)=>s+parseFloat(p.total_gram_aktual||p.total_gram||0),0)).toFixed(2)+' gr', sub:'hasil timbang aktual', color:iOS.blue },
+                  { label:'Avg per Packing', value:data.packings.length>0?Math.round(data.packings.reduce((s:any,p:any)=>s+(p.pcs_dipack||0),0)/data.packings.length)+' pcs':'—', sub:'rata-rata', color:iOS.orange },
+                ].map((d,i) => (
+                  <IOSCard key={i} style={{ padding:14 }}>
+                    <p style={{ fontSize:11, fontWeight:500, color:iOS.label3, textTransform:'uppercase', letterSpacing:0.4, marginBottom:6 }}>{d.label}</p>
+                    <p style={{ fontSize:24, fontWeight:700, color:d.color, letterSpacing:-0.5 }}>{d.value}</p>
+                    <p style={{ fontSize:11, color:iOS.label3, marginTop:4 }}>{d.sub}</p>
+                  </IOSCard>
+                ))}
+              </div>
+
+              <IOSSectionHeader title="Per Packing Record" />
+              <div style={{ padding:'0 16px', display:'flex', flexDirection:'column', gap:10 }}>
+                {data.packings.length===0 ? (
+                  <IOSCard style={{ padding:'24px 16px', textAlign:'center' }}>
+                    <p style={{ color:iOS.label3, fontSize:15 }}>Belum ada packing untuk batch ini</p>
+                  </IOSCard>
+                ) : data.packings.map((pk:any) => {
+                  const de = parseFloat(pk.total_gram||0)
+                  const pa = parseFloat(pk.total_gram_aktual||pk.total_gram||0)
+                  const sel = Math.round((pa-de)*1000)/1000
+                  const ok = Math.abs(sel) < 0.1
+                  return (
+                    <IOSCard key={pk.kode} style={{ padding:14 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
+                        <span style={{ fontSize:13, fontWeight:600, color:iOS.accent, background:iOS.accentL, borderRadius:99, padding:'4px 10px' }}>{pk.kode}</span>
+                        <IOSBadge label={`${pk.gramasi} gr`} color={iOS.orange}/>
+                        <IOSBadge label={`${pk.pcs_dipack} pcs`} color={iOS.gray}/>
+                      </div>
+                      {pk.produksi_item && (
+                        <p style={{ fontSize:13, color:iOS.label3, marginBottom:10 }}>
+                          dari <span style={{ color:iOS.accent, fontWeight:600 }}>{pk.produksi_item?.nama_item||'—'}</span>
+                        </p>
+                      )}
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', background:iOS.fill3, borderRadius:10, padding:'10px 12px', gap:4 }}>
+                        {[
+                          { label:'Data Entry', value:`${de.toFixed(3)} gr`, color:iOS.label },
+                          { label:'Packing',    value:`${pa.toFixed(3)} gr`, color:iOS.blue },
+                          { label:'Selisih',    value:ok?'✓ Pas':`${sel} gr`, color:ok?iOS.green:iOS.red },
+                        ].map((c,ci) => (
+                          <div key={ci} style={{ textAlign:'center' }}>
+                            <p style={{ fontSize:10, color:iOS.label3, marginBottom:3 }}>{c.label}</p>
+                            <p style={{ fontSize:14, fontWeight:700, color:c.color }}>{c.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <p style={{ fontSize:11, color:iOS.label3, marginTop:10, lineHeight:1.4 }}>
+                        💡 Selisih &lt; 0.1 gr normal. Lebih dari 0.5 gr perlu dicek ulang.
+                      </p>
+                    </IOSCard>
                   )
                 })}
               </div>
             </div>
           )}
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label:'Total Transaksi', val: data.pendapatan.totalTransaksi+' trx', color:'text-gray-900' },
-              { label:'Avg per Transaksi', val: data.pendapatan.totalTransaksi > 0 ? fmt(data.pendapatan.totalHJ/data.pendapatan.totalTransaksi) : '—', color:'text-violet-600' },
-            ].map(({ label, val, color }) => (
-              <div key={label} className="bg-white rounded-2xl p-3" style={{boxShadow:'0 1px 4px rgba(0,0,0,0.07)'}}>
-                <p className={`text-lg font-black ${color}`}>{val}</p>
-                <p className="text-[10px] text-gray-400 mt-0.5">{label}</p>
-              </div>
-            ))}
-          </div>
+          {/* ── TAB: ITEMS ────────────────────────────── */}
+          {activeTab==='items' && (
+            <div style={{ paddingBottom:80 }}>
+              <IOSSectionHeader title={`Rincian Item Produksi (${data.items.length})`} />
+              <IOSCard style={{ margin:'0 16px' }}>
+                {data.items.length===0 ? (
+                  <div style={{ padding:'24px 16px', textAlign:'center' }}>
+                    <p style={{ color:iOS.label3, fontSize:15 }}>Belum ada item produksi</p>
+                  </div>
+                ) : data.items.map((item:any, i:number) => {
+                  const st = STATUS_STYLE[item.current_status] || { color:iOS.gray, bg:'#F3F4F6' }
+                  const isExp = expandedItem === item.kode
+                  const itemEvents = data.events?.filter((e:any)=>e.produksi_item_id===item.id)||[]
+                  return (
+                    <div key={item.kode}>
+                      <button onClick={()=>setExpandedItem(isExp?null:item.kode)}
+                        style={{ width:'100%', background:'none', border:'none', padding:'12px 16px', cursor:'pointer', display:'flex', alignItems:'center', gap:12, textAlign:'left', fontFamily:'inherit' }}>
+                        {/* Gramasi badge */}
+                        <div style={{ width:40, height:40, background:st.bg, borderRadius:10, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                          <p style={{ fontSize:13, fontWeight:700, color:st.color, lineHeight:1 }}>{item.gramasi}</p>
+                          <p style={{ fontSize:8, color:st.color, opacity:0.7 }}>gr</p>
+                        </div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <p style={{ fontSize:15, fontWeight:600, color:iOS.label, letterSpacing:-0.2 }}>{item.kode}</p>
+                          <div style={{ display:'flex', gap:6, marginTop:3, flexWrap:'wrap' }}>
+                            <p style={{ fontSize:12, color:iOS.label3 }}>{item.pcs_good} pcs</p>
+                            <p style={{ fontSize:12, color:iOS.label3 }}>·</p>
+                            <p style={{ fontSize:12, color:iOS.label3 }}>{Number(item.total_gram||0).toFixed(2)} gr</p>
+                            <p style={{ fontSize:12, color:iOS.label3 }}>·</p>
+                            <p style={{ fontSize:12, color:iOS.label3 }}>{item.tanggal_produksi||item.tanggal}</p>
+                          </div>
+                        </div>
+                        <IOSBadge label={item.current_status} color={st.color}/>
+                        <svg width="7" height="12" viewBox="0 0 7 12" fill="none"
+                          style={{ transform:isExp?'rotate(90deg)':'rotate(0deg)', transition:'transform .2s', flexShrink:0, opacity:0.4 }}>
+                          <path d="M1 1L6 6L1 11" stroke={iOS.gray} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                      {isExp && (
+                        <div style={{ background:iOS.fill3, margin:'0 12px 12px', borderRadius:12, padding:'12px 14px' }}>
+                          <p style={{ fontSize:12, fontWeight:600, color:iOS.label3, textTransform:'uppercase', letterSpacing:0.5, marginBottom:10 }}>Histori Event</p>
+                          {itemEvents.length===0 ? (
+                            <p style={{ fontSize:13, color:iOS.label3 }}>Belum ada event</p>
+                          ) : itemEvents.map((e:any,ei:number) => (
+                            <div key={ei} style={{ display:'flex', justifyContent:'space-between', padding:'6px 0', borderBottom:ei<itemEvents.length-1?`0.5px solid ${iOS.sepO}`:'none' }}>
+                              <p style={{ fontSize:13, color:iOS.label3 }}>{e.tanggal}</p>
+                              <p style={{ fontSize:13, fontWeight:600, color:st.color }}>{e.status}</p>
+                              <p style={{ fontSize:13, color:iOS.label }}>{Number(e.total_gram||0).toFixed(3)} gr</p>
+                              <p style={{ fontSize:13, color:iOS.orange }}>-{Number(e.losses||0).toFixed(4)}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {!isExp && i < data.items.length-1 && <IOSSep left={68}/>}
+                    </div>
+                  )
+                })}
+              </IOSCard>
+            </div>
+          )}
+        </>
+      )}
+
+      {!data && !loading && !selBatch && (
+        <div style={{ textAlign:'center', padding:'60px 32px', color:iOS.label3 }}>
+          <p style={{ fontSize:48, marginBottom:12 }}>📊</p>
+          <p style={{ fontSize:17, fontWeight:600, color:iOS.label, marginBottom:6 }}>Pilih Batch</p>
+          <p style={{ fontSize:15, lineHeight:1.5 }}>Pilih batch dari dropdown di atas untuk melihat laporan lengkap</p>
         </div>
       )}
     </div>
   )
 }
 
+// ── TAB LABA RUGI ─────────────────────────────────────────────────────────────
+function TabLabaRugi({ cabangList, namaGudang }) {
+  const today      = new Date().toISOString().split('T')[0]
+  const monthStart = today.slice(0,7)+'-01'
+  const [dateFrom, setDateFrom] = useState(monthStart)
+  const [dateTo,   setDateTo]   = useState(today)
+  const [lokasi,   setLokasi]   = useState('')
+  const [data,     setData]     = useState<any>(null)
+  const [loading,  setLoading]  = useState(false)
+
+  async function load() {
+    setLoading(true)
+    const r = await getLaporanLabaRugi(dateFrom, dateTo, lokasi||undefined)
+    setData(r); setLoading(false)
+  }
+
+  return (
+    <div style={{ fontFamily:'-apple-system,"SF Pro Display",BlinkMacSystemFont,system-ui,sans-serif', background:iOS.bg, minHeight:'100vh', WebkitFontSmoothing:'antialiased', paddingBottom:80 }}>
+
+      {/* Filter */}
+      <IOSSectionHeader title="Filter Periode" />
+      <IOSCard style={{ margin:'0 16px' }}>
+        <div style={{ padding:'12px 16px' }}>
+          <p style={{ fontSize:13, color:iOS.label3, marginBottom:6 }}>Dari</p>
+          <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)}
+            style={{ width:'100%', padding:'8px 0', background:'none', border:'none', fontSize:17, color:iOS.label, fontFamily:'inherit', outline:'none' }}/>
+        </div>
+        <IOSSep/>
+        <div style={{ padding:'12px 16px' }}>
+          <p style={{ fontSize:13, color:iOS.label3, marginBottom:6 }}>Sampai</p>
+          <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)}
+            style={{ width:'100%', padding:'8px 0', background:'none', border:'none', fontSize:17, color:iOS.label, fontFamily:'inherit', outline:'none' }}/>
+        </div>
+        <IOSSep/>
+        <div style={{ padding:'12px 16px' }}>
+          <p style={{ fontSize:13, color:iOS.label3, marginBottom:6 }}>Lokasi</p>
+          <select value={lokasi} onChange={e=>setLokasi(e.target.value)}
+            style={{ width:'100%', background:'none', border:'none', fontSize:17, color:iOS.label, fontFamily:'inherit', outline:'none', padding:'4px 0' }}>
+            <option value="">Semua Lokasi</option>
+            <option value={namaGudang}>{namaGudang}</option>
+            {cabangList.map((c:any)=><option key={c.kode} value={c.nama}>{c.nama}</option>)}
+          </select>
+        </div>
+      </IOSCard>
+
+      <div style={{ padding:'12px 16px 0' }}>
+        <button onClick={load} disabled={loading}
+          style={{ width:'100%', padding:'14px', background:iOS.accent, border:'none', borderRadius:14, fontSize:17, fontWeight:600, color:'white', cursor:'pointer', fontFamily:'inherit', boxShadow:`0 4px 16px ${iOS.accent}40`, opacity:loading?0.6:1 }}>
+          {loading ? 'Memuat…' : 'Tampilkan Laporan'}
+        </button>
+      </div>
+
+      {data && (
+        <>
+          <IOSSectionHeader title="Laporan Laba Rugi" />
+          <IOSCard style={{ margin:'0 16px' }}>
+            <IOSListRow left="Total Penjualan" right={fmt(data.pendapatan.totalHJ)}/>
+            <IOSListRow left="HPP Terjual" right={`(${fmt(data.pendapatan.totalHPP)})`} accentColor={iOS.red}/>
+            <IOSListRow left="Fee Marketplace" right={`(${fmt(data.pendapatan.totalFee)})`} accentColor={iOS.orange}/>
+            <IOSListRow left="Gross Profit" right={fmt(data.pendapatan.grossProfit)} accentColor={data.pendapatan.grossProfit>=0?iOS.green:iOS.red}/>
+            <IOSListRow left="Pengeluaran Operasional" right={`(${fmt(data.pengeluaran.total)})`} accentColor={iOS.red}/>
+            <div style={{ padding:'14px 16px', background:data.netProfit>=0?'#EDFAF1':'#FFF0EF', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                {data.netProfit>=0?<TrendingUp size={18} color={iOS.green}/>:<TrendingDown size={18} color={iOS.red}/>}
+                <div>
+                  <p style={{ fontSize:17, fontWeight:600, color:iOS.label }}>Net Profit</p>
+                  <p style={{ fontSize:12, color:data.netProfit>=0?iOS.green:iOS.red }}>Margin {data.marginPct}%</p>
+                </div>
+              </div>
+              <p style={{ fontSize:20, fontWeight:700, color:data.netProfit>=0?iOS.green:iOS.red }}>{fmt(data.netProfit)}</p>
+            </div>
+          </IOSCard>
+
+          {/* Per channel */}
+          {Object.keys(data.pendapatan.perChannel).length > 0 && (
+            <>
+              <IOSSectionHeader title="Penjualan per Channel" />
+              <IOSCard style={{ margin:'0 16px', padding:'12px 16px' }}>
+                {Object.entries(data.pendapatan.perChannel).map(([ch,d]:any)=>{
+                  const pct = data.pendapatan.totalHJ>0?Math.round(d.hj/data.pendapatan.totalHJ*100):0
+                  return (
+                    <div key={ch} style={{ marginBottom:14 }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', marginBottom:5 }}>
+                        <p style={{ fontSize:15, color:iOS.label }}>{CH_LABEL[ch]||ch}</p>
+                        <p style={{ fontSize:13, color:iOS.label3 }}>{fmt(d.hj)} · {d.pcs} pcs</p>
+                      </div>
+                      <div style={{ height:5, background:iOS.gray5, borderRadius:99, overflow:'hidden' }}>
+                        <div style={{ height:'100%', width:`${pct}%`, background:iOS.accent, borderRadius:99 }}/>
+                      </div>
+                    </div>
+                  )
+                })}
+              </IOSCard>
+            </>
+          )}
+
+          <div style={{ padding:'12px 16px 0' }}>
+            <button onClick={()=>window.print()}
+              style={{ width:'100%', padding:'13px', background:iOS.card, border:`0.5px solid ${iOS.sepO}`, borderRadius:14, fontSize:16, fontWeight:500, color:iOS.accent, cursor:'pointer', fontFamily:'inherit' }}>
+              🖨 Print Laporan
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
-const TABS = [
-  { key:'batch',    label:'Per Batch',  icon: FileText },
-  { key:'labarugi', label:'Laba Rugi',  icon: BarChart2 },
-]
+const TABS = [['batch','Per Batch'],['labarugi','Laba Rugi']]
 
 export default function LaporanClient({ batchList, cabangList, namaGudang }) {
   const [tab, setTab] = useState('batch')
 
   return (
-    <div className="min-h-screen bg-[#F2F2F7]">
-      <div className="bg-white/80 backdrop-blur-xl sticky top-0 z-30 border-b border-black/5">
-        <div className="px-4 pt-4 pb-0">
-          <h1 className="text-xl font-bold text-gray-900 mb-3">Laporan</h1>
-          <div className="flex gap-1">
-            {TABS.map(({ key, label, icon: Icon }) => (
-              <button key={key} onClick={() => setTab(key)}
-                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold rounded-t-xl whitespace-nowrap transition-all
-                  ${tab===key ? 'bg-white text-violet-700 shadow-sm border-t border-x border-gray-200' : 'text-gray-400'}`}>
-                <Icon size={13}/>{label}
-              </button>
-            ))}
-          </div>
+    <div style={{ fontFamily:'-apple-system,"SF Pro Display",BlinkMacSystemFont,system-ui,sans-serif', background:iOS.bg, minHeight:'100vh', WebkitFontSmoothing:'antialiased' }}>
+      {/* Sticky tab bar */}
+      <div style={{ background:'rgba(242,242,247,.85)', backdropFilter:'saturate(180%) blur(20px)', WebkitBackdropFilter:'saturate(180%) blur(20px)', position:'sticky', top:0, zIndex:50, borderBottom:`0.5px solid ${iOS.sepO}`, padding:'14px 16px 0' }}>
+        <p style={{ fontSize:34, fontWeight:700, color:iOS.label, letterSpacing:-0.5, lineHeight:1.1, marginBottom:12 }}>Laporan</p>
+        <div style={{ display:'flex', gap:0, background:iOS.fill3, borderRadius:9, padding:2, marginBottom:10 }}>
+          {TABS.map(([k,l]) => (
+            <button key={k} onClick={()=>setTab(k)}
+              style={{ flex:1, padding:'7px 4px', background:tab===k?'white':'transparent', border:'none', borderRadius:7, fontSize:13, fontWeight:tab===k?600:400, color:tab===k?iOS.label:iOS.label3, cursor:'pointer', fontFamily:'inherit', boxShadow:tab===k?'0 1px 3px rgba(0,0,0,.12)':'none', transition:'all .2s' }}>
+              {l}
+            </button>
+          ))}
         </div>
       </div>
 
-      {tab === 'batch'    && <TabBatch batchList={batchList} namaGudang={namaGudang} cabangList={cabangList}/>}
-      {tab === 'labarugi' && <TabLabaRugi cabangList={cabangList} namaGudang={namaGudang}/>}
+      {tab==='batch'    && <TabBatch batchList={batchList}/>}
+      {tab==='labarugi' && <TabLabaRugi cabangList={cabangList} namaGudang={namaGudang}/>}
     </div>
   )
 }
