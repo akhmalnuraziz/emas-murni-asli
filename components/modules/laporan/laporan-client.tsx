@@ -140,17 +140,19 @@ function TabBatch({ batchList }) {
   const eff = b && s ? Math.round(s.totalBeratAkhir / parseFloat(b.timbangan_akhir||1) * 1000)/10 : 0
 
   return (
-    <div style={{ fontFamily:'-apple-system,"SF Pro Display",BlinkMacSystemFont,system-ui,sans-serif', background:iOS.bg, minHeight:'100vh', WebkitFontSmoothing:'antialiased' }}>
+    <div style={{ fontFamily:'"Plus Jakarta Sans","DM Sans",system-ui,sans-serif', background:iOS.bg, minHeight:'100vh', WebkitFontSmoothing:'antialiased' }}>
 
       {/* Batch selector */}
       <div style={{ padding:'16px 16px 0' }}>
-        <select value={selBatch} onChange={e => load(e.target.value)}
-          style={{ width:'100%', padding:'13px 16px', background:iOS.card, border:'none', borderRadius:14, fontSize:15, color:selBatch?iOS.label:iOS.label3, fontFamily:'inherit', outline:'none', boxShadow:'0 1px 4px rgba(0,0,0,0.08)' }}>
-          <option value="">Pilih batch untuk lihat laporan…</option>
-          {batchList.map((b:any) => (
-            <option key={b.kode} value={b.kode}>{b.kode} — {b.nama_batch} ({b.tanggal})</option>
-          ))}
-        </select>
+        <div style={{ background:iOS.card, borderRadius:14, overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.08)' }}>
+          <select value={selBatch} onChange={e => load(e.target.value)}
+            style={{ width:'100%', padding:'14px 16px', background:'transparent', border:'none', fontSize:15, color:selBatch?iOS.label:iOS.label3, fontFamily:'inherit', outline:'none', display:'block' }}>
+            <option value="">— Pilih Batch —</option>
+            {batchList.map((b:any) => (
+              <option key={b.kode} value={b.kode}>{b.kode} — {b.nama_batch} ({b.tanggal})</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {loading && (
@@ -499,7 +501,7 @@ function TabLabaRugi({ cabangList, namaGudang }) {
   }
 
   return (
-    <div style={{ fontFamily:'-apple-system,"SF Pro Display",BlinkMacSystemFont,system-ui,sans-serif', background:iOS.bg, minHeight:'100vh', WebkitFontSmoothing:'antialiased', paddingBottom:80 }}>
+    <div style={{ fontFamily:'"Plus Jakarta Sans","DM Sans",system-ui,sans-serif', background:iOS.bg, minHeight:'100vh', WebkitFontSmoothing:'antialiased', paddingBottom:80 }}>
 
       {/* Filter */}
       <IOSSectionHeader title="Filter Periode" />
@@ -597,7 +599,7 @@ export default function LaporanClient({ batchList, cabangList, namaGudang }) {
   const [tab, setTab] = useState('batch')
 
   return (
-    <div style={{ fontFamily:'-apple-system,"SF Pro Display",BlinkMacSystemFont,system-ui,sans-serif', background:iOS.bg, minHeight:'100vh', WebkitFontSmoothing:'antialiased' }}>
+    <div style={{ fontFamily:'"Plus Jakarta Sans","DM Sans",system-ui,sans-serif', background:iOS.bg, minHeight:'100vh', WebkitFontSmoothing:'antialiased' }}>
       {/* Sticky tab bar */}
       <div style={{ background:'rgba(242,242,247,.85)', backdropFilter:'saturate(180%) blur(20px)', WebkitBackdropFilter:'saturate(180%) blur(20px)', position:'sticky', top:0, zIndex:50, borderBottom:`0.5px solid ${iOS.sepO}`, padding:'14px 16px 0' }}>
         <p style={{ fontSize:34, fontWeight:700, color:iOS.label, letterSpacing:-0.5, lineHeight:1.1, marginBottom:12 }}>Laporan</p>
