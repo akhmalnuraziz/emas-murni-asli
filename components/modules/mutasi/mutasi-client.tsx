@@ -448,7 +448,7 @@ export default function MutasiClient({ mutasiList, cabang, namaGudang, userRole,
   })
 
   return (
-    <div className="min-h-screen bg-[#F2F2F7]">
+    <div className="bg-[#F2F2F7]">
       <Toast msg={toast} />
 
       {/* Header */}
@@ -522,3 +522,4 @@ export default function MutasiClient({ mutasiList, cabang, namaGudang, userRole,
     </div>
   )
 }
+
