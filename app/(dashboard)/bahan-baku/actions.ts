@@ -39,12 +39,12 @@ async function uploadBase64Fotos(
       if (buffer.length === 0) return { urls, uploadError: `Foto ${i+1}: buffer kosong` }
       const path = `batch/${safe}/${Date.now()}_${i}.jpg`
       const { error: storageErr } = await supabase.storage
-        .from('emas-fotos')
+        .from('fotos')
         .upload(path, buffer, { contentType: 'image/jpeg', upsert: true })
       if (storageErr) {
         return { urls, uploadError: `Foto ${i+1} gagal upload: ${storageErr.message}` }
       }
-      const { data } = supabase.storage.from('emas-fotos').getPublicUrl(path)
+      const { data } = supabase.storage.from('fotos').getPublicUrl(path)
       urls.push(data.publicUrl)
     } catch (err: any) {
       return { urls, uploadError: `Foto ${i+1} error: ${err?.message ?? 'unknown'}` }
@@ -298,4 +298,5 @@ export async function updateSisaFisik(formData: FormData) {
   revalidatePath('/bahan-baku')
   return { success: true, fotosCount: fotoUrls.length }
 }
+
 
