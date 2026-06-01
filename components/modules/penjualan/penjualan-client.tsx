@@ -3,8 +3,8 @@
 
 import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Search, X, Check, AlertTriangle, ShoppingBag, Printer, ChevronDown, ChevronRight, Tag, User, CreditCard, ArrowRight } from 'lucide-react'
-import { getShieldtagByKode, searchCustomer, createCustomer, createPenjualan, getPenjualanDetail } from '@/app/(dashboard)/penjualan/actions'
+import { Plus, Search, X, Check, AlertTriangle, ShoppingBag, Printer, ChevronDown, ChevronRight, Tag, User, CreditCard, ArrowRight, Pencil, Trash2 } from 'lucide-react'
+import { getShieldtagByKode, searchCustomer, createCustomer, createPenjualan, getPenjualanDetail, voidPenjualan, updatePenjualan } from '@/app/(dashboard)/penjualan/actions'
 
 const INP = "w-full h-11 px-3.5 bg-[#F2F2F7] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/25 focus:bg-white transition-all"
 const CHANNELS = [
@@ -481,10 +481,14 @@ function BuatPenjualanModal({ onClose, showToast }: { onClose: () => void; showT
 
 // ── Main ─────────────────────────────────────────────────────────────────────────
 export default function PenjualanClient({ penjualanList, userRole }: { penjualanList: any[]; userRole: string }) {
-  const [showBuat, setShowBuat]     = useState(false)
+  const [showBuat, setShowBuat]       = useState(false)
+  const [editData, setEditData]       = useState<any>(null)
   const [invoiceData, setInvoiceData] = useState<any>(null)
-  const [toast, setToast]           = useState<any>(null)
-  const [search, setSearch]         = useState('')
+  const [toast, setToast]             = useState<any>(null)
+  const [search, setSearch]           = useState('')
+  const [voidId, setVoidId]           = useState<number|null>(null)
+  const [voidReason, setVoidReason]   = useState('')
+  const [voidPend, startVoid]         = useTransition()
 
   const canSell = ['owner','admin_pusat','spv','operator_produksi','kepala_cabang'].includes(userRole)
 
@@ -493,6 +497,22 @@ export default function PenjualanClient({ penjualanList, userRole }: { penjualan
   async function showInvoice(id: number) {
     const r = await getPenjualanDetail(id)
     setInvoiceData(r)
+  }
+
+  async function openEdit(id: number) {
+    const r = await getPenjualanDetail(id)
+    if (r.penjualan) setEditData(r)
+  }
+
+  function doVoid() {
+    if (!voidId || !voidReason.trim()) return
+    startVoid(async () => {
+      const r = await voidPenjualan(voidId, voidReason)
+      if (r?.error) { showToast(r.error, false); return }
+      showToast('Invoice di-void, ST dikembalikan ✓')
+      setVoidId(null); setVoidReason('')
+      router.refresh()
+    })
   }
 
   const filtered = penjualanList.filter(p =>
@@ -559,17 +579,256 @@ export default function PenjualanClient({ penjualanList, userRole }: { penjualan
                   </p>
                 </div>
               </div>
-              <button onClick={() => showInvoice(p.id)}
-                className="mt-2.5 w-full h-8 rounded-xl bg-gray-50 text-xs font-semibold text-gray-600 flex items-center justify-center gap-1.5">
-                <Printer size={11}/>Lihat & Cetak Invoice
-              </button>
+              <div className="mt-2.5 flex gap-2">
+                <button onClick={() => showInvoice(p.id)}
+                  className="flex-1 h-8 rounded-xl bg-gray-50 text-xs font-semibold text-gray-600 flex items-center justify-center gap-1.5">
+                  <Printer size={11}/>Invoice
+                </button>
+                <button onClick={() => openEdit(p.id)}
+                  className="h-8 w-9 rounded-xl bg-violet-50 flex items-center justify-center">
+                  <Pencil size={12} className="text-violet-500"/>
+                </button>
+                <button onClick={() => { setVoidId(p.id); setVoidReason('') }}
+                  className="h-8 w-9 rounded-xl bg-red-50 flex items-center justify-center">
+                  <Trash2 size={12} className="text-red-400"/>
+                </button>
+              </div>
             </div>
           )
         })}
       </div>
 
       {showBuat && <BuatPenjualanModal onClose={() => setShowBuat(false)} showToast={showToast}/>}
+      {editData && (
+        <EditPenjualanModal
+          data={editData}
+          onClose={() => setEditData(null)}
+          showToast={showToast}
+        />
+      )}
       {invoiceData && <InvoicePrint data={invoiceData} onClose={() => setInvoiceData(null)}/>}
+
+      {/* Void confirm overlay */}
+      {voidId && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-5 w-full max-w-sm space-y-4">
+            <h3 className="text-base font-bold text-gray-900">Void Invoice?</h3>
+            <p className="text-xs text-gray-500">ST akan dikembalikan ke status Aktif. Tindakan ini tidak bisa dibatalkan.</p>
+            <div>
+              <p className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Alasan Void *</p>
+              <input value={voidReason} onChange={e => setVoidReason(e.target.value)}
+                className="w-full h-11 px-3.5 bg-[#F2F2F7] rounded-xl text-sm focus:outline-none"
+                placeholder="Contoh: Pembatalan customer, input salah…" autoFocus/>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setVoidId(null)} className="flex-1 h-11 rounded-xl bg-gray-100 text-sm font-semibold text-gray-600">Batal</button>
+              <button onClick={doVoid} disabled={voidPend || !voidReason.trim()}
+                className="flex-1 h-11 rounded-xl bg-red-500 text-sm font-bold text-white disabled:opacity-40">
+                {voidPend ? 'Memproses…' : 'Ya, Void'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+// ── Edit Modal ─────────────────────────────────────────────────────────────────
+function EditPenjualanModal({ data, onClose, showToast }: { data: any; onClose: () => void; showToast: (m: string, ok?: boolean) => void }) {
+  const router = useRouter()
+  const { penjualan: p, items: initItems, payments: initPayments } = data
+  const customer0 = p.customer ?? { id: p.customer_id, nama: p.nama_customer, no_hp: p.hp_customer }
+
+  const [channel, setChannel]     = useState(p.channel || p.source || 'toko')
+  const [mktplFee, setMktplFee]   = useState(String(p.fee_marketplace || 0))
+  const [items, setItems]         = useState(initItems.map((i: any) => ({ ...i, kode: i.shieldtag_kode })))
+  const [customer, setCustomer]   = useState<any>(customer0)
+  const [payments, setPayments]   = useState(initPayments.length ? initPayments.map((p: any) => ({ ...p, jumlah: String(p.jumlah) })) : [{ metode:'cash', jumlah:'' }])
+  const [catatan, setCatatan]     = useState(p.catatan || '')
+  const [stInput, setStInput]     = useState('')
+  const [pend, start]             = useTransition()
+  const [err, setErr]             = useState('')
+  const [custSearch, setCustSearch] = useState('')
+  const [custResults, setCustResults] = useState<any[]>([])
+
+  const totalHJ  = items.reduce((s: number, i: any) => s + (parseFloat(i.harga_jual) || 0), 0)
+  const totalPaid = payments.reduce((s: number, p: any) => s + (parseFloat(p.jumlah) || 0), 0)
+
+  async function scanST() {
+    if (!stInput.trim()) return
+    if (items.find((i: any) => (i.shieldtag_kode||i.kode) === stInput.trim().toUpperCase())) { setErr('ST sudah ada'); return }
+    const r = await getShieldtagByKode(stInput.trim())
+    if (r.error) { setErr(r.error); return }
+    setItems((prev: any) => [...prev, { ...r.data, harga_jual: '' }])
+    setStInput('')
+  }
+
+  async function searchCust(q: string) {
+    setCustSearch(q)
+    if (q.length < 2) { setCustResults([]); return }
+    setCustResults(await searchCustomer(q))
+  }
+
+  function submit() {
+    if (!customer) { setErr('Pilih customer'); return }
+    if (items.some((i: any) => !i.harga_jual)) { setErr('Isi harga jual semua item'); return }
+    if (Math.abs(totalPaid - totalHJ) > 1) { setErr(`Kurang bayar Rp ${(totalHJ - totalPaid).toLocaleString('id-ID')}`); return }
+    const fd = new FormData()
+    fd.set('customer_id', String(customer.id))
+    fd.set('channel', channel)
+    fd.set('marketplace_fee', mktplFee || '0')
+    fd.set('catatan', catatan)
+    fd.set('items', JSON.stringify(items.map((i: any) => ({
+      shieldtag_kode: i.shieldtag_kode || i.kode,
+      produk_nama: i.produk_nama, gramasi: i.gramasi,
+      hpp: i.hpp, harga_jual: parseFloat(i.harga_jual),
+    }))))
+    fd.set('payments', JSON.stringify(payments.filter((p: any) => parseFloat(p.jumlah) > 0)))
+    start(async () => {
+      const r = await updatePenjualan(p.id, fd)
+      if (r?.error) { setErr(r.error); return }
+      showToast('Invoice diperbarui ✓')
+      onClose(); router.refresh()
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-end">
+      <div className="bg-white w-full rounded-t-3xl max-h-[93vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b flex-shrink-0">
+          <div>
+            <h2 className="text-base font-bold text-gray-900">Edit Invoice</h2>
+            <p className="text-xs text-violet-500 font-semibold">{p.nomor_invoice || p.no_faktur}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><X size={15} className="text-gray-500"/></button>
+        </div>
+        <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+          {err && <div className="flex items-center gap-2 px-3 py-2.5 bg-red-50 rounded-xl text-xs text-red-600"><AlertTriangle size={13}/>{err}</div>}
+
+          {/* Channel */}
+          <div>
+            <p className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Channel</p>
+            <div className="grid grid-cols-2 gap-2">
+              {CHANNELS.map(ch => (
+                <button key={ch.value} onClick={() => setChannel(ch.value)}
+                  className={`h-10 rounded-xl flex items-center gap-2 px-3 border-2 text-sm font-semibold transition-all ${channel===ch.value ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-100 text-gray-600'}`}>
+                  <span>{ch.icon}</span>{ch.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Items */}
+          <div>
+            <p className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Items</p>
+            <div className="flex gap-2 mb-2">
+              <input value={stInput} onChange={e => setStInput(e.target.value)}
+                onKeyDown={e => e.key==='Enter' && scanST()}
+                className="flex-1 h-10 px-3 bg-[#F2F2F7] rounded-xl text-sm focus:outline-none"
+                placeholder="Tambah ST baru…"/>
+              <button onClick={scanST} className="h-10 px-3 rounded-xl text-xs font-bold text-white"
+                style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>Add</button>
+            </div>
+            <div className="space-y-2">
+              {items.map((item: any, i: number) => (
+                <div key={i} className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl px-3 py-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-gray-800 truncate">{item.produk_nama}</p>
+                    <p className="text-[10px] text-gray-400">{item.shieldtag_kode||item.kode}</p>
+                  </div>
+                  <div className="relative w-32 flex-shrink-0">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">Rp</span>
+                    <input type="number" value={item.harga_jual}
+                      onChange={e => setItems((prev: any) => prev.map((it: any,j: number) => j===i ? {...it,harga_jual:e.target.value} : it))}
+                      className="w-full h-8 pl-6 pr-2 bg-[#F2F2F7] rounded-lg text-xs font-semibold focus:outline-none"/>
+                  </div>
+                  <button onClick={() => setItems((prev: any) => prev.filter((_: any,j: number) => j!==i))}
+                    className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
+                    <X size={11} className="text-red-400"/>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Customer */}
+          <div>
+            <p className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Customer</p>
+            {customer ? (
+              <div className="flex items-center gap-2 bg-emerald-50 rounded-xl px-3 py-2">
+                <p className="flex-1 text-sm font-semibold text-emerald-700">{customer.nama}</p>
+                <button onClick={() => setCustomer(null)}><X size={13} className="text-emerald-400"/></button>
+              </div>
+            ) : (
+              <>
+                <input value={custSearch} onChange={e => searchCust(e.target.value)}
+                  className="w-full h-11 px-3.5 bg-[#F2F2F7] rounded-xl text-sm focus:outline-none mb-2"
+                  placeholder="Cari customer…"/>
+                {custResults.map((c: any) => (
+                  <button key={c.id} onClick={() => { setCustomer(c); setCustSearch(''); setCustResults([]) }}
+                    className="w-full flex items-center gap-2 px-3 py-2 bg-white border border-gray-100 rounded-xl text-left mb-1">
+                    <p className="text-sm font-semibold text-gray-800">{c.nama}</p>
+                    {c.no_hp && <p className="text-xs text-gray-400 ml-auto">{c.no_hp}</p>}
+                  </button>
+                ))}
+              </>
+            )}
+          </div>
+
+          {/* Payments */}
+          <div>
+            <p className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Pembayaran</p>
+            <div className="space-y-2">
+              {payments.map((pay: any, i: number) => (
+                <div key={i} className="flex gap-2">
+                  <select value={pay.metode}
+                    onChange={e => setPayments((prev: any) => prev.map((p: any,j: number) => j===i ? {...p,metode:e.target.value} : p))}
+                    className="h-10 px-2 bg-[#F2F2F7] rounded-xl text-xs focus:outline-none w-28 flex-shrink-0">
+                    {METHODS.map(m => <option key={m} value={m}>{m.replace('_',' ')}</option>)}
+                  </select>
+                  <div className="relative flex-1">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">Rp</span>
+                    <input type="number" value={pay.jumlah}
+                      onChange={e => setPayments((prev: any) => prev.map((p: any,j: number) => j===i ? {...p,jumlah:e.target.value} : p))}
+                      className="w-full h-10 pl-7 pr-2 bg-[#F2F2F7] rounded-xl text-sm focus:outline-none"/>
+                  </div>
+                  {payments.length > 1 && (
+                    <button onClick={() => setPayments((prev: any) => prev.filter((_: any,j: number) => j!==i))}
+                      className="w-8 h-8 mt-1 rounded-lg bg-red-50 flex items-center justify-center">
+                      <X size={11} className="text-red-400"/>
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button onClick={() => setPayments((prev: any) => [...prev, {metode:'transfer',jumlah:''}])}
+                className="text-xs font-semibold text-violet-500 flex items-center gap-1">
+                <Plus size={11}/>Tambah metode
+              </button>
+            </div>
+            <div className={`text-xs font-bold mt-2 ${Math.abs(totalPaid-totalHJ) < 1 ? 'text-emerald-500' : 'text-red-500'}`}>
+              Total: {fmt(totalHJ)} | Terbayar: {fmt(totalPaid)}
+            </div>
+          </div>
+
+          {/* Catatan */}
+          <div>
+            <p className="text-[11px] font-semibold text-gray-500 uppercase mb-1.5">Catatan</p>
+            <input value={catatan} onChange={e => setCatatan(e.target.value)}
+              className="w-full h-11 px-3.5 bg-[#F2F2F7] rounded-xl text-sm focus:outline-none" placeholder="Opsional…"/>
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={onClose} className="flex-1 h-11 rounded-xl bg-gray-100 text-sm font-semibold text-gray-600">Batal</button>
+            <button onClick={submit} disabled={pend}
+              className="flex-[2] h-11 rounded-xl text-sm font-bold text-white disabled:opacity-40"
+              style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
+              {pend ? 'Menyimpan…' : 'Simpan Perubahan'}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
