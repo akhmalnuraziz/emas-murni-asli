@@ -672,16 +672,16 @@ function AddItemModal({ batchKode, batchNama, produkList, onClose, showToast }: 
       fd.set('nama_item', selectedProduk.nama)
       fd.set('produk_id', String(selectedProduk.id))
     }
-    showToast('Item ditambahkan ✓')
-    onClose()
     start(async () => {
       if (fotoAwal.length > 0) {
         const b64s = await toB64(fotoAwal)
         fd.set('fotos_b64', JSON.stringify(b64s))
       }
       const r = await createProduksi(fd)
-      if (r?.error) { showToast(r.error, false) }
-      else { router.refresh() }
+      if (r?.error) { setErr(r.error); return }
+      showToast('Item ditambahkan ✓')
+      onClose()
+      router.refresh()
     })
   }
 
@@ -1198,6 +1198,7 @@ export default function ProduksiClient({
     </div>
   )
 }
+
 
 
 
