@@ -217,15 +217,16 @@ function UpdateModal({ item, onClose, showToast }: {
       fd.set('fotos_sisa_serbuk_b64', JSON.stringify(await toB64(fSerbuk)))
       setUploading(false)
     }
+    // Optimistic: tutup modal & toast langsung, proses di background
+    showToast('Status disimpan ✓')
+    onClose()
     start(async () => {
       const r = await updateStatusProduksi(item.id, item.kode, fd)
       if (r?.requiresConfirmation) {
         setLossesConfirm({ pct: r.lossesPercent, total: r.totalLosses, fd })
         return
       }
-      if (r?.error) { setErr(r.error); return }
-      showToast('Status diperbarui ✓')
-      onClose()
+      if (r?.error) { showToast(r.error, false) }
     })
   }
 
@@ -668,11 +669,11 @@ function AddItemModal({ batchKode, batchNama, produkList, onClose, showToast }: 
       fd.set('nama_item', selectedProduk.nama)
       fd.set('produk_id', String(selectedProduk.id))
     }
+    showToast('Item ditambahkan ✓')
+    onClose()
     start(async () => {
       const r = await createProduksi(fd)
-      if (r?.error) { setErr(r.error); return }
-      showToast('Item produksi ditambahkan ✓')
-      onClose()
+      if (r?.error) { showToast(r.error, false) }
     })
   }
 
