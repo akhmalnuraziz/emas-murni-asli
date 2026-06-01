@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { uploadFotosToStorage } from '@/lib/foto-utils'
 import { revalidatePath } from 'next/cache'
 
 const PROD_PREFIX = 'PROD.GDCJ'
@@ -40,9 +41,9 @@ async function uploadBase64Fotos(supabase: any, b64Array: string[], prefix: stri
       const buffer = Buffer.from(base64Data, 'base64')
       const path = `produksi/${safe}/${Date.now()}_${i}.jpg`
       const { error } = await supabase.storage
-        .from('emas-fotos').upload(path, buffer, { contentType: 'image/jpeg', upsert: true })
+        .from('fotos').upload(path, buffer, { contentType: 'image/jpeg', upsert: true })
       if (!error) {
-        const { data } = supabase.storage.from('emas-fotos').getPublicUrl(path)
+        const { data } = supabase.storage.from('fotos').getPublicUrl(path)
         urls.push(data.publicUrl)
       }
     } catch {}
@@ -714,6 +715,7 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
