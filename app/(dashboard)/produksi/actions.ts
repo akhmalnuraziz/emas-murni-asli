@@ -1,7 +1,6 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { uploadFotosToStorage } from '@/lib/foto-utils'
 import { revalidatePath } from 'next/cache'
 
 const PROD_PREFIX = 'PROD.GDCJ'
@@ -715,6 +714,7 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
