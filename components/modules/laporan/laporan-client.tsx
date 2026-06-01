@@ -576,3 +576,4 @@ export default function LaporanClient({ batchList, cabangList, namaGudang }) {
     </div>
   )
 }
+
