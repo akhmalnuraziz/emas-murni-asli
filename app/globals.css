@@ -1,1 +1,52 @@
 @import "tailwindcss";
+
+/* ── Global Font & iOS-style Base ────────────────────────── */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  box-sizing: border-box;
+}
+
+html, body {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  background: #F2F2F7;
+  color: #111827;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* ── iOS-style touch target minimum ─────────────────────── */
+button, a, [role="button"] {
+  min-height: 44px;
+  cursor: pointer;
+}
+
+/* ── Prevent layout overflow on mobile ───────────────────── */
+.container, main, section {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* ── iOS-style scrollbar ─────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 0px;
+  height: 4px;
+}
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 99px; }
+
+/* ── Remove blue highlight on tap (iOS) ──────────────────── */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* ── Input & Select base ─────────────────────────────────── */
+input, select, textarea {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 15px;
+}
+
+/* ── Print styles ────────────────────────────────────────── */
+@media print {
+  nav, aside, header, .no-print { display: none !important; }
+  body { background: white !important; }
+  * { color: black !important; box-shadow: none !important; }
+}
