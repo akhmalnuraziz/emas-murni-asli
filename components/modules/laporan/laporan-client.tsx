@@ -140,7 +140,7 @@ function TabBatch({ batchList }) {
   const eff = b && s ? Math.round(s.totalBeratAkhir / parseFloat(b.timbangan_akhir||1) * 1000)/10 : 0
 
   return (
-    <div style={{ fontFamily:'"Plus Jakarta Sans","DM Sans",system-ui,sans-serif', background:iOS.bg, minHeight:'100vh', WebkitFontSmoothing:'antialiased' }}>
+    <div>
 
       {/* Batch selector */}
       <div style={{ padding:'16px 16px 0' }}>
@@ -462,7 +462,7 @@ function TabLabaRugi({ cabangList, namaGudang }) {
   }
 
   return (
-    <div style={{ fontFamily:'"Plus Jakarta Sans","DM Sans",system-ui,sans-serif', background:iOS.bg, minHeight:'100vh', WebkitFontSmoothing:'antialiased', paddingBottom:80 }}>
+    <div>
 
       {/* Filter */}
       <IOSSectionHeader title="Filter Periode" />
@@ -560,23 +560,19 @@ export default function LaporanClient({ batchList, cabangList, namaGudang }) {
   const [tab, setTab] = useState('batch')
 
   return (
-    <div style={{ fontFamily:'"Plus Jakarta Sans","DM Sans",system-ui,sans-serif', background:iOS.bg, minHeight:'100vh', WebkitFontSmoothing:'antialiased' }}>
-      {/* Sticky tab bar */}
-      <div style={{ background:'rgba(242,242,247,.85)', backdropFilter:'saturate(180%) blur(20px)', WebkitBackdropFilter:'saturate(180%) blur(20px)', position:'sticky', top:0, zIndex:50, borderBottom:`0.5px solid ${iOS.sepO}`, padding:'14px 16px 0' }}>
-        <p style={{ fontSize:34, fontWeight:700, color:iOS.label, letterSpacing:-0.5, lineHeight:1.1, marginBottom:12 }}>Laporan</p>
-        <div style={{ display:'flex', gap:0, background:iOS.fill3, borderRadius:9, padding:2, marginBottom:10 }}>
+    <div className="min-h-screen bg-[#F2F2F7] pb-20">
+      <div className="px-4 pt-4 pb-2">
+        <div style={{ display:'flex', background:iOS.fill3, borderRadius:9, padding:2 }}>
           {TABS.map(([k,l]) => (
             <button key={k} onClick={()=>setTab(k)}
-              style={{ flex:1, padding:'7px 4px', background:tab===k?'white':'transparent', border:'none', borderRadius:7, fontSize:13, fontWeight:tab===k?600:400, color:tab===k?iOS.label:iOS.label3, cursor:'pointer', fontFamily:'inherit', boxShadow:tab===k?'0 1px 3px rgba(0,0,0,.12)':'none', transition:'all .2s' }}>
+              style={{ flex:1, padding:'8px 4px', background:tab===k?'white':'transparent', border:'none', borderRadius:7, fontSize:13, fontWeight:tab===k?600:400, color:tab===k?iOS.label:iOS.label3, cursor:'pointer', fontFamily:'inherit', boxShadow:tab===k?'0 1px 3px rgba(0,0,0,.12)':'none', transition:'all .2s' }}>
               {l}
             </button>
           ))}
         </div>
       </div>
-
       {tab==='batch'    && <TabBatch batchList={batchList}/>}
       {tab==='labarugi' && <TabLabaRugi cabangList={cabangList} namaGudang={namaGudang}/>}
     </div>
   )
 }
-
