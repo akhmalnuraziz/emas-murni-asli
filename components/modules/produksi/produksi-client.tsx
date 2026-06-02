@@ -892,7 +892,7 @@ function ItemRow({ item, canManage, onUpdate, onEdit, showToast }: {
               }
               <span className="text-xs text-gray-300">×</span>
               <span className="text-sm font-semibold text-gray-600">{item.pcs_good} pcs</span>
-              <Pill status={item.status} />
+              <Pill status={item.current_status} />
             </div>
             <div className="flex items-center gap-3 mt-1 flex-wrap">
               <span className="text-xs text-gray-500">{fgr(item.total_gram)} gr</span>
