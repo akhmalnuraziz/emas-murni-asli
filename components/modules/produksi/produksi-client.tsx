@@ -45,16 +45,19 @@ async function toB64(files: File[]): Promise<string[]> {
     reader.onload = () => {
       const img = new Image()
       img.onload = () => {
-        let { width: w, height: h } = img
-        if (w > MAX) { h = Math.round(h * MAX / w); w = MAX }
-        if (h > MAX) { w = Math.round(w * MAX / h); h = MAX }
-        const cv = document.createElement('canvas'); cv.width = w; cv.height = h
-        cv.getContext('2d')!.drawImage(img, 0, 0, w, h)
-        res(cv.toDataURL('image/jpeg', QUALITY).split(',')[1])
+        try {
+          let { width: w, height: h } = img
+          if (w > MAX) { h = Math.round(h * MAX / w); w = MAX }
+          if (h > MAX) { w = Math.round(w * MAX / h); h = MAX }
+          const cv = document.createElement('canvas'); cv.width = w; cv.height = h
+          cv.getContext('2d')!.drawImage(img, 0, 0, w, h)
+          res(cv.toDataURL('image/jpeg', QUALITY).split(',')[1])
+        } catch (err) { rej(err) }
       }
+      img.onerror = () => rej(new Error('Gambar gagal diproses'))
       img.src = reader.result as string
     }
-    reader.onerror = () => rej(new Error('read failed'))
+    reader.onerror = () => rej(new Error('Gagal baca file'))
     reader.readAsDataURL(f)
   })))
 }
@@ -208,27 +211,35 @@ function UpdateModal({ item, onClose, showToast }: {
     const form = e.currentTarget as HTMLFormElement
     const fd = new FormData(form)
     fd.set('is_reject', isReject ? '1' : '0')
-    if (!isReject && fotos.length > 0) {
-      setUploading(true)
-      fd.set('fotos_b64', JSON.stringify(await toB64(fotos)))
+
+    // Proses foto DULU dengan error handling (jangan tutup modal kalau gagal)
+    try {
+      if (!isReject && fotos.length > 0) {
+        setUploading(true)
+        fd.set('fotos_b64', JSON.stringify(await toB64(fotos)))
+      }
+      if (hasSerbuk && fSerbuk.length > 0) {
+        setUploading(true)
+        fd.set('fotos_sisa_serbuk_b64', JSON.stringify(await toB64(fSerbuk)))
+      }
       setUploading(false)
-    }
-    if (hasSerbuk && fSerbuk.length > 0) {
-      setUploading(true)
-      fd.set('fotos_sisa_serbuk_b64', JSON.stringify(await toB64(fSerbuk)))
+    } catch (err: any) {
       setUploading(false)
+      setErr('Foto gagal diproses: ' + (err?.message || 'coba foto lain'))
+      return
     }
-    // Optimistic: tutup modal & toast langsung, proses di background
-    showToast('Status disimpan ✓')
-    onClose()
+
+    // Setelah foto siap, baru proses simpan
     start(async () => {
       const r = await updateStatusProduksi(item.id, item.kode, fd)
       if (r?.requiresConfirmation) {
         setLossesConfirm({ pct: r.lossesPercent, total: r.totalLosses, fd })
         return
       }
-      if (r?.error) { showToast(r.error, false) }
-      else { router.refresh() }
+      if (r?.error) { setErr(r.error); return }
+      showToast('Status disimpan ✓')
+      onClose()
+      router.refresh()
     })
   }
 
@@ -334,8 +345,19 @@ function UpdateModal({ item, onClose, showToast }: {
                   {fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto proses'}
                 </span>
                 <input type="file" accept="image/*" multiple className="hidden"
-                  onChange={e => setFotos(Array.from(e.target.files ?? []).slice(0, 10))} />
+                  onChange={e => setFotos(p => [...p, ...Array.from(e.target.files ?? [])].slice(0, 10))} />
               </label>
+              {fotos.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {fotos.map((f, fi) => (
+                    <div key={fi} className="relative">
+                      <img src={URL.createObjectURL(f)} alt="" className="w-14 h-14 rounded-xl object-cover border border-violet-200" />
+                      <button type="button" onClick={() => setFotos(p => p.filter((_, i) => i !== fi))}
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center shadow-md">×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </FL>
             {hasSerbuk && (
               <FL label="Foto Sisa Serbuk">
@@ -345,8 +367,19 @@ function UpdateModal({ item, onClose, showToast }: {
                     {fSerbuk.length > 0 ? `${fSerbuk.length} foto dipilih` : 'Foto sisa serbuk emas'}
                   </span>
                   <input type="file" accept="image/*" multiple className="hidden"
-                    onChange={e => setFSerbuk(Array.from(e.target.files ?? []).slice(0, 5))} />
+                    onChange={e => setFSerbuk(p => [...p, ...Array.from(e.target.files ?? [])].slice(0, 10))} />
                 </label>
+                {fSerbuk.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {fSerbuk.map((f, fi) => (
+                      <div key={fi} className="relative">
+                        <img src={URL.createObjectURL(f)} alt="" className="w-14 h-14 rounded-xl object-cover border border-violet-200" />
+                        <button type="button" onClick={() => setFSerbuk(p => p.filter((_, i) => i !== fi))}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center shadow-md">×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </FL>
             )}
           </>
@@ -1198,6 +1231,7 @@ export default function ProduksiClient({
     </div>
   )
 }
+
 
 
 
