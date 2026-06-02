@@ -100,13 +100,19 @@ export async function createProduksi(formData: FormData) {
   const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
   const fotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, kode) : []
 
+  const fotosSerbukRaw = formData.get('fotos_sisa_serbuk_b64') as string
+  const fotosSerbukB64 = fotosSerbukRaw ? JSON.parse(fotosSerbukRaw) : []
+  const fotoSerbukUrls = fotosSerbukB64.length > 0 ? await uploadBase64Fotos(supabase, fotosSerbukB64, kode + '_serbuk') : []
+
   await supabase.from('produksi_event').insert({
     produksi_item_id: produksi.id, tanggal: tanggalProduksi,
     status: statusAwal, total_gram: beratAwal, berat_sebelumnya: beratAwal,
     sisa_serbuk: sisaSerbuk, losses: 0,
     pcs_good_snapshot: pcs,
     catatan: formData.get('catatan') as string || null,
-    user_name: profile?.name || null, fotos: fotoUrls,
+    user_name: profile?.name || null,
+    fotos: fotoUrls,
+    fotos_sisa_serbuk: fotoSerbukUrls.length > 0 ? fotoSerbukUrls : null,
   })
 
   await updateBatchSisaSeharusnya(supabase, batchKode)
@@ -200,7 +206,7 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
   const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
   const fotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, `${produksiKode}-${statusBaru}`) : []
 
-  const fotosSerbukB64Raw = formData.get('fotos_serbuk_b64') as string
+  const fotosSerbukB64Raw = formData.get('fotos_sisa_serbuk_b64') as string
   const fotosSerbukB64 = fotosSerbukB64Raw ? JSON.parse(fotosSerbukB64Raw) : []
   const fotoSerbukUrls = fotosSerbukB64.length > 0 ? await uploadBase64Fotos(supabase, fotosSerbukB64, `${produksiKode}-serbuk`) : []
 
