@@ -15,7 +15,7 @@ const CHANNELS = [
   { value:'lainnya',   label:'Lainnya',      icon:'📦' },
 ]
 const METHODS = ['cash','transfer','qris','shopee_pay','gopay','ovo','dana','lainnya']
-const fmt = (n: number) => 'Rp ' + n.toLocaleString('id-ID')
+const fmt = (n: any) => 'Rp ' + (Number(n) || 0).toLocaleString('id-ID')
 
 function FL({ label, req, children }: any) {
   return (
@@ -115,7 +115,7 @@ function InvoicePrint({ data, onClose }: { data: any; onClose: () => void }) {
           {/* Total & Payment */}
           <div className="space-y-1 pt-1 border-t">
             <div className="flex justify-between text-sm font-black text-gray-900">
-              <span>TOTAL</span><span>{fmt(items.reduce((s: number, i: any) => s + i.harga_jual, 0))}</span>
+              <span>TOTAL</span><span>{fmt(items.reduce((s: number, i: any) => s + (Number(i.harga_jual) || 0), 0))}</span>
             </div>
             {payments.map((pay: any, i: number) => (
               <div key={i} className="flex justify-between text-xs text-gray-600">
@@ -832,3 +832,4 @@ function EditPenjualanModal({ data, onClose, showToast }: { data: any; onClose: 
     </div>
   )
 }
+
