@@ -128,8 +128,8 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
   const { data: produksi } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
   if (!produksi) return { error: 'Item produksi tidak ditemukan' }
 
-  const statusBaru = formData.get('status') as string
-  const totalGramBaru = parseFloat(formData.get('total_gram') as string)
+  const statusBaru = formData.get('status_baru') as string
+  const totalGramBaru = parseFloat(formData.get('total_gram_baru') as string)
   const tanggal = formData.get('tanggal') as string
   const sisaSerbuk = statusBaru === 'Pas Berat' ? parseFloat(formData.get('sisa_serbuk') as string || '0') : 0
 
@@ -714,6 +714,7 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
