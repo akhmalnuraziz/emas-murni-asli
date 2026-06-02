@@ -157,7 +157,7 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
 
     const fotosB64Raw = formData.get('fotos_b64') as string
     const fotosB64    = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
-    const fotoUrls    = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, \`\${produksiKode}-reject\`) : []
+    const fotoUrls    = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, `${produksiKode}-reject`) : []
 
     await supabase.from('produksi_event').insert({
       produksi_item_id: produksiId, tanggal, status: 'Reject',
