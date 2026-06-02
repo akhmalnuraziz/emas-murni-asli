@@ -118,8 +118,10 @@ export default async function InventoryPage() {
 
   return (
     <InventoryClient
+      namaGudang={namaGudang}
       gudangItems={gudangItems}
       cabangStok={cabangStok}
     />
   )
 }
+
