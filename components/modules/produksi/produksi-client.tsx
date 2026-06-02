@@ -200,6 +200,7 @@ function UpdateModal({ item, onClose, showToast }: {
   const [pend, start] = useTransition()
   const [uploading, setUploading] = useState(false)
   const [err, setErr] = useState('')
+  const [delEvConf, setDelEvConf] = useState<number|null>(null)
   // 3% losses confirm
   const [lossesConfirm, setLossesConfirm] = useState<{ pct: number; total: number; fd: FormData } | null>(null)
   const [reason, setReason] = useState('')
@@ -577,10 +578,24 @@ function EditModal({ item, onClose, showToast }: {
                   {isLast && !isEditing && (
                     delConf === ev.id ? (
                       <div className="flex gap-1">
-                        <button onClick={() => delEv(ev.id)} disabled={pend}
-                          className="px-2 h-7 text-[10px] font-bold rounded-xl bg-red-500 text-white">
-                          {pend ? '…' : 'Hapus'}
-                        </button>
+                        {delEvConf === ev.id ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-red-500 font-semibold">Hapus event ini?</span>
+                            <button onClick={() => delEv(ev.id)} disabled={pend}
+                              className="px-2 h-7 text-[10px] font-bold rounded-xl bg-red-500 text-white">
+                              {pend ? '…' : 'Ya'}
+                            </button>
+                            <button onClick={() => setDelEvConf(null)}
+                              className="px-2 h-7 text-[10px] font-semibold rounded-xl bg-gray-100 text-gray-600">
+                              Batal
+                            </button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setDelEvConf(ev.id)}
+                            className="px-2 h-7 text-[10px] font-bold rounded-xl bg-red-50 text-red-500">
+                            Hapus
+                          </button>
+                        )}
                         <button onClick={() => setDelConf(null)} className="px-2 h-7 text-[10px] font-semibold rounded-xl bg-gray-100 text-gray-600">Batal</button>
                       </div>
                     ) : (
