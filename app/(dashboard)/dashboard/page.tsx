@@ -52,7 +52,7 @@ export default async function DashboardPage() {
     supabase.from('produksi_item').select('*',{count:'exact',head:true}).eq('current_status','Siap Packing').eq('tanggal_produksi',today).is('voided_at',null),
     supabase.from('produksi_item').select('*',{count:'exact',head:true}).eq('current_status','Siap Packing').eq('tanggal_produksi',yesterday).is('voided_at',null),
     supabase.from('produksi_item').select('pcs_reject').is('voided_at',null).gt('pcs_reject',0),
-    supabase.from('packing').select('pcs_dipack').eq('status_surat','sudah_cetak').is('voided_at',null),
+    supabase.from('packing').select('pcs_dipack').is('voided_at',null),
     supabase.from('shieldtag').select('*',{count:'exact',head:true}).eq('status','Aktif').is('voided_at',null),
     supabase.from('shieldtag').select('*',{count:'exact',head:true}).eq('status','Terdistribusi').is('voided_at',null),
     supabase.from('shieldtag').select('*',{count:'exact',head:true}).eq('status','Terdistribusi').is('voided_at',null).lte('tgl_regis',yesterday),
