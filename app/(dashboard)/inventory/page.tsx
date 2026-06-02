@@ -22,7 +22,6 @@ export default async function InventoryPage() {
       ),
       shieldtag (kode, status, lokasi, tgl_regis, hpp, voided_at)
     `)
-    .eq('status_surat', 'sudah_cetak')
     .is('voided_at', null)
 
   // Agregasi per produk
