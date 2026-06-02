@@ -135,13 +135,63 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
   if (!produksi) return { error: 'Item produksi tidak ditemukan' }
 
   const statusBaru = formData.get('status_baru') as string
-  const totalGramBaru = parseFloat(formData.get('total_gram_baru') as string)
   const tanggal = formData.get('tanggal') as string
-  const sisaSerbuk = statusBaru === 'Pas Berat' ? parseFloat(formData.get('sisa_serbuk') as string || '0') : 0
+  const isReject = statusBaru === 'Reject'
 
   if (!statusBaru) return { error: 'Status wajib dipilih' }
-  if (!totalGramBaru || totalGramBaru <= 0) return { error: 'Total berat wajib diisi' }
   if (!tanggal) return { error: 'Tanggal wajib diisi' }
+
+  // ── REJECT PATH ─────────────────────────────────────────────────────────────
+  if (isReject) {
+    const pcsReject  = parseInt(formData.get('pcs_reject') as string)
+    const beratReject = parseFloat(formData.get('berat_reject') as string)
+    const pcsGoodNow  = produksi.pcs_good ?? produksi.pcs ?? 0
+    const beratNow    = parseFloat(String(produksi.total_gram ?? 0))
+
+    if (!pcsReject  || pcsReject  <= 0) return { error: 'PCS reject wajib diisi' }
+    if (!beratReject || beratReject <= 0) return { error: 'Berat reject wajib diisi' }
+    if (pcsReject > pcsGoodNow) return { error: `Reject (${pcsReject}) melebihi PCS good (${pcsGoodNow})` }
+
+    const newPcsGood   = pcsGoodNow - pcsReject
+    const newTotalGram = Math.max(0, beratNow - beratReject)
+
+    const fotosB64Raw = formData.get('fotos_b64') as string
+    const fotosB64    = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
+    const fotoUrls    = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, \`\${produksiKode}-reject\`) : []
+
+    await supabase.from('produksi_event').insert({
+      produksi_item_id: produksiId, tanggal, status: 'Reject',
+      total_gram: newTotalGram, berat_sebelumnya: beratNow,
+      sisa_serbuk: 0, losses: 0,
+      pcs_good_snapshot: newPcsGood,
+      pcs_reject_snapshot: pcsReject,
+      catatan: formData.get('catatan') as string || null,
+      user_name: profile?.name || null,
+      fotos: fotoUrls,
+    })
+
+    await supabase.from('produksi_item').update({
+      pcs_good: newPcsGood,
+      total_gram: newTotalGram,
+    }).eq('id', produksiId)
+
+    await supabase.from('audit_log').insert({
+      user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+      action: 'REJECT', module: 'PRODUKSI',
+      record_key: produksiKode, record_id: String(produksiId),
+      before_data: { pcs_good: pcsGoodNow, total_gram: beratNow },
+      after_data: { pcs_good: newPcsGood, pcs_reject: pcsReject, berat_reject: beratReject },
+    })
+
+    revalidatePath('/produksi')
+    return { success: true }
+  }
+  // ── END REJECT PATH ─────────────────────────────────────────────────────────
+
+  const totalGramBaru = parseFloat(formData.get('total_gram_baru') as string)
+  const sisaSerbuk = statusBaru === 'Pas Berat' ? parseFloat(formData.get('sisa_serbuk') as string || '0') : 0
+
+  if (!totalGramBaru || totalGramBaru <= 0) return { error: 'Total berat wajib diisi' }
 
   // ─── Guard: status non-Reject tidak boleh duplikat ─────────────────────────
   if (statusBaru !== 'Reject') {
