@@ -266,6 +266,8 @@ function EditModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;
 function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint}:{
   p:any;canManage:boolean;canDelete:boolean;onEdit:()=>void;onDelete:()=>void;onPrint:()=>void
 }){
+  const packingId = p.id
+  const [delConfId,setDelConfId] = useState<any>(null)
   const [lightbox,setLightbox]=useState<string|null>(null)
   const fotos=Array.isArray(p.fotos)?p.fotos:[]
   const stCount=p.shieldtag_count??0
@@ -279,7 +281,17 @@ function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint}:{
           {isPrinted&&<span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-emerald-700"style={{background:'rgba(34,197,94,0.1)'}}>✓ Cetak</span>}
           <button onClick={onPrint}className="w-7 h-7 rounded-xl bg-violet-50 text-violet-500 flex items-center justify-center hover:bg-violet-100"title="Print"><Printer size={12}/></button>
           {canManage&&<button onClick={onEdit}className="w-7 h-7 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-100"title="Edit"><Edit2 size={11}/></button>}
-          {canDelete&&<button onClick={onDelete}className="w-7 h-7 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100"title="Hapus"><Trash2 size={11}/></button>}
+          {canDelete&&(
+          delConfId===packingId ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-red-500 font-semibold whitespace-nowrap">Hapus packing?</span>
+              <button onClick={onDelete} className="px-2 h-7 text-[10px] font-bold rounded-xl bg-red-500 text-white">Ya</button>
+              <button onClick={()=>setDelConfId(null)} className="px-2 h-7 text-[10px] font-semibold rounded-xl bg-gray-100 text-gray-600">Batal</button>
+            </div>
+          ) : (
+            <button onClick={()=>setDelConfId(packingId)} className="w-7 h-7 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100" title="Hapus"><Trash2 size={11}/></button>
+          )
+        )}
         </div>
       </div>
       <div className="grid grid-cols-3 gap-2">
