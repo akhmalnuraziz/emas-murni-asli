@@ -48,10 +48,15 @@ export default async function InventoryPage() {
 
     const tags = (pk.shieldtag as any[]).filter(st => !st.voided_at)
     const stAktif = tags.filter(st => st.status === 'Aktif').length
+    // Pieces yang BELUM ber-shieldtag = pcs dipack - jumlah shieldtag terdaftar
+    const registered = tags.length
+    const pendingST  = Math.max(0, pk.pcs_dipack - registered)
+    // Stok fisik di gudang = Aktif (siap jual) + belum di-ST. Yang terjual/transit/di-cabang TIDAK dihitung.
+    const fisikGudang = stAktif + pendingST
 
-    produkMap[key].total_pcs  += pk.pcs_dipack
+    produkMap[key].total_pcs  += fisikGudang
     produkMap[key].st_aktif   += stAktif
-    produkMap[key].st_pending += pk.pcs_dipack - stAktif
+    produkMap[key].st_pending += pendingST
     produkMap[key].shieldtags.push(...tags.filter(st => st.status === 'Aktif').map(st => ({
       kode: st.kode,
       gramasi,
