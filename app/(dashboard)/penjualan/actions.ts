@@ -201,7 +201,8 @@ export async function updatePenjualan(id: number, formData: FormData) {
     catatan,
     harga_jual: totalHJ, total_harga_jual: totalHJ,
     hpp_total: totalHPP,
-    profit: totalHJ - totalHPP, total_profit: totalHJ - totalHPP,
+    profit: totalHJ - totalHPP - (totalHJ * mktpl_fee / 100),
+    total_profit: totalHJ - totalHPP - (totalHJ * mktpl_fee / 100),
   }).eq('id', id)
 
   // Replace items: delete old, insert new
