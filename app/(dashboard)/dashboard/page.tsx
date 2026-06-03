@@ -23,6 +23,7 @@ export default async function DashboardPage() {
     // Stok Gudang (packing cetak)
     { data: packingCetak },
     { count: stGudangAktif },
+    { data: allShieldtags },
     // Stok Cabang
     { count: stokCabang },
     // Stok Cabang kemarin (perbandingan)
@@ -54,6 +55,8 @@ export default async function DashboardPage() {
     supabase.from('produksi_item').select('pcs_reject').is('voided_at',null).gt('pcs_reject',0),
     supabase.from('packing').select('pcs_dipack').is('voided_at',null),
     supabase.from('shieldtag').select('*',{count:'exact',head:true}).eq('status','Aktif').is('voided_at',null),
+    // Semua shieldtag terdaftar (untuk hitung pending ST = dipack - terdaftar)
+    supabase.from('shieldtag').select('kode').is('voided_at',null),
     supabase.from('shieldtag').select('*',{count:'exact',head:true}).eq('status','Terdistribusi').is('voided_at',null),
     supabase.from('shieldtag').select('*',{count:'exact',head:true}).eq('status','Terdistribusi').is('voided_at',null).lte('tgl_regis',yesterday),
     supabase.from('mutasi').select('*',{count:'exact',head:true}).eq('status','transit'),
@@ -68,8 +71,11 @@ export default async function DashboardPage() {
   ])
 
   const namaGudang   = settingGudang?.value ?? 'Gudang CJ'
-  const stokGudangTotal = (packingCetak ?? []).reduce((s: number, p: any) => s + (p.pcs_dipack ?? 0), 0)
-  const stGudangPending = Math.max(0, stokGudangTotal - (stGudangAktif ?? 0))
+  // Stok fisik gudang = ST Aktif + pcs belum ber-ST. Terjual/transit/cabang tidak dihitung.
+  const totalDipack    = (packingCetak ?? []).reduce((s: number, p: any) => s + (p.pcs_dipack ?? 0), 0)
+  const totalRegistered = (allShieldtags ?? []).length
+  const stGudangPending = Math.max(0, totalDipack - totalRegistered)
+  const stokGudangTotal = (stGudangAktif ?? 0) + stGudangPending
   const totalRejectPcs  = (rejectData ?? []).reduce((s: number, i: any) => s + (i.pcs_reject ?? 0), 0)
   const totalBahanAktif = (batchAktifList ?? []).reduce((s: number, b: any) => s + parseFloat(b.timbangan_akhir ?? 0), 0)
   const totalBahanTidakAktif = (batchTidakAktifList ?? []).reduce((s: number, b: any) => s + parseFloat(b.timbangan_akhir ?? 0), 0)
