@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import ProduksiClient from '@/components/modules/produksi/produksi-client'
 
+// Never cache — must always reflect latest mutations from server actions
+export const dynamic = 'force-dynamic'
+
 export default async function ProduksiPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
