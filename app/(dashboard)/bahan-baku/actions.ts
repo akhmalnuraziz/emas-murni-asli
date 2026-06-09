@@ -39,12 +39,12 @@ async function uploadBase64Fotos(
       if (buffer.length === 0) return { urls, uploadError: `Foto ${i+1}: buffer kosong` }
       const path = `batch/${safe}/${Date.now()}_${i}.jpg`
       const { error: storageErr } = await supabase.storage
-        .from('emas-fotos')
+        .from('fotos')
         .upload(path, buffer, { contentType: 'image/jpeg', upsert: true })
       if (storageErr) {
         return { urls, uploadError: `Foto ${i+1} gagal upload: ${storageErr.message}` }
       }
-      const { data } = supabase.storage.from('emas-fotos').getPublicUrl(path)
+      const { data } = supabase.storage.from('fotos').getPublicUrl(path)
       urls.push(data.publicUrl)
     } catch (err: any) {
       return { urls, uploadError: `Foto ${i+1} error: ${err?.message ?? 'unknown'}` }
@@ -58,6 +58,8 @@ export async function createBatch(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat'].includes(profile?.role ?? ''))
+    return { error: 'Hanya Owner/Admin Pusat yang bisa membuat batch bahan baku' }
 
   const kodeInput = (formData.get('kode') as string)?.trim()
   const kode = kodeInput || await generateBatchCode(supabase)
@@ -79,9 +81,11 @@ export async function createBatch(formData: FormData) {
 
   const selisih    = beratPusat - beratGudang
   const catatan    = formData.get('catatan') as string
-  if (Math.abs(selisih) > 0.05 && !catatan?.trim()) {
-    return { error: 'Selisih berat melewati batas toleransi (>0.05gr) — catatan wajib diisi' }
-  }
+  const selisihPersen = beratGudang > 0 ? Math.abs(selisih) / beratGudang * 100 : 0
+  if (selisihPersen > 5)
+    return { error: `Selisih (${selisih.toFixed(3)}gr = ${selisihPersen.toFixed(2)}%) melebihi batas 5%. Periksa data timbangan.` }
+  if (Math.abs(selisih) > 0.05 && !catatan?.trim())
+    return { error: 'Selisih melebihi toleransi — catatan wajib diisi' }
 
   const hargaBeli     = parseFloat(formData.get('harga_beli') as string) || 0
   const biayaTbhRaw   = formData.get('biaya_tbh') as string
@@ -134,15 +138,18 @@ export async function updateBatch(batchId: number, batchKode: string, formData: 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat'].includes(profile?.role ?? ''))
+    return { error: 'Hanya Owner/Admin Pusat yang bisa update batch bahan baku' }
 
   const beratPusat  = parseFloat(formData.get('bahan_dari_pusat') as string)
   const beratGudang = parseFloat(formData.get('timbangan_akhir') as string)
   const selisih     = beratPusat - beratGudang
   const catatan     = formData.get('catatan') as string
-
-  if (Math.abs(selisih) > 0.05 && !catatan?.trim()) {
-    return { error: 'Selisih berat melewati batas toleransi — catatan wajib diisi' }
-  }
+  const selisihPct  = beratGudang > 0 ? Math.abs(selisih) / beratGudang * 100 : 0
+  if (selisihPct > 5)
+    return { error: `Selisih (${selisih.toFixed(3)}gr = ${selisihPct.toFixed(2)}%) melebihi batas 5%. Periksa data timbangan.` }
+  if (Math.abs(selisih) > 0.05 && !catatan?.trim())
+    return { error: 'Selisih melebihi toleransi — catatan wajib diisi' }
 
   const hargaBeli     = parseFloat(formData.get('harga_beli') as string) || 0
   const biayaTbhRaw   = formData.get('biaya_tbh') as string
@@ -220,7 +227,13 @@ export async function lockBatch(batchId: number, batchKode: string) {
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
 
-  await supabase.from('batch').update({ voided_at: new Date().toISOString(), void_reason: 'LOCKED_BY_USER' }).eq('id', batchId)
+  await supabase.from('batch').update({
+    status:      'terkunci',
+    locked_at:   new Date().toISOString(),
+    locked_by:   user.id,
+    lock_reason: 'LOCKED_BY_USER',
+  }).eq('id', batchId)
+
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'LOCK_BATCH', module: 'BAHAN_BAKU', record_key: batchKode, record_id: String(batchId),
@@ -236,7 +249,7 @@ export async function unlockBatch(batchId: number, batchKode: string) {
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
   if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
 
-  await supabase.from('batch').update({ voided_at: null, void_reason: null }).eq('id', batchId)
+  await supabase.from('batch').update({ status: 'aktif', locked_at: null, locked_by: null, lock_reason: null }).eq('id', batchId)
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'UNLOCK_BATCH', module: 'BAHAN_BAKU', record_key: batchKode, record_id: String(batchId),
@@ -267,6 +280,8 @@ export async function updateSisaFisik(formData: FormData) {
   }
 
   // Pakai RPC untuk bypass PostgREST schema cache issue
+  const catatanSisaFisik = formData.get('catatan_sisa_fisik') as string || null
+
   const { error } = await supabase.rpc('update_sisa_fisik', {
     p_id: batchId,
     p_sisa_fisik: sisaFisik,
@@ -274,6 +289,10 @@ export async function updateSisaFisik(formData: FormData) {
   })
 
   if (error) return { error: `DB error: ${error.message}` }
+
+  if (catatanSisaFisik !== null) {
+    await supabase.from('batch').update({ catatan_sisa_fisik: catatanSisaFisik || null }).eq('id', batchId)
+  }
 
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
@@ -284,4 +303,252 @@ export async function updateSisaFisik(formData: FormData) {
 
   revalidatePath('/bahan-baku')
   return { success: true, fotosCount: fotoUrls.length }
+}
+
+
+
+
+// ═══════════════════════════════════════════════════════════════════
+// PELEBURAN
+// ═══════════════════════════════════════════════════════════════════
+
+export async function createPeleburan(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+
+  const batchKode  = formData.get('batch_kode') as string
+  const tanggal    = formData.get('tanggal') as string
+  const jamMulai   = formData.get('jam_mulai') as string || null
+  const operator   = formData.get('operator') as string || null
+  const keterangan = formData.get('keterangan_serahkan') as string || null
+
+  if (!batchKode) return { error: 'Batch wajib dipilih' }
+  if (!tanggal)   return { error: 'Tanggal mulai wajib diisi' }
+  if (!jamMulai)  return { error: 'Jam mulai wajib diisi' }
+
+  // ── Parse sumber bahan ──────────────────────────────────────────────────
+  type SumberItem = {
+    tipe: 'batch_mentah' | 'sisa_peleburan' | 'reject_cutting'
+    ref_id: string | null
+    ref_label: string
+    gram_otomatis: number
+    gram_aktual: number
+  }
+  const sumberRaw  = formData.get('sumber_json') as string
+  const sumberList: SumberItem[] = sumberRaw ? JSON.parse(sumberRaw) : []
+
+  if (sumberList.length === 0) return { error: 'Minimal satu sumber bahan harus dipilih' }
+
+  const totalDikasih    = sumberList.reduce((s, x) => s + Number(x.gram_aktual), 0)
+  const sumberBatchGram = sumberList.filter(x => x.tipe === 'batch_mentah')
+                                    .reduce((s, x) => s + Number(x.gram_aktual), 0)
+
+  if (totalDikasih <= 0) return { error: 'Total bahan dikasih harus lebih dari 0' }
+
+  // Validasi: timbangan naik pada batch_mentah → wajib keterangan
+  if (sumberBatchGram > 0) {
+    const { data: batch } = await supabase.from('batch').select('sisa_bahan_seharusnya').eq('kode', batchKode).single()
+    const sisaTersedia = Number(batch?.sisa_bahan_seharusnya ?? 0)
+    if (sumberBatchGram > sisaTersedia && !keterangan)
+      return { error: `Timbangan naik ${(sumberBatchGram - sisaTersedia).toFixed(3)} gr dari sisa batch (${sisaTersedia.toFixed(3)} gr). Wajib isi Keterangan.` }
+  }
+
+  // ── Upload foto ──────────────────────────────────────────────────────────
+  const fotosRaw = formData.get('foto_serahkan_b64') as string
+  const fotosB64 = fotosRaw ? JSON.parse(fotosRaw) : []
+  const { urls: fotoUrls } = fotosB64.length > 0
+    ? await uploadBase64Fotos(supabase, fotosB64, batchKode + '_plb', [])
+    : { urls: [] as string[] }
+
+  // ── Generate kode ────────────────────────────────────────────────────────
+  const { count } = await supabase.from('peleburan').select('*', { count: 'exact', head: true })
+  const kode = `PLB.GDCJ/${String((count ?? 0) + 1).padStart(4, '0')}`
+
+  // ── Insert peleburan ─────────────────────────────────────────────────────
+  const { data, error } = await supabase.from('peleburan').insert({
+    kode, batch_kode: batchKode,
+    tanggal, jam_mulai: jamMulai,
+    dikasih_gram: totalDikasih,
+    sumber_batch_gram: sumberBatchGram,
+    diterima_gram: null,
+    operator, keterangan_serahkan: keterangan,
+    foto_serahkan: fotoUrls,
+    status: 'proses',
+    created_by: user.id,
+  }).select().single()
+
+  if (error) return { error: error.message }
+
+  // ── Insert sumber records ────────────────────────────────────────────────
+  if (sumberList.length > 0) {
+    await supabase.from('peleburan_sumber').insert(
+      sumberList.map(s => ({
+        peleburan_id: data.id,
+        tipe:         s.tipe,
+        ref_id:       s.ref_id,
+        ref_label:    s.ref_label,
+        gram_otomatis: s.gram_otomatis,
+        gram_aktual:   s.gram_aktual,
+      }))
+    )
+  }
+
+  // ── Update reject items → sudah_dilebur ──────────────────────────────────
+  const rejectIds = sumberList
+    .filter(s => s.tipe === 'reject_cutting' && s.ref_id)
+    .map(s => parseInt(s.ref_id!))
+  if (rejectIds.length > 0)
+    await supabase.from('produksi_item').update({ status_reject: 'sudah_dilebur' }).in('id', rejectIds)
+
+  await supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'CREATE', module: 'peleburan', record_key: kode, record_id: String(data.id),
+    after_data: { batch_kode: batchKode, dikasih: totalDikasih, sumber_count: sumberList.length, status: 'proses' },
+  })
+
+  revalidatePath('/bahan-baku')
+  revalidatePath('/produksi')
+  return { success: true, kode, id: data.id }
+}
+
+export async function selesaiLebur(id: number, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+
+  const diterima        = parseFloat(formData.get('diterima_gram') as string)
+  const tanggalTerima   = formData.get('tanggal_diterima') as string
+  const jamSelesai      = formData.get('jam_selesai') as string || null
+  const operatorTerima  = formData.get('operator_diterima') as string || null
+  const keteranganTrm   = formData.get('keterangan_diterima') as string || null
+
+  if (!diterima || diterima <= 0) return { error: 'Berat diterima wajib diisi' }
+  if (!tanggalTerima)             return { error: 'Tanggal diterima wajib diisi' }
+  if (!jamSelesai)                return { error: 'Jam selesai wajib diisi' }
+
+  const { data: plb } = await supabase.from('peleburan').select('dikasih_gram, kode').eq('id', id).single()
+  if (!plb) return { error: 'Peleburan tidak ditemukan' }
+  if (diterima > plb.dikasih_gram) return { error: 'Diterima tidak boleh melebihi dikasih' }
+
+  const fotosRaw  = formData.get('foto_diterima_b64') as string
+  const fotosB64  = fotosRaw ? JSON.parse(fotosRaw) : []
+  const { urls: fotoUrls } = fotosB64.length > 0
+    ? await uploadBase64Fotos(supabase, fotosB64, plb.kode + '_done', [])
+    : { urls: [] }
+
+  const { error } = await supabase.from('peleburan').update({
+    diterima_gram: diterima,
+    tanggal_diterima: tanggalTerima,
+    jam_selesai: jamSelesai,
+    operator_diterima: operatorTerima,
+    keterangan_diterima: keteranganTrm,
+    foto_diterima: fotoUrls,
+    status: 'selesai',
+  }).eq('id', id)
+
+  if (error) return { error: error.message }
+
+  await supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'EDIT', module: 'peleburan', record_key: plb.kode, record_id: String(id),
+    after_data: { diterima, losses: Number(plb.dikasih_gram) - diterima, status: 'selesai' },
+  })
+
+  revalidatePath('/bahan-baku')
+  revalidatePath('/produksi')
+  return { success: true }
+}
+
+export async function editPeleburan(id: number, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+
+  const dikasih   = parseFloat(formData.get('dikasih_gram') as string)
+  const tanggal   = formData.get('tanggal') as string
+  const jamMulai  = formData.get('jam_mulai') as string || null
+  const operator  = formData.get('operator') as string || null
+  const keterangan = formData.get('keterangan_serahkan') as string || null
+
+  if (!dikasih || dikasih <= 0) return { error: 'Berat diserahkan wajib diisi' }
+  if (!tanggal)                  return { error: 'Tanggal mulai wajib diisi' }
+  if (!jamMulai)                 return { error: 'Jam mulai wajib diisi' }
+
+  const { data: plb } = await supabase.from('peleburan').select('kode, dikasih_gram, batch_kode, diterima_gram').eq('id', id).single()
+  if (!plb) return { error: 'Peleburan tidak ditemukan' }
+  if (plb.diterima_gram && dikasih < plb.diterima_gram)
+    return { error: `Dikasih tidak boleh kurang dari diterima (${plb.diterima_gram} gr)` }
+
+  // Handle sisa bahan jika dikasih berubah
+  const selisih = dikasih - Number(plb.dikasih_gram)
+  if (selisih !== 0) {
+    const { data: batch } = await supabase.from('batch').select('sisa_bahan_seharusnya').eq('kode', plb.batch_kode).single()
+    const sisaBaru = Number(batch?.sisa_bahan_seharusnya ?? 0) - selisih
+    // Timbangan naik diizinkan — keterangan sudah divalidasi di client
+    await supabase.from('batch').update({ sisa_bahan_seharusnya: sisaBaru }).eq('kode', plb.batch_kode)
+  }
+
+  // Handle foto - keep existing + add new
+  const existingRaw = formData.get('existing_fotos') as string
+  const existing = existingRaw ? JSON.parse(existingRaw) : []
+  const newFotosRaw = formData.get('foto_serahkan_b64') as string
+  const newFotosB64 = newFotosRaw ? JSON.parse(newFotosRaw) : []
+  const { urls: fotoUrls } = newFotosB64.length > 0
+    ? await uploadBase64Fotos(supabase, newFotosB64, plb.kode + '_edit', existing)
+    : { urls: existing }
+
+  const { error } = await supabase.from('peleburan').update({
+    dikasih_gram: dikasih, tanggal, jam_mulai: jamMulai,
+    operator, keterangan_serahkan: keterangan,
+    foto_serahkan: fotoUrls,
+  }).eq('id', id)
+
+  if (error) return { error: error.message }
+
+  await supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'EDIT', module: 'peleburan', record_key: plb.kode, record_id: String(id),
+    before_data: { dikasih_gram: plb.dikasih_gram }, after_data: { dikasih_gram: dikasih },
+  })
+
+  revalidatePath('/bahan-baku')
+  return { success: true }
+}
+
+export async function voidPeleburan(id: number, reason: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+
+  // Cek tidak ada produksi item yang pakai peleburan ini
+  const { count } = await supabase.from('produksi_item')
+    .select('*', { count: 'exact', head: true })
+    .eq('peleburan_id', id).is('voided_at', null)
+  if ((count ?? 0) > 0) return { error: 'Tidak bisa void: ada item produksi yang menggunakan peleburan ini' }
+
+  const { data: plb } = await supabase.from('peleburan').select('kode').eq('id', id).single()
+  await supabase.from('peleburan').update({ voided_at: new Date().toISOString(), void_reason: reason }).eq('id', id)
+  await supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'VOID', module: 'peleburan', record_key: plb?.kode ?? '', record_id: String(id), reason,
+  })
+
+  revalidatePath('/bahan-baku')
+  revalidatePath('/produksi')
+  return { success: true }
+}
+
+export async function getPeleburanByBatch(batchKode: string) {
+  const supabase = await createClient()
+  const { data } = await supabase.from('peleburan')
+    .select('id, kode, tanggal, dikasih_gram, diterima_gram, losses_gram, operator, catatan, voided_at')
+    .eq('batch_kode', batchKode)
+    .is('voided_at', null)
+    .order('created_at', { ascending: false })
+  return data ?? []
 }
