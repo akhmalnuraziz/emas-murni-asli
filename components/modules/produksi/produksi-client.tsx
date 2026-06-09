@@ -409,7 +409,8 @@ const F = ({ label, req, children }: { label: string; req?: boolean; children: R
 function CreateModal({ batches, onClose, onSubmit, isPending, error }: {
   batches: any[]; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
 }) {
-  const [f, setF] = useState({ batch_kode: batches[0]?.kode ?? '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, operator: '', target_selesai: '' })
+  const nowTime = new Date().toTimeString().slice(0,5)
+  const [f, setF] = useState({ batch_kode: batches[0]?.kode ?? '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime, operator: '', target_selesai: '' })
   const [fotos, setFotos] = useState<File[]>([])
   const [up, setUp] = useState(false)
   const s = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
@@ -449,7 +450,10 @@ function CreateModal({ batches, onClose, onSubmit, isPending, error }: {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <F label="Tanggal Produksi" req><input name="tanggal_produksi" type="date" value={f.tanggal_produksi} onChange={e => s('tanggal_produksi', e.target.value)} className={inp} required /></F>
+            <div className="grid grid-cols-2 gap-3">
+            <F label="Tanggal Mulai" req><input name="tanggal_produksi" type="date" value={f.tanggal_produksi} onChange={e => s('tanggal_produksi', e.target.value)} className={inp} required /></F>
+            <F label="Jam Mulai" req><input name="jam_mulai" type="time" value={f.jam_mulai ?? ''} onChange={e => s('jam_mulai', e.target.value)} className={inp} required /></F>
+          </div>
             <F label="Target Selesai"><input name="target_selesai" type="date" value={f.target_selesai} onChange={e => s('target_selesai', e.target.value)} className={inp} /></F>
           </div>
           <F label="Operator / PIC"><input name="operator" value={f.operator} onChange={e => s('operator', e.target.value)} placeholder="Nama operator" className={inp} /></F>
@@ -498,7 +502,7 @@ function EditModal({ item, onClose, onSubmit, isPending, error }: {
           <F label="Nama / Label Batch"><input value={f.nama_item} onChange={e => s('nama_item', e.target.value)} placeholder="cth: LM REI 10GR BATCH 26" className={inp} /></F>
           <div className="grid grid-cols-2 gap-3">
             <F label="Nama Item"><input value={f.nama_item} onChange={e => s('nama_item', e.target.value)} placeholder="Nama produk (auto-generate dari gramasi)" className={inp} name="nama_item"/></F>
-            <F label="Gramasi" req><select value={f.gramasi} onChange={e => { s('gramasi', e.target.value); s('nama_item', `LM REI ${e.target.value}GR`) }} className={inp}>{GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} Gram</option>)}</select></F>
+            <F label="Pilih Gramasi Yang Ingin Di Produksi" req><select value={f.gramasi} onChange={e => { s('gramasi', e.target.value); s('nama_item', `LM REI ${e.target.value}GR`) }} className={inp}>{GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} Gram</option>)}</select></F>
             <F label="PCS" req><input type="number" min="1" value={f.pcs} onChange={e => s('pcs', e.target.value)} className={inp} /></F>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -561,13 +565,13 @@ function SelesaiCuttingModal({ item, onClose, onSubmit, isPending, error }: {
         </div>
         <form onSubmit={submit} className="px-5 pb-6 pt-4 space-y-4 overflow-y-auto flex-1">
           {/* Info Diserahkan */}
-          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+          <div className="px-4 py-3 rounded-2xl text-xs"
             style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.15)' }}>
-            <div className="text-xs">
-              <span className="text-gray-400">Diserahkan: </span>
-              <span className="font-bold text-violet-700">{fgr(serahGram)} gr</span>
-              {item.pcs ? <span className="text-gray-400 ml-2">· {item.pcs} PCS</span> : null}
-            </div>
+            <span className="text-gray-400">Diserahkan: </span>
+            <span className="font-bold text-violet-700">{fgr(serahGram)} gr</span>
+            <span className="text-gray-400 mx-1">·</span>
+            <span className="font-semibold text-gray-600">{item.gramasi}gr</span>
+            {item.pcs ? <><span className="text-gray-400 mx-1">·</span><span className="font-semibold text-gray-600">{item.pcs} PCS</span></> : null}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -712,8 +716,12 @@ function SerahStageModal({ item, tahap, onClose, onSubmit, isPending, error }: {
         <form onSubmit={submit} className="px-5 pb-6 pt-4 space-y-4 overflow-y-auto flex-1">
           {/* Info dari tahap sebelumnya */}
           <div className="px-4 py-3 rounded-2xl text-xs" style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.15)'}}>
-            <p className="text-[9px] font-bold text-violet-500 uppercase mb-1">Data dari tahap sebelumnya</p>
-            <p className="font-bold text-gray-700">{serahGram.toFixed(3)} gr · {serahPcs} PCS</p>
+            <p className="text-[9px] font-bold text-violet-500 uppercase mb-2">Data yang akan diserahkan</p>
+            <div className="flex flex-wrap gap-3">
+              <div><p className="text-gray-400 text-[10px]">Total Berat</p><p className="font-bold text-violet-700">{serahGram.toFixed(3)} gr</p></div>
+              <div><p className="text-gray-400 text-[10px]">Gramasi</p><p className="font-bold text-gray-700">{item.gramasi} gr</p></div>
+              <div><p className="text-gray-400 text-[10px]">Jumlah PCS</p><p className="font-bold text-gray-700">{serahPcs > 0 ? `${serahPcs} PCS` : '—'}</p></div>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -807,9 +815,12 @@ function TerimaStageModal({ item, tahap, handoverId, onClose, onSubmit, isPendin
         <form onSubmit={submit} className="px-5 pb-6 pt-4 space-y-4 overflow-y-auto flex-1">
           {/* Info diserahkan */}
           <div className="px-4 py-3 rounded-2xl text-xs" style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.15)'}}>
-            <span className="text-gray-400">Diserahkan: </span>
-            <span className="font-bold text-violet-700">{Number(serahGram).toFixed(3)} gr</span>
-            {(currentH?.serah_pcs ?? item.pcs_good) && <span className="text-gray-400 ml-2">· {currentH?.serah_pcs ?? item.pcs_good} PCS</span>}
+            <p className="text-[9px] font-bold text-violet-500 uppercase mb-2">Diserahkan</p>
+            <div className="flex flex-wrap gap-3">
+              <div><p className="text-gray-400 text-[10px]">Total Berat</p><p className="font-bold text-violet-700">{Number(serahGram).toFixed(3)} gr</p></div>
+              <div><p className="text-gray-400 text-[10px]">Gramasi</p><p className="font-bold text-gray-700">{item.gramasi} gr</p></div>
+              {(currentH?.serah_pcs ?? item.pcs_good ?? item.pcs) ? <div><p className="text-gray-400 text-[10px]">Jumlah PCS</p><p className="font-bold text-gray-700">{currentH?.serah_pcs ?? item.pcs_good ?? item.pcs} PCS</p></div> : null}
+            </div>
           </div>
 
           <div>
