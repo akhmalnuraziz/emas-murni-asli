@@ -10,7 +10,8 @@ import {
 import { cn, formatDate } from '@/lib/utils'
 import {
   createProduksi, updateStatusProduksi, editProduksi, selesaiCutting,
-  inputReject, leburReject, deleteProduksi, updateSisaFisikBatch
+  inputReject, leburReject, deleteProduksi, updateSisaFisikBatch,
+  serahStageProduksi, terimaStageProduksi, voidStageHandover
 } from '@/app/(dashboard)/produksi/actions'
 import type { UserRole } from '@/lib/types/database'
 
@@ -661,6 +662,240 @@ function SelesaiCuttingModal({ item, onClose, onSubmit, isPending, error }: {
   )
 }
 
+
+// ─── Serah Stage Modal ────────────────────────────────────────────────────────
+function SerahStageModal({ item, tahap, onClose, onSubmit, isPending, error }: {
+  item: any; tahap: string; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
+}) {
+  const [fotos, setFotos] = useState<File[]>([])
+  const [uploading, setUploading] = useState(false)
+  const tahapLabel: Record<string,string> = { pas_berat: 'Pas Berat', annealing: 'Annealing', siap_packing: 'Siap Packing' }
+  const label = tahapLabel[tahap] ?? tahap
+
+  // Data serah from previous stage
+  const handovers: any[] = Array.isArray(item.stage_handover) ? item.stage_handover.filter((h:any)=>!h.voided_at) : []
+  const prevTahapMap: Record<string,string> = { annealing: 'pas_berat', siap_packing: 'annealing' }
+  let serahGram = 0, serahPcs = item.pcs_good ?? item.pcs ?? 0
+  if (tahap === 'pas_berat') {
+    serahGram = Number(item.terima_gram ?? item.total_gram ?? 0)
+    serahPcs  = item.pcs_good ?? item.pcs ?? 0
+  } else {
+    const prevH = handovers.find((h:any) => h.tahap === prevTahapMap[tahap] && h.status === 'selesai')
+    serahGram = Number(prevH?.terima_gram ?? item.total_gram ?? 0)
+    serahPcs  = prevH?.terima_pcs ?? item.pcs_good ?? item.pcs ?? 0
+  }
+
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const formEl = e.currentTarget
+    setUploading(true)
+    try {
+      const b64s = fotos.length > 0 ? await filesToBase64(fotos) : []
+      const fd = new FormData(formEl)
+      fd.set('fotos_b64', JSON.stringify(b64s))
+      onSubmit(fd)
+    } finally { setUploading(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)' }}>
+      <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[88vh] flex flex-col"
+        style={{ boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }}>
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0 border-b border-gray-100">
+          <div>
+            <h2 className="text-base font-bold text-gray-900">→ Serah ke {label}</h2>
+            <p className="text-xs text-violet-500 font-semibold mt-0.5">{item.kode} — {item.nama_item}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><X size={14}/></button>
+        </div>
+        <form onSubmit={submit} className="px-5 pb-6 pt-4 space-y-4 overflow-y-auto flex-1">
+          {/* Info dari tahap sebelumnya */}
+          <div className="px-4 py-3 rounded-2xl text-xs" style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.15)'}}>
+            <p className="text-[9px] font-bold text-violet-500 uppercase mb-1">Data dari tahap sebelumnya</p>
+            <p className="font-bold text-gray-700">{serahGram.toFixed(3)} gr · {serahPcs} PCS</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Tanggal Serah *</label>
+              <input name="serah_tanggal" type="date" defaultValue={new Date().toISOString().split('T')[0]} className={inp} required/>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Jam Serah</label>
+              <input name="serah_jam" type="time" className={inp}/>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Operator</label>
+            <input name="serah_operator" type="text" placeholder="Nama operator (opsional)" className={inp}/>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Catatan</label>
+            <input name="serah_catatan" type="text" placeholder="Opsional" className={inp}/>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Foto</label>
+            <label className="flex items-center gap-2 h-11 px-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-violet-50 transition-colors border border-gray-200">
+              <Camera size={14} className="text-gray-400 flex-shrink-0"/>
+              <span className="text-xs text-gray-400">{fotos.length > 0 ? `${fotos.length} foto` : 'Tambah foto (opsional)'}</span>
+              <input type="file" accept="image/*" multiple className="hidden" onChange={e=>setFotos(p=>[...p,...Array.from(e.target.files??[])].slice(0,5))}/>
+            </label>
+          </div>
+          {error && <div className="flex items-center gap-2 px-3 py-2.5 bg-red-50 rounded-2xl text-xs text-red-600 border border-red-100"><AlertTriangle size={13}/><span>{error}</span></div>}
+          <div className="flex gap-3">
+            <button type="button" onClick={onClose} className="flex-1 h-11 rounded-2xl bg-gray-100 text-sm font-semibold text-gray-600">Batal</button>
+            <button type="submit" disabled={isPending||uploading}
+              className="flex-1 h-11 rounded-2xl text-sm font-bold text-white disabled:opacity-50 flex items-center justify-center gap-2"
+              style={{background:'linear-gradient(135deg,#F97316,#EA580C)'}}>
+              {(isPending||uploading)&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
+              {uploading?'Upload...':isPending?'Menyimpan...':'Konfirmasi Serah'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Terima Stage Modal ───────────────────────────────────────────────────────
+function TerimaStageModal({ item, tahap, handoverId, onClose, onSubmit, isPending, error }: {
+  item: any; tahap: string; handoverId: number; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
+}) {
+  const [fotos, setFotos] = useState<File[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [adaReject, setAdaReject] = useState(false)
+  const tahapLabel: Record<string,string> = { pas_berat: 'Pas Berat', annealing: 'Annealing', siap_packing: 'Siap Packing' }
+  const label = tahapLabel[tahap] ?? tahap
+  const isPasBerat = tahap === 'pas_berat'
+
+  // Ambil berat serah dari handover
+  const handovers: any[] = Array.isArray(item.stage_handover) ? item.stage_handover.filter((h:any)=>!h.voided_at) : []
+  const currentH = handovers.find((h:any) => h.tahap === tahap)
+  const serahGram = currentH?.serah_gram ?? (tahap==='pas_berat' ? item.terima_gram : item.total_gram) ?? 0
+
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const formEl = e.currentTarget
+    setUploading(true)
+    try {
+      const b64s = fotos.length > 0 ? await filesToBase64(fotos) : []
+      const fd = new FormData(formEl)
+      fd.set('fotos_b64', JSON.stringify(b64s))
+      // If handoverId is 0 (old item without serah), create serah+terima in one call
+      // by adding serah data to the form
+      if (handoverId === 0) {
+        fd.set('create_serah_first', '1')
+        fd.set('serah_gram', String(serahGram))
+        fd.set('serah_pcs', String(item.pcs_good ?? item.pcs ?? 0))
+      }
+      onSubmit(fd)
+    } finally { setUploading(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)' }}>
+      <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[92vh] flex flex-col"
+        style={{ boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }}>
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0 border-b border-gray-100">
+          <div>
+            <h2 className="text-base font-bold text-gray-900">✓ Konfirmasi Terima {label}</h2>
+            <p className="text-xs text-violet-500 font-semibold mt-0.5">{item.kode} — {item.nama_item}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><X size={14}/></button>
+        </div>
+        <form onSubmit={submit} className="px-5 pb-6 pt-4 space-y-4 overflow-y-auto flex-1">
+          {/* Info diserahkan */}
+          <div className="px-4 py-3 rounded-2xl text-xs" style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.15)'}}>
+            <span className="text-gray-400">Diserahkan: </span>
+            <span className="font-bold text-violet-700">{Number(serahGram).toFixed(3)} gr</span>
+            {(currentH?.serah_pcs ?? item.pcs_good) && <span className="text-gray-400 ml-2">· {currentH?.serah_pcs ?? item.pcs_good} PCS</span>}
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Total Berat Setelah Diproses (gr) *</label>
+            <input name="terima_gram" type="number" step="0.001" placeholder={`Max ${Number(serahGram).toFixed(3)} gr`} className={inp} required/>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Tanggal Terima *</label>
+              <input name="terima_tanggal" type="date" defaultValue={new Date().toISOString().split('T')[0]} className={inp} required/>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Jam Terima *</label>
+              <input name="terima_jam" type="time" className={inp} required/>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">
+              PCS Berhasil <span className="text-gray-400 font-normal">(opsional)</span>
+            </label>
+            <input name="terima_pcs" type="number" min="1" placeholder="Isi jika sudah dihitung" className={inp}/>
+          </div>
+
+          {/* Sisa Serbuk — hanya Pas Berat */}
+          {isPasBerat && (
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Sisa Serbuk (gr)</label>
+              <input name="sisa_serbuk" type="number" step="0.001" defaultValue="0" className={inp}/>
+            </div>
+          )}
+
+          {/* Reject toggle */}
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" checked={adaReject} onChange={e=>setAdaReject(e.target.checked)} className="w-4 h-4 rounded accent-red-500"/>
+              <span className="text-xs font-semibold text-gray-600">Ada Reject</span>
+            </label>
+            {adaReject && (
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Berat Reject (gr)</label>
+                  <input name="reject_gram" type="number" step="0.001" defaultValue="0" className={inp}/>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1.5 block">PCS Reject</label>
+                  <input name="reject_pcs" type="number" min="0" defaultValue="0" className={inp}/>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">
+              Catatan <span className="text-gray-400 font-normal">(alasan losses, kondisi, dll)</span>
+            </label>
+            <input name="terima_catatan" type="text" placeholder="Opsional" className={inp}/>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Foto Bukti</label>
+            <label className="flex items-center gap-2 h-11 px-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-violet-50 transition-colors border border-gray-200">
+              <Camera size={14} className="text-gray-400 flex-shrink-0"/>
+              <span className="text-xs text-gray-400">{fotos.length > 0 ? `${fotos.length} foto` : 'Tambah foto (opsional)'}</span>
+              <input type="file" accept="image/*" multiple className="hidden" onChange={e=>setFotos(p=>[...p,...Array.from(e.target.files??[])].slice(0,5))}/>
+            </label>
+          </div>
+
+          {error && <div className="flex items-center gap-2 px-3 py-2.5 bg-red-50 rounded-2xl text-xs text-red-600 border border-red-100"><AlertTriangle size={13}/><span>{error}</span></div>}
+
+          <div className="flex gap-3">
+            <button type="button" onClick={onClose} className="flex-1 h-11 rounded-2xl bg-gray-100 text-sm font-semibold text-gray-600">Batal</button>
+            <button type="submit" disabled={isPending||uploading}
+              className="flex-1 h-11 rounded-2xl text-sm font-bold text-white disabled:opacity-50 flex items-center justify-center gap-2"
+              style={{background:'linear-gradient(135deg,#059669,#047857)'}}>
+              {(isPending||uploading)&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
+              {uploading?'Upload...':isPending?'Menyimpan...':'Konfirmasi Diterima'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ─── Update Status Modal ───────────────────────────────────────────────────────
 function UpdateModal({ item, onClose, onSubmit, isPending, error }: {
   item: any; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
@@ -804,7 +1039,9 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
   const [search,       setSearch]    = useState('')
   const [tab,          setTab]       = useState('Semua')
   const [exp,          setExp]       = useState<number | null>(null)
-  const [modal,        setModal]     = useState<'create'|'edit'|'update'|'delete'|'cuttingTerima'|null>(null)
+  const [modal,        setModal]     = useState<'create'|'edit'|'update'|'delete'|'cuttingTerima'|'serahStage'|'terimaStage'|null>(null)
+  const [activeTahap,  setActiveTahap]  = useState<string>('')
+  const [activeHandoverId, setActiveHandoverId] = useState<number|null>(null)
   const [active,       setActive]    = useState<any | null>(null)
   const [err,          setErr]       = useState('')
   const [toast,        setToast]     = useState<{ msg: string; ok: boolean } | null>(null)
@@ -854,10 +1091,14 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
   const tabs = ['Semua', ...STATUS_FLOW, 'Sudah Packing', 'Reject']
   const visible = filtered.slice(0, visibleCount)
 
-  function openModal(type: 'create'|'edit'|'update'|'delete'|'cuttingTerima', item?: any) { setActive(item ?? null); setErr(''); setModal(type) }
+  function openModal(type: 'create'|'edit'|'update'|'delete'|'cuttingTerima'|'serahStage'|'terimaStage', item?: any) { setActive(item ?? null); setErr(''); setModal(type) }
   function handleCreate(fd: FormData) { setErr(''); startTransition(async () => { const r = await createProduksi(fd); if (r?.error) { setErr(r.error); return }; showToast(`✅ ${r?.kode} berhasil dibuat`); setModal(null) }) }
   function handleEdit(fd: FormData)   { if (!active) return; setErr(''); startTransition(async () => { const r = await editProduksi(active.id, active.kode, fd); if (r?.error) { setErr(r.error); return }; showToast('✅ Data diperbarui'); setModal(null) }) }
   function handleSelesaiCutting(fd: FormData) { if (!active) return; setErr(''); startTransition(async () => { const r = await selesaiCutting(active.id, active.kode, fd); if (r?.error) { setErr(r.error); return }; showToast('✅ Cutting diterima'); setModal(null) }) }
+  function handleSerahStage(fd: FormData) { if (!active) return; setErr(''); startTransition(async () => { const r = await serahStageProduksi(active.id, active.kode, activeTahap, fd); if (r?.error) { setErr(r.error); return }; showToast(`✅ Diserahkan ke ${activeTahap.replace('_',' ')}`); setModal(null) }) }
+  function handleTerimaStage(fd: FormData) { if (!active || !activeHandoverId) return; setErr(''); startTransition(async () => { const r = await terimaStageProduksi(activeHandoverId, active.id, active.kode, activeTahap, fd); if (r?.error) { setErr(r.error); return }; showToast(`✅ Terima ${activeTahap.replace('_',' ')} berhasil`); setModal(null) }) }
+  function openSerahStage(item: any, tahap: string) { setActive(item); setActiveTahap(tahap); setErr(''); setModal('serahStage') }
+  function openTerimaStage(item: any, tahap: string, handoverId: number) { setActive(item); setActiveTahap(tahap); setActiveHandoverId(handoverId); setErr(''); setModal('terimaStage') }
   function handleUpdate(fd: FormData) {
     if (!active) return; setErr('')
     const isReject = fd.get('is_reject') === '1'
@@ -1000,22 +1241,96 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                       </div>
                       {/* Actions */}
                       <div className="flex items-center gap-1.5 flex-shrink-0 pt-0.5">
-                        {/* Diterima Cutting — hanya saat proses cutting */}
-                        {canEdit && item.current_status === 'Cutting' && item.status_cutting === 'proses' && (
-                          <button onClick={() => openModal('cuttingTerima', item)}
-                            className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 transition-all hover:scale-105"
-                            style={{ background: 'rgba(34,197,94,0.12)', color: '#16A34A' }}>
-                            <Check size={11} /> Diterima
-                          </button>
-                        )}
-                        {/* Update — hanya setelah cutting selesai */}
-                        {canEdit && STATUS_NEXT[item.current_status] !== undefined && (item.current_status !== 'Cutting' || item.status_cutting === 'selesai') && (
-                          <button onClick={() => openModal('update', item)}
-                            className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 transition-all hover:scale-105"
-                            style={{ background: 'rgba(139,92,246,0.1)', color: '#7C3AED' }}>
-                            <Plus size={11} /> Update
-                          </button>
-                        )}
+                        {/* Stage-aware action buttons */}
+                        {canEdit && (() => {
+                          const handovers: any[] = Array.isArray(item.stage_handover) ? item.stage_handover.filter((h:any) => !h.voided_at) : []
+                          const pbH = handovers.find((h:any) => h.tahap === 'pas_berat')
+                          const annH = handovers.find((h:any) => h.tahap === 'annealing')
+                          const spH = handovers.find((h:any) => h.tahap === 'siap_packing')
+                          const s = item.current_status
+                          
+                          // Cutting: Diterima button
+                          if (s === 'Cutting' && item.status_cutting === 'proses')
+                            return <button onClick={() => openModal('cuttingTerima', item)}
+                              className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all"
+                              style={{ background: 'rgba(34,197,94,0.12)', color: '#16A34A' }}>
+                              <Check size={11} /> Diterima
+                            </button>
+
+                          // Cutting selesai → Serah Pas Berat
+                          if (s === 'Cutting' && item.status_cutting === 'selesai' && !pbH)
+                            return <button onClick={() => openSerahStage(item, 'pas_berat')}
+                              className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all"
+                              style={{ background: 'rgba(249,115,22,0.12)', color: '#EA580C' }}>
+                              <Plus size={11} /> Pas Berat
+                            </button>
+
+                          // Pas Berat: Diterima
+                          if (s === 'Pas Berat' && pbH?.status === 'proses')
+                            return <button onClick={() => openTerimaStage(item, 'pas_berat', pbH.id)}
+                              className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all"
+                              style={{ background: 'rgba(34,197,94,0.12)', color: '#16A34A' }}>
+                              <Check size={11} /> Diterima
+                            </button>
+
+                          // Pas Berat tidak ada handover (item lama) → bisa input terima
+                          if (s === 'Pas Berat' && !pbH)
+                            return <button onClick={() => openTerimaStage(item, 'pas_berat', 0)}
+                              className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all"
+                              style={{ background: 'rgba(34,197,94,0.12)', color: '#16A34A' }}>
+                              <Check size={11} /> Input Terima
+                            </button>
+
+                          // Pas Berat selesai → Serah Annealing
+                          if (s === 'Pas Berat' && pbH?.status === 'selesai' && !annH)
+                            return <button onClick={() => openSerahStage(item, 'annealing')}
+                              className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all"
+                              style={{ background: 'rgba(234,179,8,0.12)', color: '#CA8A04' }}>
+                              <Plus size={11} /> Annealing
+                            </button>
+
+                          // Annealing: Diterima
+                          if (s === 'Annealing' && annH?.status === 'proses')
+                            return <button onClick={() => openTerimaStage(item, 'annealing', annH.id)}
+                              className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all"
+                              style={{ background: 'rgba(34,197,94,0.12)', color: '#16A34A' }}>
+                              <Check size={11} /> Diterima
+                            </button>
+
+                          // Annealing tidak ada handover (item lama) → input terima
+                          if (s === 'Annealing' && !annH)
+                            return <button onClick={() => openTerimaStage(item, 'annealing', 0)}
+                              className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all"
+                              style={{ background: 'rgba(34,197,94,0.12)', color: '#16A34A' }}>
+                              <Check size={11} /> Input Terima
+                            </button>
+
+                          // Annealing selesai → Serah Siap Packing
+                          if (s === 'Annealing' && annH?.status === 'selesai' && !spH)
+                            return <button onClick={() => openSerahStage(item, 'siap_packing')}
+                              className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all"
+                              style={{ background: 'rgba(139,92,246,0.12)', color: '#7C3AED' }}>
+                              <Plus size={11} /> Siap Packing
+                            </button>
+
+                          // Siap Packing: Diterima
+                          if (s === 'Siap Packing' && spH?.status === 'proses')
+                            return <button onClick={() => openTerimaStage(item, 'siap_packing', spH.id)}
+                              className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all"
+                              style={{ background: 'rgba(34,197,94,0.12)', color: '#16A34A' }}>
+                              <Check size={11} /> Diterima
+                            </button>
+
+                          // Siap Packing tidak ada handover (item lama) → input terima
+                          if (s === 'Siap Packing' && !spH)
+                            return <button onClick={() => openTerimaStage(item, 'siap_packing', 0)}
+                              className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all"
+                              style={{ background: 'rgba(34,197,94,0.12)', color: '#16A34A' }}>
+                              <Check size={11} /> Input Terima
+                            </button>
+
+                          return null
+                        })()}
                         {canEdit && (
                           <button onClick={() => openModal('edit', item)}
                             className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-105"
@@ -1145,6 +1460,48 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                           </div>
                         )
                       })()}
+
+                      {/* Stage Handover Timeline */}
+                      {(() => {
+                        const handovers: any[] = Array.isArray(item.stage_handover) ? item.stage_handover.filter((h:any)=>!h.voided_at).sort((a:any,b:any)=>['pas_berat','annealing','siap_packing'].indexOf(a.tahap)-['pas_berat','annealing','siap_packing'].indexOf(b.tahap)) : []
+                        if (handovers.length === 0) return null
+                        const tahapLabel: Record<string,string> = {pas_berat:'Pas Berat',annealing:'Annealing',siap_packing:'Siap Packing'}
+                        const tahapColor: Record<string,string> = {pas_berat:'#F97316',annealing:'#EAB308',siap_packing:'#8B5CF6'}
+                        return (
+                          <div className="rounded-xl overflow-hidden border border-violet-100">
+                            <div className="px-3 py-2 text-[9px] font-bold text-violet-600 uppercase tracking-wide" style={{background:'rgba(139,92,246,0.05)'}}>
+                              ⛓ Alur Serah-Terima
+                            </div>
+                            {handovers.map((h:any) => (
+                              <div key={h.id} className="px-3 py-3 border-t" style={{borderColor:'rgba(139,92,246,0.07)'}}>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{background:tahapColor[h.tahap]}}>{tahapLabel[h.tahap]}</span>
+                                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${h.status==='selesai'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>{h.status==='selesai'?'✓ Selesai':'⏳ Proses'}</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div className="rounded-lg p-2 text-xs" style={{background:'rgba(59,130,246,0.05)'}}>
+                                    <p className="text-[9px] font-bold text-blue-400 uppercase mb-1">📤 Diserahkan</p>
+                                    <p className="font-semibold text-gray-700">{h.serah_gram ? `${parseFloat(h.serah_gram).toFixed(3)} gr` : '—'} · {h.serah_pcs ?? '—'} PCS</p>
+                                    {h.serah_tanggal && <p className="text-gray-400 mt-0.5">{new Date(h.serah_tanggal).toLocaleDateString('id-ID')}{h.serah_jam ? ` ${String(h.serah_jam).slice(0,5)}` : ''}</p>}
+                                    {h.serah_catatan && <p className="text-gray-400 italic text-[10px]">{h.serah_catatan}</p>}
+                                  </div>
+                                  <div className="rounded-lg p-2 text-xs" style={{background:'rgba(34,197,94,0.05)'}}>
+                                    <p className="text-[9px] font-bold text-green-500 uppercase mb-1">📥 Diterima</p>
+                                    {h.terima_gram ? <>
+                                      <p className="font-semibold text-gray-700">{parseFloat(h.terima_gram).toFixed(3)} gr · {h.terima_pcs ?? '—'} PCS</p>
+                                      {h.terima_tanggal && <p className="text-gray-400 mt-0.5">{new Date(h.terima_tanggal).toLocaleDateString('id-ID')}{h.terima_jam ? ` ${String(h.terima_jam).slice(0,5)}` : ''}</p>}
+                                      {h.sisa_serbuk > 0 && <p className="text-violet-500">Serbuk: {parseFloat(h.sisa_serbuk).toFixed(3)} gr</p>}
+                                      {h.reject_gram > 0 && <p className="text-red-500 font-semibold">Reject: {parseFloat(h.reject_gram).toFixed(3)} gr · {h.reject_pcs} PCS</p>}
+                                      {h.losses_gram > 0 && <p className="text-orange-500 font-semibold">Losses: {parseFloat(h.losses_gram).toFixed(3)} gr</p>}
+                                      {h.terima_catatan && <p className="text-gray-400 italic text-[10px]">{h.terima_catatan}</p>}
+                                    </> : <p className="text-gray-400 italic text-[10px]">Belum diterima</p>}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )
+                      })()}
                       <p className="text-[9.5px] font-bold text-gray-400 tracking-widest uppercase">Riwayat Proses</p>
                       {events.length === 0
                         ? <p className="text-xs text-gray-400 italic">Belum ada event tercatat</p>
@@ -1173,6 +1530,8 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
       {modal === 'edit'   && active           && <EditModal   item={active}      onClose={() => setModal(null)} onSubmit={handleEdit}   isPending={isPending} error={err} />}
       {modal === 'update' && active           && <UpdateModal item={active}      onClose={() => setModal(null)} onSubmit={handleUpdate} isPending={isPending} error={err} />}
       {modal === 'cuttingTerima' && active   && <SelesaiCuttingModal item={active} onClose={() => setModal(null)} onSubmit={handleSelesaiCutting} isPending={isPending} error={err} />}
+      {modal === 'serahStage'    && active   && <SerahStageModal item={active} tahap={activeTahap} onClose={() => setModal(null)} onSubmit={handleSerahStage} isPending={isPending} error={err} />}
+      {modal === 'terimaStage'   && active   && <TerimaStageModal item={active} tahap={activeTahap} handoverId={activeHandoverId ?? 0} onClose={() => setModal(null)} onSubmit={handleTerimaStage} isPending={isPending} error={err} />}
       {modal === 'delete' && active           && <DelModal    item={active}      onClose={() => setModal(null)} onConfirm={handleDelete} isPending={isPending} />}
     </div>
   )
