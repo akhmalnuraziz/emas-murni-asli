@@ -78,16 +78,30 @@ export async function createProduksi(formData: FormData) {
     return { error: `Berat melebihi sisa bahan batch (${sisaSeharusnya.toFixed(2)} gr tersisa)` }
   }
 
+  // Validasi: minimal ada 1 peleburan selesai dari batch ini
+  const { data: peleburanSelesai } = await supabase
+    .from('peleburan').select('id').eq('batch_kode', batchKode).eq('status', 'selesai').limit(1)
+  if (!peleburanSelesai || peleburanSelesai.length === 0) {
+    return { error: 'Batch ini belum memiliki peleburan yang selesai. Buat dan selesaikan peleburan terlebih dahulu sebelum memulai produksi.' }
+  }
+
   const kode = await generateProduksiCode(supabase)
   const sisaSerbuk = statusAwal === 'Pas Berat' ? parseFloat(formData.get('sisa_serbuk') as string || '0') : 0
 
   const targetSelesai = (formData.get('target_selesai') as string) || null
 
+  const jamMulai = (formData.get('jam_mulai') as string) || null
+  const pcsVal = pcs && pcs > 0 ? pcs : null   // PCS opsional saat create
+  const namaItemBaru = (formData.get('nama_item') as string) || `LM REI ${gramasi}GR`
+
   const { data: produksi, error } = await supabase.from('produksi_item').insert({
-    kode, batch_kode: batchKode, gramasi, pcs, pcs_awal: pcs, pcs_good: pcs, pcs_reject: 0,
-    nama_item: formData.get('nama_item') as string || null,
-    berat_awal: beratAwal, total_gram: beratAwal, current_status: statusAwal,
+    kode, batch_kode: batchKode, gramasi, pcs: pcsVal, pcs_awal: pcsVal, pcs_good: pcsVal, pcs_reject: 0,
+    nama_item: namaItemBaru,
+    berat_awal: beratAwal, serah_gram: beratAwal, total_gram: beratAwal, current_status: statusAwal,
     tanggal_produksi: tanggalProduksi, tanggal: tanggalProduksi,
+    tanggal_mulai: tanggalProduksi,
+    jam_mulai_cutting: jamMulai,
+    jam_mulai_produksi: jamMulai,
     target_selesai: targetSelesai,
     memo: formData.get('memo') as string || null,
     operator: formData.get('operator') as string || profile?.name || null,
@@ -543,7 +557,7 @@ export async function serahStageProduksi(
 
   // Cek apakah sudah ada handover di tahap ini
   const { data: existing } = await supabase.from('stage_handover')
-    .select('id').eq('produksi_item_id', produksiId).eq('tahap', tahap).is('voided_at', null).single()
+    .select('id').eq('produksi_item_id', produksiId).eq('tahap', tahap).is('voided_at', null).maybeSingle()
   if (existing) return { error: `Handover ${tahap} sudah ada` }
 
   await supabase.from('stage_handover').insert({
