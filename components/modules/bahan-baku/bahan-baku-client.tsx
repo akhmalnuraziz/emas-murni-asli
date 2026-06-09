@@ -6,7 +6,7 @@ import {
   Plus, Search, Lock, Unlock, X, Check, AlertTriangle,
   Edit2, Trash2, Scale, Camera, Eye, EyeOff, ChevronDown, ChevronUp, Clock
 } from 'lucide-react'
-import { cn, formatRupiah, formatDate, fmtGram } from '@/lib/utils'
+import { cn, formatRupiah, formatDate, formatGram } from '@/lib/utils'
 import {
   createBatch, updateBatch, deleteBatch,
   lockBatch, unlockBatch, updateSisaFisik,
@@ -28,10 +28,10 @@ function hitungSelisih(pusat: number, gudang: number) {
   const direction = selisih > 0 ? 'kurang' : 'lebih'
   const withinTol = abs <= 0.05
   return {
-    badge: `${direction === 'kurang' ? '-' : '+'}${fmtGram(abs)}`,
+    badge: `${direction === 'kurang' ? '-' : '+'}${formatGram(abs)}`,
     desc: withinTol
-      ? `Timbangan gudang berbeda dengan timbangan pusat, ${direction} ${fmtGram(abs)} dan masih dalam toleransi`
-      : `Timbangan gudang berbeda dengan timbangan pusat, selisih ${fmtGram(abs)} melebihi batas toleransi — catatan wajib diisi`,
+      ? `Timbangan gudang berbeda dengan timbangan pusat, ${direction} ${formatGram(abs)} dan masih dalam toleransi`
+      : `Timbangan gudang berbeda dengan timbangan pusat, selisih ${formatGram(abs)} melebihi batas toleransi — catatan wajib diisi`,
     color: withinTol ? 'text-amber-700' : 'text-red-700',
     bg: withinTol ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)',
     dot: withinTol ? '#F59E0B' : '#EF4444',
@@ -423,17 +423,17 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                   <div className="hidden sm:flex items-center gap-3 flex-shrink-0 mr-1">
                     <div className="text-center">
                       <p className="text-[9px] font-bold text-gray-400 uppercase">Pusat</p>
-                      <p className="text-xs font-bold text-gray-600">{fmtGram(batchPusat)}</p>
+                      <p className="text-xs font-bold text-gray-600">{formatGram(batchPusat)}</p>
                     </div>
                     <div className="w-px h-8 bg-gray-200"/>
                     <div className="text-center">
                       <p className="text-[9px] font-bold text-gray-400 uppercase">Gudang</p>
-                      <p className="text-xs font-bold text-gray-600">{fmtGram(timbAkhir)}</p>
+                      <p className="text-xs font-bold text-gray-600">{formatGram(timbAkhir)}</p>
                     </div>
                     <div className="w-px h-8 bg-gray-200"/>
                     <div className="text-center">
                       <p className="text-[9px] font-bold text-gray-400 uppercase">Sisa</p>
-                      <p className="text-sm font-bold text-gray-800">{fmtGram(sisaSeharusnya)}</p>
+                      <p className="text-sm font-bold text-gray-800">{formatGram(sisaSeharusnya)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
@@ -494,9 +494,9 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                     {/* Grid info: berat pusat, gudang, losses, catatan */}
                     <div className={fotos.length>0 ? 'grid grid-cols-2 sm:grid-cols-4 gap-3' : 'pt-4 grid grid-cols-2 sm:grid-cols-4 gap-3'}>
                       {[
-                        {label:'Berat Pusat',val:`${fmtGram(batchPusat)}`},
-                        {label:'Timbangan Gudang',val:`${fmtGram(timbAkhir)}`},
-                        {label:'Losses Lebur',val:lossesLebur>0?`${fmtGram(lossesLebur)}`:'—'},
+                        {label:'Berat Pusat',val:`${formatGram(batchPusat)}`},
+                        {label:'Timbangan Gudang',val:`${formatGram(timbAkhir)}`},
+                        {label:'Losses Lebur',val:lossesLebur>0?`${formatGram(lossesLebur)}`:'—'},
                         {label:'Catatan',val:batch.catatan||'—'},
                       ].map(item=>(
                         <div key={item.label}className="rounded-2xl p-3"style={{background:'rgba(255,255,255,0.8)',border:'1px solid rgba(209,213,219,0.4)'}}>
@@ -519,9 +519,9 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                       <p className="text-xs font-bold text-violet-700">📊 Rekonsiliasi Bahan Baku</p>
                       <div className="grid grid-cols-3 gap-3">
                         {[
-                          {label:'Sisa Seharusnya',val:`${fmtGram(sisaSeharusnya)}`,sub:'Otomatis'},
-                          {label:'Sisa Fisik (timbang)',val:sisaFisik!=null?`${fmtGram(sisaFisik)}`:null,sub:'Manual'},
-                          {label:'Selisih',val:loses!=null?(loses>0?`+${fmtGram(loses)}`:`${fmtGram(loses)}`):null,sub:'Seharusnya − Fisik',red:loses!=null&&loses>0},
+                          {label:'Sisa Seharusnya',val:`${formatGram(sisaSeharusnya)}`,sub:'Otomatis'},
+                          {label:'Sisa Fisik (timbang)',val:sisaFisik!=null?`${formatGram(sisaFisik)}`:null,sub:'Manual'},
+                          {label:'Selisih',val:loses!=null?(loses>0?`+${formatGram(loses)}`:`${formatGram(loses)}`):null,sub:'Seharusnya − Fisik',red:loses!=null&&loses>0},
                         ].map(item=>(
                           <div key={item.label}className="rounded-xl p-3"style={{background:'rgba(255,255,255,0.7)'}}>
                             <p className="text-[10px] text-gray-400">{item.label}</p>
@@ -544,10 +544,10 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y"style={{borderColor:'rgba(239,68,68,0.08)'}}>
                           {[
-                            {label:'Sisa Fisik', val: sisaFisik!=null?fmtGram(sisaFisik):'—', color:'text-gray-700'},
-                            {label:'Losses Lebur', val: lossesLebur>0?fmtGram(lossesLebur):'—', color:'text-orange-500'},
-                            {label:'Losses Cutting', val: lossesCutting>0?fmtGram(lossesCutting):'—', color:'text-red-500'},
-                            {label:'Total Losses', val: totalLosses>0?fmtGram(totalLosses):'—', color:totalLosses>0?'text-red-600 font-extrabold':'text-gray-400'},
+                            {label:'Sisa Fisik', val: sisaFisik!=null?formatGram(sisaFisik):'—', color:'text-gray-700'},
+                            {label:'Losses Lebur', val: lossesLebur>0?formatGram(lossesLebur):'—', color:'text-orange-500'},
+                            {label:'Losses Cutting', val: lossesCutting>0?formatGram(lossesCutting):'—', color:'text-red-500'},
+                            {label:'Total Losses', val: totalLosses>0?formatGram(totalLosses):'—', color:totalLosses>0?'text-red-600 font-extrabold':'text-gray-400'},
                           ].map(col=>(
                             <div key={col.label} className="px-3 py-2.5 text-center">
                               <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide leading-tight mb-1">{col.label}</p>
@@ -636,12 +636,12 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                       const terpakai    = batchProdItems.reduce((s:number,i:any)=>s+Number(i.total_gram??0),0)
                       const bahanMasuk  = timbAkhir
                       const cols = [
-                        {label:'Bahan Masuk',    val:`${fmtGram(bahanMasuk)}`,  color:'text-gray-700'},
-                        {label:'Sudah Dilebur',  val:`${fmtGram(sudahDilebur)}`, color:'text-blue-600'},
-                        {label:'Terpakai',       val:`${fmtGram(terpakai)}`,    color:'text-violet-600'},
-                        {label:'Sisa Seharusnya',val:`${fmtGram(sisaSeharusnya)}`,color:sisaSeharusnya<0?'text-red-500':'text-gray-700'},
-                        {label:'Sisa Fisik',     val:sisaFisik!=null?`${fmtGram(sisaFisik)}`:'—', color:'text-green-600'},
-                        {label:'Losses Lebur',   val:`${fmtGram(losses)}`,      color:losses>0?'text-red-400':'text-gray-400'},
+                        {label:'Bahan Masuk',    val:`${formatGram(bahanMasuk)}`,  color:'text-gray-700'},
+                        {label:'Sudah Dilebur',  val:`${formatGram(sudahDilebur)}`, color:'text-blue-600'},
+                        {label:'Terpakai',       val:`${formatGram(terpakai)}`,    color:'text-violet-600'},
+                        {label:'Sisa Seharusnya',val:`${formatGram(sisaSeharusnya)}`,color:sisaSeharusnya<0?'text-red-500':'text-gray-700'},
+                        {label:'Sisa Fisik',     val:sisaFisik!=null?`${formatGram(sisaFisik)}`:'—', color:'text-green-600'},
+                        {label:'Losses Lebur',   val:`${formatGram(losses)}`,      color:losses>0?'text-red-400':'text-gray-400'},
                       ]
                       return (
                         <div className="rounded-2xl overflow-hidden border border-violet-100">
@@ -746,9 +746,9 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                             </div>
                             {/* Gram info */}
                             <div className="flex gap-4 text-xs">
-                              <div><p className="text-[10px] text-gray-400">Dikasih</p><p className="font-semibold text-gray-700">{fmtGram(plb.dikasih_gram)}</p></div>
-                              <div><p className="text-[10px] text-gray-400">Diterima</p><p className="font-semibold text-gray-700">{plb.diterima_gram!=null?fmtGram(plb.diterima_gram):'—'}</p></div>
-                              <div><p className="text-[10px] text-gray-400">Losses</p><p className={`font-semibold ${plb.losses_gram>0?'text-red-500':'text-gray-500'}`}>{plb.losses_gram!=null?fmtGram(plb.losses_gram):'—'}</p></div>
+                              <div><p className="text-[10px] text-gray-400">Dikasih</p><p className="font-semibold text-gray-700">{formatGram(plb.dikasih_gram)}</p></div>
+                              <div><p className="text-[10px] text-gray-400">Diterima</p><p className="font-semibold text-gray-700">{plb.diterima_gram!=null?formatGram(plb.diterima_gram):'—'}</p></div>
+                              <div><p className="text-[10px] text-gray-400">Losses</p><p className={`font-semibold ${plb.losses_gram>0?'text-red-500':'text-gray-500'}`}>{plb.losses_gram!=null?formatGram(plb.losses_gram):'—'}</p></div>
                             </div>
                             {/* Foto diserahkan + diterima */}
                             {((Array.isArray(plb.foto_serahkan)&&plb.foto_serahkan.length>0)||(Array.isArray(plb.foto_diterima)&&plb.foto_diterima.length>0))&&(
@@ -954,11 +954,11 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaBahan, rejectOptions, 
                           <input type="checkbox" checked={rejGram[rej.id]!==undefined} onChange={()=>toggleRej(rej.id,rej.berat_reject)} className="w-4 h-4 rounded accent-violet-600"/>
                           <span className="text-xs font-medium text-gray-700">{rej.kode??rej.nama_item}</span>
                           <span className="text-[10px] text-gray-400 ml-1">({rej.gramasi})</span>
-                          <span className="ml-auto text-[10px] text-red-400 font-semibold">{fmtGram(rej.berat_reject)}</span>
+                          <span className="ml-auto text-[10px] text-red-400 font-semibold">{formatGram(rej.berat_reject)}</span>
                         </label>
                         {rejGram[rej.id]!==undefined&&(
                           <div className="mt-1 pl-6">
-                            <input type="number" step="0.001" max={rej.berat_reject} placeholder={`Max ${fmtGram(rej.berat_reject)}`}
+                            <input type="number" step="0.001" max={rej.berat_reject} placeholder={`Max ${formatGram(rej.berat_reject)}`}
                               value={rejGram[rej.id]} onChange={e=>setRejGram(p=>({...p,[rej.id]:e.target.value}))} className={inp}/>
                           </div>
                         )}
@@ -1042,7 +1042,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaBahan, rejectOptions, 
             <button type="submit" disabled={pend||totalDikasih<=0}
               className="flex-1 h-11 rounded-2xl text-sm font-bold text-white disabled:opacity-40"
               style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
-              {pend?'Menyimpan…':`Mulai Peleburan (${fmtGram(totalDikasih)})`}
+              {pend?'Menyimpan…':`Mulai Peleburan (${formatGram(totalDikasih)})`}
             </button>
           </div>
         </form>
@@ -1095,7 +1095,7 @@ function SelesaiLeburModal({ peleburan, onClose, showToast }: {
         <form onSubmit={handleSubmit} className="px-5 pb-6 space-y-4 overflow-y-auto flex-1">
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs" style={{background:'rgba(139,92,246,0.06)'}}>
             <span className="text-gray-500">Dikasih:</span>
-            <span className="font-bold text-violet-700">{fmtGram(peleburan.dikasih_gram)}</span>
+            <span className="font-bold text-violet-700">{formatGram(peleburan.dikasih_gram)}</span>
           </div>
 
           <div className="rounded-2xl overflow-hidden border border-green-100">
