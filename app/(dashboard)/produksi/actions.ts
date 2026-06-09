@@ -65,8 +65,7 @@ export async function createProduksi(formData: FormData) {
 
   if (!batchKode) return { error: 'Batch wajib dipilih' }
   if (!gramasi) return { error: 'Gramasi wajib dipilih' }
-  if (!pcs || pcs <= 0) return { error: 'PCS wajib diisi' }
-  if (!beratAwal || beratAwal <= 0) return { error: 'Total berat wajib diisi' }
+  if (!beratAwal || beratAwal <= 0) return { error: 'Total berat (serah gram) wajib diisi' }
   if (!statusAwal) return { error: 'Status awal wajib dipilih' }
   if (!tanggalProduksi) return { error: 'Tanggal produksi wajib diisi' }
 
@@ -87,7 +86,7 @@ export async function createProduksi(formData: FormData) {
   const { data: produksi, error } = await supabase.from('produksi_item').insert({
     kode, batch_kode: batchKode, gramasi, pcs, pcs_awal: pcs, pcs_good: pcs, pcs_reject: 0,
     nama_item: formData.get('nama_item') as string || null,
-    berat_awal: beratAwal, serah_gram: beratAwal, total_gram: beratAwal, current_status: statusAwal,
+    berat_awal: beratAwal, total_gram: beratAwal, current_status: statusAwal,
     tanggal_produksi: tanggalProduksi, tanggal: tanggalProduksi,
     target_selesai: targetSelesai,
     memo: formData.get('memo') as string || null,
@@ -386,6 +385,75 @@ export async function updateSisaFisikBatch(batchKode: string, sisaFisik: number 
   return { success: true }
 }
 
+
+export async function selesaiCutting(produksiId: number, produksiKode: string, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+
+  const terimaGram    = parseFloat(formData.get('terima_gram') as string)
+  const rejectGram    = parseFloat(formData.get('reject_cutting_gram') as string || '0')
+  const pcsGood       = parseInt(formData.get('pcs_good') as string || '0') || null
+  const pcsReject     = parseInt(formData.get('pcs_reject') as string || '0')
+  const jamSelesai    = (formData.get('jam_selesai') as string) || null
+  const tanggalSelesai = formData.get('tanggal_selesai') as string
+  const catatan       = (formData.get('catatan') as string) || null
+
+  if (!terimaGram || terimaGram < 0) return { error: 'Berat diterima wajib diisi' }
+  if (!tanggalSelesai) return { error: 'Tanggal selesai wajib diisi' }
+
+  const fotosB64Raw = formData.get('fotos_b64') as string
+  const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
+  const fotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, `${produksiKode}-terima`) : []
+
+  const { data: produksi } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
+  if (!produksi) return { error: 'Item tidak ditemukan' }
+  const serahGram = produksi.serah_gram ?? produksi.berat_awal ?? 0
+  const losses = Math.max(0, serahGram - terimaGram - rejectGram)
+
+  // Insert event (Diterima Cutting)
+  await supabase.from('produksi_event').insert({
+    produksi_item_id: produksiId,
+    tanggal: tanggalSelesai,
+    status: 'Cutting',
+    total_gram: terimaGram,
+    berat_sebelumnya: serahGram,
+    sisa_serbuk: rejectGram, // abuse sisa_serbuk field for reject gram display
+    losses,
+    jam_mulai: jamSelesai,
+    catatan: catatan
+      ? `Serah: ${serahGram}gr | Terima: ${terimaGram}gr | Reject Cutting: ${rejectGram}gr | Losses: ${losses.toFixed(3)}gr | ${catatan}`
+      : `Serah: ${serahGram}gr | Terima: ${terimaGram}gr | Reject Cutting: ${rejectGram}gr | Losses: ${losses.toFixed(3)}gr`,
+    user_name: profile?.name || null,
+    fotos: fotoUrls,
+  })
+
+  // Update produksi_item
+  const updateData: any = {
+    terima_gram: terimaGram,
+    reject_cutting_gram: rejectGram,
+    tanggal_selesai: tanggalSelesai,
+    jam_selesai: jamSelesai,
+    status_cutting: 'selesai',
+    total_gram: terimaGram,
+    foto_diterima_cutting: fotoUrls,
+  }
+  if (pcsGood && pcsGood > 0) {
+    updateData.pcs_good = pcsGood
+    updateData.pcs = pcsGood
+  }
+  if (pcsReject > 0) {
+    updateData.pcs_reject = pcsReject
+    updateData.berat_reject = rejectGram
+    updateData.status_reject = 'belum_dilebur'
+  }
+  await supabase.from('produksi_item').update(updateData).eq('id', produksiId)
+
+  revalidatePath('/produksi')
+  return { success: true }
+}
+
 export async function editProduksi(produksiId: number, produksiKode: string, formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -408,8 +476,11 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
 
   const { data: before } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
 
+  const namaItemBaru = (formData.get('nama_item') as string) || `LM REI ${gramasi}GR`
   const { error } = await supabase.from('produksi_item').update({
-    gramasi, pcs, pcs_awal: pcs, pcs_good: pcs, berat_awal: beratAwal, total_gram: beratAwal,
+    gramasi, pcs, pcs_awal: pcs, pcs_good: pcs, berat_awal: beratAwal,
+    serah_gram: beratAwal, total_gram: beratAwal,
+    nama_item: namaItemBaru,
     operator: operator || null, catatan: catatan || null,
     tanggal_produksi: tanggal, tanggal, memo: memo || null,
     target_selesai: targetSelesai,
