@@ -1,18 +1,20 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Plus, Search, Lock, Unlock, X, Check, AlertTriangle,
-  Edit2, Trash2, Scale, Camera, Eye, EyeOff, ChevronDown, ChevronUp
+  Edit2, Trash2, Scale, Camera, Eye, EyeOff, ChevronDown, ChevronUp, Clock
 } from 'lucide-react'
-import { cn, formatRupiah, formatDate } from '@/lib/utils'
+import { cn, formatRupiah, formatDate, fmtGram } from '@/lib/utils'
 import {
   createBatch, updateBatch, deleteBatch,
-  lockBatch, unlockBatch, updateSisaFisik
+  lockBatch, unlockBatch, updateSisaFisik,
+  createPeleburan, voidPeleburan, editPeleburan
 } from '@/app/(dashboard)/bahan-baku/actions'
 import type { UserRole } from '@/lib/types/database'
 
-interface Props { batches: any[]; userRole: UserRole; userName: string }
+interface Props { batches: any[]; peleburanList?: any[]; rejectItems?: any[]; produksiItems?: any[]; rejectCountMap: Record<string, number>; userRole: UserRole; userName: string }
 
 // ─── Selisih helper ──────────────────────────────────────────────────────────
 function hitungSelisih(pusat: number, gudang: number) {
@@ -26,10 +28,10 @@ function hitungSelisih(pusat: number, gudang: number) {
   const direction = selisih > 0 ? 'kurang' : 'lebih'
   const withinTol = abs <= 0.05
   return {
-    badge: `${direction === 'kurang' ? '-' : '+'}${abs.toFixed(3)} gr`,
+    badge: `${direction === 'kurang' ? '-' : '+'}${fmtGram(abs)}`,
     desc: withinTol
-      ? `Timbangan gudang berbeda dengan timbangan pusat, ${direction} ${abs.toFixed(3)} gr dan masih dalam toleransi`
-      : `Timbangan gudang berbeda dengan timbangan pusat, selisih ${abs.toFixed(3)} gr melebihi batas toleransi — catatan wajib diisi`,
+      ? `Timbangan gudang berbeda dengan timbangan pusat, ${direction} ${fmtGram(abs)} dan masih dalam toleransi`
+      : `Timbangan gudang berbeda dengan timbangan pusat, selisih ${fmtGram(abs)} melebihi batas toleransi — catatan wajib diisi`,
     color: withinTol ? 'text-amber-700' : 'text-red-700',
     bg: withinTol ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)',
     dot: withinTol ? '#F59E0B' : '#EF4444',
@@ -39,7 +41,7 @@ function hitungSelisih(pusat: number, gudang: number) {
 
 function getBatchStatus(b: any) {
   if (b.voided_at && b.void_reason === 'DELETED_BY_USER') return 'dihapus'
-  if (b.voided_at) return 'terkunci'
+  if (b.status === 'terkunci') return 'terkunci'
   return 'aktif'
 }
 
@@ -124,6 +126,7 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
   const [gudang,setGudang]=useState(String(initial?.timbangan_akhir??''))
   const [harga,setHarga]=useState(String(initial?.harga_beli??''))
   const [biaya,setBiaya]=useState<{label:string;jumlah:number}[]>(initial?.biaya_tambahan??[])
+  const [catatan,setCatatan]=useState(initial?.catatan??'') // FIX poin 1 - controlled state
   const [newFotos,setNewFotos]=useState<File[]>([])
   const [existingFotos,setExistingFotos]=useState<string[]>(initial?.fotos??[])
   const [uploading,setUploading]=useState(false)
@@ -134,31 +137,19 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
   const totalHpp = hargaNum+totalBiaya
   const hppGr = parseFloat(gudang)>0 ? totalHpp/parseFloat(gudang) : 0
 
-  async function submit(e: React.FormEvent<HTMLFormElement>) {
+  async function submit(e:React.FormEvent<HTMLFormElement>){
     e.preventDefault()
+    const formEl=e.currentTarget
     setUploading(true)
-    try {
-      const b64s = newFotos.length > 0 ? await filesToBase64(newFotos) : []
-
-      // Defensive: in some browsers/builds, handlers can be triggered from a non-form target.
-      // Always resolve the closest <form> to construct FormData safely.
-      const maybeTarget = (e.target ?? e.currentTarget) as unknown as HTMLElement | null
-      const formEl =
-        e.currentTarget instanceof HTMLFormElement
-          ? e.currentTarget
-          : (maybeTarget?.closest?.('form') as HTMLFormElement | null)
-
-      if (!formEl) {
-        onSubmit(new FormData())
-        return
-      }
-
-      const fd = new FormData(formEl)
+    try{
+      const b64s=newFotos.length>0?await filesToBase64(newFotos):[]
+      const fd=new FormData(formEl)
       fd.set('biaya_tbh',JSON.stringify(biaya))
       fd.set('existing_fotos',JSON.stringify(existingFotos))
       fd.set('new_fotos_b64',JSON.stringify(b64s))
+      fd.set('catatan', catatan) // ensure catatan is in FormData
       onSubmit(fd)
-    } finally { setUploading(false) }
+    }finally{setUploading(false)}
   }
 
   return(
@@ -219,8 +210,11 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
               </div>}
             </div>
           )}
+          {/* FIX poin 1 - catatan sebagai controlled input */}
           <F label={`Catatan${si?.warn?' *':''}`}>
-            <input name="catatan" defaultValue={initial?.catatan??''} placeholder={si?.warn?'Wajib — jelaskan alasan selisih berat':'Keterangan tambahan...'} className={cn(inp,si?.warn&&'border-red-300')} required={!!si?.warn}/>
+            <input name="catatan" value={catatan} onChange={e=>setCatatan(e.target.value)}
+              placeholder={si?.warn?'Wajib — jelaskan alasan selisih berat':'Keterangan tambahan...'}
+              className={cn(inp,si?.warn&&'border-red-300')} required={!!si?.warn}/>
           </F>
           <F label="Foto Bukti / Sertifikat">
             {existingFotos.length>0&&(
@@ -252,8 +246,13 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
-export default function BahanBakuClient({batches,userRole,userName}:Props){
+export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[],produksiItems=[],rejectCountMap,userRole,userName}:Props){
   const [filter,setFilter]=useState<'semua'|'aktif'|'terkunci'>('semua')
+  const router = useRouter()
+  const [peleburanModalBatch,setPeleburanModalBatch]=useState<string|null>(null)
+  const [selesaiLeburItem,setSelesaiLeburItem]=useState<any>(null)
+  const [hapusPlbId,setHapusPlbId]=useState<number|null>(null)
+  const [editPlbItem,setEditPlbItem]=useState<any>(null)
   const [search,setSearch]=useState('')
   const [expanded,setExpanded]=useState<number|null>(null)
   const [showCreate,setShowCreate]=useState(false)
@@ -266,6 +265,7 @@ export default function BahanBakuClient({batches,userRole,userName}:Props){
   const [showHPP,setShowHPP]=useState(false)
   const [editingSF,setEditingSF]=useState<number|null>(null)
   const [sfInput,setSfInput]=useState<Record<number,string>>({})
+  const [sfCatatan,setSfCatatan]=useState<Record<number,string>>({}) // FIX poin 5
   const [sfFotos,setSfFotos]=useState<Record<number,File[]>>({})
   const [sfExisting,setSfExisting]=useState<Record<number,string[]>>({})
   const [sfUploading,setSfUploading]=useState<Record<number,boolean>>({})
@@ -297,11 +297,23 @@ export default function BahanBakuClient({batches,userRole,userName}:Props){
       fd.set('sisa_fisik',String(val))
       fd.set('existing_fotos',JSON.stringify(sfExisting[batch.id]??[]))
       fd.set('new_fotos_b64',JSON.stringify(b64s))
+      fd.set('catatan_sisa_fisik', sfCatatan[batch.id]??'') // FIX poin 5
       const r=await updateSisaFisik(fd)
       if(r?.error){showToast(r.error,false);return}
       showToast('✅ Sisa fisik disimpan')
-      setSfFotos(p=>({...p,[batch.id]:[]}));setSfExisting(p=>({...p,[batch.id]:[]}));setEditingSF(null)
+      setSfFotos(p=>({...p,[batch.id]:[]}));setSfExisting(p=>({...p,[batch.id]:[]}))
+      setSfCatatan(p=>({...p,[batch.id]:''}));setEditingSF(null)
     }finally{setSfUploading(p=>({...p,[batch.id]:false}))}
+  }
+
+  // ─── Duration helper ──────────────────────────────────────────────────────
+  function durasiText(mulai: string|null|undefined, selesai: string|null|undefined): string|null {
+    if (!mulai || !selesai) return null
+    const [hm, hs] = [mulai.slice(0,5).split(':'), selesai.slice(0,5).split(':')]
+    const mnt = (parseInt(hs[0])*60+parseInt(hs[1])) - (parseInt(hm[0])*60+parseInt(hm[1]))
+    if (isNaN(mnt) || mnt < 0) return null
+    if (mnt < 60) return `${mnt} mnt`
+    return `${Math.floor(mnt/60)} j ${mnt%60} mnt`
   }
 
   return(
@@ -339,7 +351,7 @@ export default function BahanBakuClient({batches,userRole,userName}:Props){
             <button key={f} onClick={()=>setFilter(f)}
               className="px-3.5 py-1.5 rounded-full text-xs font-semibold capitalize transition-all"
               style={filter===f?{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)',color:'#fff',boxShadow:'0 4px 12px rgba(139,92,246,0.35)'}:{background:'rgba(255,255,255,0.8)',color:'#6B7280',border:'1px solid rgba(209,213,219,0.5)'}}>
-              {f==='semua'?`Semua Batch (${batches.filter(b=>getBatchStatus(b)!=='dihapus').length})`:f==='aktif'?'Aktif':'Terkunci'}
+              {f==='semua'?`Semua (${batches.filter(b=>getBatchStatus(b)!=='dihapus').length})`:f==='aktif'?'Aktif':'Terkunci'}
             </button>
           ))}
           <div className="relative flex-1 min-w-[200px]">
@@ -374,38 +386,55 @@ export default function BahanBakuClient({batches,userRole,userName}:Props){
             const isEditSF=editingSF===batch.id
             const supplierLabel=`Bahan dari ${batch.supplier??'GUDANG PUSAT'}`
             const batchLabel=batch.nama_batch?` · ${batch.nama_batch}`:''
+            const batchPusat = Number(batch.bahan_dari_pusat??0)
+
+            // Losses computation
+            const plbBatchAll = (peleburanList as any[]).filter((p:any)=>p.batch_kode===batch.kode)
+            const lossesLebur = plbBatchAll.filter((p:any)=>p.status==='selesai').reduce((s:number,p:any)=>s+Number(p.losses_gram??0),0)
+            const batchProdItems = (produksiItems as any[]).filter((i:any)=>i.batch_kode===batch.kode&&!i.voided_at)
+            const lossesCutting = batchProdItems.reduce((s:number,i:any)=>s+Number(i.losses_cutting??0)+Number(i.reject_cutting_gram??0),0)
+            const totalLosses = lossesLebur + lossesCutting
 
             return(
               <div key={batch.id}className="rounded-3xl overflow-hidden transition-all"
                 style={{background:'rgba(255,255,255,0.75)',backdropFilter:'blur(20px)',border:'1px solid rgba(255,255,255,0.6)',boxShadow:'0 4px 24px rgba(139,92,246,0.07),0 1px 8px rgba(0,0,0,0.04)'}}>
                 {/* Card header */}
                 <div className="flex items-center gap-3 px-5 pt-4 pb-3">
-                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 font-black text-sm text-violet-700"
+                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 font-black text-sm text-violet-700"
                     style={{background:'linear-gradient(135deg,rgba(139,92,246,0.15),rgba(167,139,250,0.1))'}}>
                     {(batch.nama_batch??batch.kode??'BA').slice(0,2).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-base font-bold text-gray-900"style={{fontFamily:"'SF Pro Display','Inter',sans-serif"}}>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-sm font-bold text-gray-900"style={{fontFamily:"'SF Pro Display','Inter',sans-serif"}}>
                         {batch.nama_batch??batch.kode}
                       </span>
-                      <span className={cn('text-[10px] font-bold px-2.5 py-0.5 rounded-full',
+                      {/* FIX poin 2: hapus si.badge dari sini */}
+                      <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full',
                         status==='aktif'?'text-emerald-700':'text-amber-700')}
                         style={{background:status==='aktif'?'rgba(34,197,94,0.1)':'rgba(245,158,11,0.1)'}}>
                         {status==='aktif'?'AKTIF':'TERKUNCI 🔒'}
                       </span>
-                      <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full"
-                        style={{background:si.bg,color:si.dot,border:`1px solid ${si.dot}30`}}>
-                        {si.badge}
-                      </span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5 font-medium">{batch.kode} · {supplierLabel}{batchLabel}</p>
-                    <p className="text-xs text-gray-400">Datang: {formatDate(batch.tanggal)}</p>
+                    <p className="text-xs text-gray-400 mt-0.5 font-medium truncate">{batch.kode} · {supplierLabel}</p>
+                    <p className="text-[11px] text-gray-400">Datang: {formatDate(batch.tanggal)}</p>
                   </div>
-                  <div className="text-right hidden sm:block flex-shrink-0 mr-2">
-                    <p className="text-xs text-gray-400">Sisa Bahan</p>
-                    <p className="text-base font-bold text-gray-800">{sisaSeharusnya.toFixed(3)} gr</p>
-                    <p className="text-xs text-gray-400">dari {timbAkhir.toFixed(3)} gr</p>
+                  {/* FIX poin 3: tampilkan pusat + gudang + sisa langsung di card */}
+                  <div className="hidden sm:flex items-center gap-3 flex-shrink-0 mr-1">
+                    <div className="text-center">
+                      <p className="text-[9px] font-bold text-gray-400 uppercase">Pusat</p>
+                      <p className="text-xs font-bold text-gray-600">{fmtGram(batchPusat)}</p>
+                    </div>
+                    <div className="w-px h-8 bg-gray-200"/>
+                    <div className="text-center">
+                      <p className="text-[9px] font-bold text-gray-400 uppercase">Gudang</p>
+                      <p className="text-xs font-bold text-gray-600">{fmtGram(timbAkhir)}</p>
+                    </div>
+                    <div className="w-px h-8 bg-gray-200"/>
+                    <div className="text-center">
+                      <p className="text-[9px] font-bold text-gray-400 uppercase">Sisa</p>
+                      <p className="text-sm font-bold text-gray-800">{fmtGram(sisaSeharusnya)}</p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     {status==='aktif'&&<>
@@ -425,57 +454,74 @@ export default function BahanBakuClient({batches,userRole,userName}:Props){
                 </div>
 
                 {/* HPP bar */}
-                <div className="px-5 pb-3 flex items-center gap-3">
-                  {canSeeHPP&&(
-                    <p className="text-xs font-semibold transition-all"style={{color:'#8B5CF6'}}>
+                {canSeeHPP&&(
+                  <div className="px-5 pb-2">
+                    <p className="text-xs font-semibold"style={{color:'#8B5CF6'}}>
                       HPP: {showHPP?`${formatRupiah(batch.hpp_gr??0)}/gr`:'•••/gr'}
                     </p>
-                  )}
-                  <div className="flex-1"/>
-                </div>
+                  </div>
+                )}
 
-                {/* Progress bar — ONLY show when ada pemakaian */}
+                {/* Progress bar */}
                 {sudahTerpakai&&(
                   <div className="px-5 pb-4">
                     <div className="w-full h-1.5 rounded-full"style={{background:'rgba(139,92,246,0.1)'}}>
                       <div className="h-1.5 rounded-full transition-all"
                         style={{width:`${pct}%`,background:`linear-gradient(90deg,#8B5CF6,#A78BFA)`,boxShadow:'0 0 8px rgba(139,92,246,0.4)'}}/>
                     </div>
-                    <p className="text-[11px] text-right mt-1 font-medium"style={{color:'#8B5CF6'}}>{pct.toFixed(1)}% tersisa · {(timbAkhir-sisaSeharusnya).toFixed(3)} gr terpakai</p>
+                    <p className="text-[11px] text-right mt-1 font-medium"style={{color:'#8B5CF6'}}>{pct.toFixed(1)}% tersisa</p>
                   </div>
                 )}
 
                 {/* Expanded detail */}
                 {isExp&&(
                   <div className="px-5 pb-5 border-t space-y-4"style={{borderColor:'rgba(139,92,246,0.1)',background:'rgba(139,92,246,0.02)'}}>
-                    <div className="pt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+
+                    {/* FIX poin 4: Foto Bukti di ATAS selisih description */}
+                    {fotos.length>0&&(
+                      <div className="pt-4">
+                        <p className="text-xs font-semibold text-gray-400 mb-2">📷 Foto Bukti / Sertifikat ({fotos.length})</p>
+                        <div className="flex gap-2 flex-wrap">
+                          {fotos.map((url:string,i:number)=>(
+                            <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="w-14 h-14 rounded-xl overflow-hidden border border-gray-200 block hover:opacity-80 hover:scale-105 transition-transform">
+                              <img src={url} alt="" className="w-full h-full object-cover"/>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Grid info: berat pusat, gudang, losses, catatan */}
+                    <div className={fotos.length>0 ? 'grid grid-cols-2 sm:grid-cols-4 gap-3' : 'pt-4 grid grid-cols-2 sm:grid-cols-4 gap-3'}>
                       {[
-                        {label:'Berat Pusat',val:`${(batch.bahan_dari_pusat??0).toFixed(3)} gr`},
-                        {label:'Timbangan Gudang',val:`${timbAkhir.toFixed(3)} gr`},
-                        {label:'HPP / gram',val:canSeeHPP&&showHPP?formatRupiah(batch.hpp_gr??0):'•••'},
-                        {label:'Total HPP',val:canSeeHPP&&showHPP?formatRupiah(batch.total_hpp??0):'•••'},
+                        {label:'Berat Pusat',val:`${fmtGram(batchPusat)}`},
+                        {label:'Timbangan Gudang',val:`${fmtGram(timbAkhir)}`},
+                        {label:'Losses Lebur',val:lossesLebur>0?`${fmtGram(lossesLebur)}`:'—'},
+                        {label:'Catatan',val:batch.catatan||'—'},
                       ].map(item=>(
                         <div key={item.label}className="rounded-2xl p-3"style={{background:'rgba(255,255,255,0.8)',border:'1px solid rgba(209,213,219,0.4)'}}>
                           <p className="text-[10px] text-gray-400 font-medium">{item.label}</p>
-                          <p className="text-sm font-bold text-gray-700 mt-0.5">{item.val}</p>
+                          <p className="text-sm font-bold text-gray-700 mt-0.5 break-words">{item.val}</p>
                         </div>
                       ))}
                     </div>
 
                     {/* Selisih description */}
-                    <div className="flex items-start gap-3 px-4 py-3 rounded-2xl"style={{background:si.bg,border:`1px solid ${si.dot}25`}}>
-                      <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0"style={{background:si.dot}}/>
-                      <p className={cn('text-xs font-medium',si.color)}>{si.desc}</p>
-                    </div>
+                    {(si.warn || Math.abs((batchPusat)-(timbAkhir)) > 0) && (
+                      <div className="flex items-start gap-3 px-4 py-3 rounded-2xl"style={{background:si.bg,border:`1px solid ${si.dot}25`}}>
+                        <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0"style={{background:si.dot}}/>
+                        <p className={cn('text-xs font-medium',si.color)}>{si.desc}</p>
+                      </div>
+                    )}
 
                     {/* Rekonsiliasi */}
                     <div className="rounded-2xl p-4 space-y-3"style={{background:'rgba(139,92,246,0.05)',border:'1px solid rgba(139,92,246,0.12)'}}>
-                      <p className="text-xs font-bold text-violet-700">Rekonsiliasi Bahan Baku</p>
+                      <p className="text-xs font-bold text-violet-700">📊 Rekonsiliasi Bahan Baku</p>
                       <div className="grid grid-cols-3 gap-3">
                         {[
-                          {label:'Sisa Seharusnya',val:`${sisaSeharusnya.toFixed(3)} gr`,sub:'Otomatis'},
-                          {label:'Sisa Fisik (timbang)',val:sisaFisik!=null?`${sisaFisik.toFixed(3)} gr`:null,sub:'Manual'},
-                          {label:'Selisih Rekonsiliasi',val:loses!=null?(loses>0?`+${loses.toFixed(3)} gr`:`${loses.toFixed(3)} gr`):null,sub:'Seharusnya − Fisik',red:loses!=null&&loses>0},
+                          {label:'Sisa Seharusnya',val:`${fmtGram(sisaSeharusnya)}`,sub:'Otomatis'},
+                          {label:'Sisa Fisik (timbang)',val:sisaFisik!=null?`${fmtGram(sisaFisik)}`:null,sub:'Manual'},
+                          {label:'Selisih',val:loses!=null?(loses>0?`+${fmtGram(loses)}`:`${fmtGram(loses)}`):null,sub:'Seharusnya − Fisik',red:loses!=null&&loses>0},
                         ].map(item=>(
                           <div key={item.label}className="rounded-xl p-3"style={{background:'rgba(255,255,255,0.7)'}}>
                             <p className="text-[10px] text-gray-400">{item.label}</p>
@@ -484,69 +530,41 @@ export default function BahanBakuClient({batches,userRole,userName}:Props){
                           </div>
                         ))}
                       </div>
-
-                      {/* Foto sisa fisik view */}
-                      {fotoSF.length>0&&!isEditSF&&(
-                        <div>
-                          <p className="text-[10px] font-semibold text-gray-400 mb-2">Foto Sisa Fisik ({fotoSF.length})</p>
-                          <div className="flex gap-2 flex-wrap">
-                            {fotoSF.map((url:string,i:number)=>(
-                              <a key={i} href={url} target="_blank" rel="noopener noreferrer"className="w-14 h-14 rounded-xl overflow-hidden border border-gray-200 block hover:opacity-80">
-                                <img src={url} alt="" className="w-full h-full object-cover"/>
-                              </a>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {status==='aktif'&&(
-                        !isEditSF?(
-                          <button onClick={()=>{setEditingSF(batch.id);setSfInput(p=>({...p,[batch.id]:String(sisaFisik??'')}));setSfExisting(p=>({...p,[batch.id]:[...fotoSF]}))}}
-                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-violet-600 rounded-xl transition-all hover:scale-105"
-                            style={{background:'rgba(255,255,255,0.9)',border:'1px solid rgba(139,92,246,0.2)'}}>
-                            <Edit2 size={11}/>{sisaFisik!=null?'Edit Sisa Fisik':'Input Sisa Fisik'}
-                          </button>
-                        ):(
-                          <div className="rounded-2xl p-4 space-y-3"style={{background:'rgba(255,255,255,0.9)',border:'1px solid rgba(139,92,246,0.2)'}}>
-                            <div className="flex items-center justify-between">
-                              <p className="text-xs font-bold text-violet-700">Input Sisa Fisik</p>
-                              <button onClick={()=>{setEditingSF(null);setSfFotos(p=>({...p,[batch.id]:[]}))}}className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><X size={12}/></button>
-                            </div>
-                            <div className="flex gap-2">
-                              <input type="number" step="0.001" value={sfInput[batch.id]??''} onChange={e=>setSfInput(p=>({...p,[batch.id]:e.target.value}))} placeholder="Berat sisa fisik (gram)" className={cn(inp,'flex-1')}/>
-                              <button onClick={()=>handleSisaFisik(batch)} disabled={sfUploading[batch.id]}
-                                className="px-4 py-2 text-sm font-bold text-white rounded-2xl disabled:opacity-60 flex items-center gap-1.5 flex-shrink-0"
-                                style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
-                                {sfUploading[batch.id]?<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<Check size={13}/>}
-                                {sfUploading[batch.id]?'Simpan...':'Simpan'}
-                              </button>
-                            </div>
-                            {(sfExisting[batch.id]??[]).length>0&&(
-                              <div className="flex gap-2 flex-wrap">
-                                {(sfExisting[batch.id]??[]).map((url:string,i:number)=>(
-                                  <div key={i}className="relative w-12 h-12">
-                                    <img src={url} alt="" className="w-full h-full object-cover rounded-xl border border-gray-200"/>
-                                    <button type="button"onClick={()=>setSfExisting(p=>({...p,[batch.id]:(p[batch.id]??[]).filter((_,j)=>j!==i)}))}className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center"><X size={9}/></button>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            <FotoPicker files={sfFotos[batch.id]??[]}
-                              onAdd={f=>setSfFotos(p=>({...p,[batch.id]:[...(p[batch.id]??[]),...f].slice(0,10)}))}
-                              onRemove={i=>i===-1?setSfFotos(p=>({...p,[batch.id]:[]})):setSfFotos(p=>({...p,[batch.id]:(p[batch.id]??[]).filter((_,j)=>j!==i)}))}
-                              label="Foto sisa fisik (opsional)" small/>
-                          </div>
-                        )
+                      {batch.catatan_sisa_fisik&&(
+                        <p className="text-xs text-gray-500 italic px-1">📝 {batch.catatan_sisa_fisik}</p>
                       )}
                     </div>
 
-                    {/* Foto bukti */}
-                    {fotos.length>0&&(
+                    {/* FIX poin 8: Tabel Losses */}
+                    {(lossesLebur > 0 || lossesCutting > 0 || sisaFisik != null) && (
+                      <div className="rounded-2xl overflow-hidden border border-red-100">
+                        <div className="px-4 py-2 text-[10px] font-bold text-red-600 uppercase tracking-wide"
+                          style={{background:'rgba(239,68,68,0.05)'}}>
+                          📉 Ringkasan Losses
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y"style={{borderColor:'rgba(239,68,68,0.08)'}}>
+                          {[
+                            {label:'Sisa Fisik', val: sisaFisik!=null?fmtGram(sisaFisik):'—', color:'text-gray-700'},
+                            {label:'Losses Lebur', val: lossesLebur>0?fmtGram(lossesLebur):'—', color:'text-orange-500'},
+                            {label:'Losses Cutting', val: lossesCutting>0?fmtGram(lossesCutting):'—', color:'text-red-500'},
+                            {label:'Total Losses', val: totalLosses>0?fmtGram(totalLosses):'—', color:totalLosses>0?'text-red-600 font-extrabold':'text-gray-400'},
+                          ].map(col=>(
+                            <div key={col.label} className="px-3 py-2.5 text-center">
+                              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide leading-tight mb-1">{col.label}</p>
+                              <p className={`text-xs font-bold ${col.color}`}>{col.val}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Foto sisa fisik */}
+                    {fotoSF.length>0&&!isEditSF&&(
                       <div>
-                        <p className="text-xs font-semibold text-gray-400 mb-2">Foto Bukti / Sertifikat ({fotos.length})</p>
+                        <p className="text-[10px] font-semibold text-gray-400 mb-2">Foto Sisa Fisik ({fotoSF.length})</p>
                         <div className="flex gap-2 flex-wrap">
-                          {fotos.map((url:string,i:number)=>(
-                            <a key={i} href={url} target="_blank" rel="noopener noreferrer"className="w-14 h-14 rounded-xl overflow-hidden border border-gray-200 block hover:opacity-80 hover:scale-105 transition-transform">
+                          {fotoSF.map((url:string,i:number)=>(
+                            <a key={i} href={url} target="_blank" rel="noopener noreferrer"className="w-14 h-14 rounded-xl overflow-hidden border border-gray-200 block hover:opacity-80">
                               <img src={url} alt="" className="w-full h-full object-cover"/>
                             </a>
                           ))}
@@ -554,11 +572,228 @@ export default function BahanBakuClient({batches,userRole,userName}:Props){
                       </div>
                     )}
 
-                    {batch.catatan&&(
-                      <div className="px-4 py-3 rounded-2xl"style={{background:'rgba(245,158,11,0.06)',border:'1px solid rgba(245,158,11,0.2)'}}>
-                        <p className="text-xs text-amber-700"><span className="font-semibold">Catatan:</span> {batch.catatan}</p>
-                      </div>
+                    {/* Reject alert */}
+                    {(()=>{
+                      const rCount = rejectCountMap[batch.kode] ?? 0
+                      return rCount > 0 ? (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold"
+                          style={{background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',color:'#DC2626'}}>
+                          <span>⚠️</span>
+                          <span>{rCount} item reject belum dilebur</span>
+                        </div>
+                      ) : null
+                    })()}
+
+                    {/* Input sisa fisik */}
+                    {status==='aktif'&&(
+                      !isEditSF?(
+                        <button onClick={()=>{setEditingSF(batch.id);setSfInput(p=>({...p,[batch.id]:String(sisaFisik??'')}));setSfExisting(p=>({...p,[batch.id]:[...fotoSF]}))}}
+                          className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-violet-600 rounded-xl transition-all hover:scale-105"
+                          style={{background:'rgba(255,255,255,0.9)',border:'1px solid rgba(139,92,246,0.2)'}}>
+                          <Edit2 size={11}/>{sisaFisik!=null?'Edit Sisa Fisik':'Input Sisa Fisik'}
+                        </button>
+                      ):(
+                        <div className="rounded-2xl p-4 space-y-3"style={{background:'rgba(255,255,255,0.9)',border:'1px solid rgba(139,92,246,0.2)'}}>
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-bold text-violet-700">Input Sisa Fisik</p>
+                            <button onClick={()=>{setEditingSF(null);setSfFotos(p=>({...p,[batch.id]:[]}))}}className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><X size={12}/></button>
+                          </div>
+                          <div className="flex gap-2">
+                            <input type="number" step="0.001" value={sfInput[batch.id]??''} onChange={e=>setSfInput(p=>({...p,[batch.id]:e.target.value}))} placeholder="Berat sisa fisik (gram)" className={cn(inp,'flex-1')}/>
+                            <button onClick={()=>handleSisaFisik(batch)} disabled={sfUploading[batch.id]}
+                              className="px-4 py-2 text-sm font-bold text-white rounded-2xl disabled:opacity-60 flex items-center gap-1.5 flex-shrink-0"
+                              style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
+                              {sfUploading[batch.id]?<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<Check size={13}/>}
+                              {sfUploading[batch.id]?'Simpan...':'Simpan'}
+                            </button>
+                          </div>
+                          {/* FIX poin 5: catatan sisa fisik */}
+                          <input type="text" value={sfCatatan[batch.id]??''} onChange={e=>setSfCatatan(p=>({...p,[batch.id]:e.target.value}))}
+                            placeholder="Catatan sisa fisik (opsional)" className={inp}/>
+                          {(sfExisting[batch.id]??[]).length>0&&(
+                            <div className="flex gap-2 flex-wrap">
+                              {(sfExisting[batch.id]??[]).map((url:string,i:number)=>(
+                                <div key={i}className="relative w-12 h-12">
+                                  <img src={url} alt="" className="w-full h-full object-cover rounded-xl border border-gray-200"/>
+                                  <button type="button"onClick={()=>setSfExisting(p=>({...p,[batch.id]:(p[batch.id]??[]).filter((_,j)=>j!==i)}))}className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center"><X size={9}/></button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <FotoPicker files={sfFotos[batch.id]??[]}
+                            onAdd={f=>setSfFotos(p=>({...p,[batch.id]:[...(p[batch.id]??[]),...f].slice(0,10)}))}
+                            onRemove={i=>i===-1?setSfFotos(p=>({...p,[batch.id]:[]})):setSfFotos(p=>({...p,[batch.id]:(p[batch.id]??[]).filter((_,j)=>j!==i)}))}
+                            label="Foto sisa fisik (opsional)" small/>
+                        </div>
+                      )
                     )}
+
+                    {/* ─── Rekonsiliasi 6-kolom ─────────────── */}
+                    {(()=>{
+                      const plbList = (peleburanList as any[]).filter((p:any)=>p.batch_kode===batch.kode)
+                      const sudahDilebur = plbList.reduce((s:number,p:any)=>s+Number(p.dikasih_gram??0),0)
+                      const losses      = plbList.filter((p:any)=>p.status==='selesai').reduce((s:number,p:any)=>s+Number(p.losses_gram??0),0)
+                      const terpakai    = batchProdItems.reduce((s:number,i:any)=>s+Number(i.total_gram??0),0)
+                      const bahanMasuk  = timbAkhir
+                      const cols = [
+                        {label:'Bahan Masuk',    val:`${fmtGram(bahanMasuk)}`,  color:'text-gray-700'},
+                        {label:'Sudah Dilebur',  val:`${fmtGram(sudahDilebur)}`, color:'text-blue-600'},
+                        {label:'Terpakai',       val:`${fmtGram(terpakai)}`,    color:'text-violet-600'},
+                        {label:'Sisa Seharusnya',val:`${fmtGram(sisaSeharusnya)}`,color:sisaSeharusnya<0?'text-red-500':'text-gray-700'},
+                        {label:'Sisa Fisik',     val:sisaFisik!=null?`${fmtGram(sisaFisik)}`:'—', color:'text-green-600'},
+                        {label:'Losses Lebur',   val:`${fmtGram(losses)}`,      color:losses>0?'text-red-400':'text-gray-400'},
+                      ]
+                      return (
+                        <div className="rounded-2xl overflow-hidden border border-violet-100">
+                          <div className="px-4 py-2 text-[10px] font-bold text-violet-600 uppercase tracking-wide"
+                            style={{background:'rgba(139,92,246,0.05)'}}>
+                            📊 Rekonsiliasi Detail
+                          </div>
+                          <div className="grid grid-cols-3 sm:grid-cols-6 divide-x divide-y" style={{borderColor:'rgba(139,92,246,0.08)'}}>
+                            {cols.map(col=>(
+                              <div key={col.label} className="px-2 py-2.5 text-center">
+                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide leading-tight mb-1">{col.label}</p>
+                                <p className={`text-[11px] font-bold ${col.color}`}>{col.val}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })()}
+
+                    {/* ─── Peleburan section ─────────────── */}
+                    <div className="rounded-2xl overflow-hidden" style={{border:'1px solid rgba(139,92,246,0.15)'}}>
+                      <div className="flex items-center justify-between px-4 py-3" style={{background:'rgba(139,92,246,0.06)'}}>
+                        <p className="text-xs font-bold text-violet-700">🔥 Riwayat Peleburan</p>
+                        {status==='aktif'&&(
+                          <button type="button" onClick={()=>setPeleburanModalBatch(batch.kode)}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-white"
+                            style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
+                            + Buat Peleburan
+                          </button>
+                        )}
+                      </div>
+                      {(()=>{
+                        const plbList=(peleburanList as any[]).filter((p:any)=>p.batch_kode===batch.kode)
+                        if(plbList.length===0) return (
+                          <p className="text-xs text-gray-400 text-center py-4">Belum ada peleburan.</p>
+                        )
+                        return plbList.map((plb:any)=>{
+                          // FIX poin 7: hitung durasi
+                          const durasi = durasiText(plb.jam_mulai, plb.jam_selesai)
+                          return (
+                          <div key={plb.id} className="px-4 py-3 border-t" style={{borderColor:'rgba(139,92,246,0.08)'}}>
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <p className="text-xs font-bold text-gray-800">{plb.kode}</p>
+                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${plb.status==='selesai'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>
+                                    {plb.status==='selesai'?'✓ Selesai':'⏳ Proses'}
+                                  </span>
+                                </div>
+                                {/* FIX poin 7: jam mulai & selesai */}
+                                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                  <p className="text-[10px] text-gray-400">
+                                    {new Date(plb.tanggal).toLocaleDateString('id-ID')}
+                                  </p>
+                                  {plb.jam_mulai&&(
+                                    <span className="flex items-center gap-0.5 text-[10px] text-violet-500 font-semibold">
+                                      <Clock size={9}/>{String(plb.jam_mulai).slice(0,5)}
+                                    </span>
+                                  )}
+                                  {plb.jam_selesai&&(
+                                    <span className="text-[10px] text-gray-400">→ <span className="text-green-600 font-semibold">{String(plb.jam_selesai).slice(0,5)}</span></span>
+                                  )}
+                                  {durasi&&<span className="text-[10px] text-gray-400 italic">({durasi})</span>}
+                                  {plb.operator&&<span className="text-[10px] text-gray-400">· {plb.operator}</span>}
+                                </div>
+                              </div>
+                              {/* FIX poin 12: Tombol hapus dengan konfirmasi yang lebih jelas */}
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                {plb.status!=='selesai'&&batch.status==='aktif'&&(
+                                  <button type="button" onClick={()=>setSelesaiLeburItem(plb)}
+                                    className="flex-shrink-0 px-2.5 py-1 rounded-xl text-[11px] font-bold text-white"
+                                    style={{background:'linear-gradient(135deg,#059669,#047857)'}}>
+                                    Selesai Lebur
+                                  </button>
+                                )}
+                                {batch.status==='aktif'&&(
+                                  hapusPlbId===plb.id ? (
+                                    <div className="flex items-center gap-1 px-2 py-1 rounded-xl bg-red-50 border border-red-200">
+                                      <span className="text-[10px] text-red-600 font-semibold">Hapus {plb.kode}?</span>
+                                      <button type="button" onClick={async()=>{
+                                        await voidPeleburan(plb.id,'Dihapus manual')
+                                        setHapusPlbId(null); router.refresh()
+                                      }} className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-red-500 text-white">Ya</button>
+                                      <button type="button" onClick={()=>setHapusPlbId(null)}
+                                        className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-gray-200 text-gray-600">Batal</button>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-1">
+                                      <button type="button" onClick={()=>setEditPlbItem(plb)}
+                                        className="w-7 h-7 rounded-xl bg-blue-50 flex items-center justify-center">
+                                        <Edit2 size={12} className="text-blue-400"/>
+                                      </button>
+                                      <button type="button" onClick={()=>setHapusPlbId(plb.id)}
+                                        className="w-7 h-7 rounded-xl bg-red-50 flex items-center justify-center"
+                                        title="Hapus peleburan">
+                                        <Trash2 size={12} className="text-red-400"/>
+                                      </button>
+                                    </div>
+                                  )
+                                )}
+                              </div>
+                            </div>
+                            {/* Gram info */}
+                            <div className="flex gap-4 text-xs">
+                              <div><p className="text-[10px] text-gray-400">Dikasih</p><p className="font-semibold text-gray-700">{fmtGram(plb.dikasih_gram)}</p></div>
+                              <div><p className="text-[10px] text-gray-400">Diterima</p><p className="font-semibold text-gray-700">{plb.diterima_gram!=null?fmtGram(plb.diterima_gram):'—'}</p></div>
+                              <div><p className="text-[10px] text-gray-400">Losses</p><p className={`font-semibold ${plb.losses_gram>0?'text-red-500':'text-gray-500'}`}>{plb.losses_gram!=null?fmtGram(plb.losses_gram):'—'}</p></div>
+                            </div>
+                            {/* Foto diserahkan + diterima */}
+                            {((Array.isArray(plb.foto_serahkan)&&plb.foto_serahkan.length>0)||(Array.isArray(plb.foto_diterima)&&plb.foto_diterima.length>0))&&(
+                              <div className="grid grid-cols-2 gap-3 mt-2">
+                                {Array.isArray(plb.foto_serahkan)&&plb.foto_serahkan.length>0&&(
+                                  <div>
+                                    <p className="text-[10px] text-gray-400 mb-1">📷 Diserahkan</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {(plb.foto_serahkan as string[]).map((url:string,i:number)=>(
+                                        <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                                          <img src={url} alt="" className="w-12 h-12 rounded-xl object-cover border border-violet-200 hover:opacity-80"/>
+                                        </a>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {Array.isArray(plb.foto_diterima)&&plb.foto_diterima.length>0&&(
+                                  <div>
+                                    <p className="text-[10px] text-gray-400 mb-1">📷 Diterima</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {(plb.foto_diterima as string[]).map((url:string,i:number)=>(
+                                        <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                                          <img src={url} alt="" className="w-12 h-12 rounded-xl object-cover border border-violet-200 hover:opacity-80"/>
+                                        </a>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {/* FIX poin 6: tampilkan keterangan_serahkan DAN keterangan_diterima */}
+                            {plb.keterangan_serahkan&&(
+                              <div className="mt-2 px-3 py-1.5 rounded-lg text-xs text-gray-500 italic" style={{background:"rgba(139,92,246,0.05)"}}>
+                                📤 Diserahkan: {plb.keterangan_serahkan}
+                              </div>
+                            )}
+                            {plb.keterangan_diterima&&(
+                              <div className="mt-1 px-3 py-1.5 rounded-lg text-xs text-green-700 italic" style={{background:"rgba(16,185,129,0.05)"}}>
+                                📥 Diterima: {plb.keterangan_diterima}
+                              </div>
+                            )}
+                          </div>
+                        )})
+                      })()}
+                    </div>
                   </div>
                 )}
               </div>
@@ -569,6 +804,14 @@ export default function BahanBakuClient({batches,userRole,userName}:Props){
 
       {/* Modals */}
       {showCreate&&<BatchFormModal onSubmit={handleCreate} onClose={()=>setShowCreate(false)} isPending={isPending} error={formError}/>}
+      {peleburanModalBatch&&<CreatePeleburanModal
+        batchKode={peleburanModalBatch}
+        batchNama={batches.find((b:any)=>b.kode===peleburanModalBatch)?.nama_batch??''}
+        sisaBahan={Number(batches.find((b:any)=>b.kode===peleburanModalBatch)?.sisa_bahan_seharusnya??0)}
+        rejectOptions={(rejectItems as any[]).filter((r:any)=>r.batch_kode===peleburanModalBatch)}
+        onClose={()=>setPeleburanModalBatch(null)} showToast={showToast}/>}
+      {selesaiLeburItem&&<SelesaiLeburModal peleburan={selesaiLeburItem} onClose={()=>setSelesaiLeburItem(null)} showToast={showToast}/>}
+      {editPlbItem&&<EditPeleburanModal peleburan={editPlbItem} onClose={()=>setEditPlbItem(null)} showToast={showToast}/>}
       {editItem&&<BatchFormModal initial={editItem} onSubmit={handleUpdate} onClose={()=>setEditItem(null)} isPending={isPending} error={formError} isEdit/>}
 
       {lockModal&&(
@@ -594,7 +837,8 @@ export default function BahanBakuClient({batches,userRole,userName}:Props){
           <div className="w-full max-w-sm rounded-3xl p-6 text-center"style={{background:'rgba(255,255,255,0.92)',backdropFilter:'blur(24px)',boxShadow:'0 32px 64px rgba(239,68,68,0.15)'}}>
             <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><Trash2 size={24}className="text-red-500"/></div>
             <h2 className="text-lg font-bold text-gray-900">Hapus Batch?</h2>
-            <p className="text-sm text-gray-500 mt-2 mb-6"><span className="font-semibold text-gray-700">{delModal.kode}</span> akan dihapus permanen.</p>
+            <p className="text-sm text-gray-500 mt-2 mb-1"><span className="font-semibold text-gray-700">{delModal.kode}</span> akan dihapus permanen.</p>
+            <p className="text-xs text-red-500 font-semibold mb-6">⚠ Tindakan ini tidak bisa dibatalkan</p>
             <div className="flex gap-3">
               <button onClick={()=>setDelModal(null)}className="flex-1 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
               <button onClick={()=>startTransition(async()=>{const r=await deleteBatch(delModal.id,delModal.kode);if(r?.error)showToast(r.error,false);else{showToast('🗑️ Batch dihapus');setDelModal(null)}})} disabled={isPending}
@@ -606,6 +850,466 @@ export default function BahanBakuClient({batches,userRole,userName}:Props){
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── Create Peleburan Modal (FIX poin 11: hanya 2 sumber) ───────────────────
+function CreatePeleburanModal({ batchKode, batchNama, sisaBahan, rejectOptions, onClose, showToast }: {
+  batchKode: string; batchNama: string; sisaBahan: number
+  rejectOptions: any[]
+  onClose: () => void; showToast: (m: string, ok?: boolean) => void
+}) {
+  const [pend, start]     = useTransition()
+  const [err, setErr]     = useState('')
+  const [fotos, setFotos] = useState<File[]>([])
+  const [batchChecked, setBatchChecked] = useState(false)
+  const [batchGram, setBatchGram]       = useState('')
+  const [rejGram, setRejGram]   = useState<Record<number,string>>({})
+  const router = useRouter()
+
+  function toggleRej(id: number, berat: number) {
+    setRejGram(prev => { const n={...prev}; if(n[id]!==undefined){delete n[id]}else{n[id]=Number(berat).toFixed(3)}; return n })
+  }
+
+  const totalDikasih =
+    (batchChecked ? (Number(batchGram)||0) : 0) +
+    Object.values(rejGram).reduce((s,v)=>s+(Number(v)||0),0)
+
+  const batchNaik = batchChecked && (Number(batchGram)||0) > sisaBahan && sisaBahan >= 0
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const form = e.currentTarget
+    const fd   = new FormData(form)
+    fd.set('batch_kode', batchKode)
+
+    type SI = { tipe:string; ref_id:string|null; ref_label:string; gram_otomatis:number; gram_aktual:number }
+    const sumber: SI[] = []
+    if (batchChecked && (Number(batchGram)||0) > 0)
+      sumber.push({ tipe:'batch_mentah', ref_id:null, ref_label:'Batch Mentah', gram_otomatis:sisaBahan, gram_aktual:Number(batchGram) })
+    for (const [id,gram] of Object.entries(rejGram)) {
+      const rej = rejectOptions.find((r:any)=>r.id===Number(id))
+      if (rej && (Number(gram)||0) > 0)
+        sumber.push({ tipe:'reject_cutting', ref_id:id, ref_label:rej.kode??rej.nama_item, gram_otomatis:Number(rej.berat_reject), gram_aktual:Number(gram) })
+    }
+    if (sumber.length === 0) { setErr('Pilih minimal satu sumber bahan'); return }
+    fd.set('sumber_json', JSON.stringify(sumber))
+    if (fotos.length > 0) {
+      const b64s = await filesToBase64(fotos)
+      fd.set('foto_serahkan_b64', JSON.stringify(b64s))
+    }
+    setErr('')
+    start(async () => {
+      const r = await createPeleburan(fd)
+      if (r?.error) { setErr(r.error); return }
+      showToast(`Peleburan ${r.kode} dibuat`)
+      onClose(); router.refresh()
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{background:'rgba(0,0,0,0.45)'}}>
+      <div className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[94vh] flex flex-col" style={{boxShadow:'0 8px 40px rgba(0,0,0,0.2)'}}>
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
+          <div>
+            <h2 className="text-base font-bold text-gray-900">Buat Peleburan</h2>
+            <p className="text-xs text-violet-500 font-semibold mt-0.5">{batchNama||batchKode}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><X size={15} className="text-gray-500"/></button>
+        </div>
+        <form onSubmit={handleSubmit} className="px-5 pb-6 space-y-4 overflow-y-auto flex-1">
+
+          {/* SUMBER BAHAN — FIX poin 11: hanya 2 pilihan */}
+          <div className="rounded-2xl overflow-hidden border border-violet-100">
+            <div className="px-4 py-2.5 text-xs font-bold text-violet-700 uppercase tracking-wide" style={{background:'rgba(139,92,246,0.06)'}}>
+              🧱 Sumber Bahan
+            </div>
+            <div className="p-4 space-y-4">
+
+              {/* 1. Sisa Bahan Mentah Batch */}
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input type="checkbox" checked={batchChecked} onChange={e=>setBatchChecked(e.target.checked)} className="w-4 h-4 rounded accent-violet-600"/>
+                  <span className="text-xs font-semibold text-gray-700">Sisa Bahan Mentah Batch</span>
+                  <span className="ml-auto text-[10px] text-gray-400">{(Math.round(sisaBahan*100)/100).toFixed(2).replace('.',',')} gr tersisa</span>
+                </label>
+                {batchChecked&&(
+                  <div className="mt-2 pl-6">
+                    <input type="number" step="0.001" placeholder={`cth: ${sisaBahan.toFixed(3)}`}
+                      value={batchGram} onChange={e=>setBatchGram(e.target.value)} className={inp}/>
+                    {batchNaik&&<p className="text-[11px] text-amber-600 font-semibold mt-1">⚠ Timbangan naik {((Number(batchGram)||0)-sisaBahan).toFixed(3)} gr — wajib isi Keterangan</p>}
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Reject Cutting */}
+              {rejectOptions.length>0&&(
+                <div>
+                  <p className="text-xs font-semibold text-gray-700 mb-2">Reject Cutting</p>
+                  <div className="space-y-2">
+                    {rejectOptions.map((rej:any)=>(
+                      <div key={rej.id}>
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input type="checkbox" checked={rejGram[rej.id]!==undefined} onChange={()=>toggleRej(rej.id,rej.berat_reject)} className="w-4 h-4 rounded accent-violet-600"/>
+                          <span className="text-xs font-medium text-gray-700">{rej.kode??rej.nama_item}</span>
+                          <span className="text-[10px] text-gray-400 ml-1">({rej.gramasi})</span>
+                          <span className="ml-auto text-[10px] text-red-400 font-semibold">{fmtGram(rej.berat_reject)}</span>
+                        </label>
+                        {rejGram[rej.id]!==undefined&&(
+                          <div className="mt-1 pl-6">
+                            <input type="number" step="0.001" max={rej.berat_reject} placeholder={`Max ${fmtGram(rej.berat_reject)}`}
+                              value={rejGram[rej.id]} onChange={e=>setRejGram(p=>({...p,[rej.id]:e.target.value}))} className={inp}/>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {rejectOptions.length===0&&!batchChecked&&(
+                <p className="text-xs text-gray-400 italic text-center py-2">Centang sumber bahan di atas</p>
+              )}
+
+              {/* Total */}
+              <div className="flex items-center justify-between px-3 py-2.5 rounded-xl" style={{background:'rgba(139,92,246,0.07)'}}>
+                <span className="text-xs text-gray-500 font-semibold">Total Dikasih</span>
+                <span className={`text-sm font-bold ${totalDikasih>0?'text-violet-700':'text-gray-400'}`}>{(Math.round(totalDikasih*100)/100).toFixed(2).replace('.',',')} gr</span>
+              </div>
+            </div>
+          </div>
+
+          {/* DISERAHKAN */}
+          <div className="rounded-2xl overflow-hidden border border-violet-100">
+            <div className="px-4 py-2.5 text-xs font-bold text-violet-700 uppercase tracking-wide" style={{background:'rgba(139,92,246,0.06)'}}>
+              📤 Diserahkan
+            </div>
+            <div className="p-4 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Tanggal Mulai *</label>
+                  <input name="tanggal" type="date" defaultValue={new Date().toISOString().split('T')[0]} className={inp} required/>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Jam Mulai *</label>
+                  <input name="jam_mulai" type="time" className={inp} required/>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Foto</label>
+                <label className="flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-violet-50">
+                  <Camera size={14} className="text-gray-400 flex-shrink-0"/>
+                  <span className="text-xs text-gray-400">{fotos.length>0?`${fotos.length} foto dipilih`:'Tambah foto'}</span>
+                  <input type="file" accept="image/*" multiple className="hidden"
+                    onChange={e=>setFotos(p=>[...p,...Array.from(e.target.files??[])].slice(0,5))}/>
+                </label>
+                {fotos.length>0&&(
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {fotos.map((f,i)=>(
+                      <div key={i} className="relative">
+                        <img src={URL.createObjectURL(f)} alt="" className="w-14 h-14 rounded-xl object-cover border border-violet-200"/>
+                        <button type="button" onClick={()=>setFotos(p=>p.filter((_,j)=>j!==i))}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Operator</label>
+                <input name="operator" type="text" placeholder="Nama operator" className={inp}/>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">
+                  Keterangan {batchNaik&&<span className="text-red-500">* (wajib — timbangan naik)</span>}
+                </label>
+                <input name="keterangan_serahkan" type="text"
+                  placeholder={batchNaik?'Jelaskan alasan timbangan naik...':'Opsional'}
+                  className={inp} required={batchNaik}/>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-4 py-3 rounded-2xl border border-dashed border-gray-200 text-center">
+            <p className="text-xs text-gray-400">Bagian <span className="font-semibold text-gray-500">Diterima</span> diisi setelah proses lebur selesai</p>
+          </div>
+
+          {err&&<div className="flex items-center gap-2 px-3 py-2 bg-red-50 rounded-xl text-xs text-red-600"><AlertTriangle size={13} className="flex-shrink-0"/><span>{err}</span></div>}
+
+          <div className="flex gap-2">
+            <button type="button" onClick={onClose} className="flex-1 h-11 rounded-2xl bg-gray-100 text-sm font-semibold text-gray-600">Batal</button>
+            <button type="submit" disabled={pend||totalDikasih<=0}
+              className="flex-1 h-11 rounded-2xl text-sm font-bold text-white disabled:opacity-40"
+              style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
+              {pend?'Menyimpan…':`Mulai Peleburan (${fmtGram(totalDikasih)})`}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Selesai Lebur Modal ──────────────────────────────────────────────────────
+function SelesaiLeburModal({ peleburan, onClose, showToast }: {
+  peleburan: any; onClose: () => void; showToast: (m: string, ok?: boolean) => void
+}) {
+  const [pend, start]   = useTransition()
+  const [err, setErr]   = useState('')
+  const [fotos, setFotos] = useState<File[]>([])
+  const router = useRouter()
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const form = e.currentTarget
+    const fd = new FormData(form)
+    if (fotos.length > 0) {
+      const b64s = await filesToBase64(fotos)
+      fd.set('foto_diterima_b64', JSON.stringify(b64s))
+    }
+    setErr('')
+    start(async () => {
+      const { selesaiLebur } = await import('@/app/(dashboard)/bahan-baku/actions')
+      const r = await selesaiLebur(peleburan.id, fd)
+      if (r?.error) { setErr(r.error); return }
+      showToast('Peleburan selesai — losses tercatat')
+      onClose(); router.refresh()
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      style={{background:'rgba(0,0,0,0.4)'}}>
+      <div className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[92vh] flex flex-col"
+        style={{boxShadow:'0 8px 40px rgba(0,0,0,0.18)'}}>
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
+          <div>
+            <h2 className="text-base font-bold text-gray-900">Selesai Lebur</h2>
+            <p className="text-xs text-violet-500 font-semibold mt-0.5">{peleburan.kode}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+            <X size={15} className="text-gray-500"/>
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="px-5 pb-6 space-y-4 overflow-y-auto flex-1">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs" style={{background:'rgba(139,92,246,0.06)'}}>
+            <span className="text-gray-500">Dikasih:</span>
+            <span className="font-bold text-violet-700">{fmtGram(peleburan.dikasih_gram)}</span>
+          </div>
+
+          <div className="rounded-2xl overflow-hidden border border-green-100">
+            <div className="px-4 py-2.5 text-xs font-bold text-green-700 uppercase tracking-wide"
+              style={{background:'rgba(16,185,129,0.06)'}}>
+              📥 Diterima
+            </div>
+            <div className="p-4 space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Berat Diterima (gr) *</label>
+                <input name="diterima_gram" type="number" step="0.001"
+                  max={peleburan.dikasih_gram} placeholder="cth: 499.980" className={inp} required/>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Tanggal Selesai *</label>
+                  <input name="tanggal_diterima" type="date"
+                    defaultValue={new Date().toISOString().split('T')[0]}
+                    className={inp} required/>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Jam Selesai *</label>
+                  <input name="jam_selesai" type="time" className={inp} required/>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Foto Bukti</label>
+                <label className="flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-green-50 transition-colors">
+                  <Camera size={14} className="text-gray-400 flex-shrink-0"/>
+                  <span className="text-xs text-gray-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto'}</span>
+                  <input type="file" accept="image/*" multiple className="hidden"
+                    onChange={e => setFotos(p => [...p, ...Array.from(e.target.files??[])].slice(0,5))}/>
+                </label>
+                {fotos.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {fotos.map((f,i) => (
+                      <div key={i} className="relative">
+                        <img src={URL.createObjectURL(f)} alt="" className="w-14 h-14 rounded-xl object-cover border border-green-200"/>
+                        <button type="button" onClick={() => setFotos(p => p.filter((_,j) => j!==i))}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Operator</label>
+                <input name="operator_diterima" type="text" placeholder="Nama operator" className={inp}/>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Catatan Selesai Lebur</label>
+                <input name="keterangan_diterima" type="text" placeholder="Opsional" className={inp}/>
+              </div>
+            </div>
+          </div>
+
+          {err && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-red-50 rounded-xl text-xs text-red-600">
+              <AlertTriangle size={13} className="flex-shrink-0"/><span>{err}</span>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <button type="button" onClick={onClose}
+              className="flex-1 h-11 rounded-2xl bg-gray-100 text-sm font-semibold text-gray-600">
+              Batal
+            </button>
+            <button type="submit" disabled={pend}
+              className="flex-1 h-11 rounded-2xl text-sm font-bold text-white disabled:opacity-50"
+              style={{background:'linear-gradient(135deg,#059669,#047857)'}}>
+              {pend ? 'Menyimpan…' : 'Konfirmasi Selesai'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Edit Peleburan Modal ─────────────────────────────────────────────────────
+function EditPeleburanModal({ peleburan, onClose, showToast }: {
+  peleburan: any; onClose: () => void; showToast: (m: string, ok?: boolean) => void
+}) {
+  const [pend, start] = useTransition()
+  const [err, setErr] = useState('')
+  const [editDikasih, setEditDikasih] = useState('')
+  const [newFotos, setNewFotos] = useState<File[]>([])
+  const [existingFotos, setExistingFotos] = useState<string[]>(
+    Array.isArray(peleburan.foto_serahkan) ? peleburan.foto_serahkan : []
+  )
+  const router = useRouter()
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const form = e.currentTarget
+    const fd = new FormData(form)
+    fd.set('existing_fotos', JSON.stringify(existingFotos))
+    if (newFotos.length > 0) {
+      const b64s = await filesToBase64(newFotos)
+      fd.set('foto_serahkan_b64', JSON.stringify(b64s))
+    }
+    setErr('')
+    start(async () => {
+      const r = await editPeleburan(peleburan.id, fd)
+      if (r?.error) { setErr(r.error); return }
+      showToast('Peleburan berhasil diupdate')
+      onClose(); router.refresh()
+    })
+  }
+
+  const toTime = (t: any) => t ? String(t).slice(0,5) : ''
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      style={{background:'rgba(0,0,0,0.4)'}}>
+      <div className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[92vh] flex flex-col"
+        style={{boxShadow:'0 8px 40px rgba(0,0,0,0.18)'}}>
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
+          <div>
+            <h2 className="text-base font-bold text-gray-900">Edit Peleburan</h2>
+            <p className="text-xs text-violet-500 font-semibold mt-0.5">{peleburan.kode}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+            <X size={15} className="text-gray-500"/>
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="px-5 pb-6 space-y-3 overflow-y-auto flex-1">
+          <div className="rounded-2xl overflow-hidden border border-violet-100">
+            <div className="px-4 py-2.5 text-xs font-bold text-violet-700 uppercase tracking-wide"
+              style={{background:'rgba(139,92,246,0.06)'}}>
+              📤 Diserahkan
+            </div>
+            <div className="p-4 space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Berat Diserahkan (gr) *</label>
+                <input name="dikasih_gram" type="number" step="0.001"
+                  defaultValue={peleburan.dikasih_gram} className={inp}
+                  onChange={e => setEditDikasih(e.target.value)} required/>
+                {(() => {
+                  const val = Number(editDikasih||peleburan.dikasih_gram)
+                  const sisa = Number(peleburan.sisa_tersedia ?? 0)
+                  if (sisa > 0 && val > sisa) return (
+                    <div className="flex items-center gap-2 mt-1.5 px-3 py-2 rounded-xl text-xs bg-amber-50 border border-amber-200">
+                      <span className="text-amber-600 font-bold">⚠</span>
+                      <span className="text-amber-700 font-semibold">Timbangan naik {(val - sisa).toFixed(3)} gr dari sisa ({sisa.toFixed(3)} gr)</span>
+                    </div>
+                  )
+                  return null
+                })()}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Tanggal Mulai *</label>
+                  <input name="tanggal" type="date"
+                    defaultValue={peleburan.tanggal} className={inp} required/>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Jam Mulai *</label>
+                  <input name="jam_mulai" type="time"
+                    defaultValue={toTime(peleburan.jam_mulai)} className={inp} required/>
+                </div>
+              </div>
+              {existingFotos.length > 0 && (
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Foto saat ini</label>
+                  <div className="flex flex-wrap gap-2">
+                    {existingFotos.map((url,i) => (
+                      <div key={i} className="relative">
+                        <img src={url} alt="" className="w-14 h-14 rounded-xl object-cover border border-violet-200"/>
+                        <button type="button" onClick={() => setExistingFotos(p => p.filter((_,j) => j!==i))}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">×</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Tambah Foto</label>
+                <label className="flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-violet-50">
+                  <Camera size={14} className="text-gray-400 flex-shrink-0"/>
+                  <span className="text-xs text-gray-400">{newFotos.length > 0 ? `${newFotos.length} foto baru` : 'Tambah foto'}</span>
+                  <input type="file" accept="image/*" multiple className="hidden"
+                    onChange={e => setNewFotos(p => [...p, ...Array.from(e.target.files??[])].slice(0,5))}/>
+                </label>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Operator</label>
+                <input name="operator" type="text" defaultValue={peleburan.operator??''}
+                  placeholder="Nama operator" className={inp}/>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Keterangan</label>
+                <input name="keterangan_serahkan" type="text" defaultValue={peleburan.keterangan_serahkan??''}
+                  placeholder="Opsional" className={inp}/>
+              </div>
+            </div>
+          </div>
+          {err && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-red-50 rounded-xl text-xs text-red-600">
+              <AlertTriangle size={13} className="flex-shrink-0"/><span>{err}</span>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <button type="button" onClick={onClose}
+              className="flex-1 h-11 rounded-2xl bg-gray-100 text-sm font-semibold text-gray-600">
+              Batal
+            </button>
+            <button type="submit" disabled={pend}
+              className="flex-1 h-11 rounded-2xl text-sm font-bold text-white disabled:opacity-50"
+              style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
+              {pend ? 'Menyimpan…' : 'Simpan Perubahan'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
