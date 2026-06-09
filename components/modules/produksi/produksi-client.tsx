@@ -1046,504 +1046,430 @@ function StatChip({ label, value, accent }: { label: string; value: React.ReactN
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
 export default function ProduksiClient({ produksiList, batches, userRole, userName }: Props) {
-  const [isPending, startTransition] = useTransition()
-  const [search,       setSearch]    = useState('')
-  const [tab,          setTab]       = useState('Semua')
-  const [exp,          setExp]       = useState<number | null>(null)
-  const [modal,        setModal]     = useState<'create'|'edit'|'update'|'delete'|'cuttingTerima'|'serahStage'|'terimaStage'|null>(null)
-  const [activeTahap,  setActiveTahap]  = useState<string>('')
+  const [search, setSearch]     = useState('')
+  const [filterStatus, setFilter] = useState<string>('Semua')
+  const [expanded, setExpanded] = useState<Set<number>>(new Set())
+  const [modal, setModal]       = useState<'create'|'edit'|'update'|'delete'|'cuttingTerima'|'serahStage'|'terimaStage'|null>(null)
+  const [active, setActive]     = useState<any>(null)
+  const [activeTahap, setActiveTahap]   = useState<string>('')
   const [activeHandoverId, setActiveHandoverId] = useState<number|null>(null)
-  const [active,       setActive]    = useState<any | null>(null)
-  const [err,          setErr]       = useState('')
-  const [toast,        setToast]     = useState<{ msg: string; ok: boolean } | null>(null)
-  const [visibleCount, setVisible]   = useState(20)
+  const [err, setErr]           = useState('')
+  const [toast, setToast]       = useState<{msg:string;ok:boolean}|null>(null)
+  const [isPending, start]      = useTransition()
 
-  // Restore last active tab from localStorage
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('produksi_tab')
-      if (saved) setTab(saved)
-    } catch {}
-  }, [])
-
-  function changeTab(t: string) {
-    setTab(t)
-    setVisible(20)
-    try { localStorage.setItem('produksi_tab', t) } catch {}
-  }
-
-  function showToast(msg: string, ok = true) { setToast({ msg, ok }); setTimeout(() => setToast(null), 3500) }
   const canEdit   = ['owner','admin_pusat','spv','operator_produksi'].includes(userRole)
-  const canDelete = ['owner','admin_pusat'].includes(userRole)
+  const canDelete = ['owner','admin_pusat','spv'].includes(userRole)
 
-  // 'Semua' hides archived (Sudah Packing) items — only shown when that tab is active
-  const filtered = produksiList.filter(item => {
-    if (tab === 'Semua' && item.current_status === 'Sudah Packing') return false
-    if (tab !== 'Semua' && item.current_status !== tab) return false
-    const q = search.toLowerCase()
-    return !q || item.kode?.toLowerCase().includes(q) || item.batch_kode?.toLowerCase().includes(q) || item.gramasi?.includes(q) || item.nama_item?.toLowerCase().includes(q)
+  function showToast(msg: string, ok = true) { setToast({msg,ok}); setTimeout(()=>setToast(null),3200) }
+  function openModal(type: typeof modal, item?: any) { setActive(item??null); setErr(''); setModal(type) }
+  function openSerahStage(item: any, tahap: string)  { setActive(item); setActiveTahap(tahap); setErr(''); setModal('serahStage') }
+  function openTerimaStage(item: any, tahap: string, hid: number) { setActive(item); setActiveTahap(tahap); setActiveHandoverId(hid); setErr(''); setModal('terimaStage') }
+  function toggleExp(id: number) { setExpanded(prev => { const n=new Set(prev); n.has(id)?n.delete(id):n.add(id); return n }) }
+
+  function handleCreate(fd: FormData) { setErr(''); start(async()=>{ const r=await createProduksi(fd); if(r?.error){setErr(r.error);return}; showToast(`✅ ${r.kode} dibuat`); setModal(null) }) }
+  function handleEdit(fd: FormData)   { if(!active)return; setErr(''); start(async()=>{ const r=await editProduksi(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Diperbarui'); setModal(null) }) }
+  function handleUpdate(fd: FormData) { if(!active)return; setErr(''); start(async()=>{ const r=await updateStatusProduksi(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Status diperbarui'); setModal(null) }) }
+  function handleDelete()             { if(!active)return; start(async()=>{ await deleteProduksi(active.id,active.kode); showToast('🗑️ Dihapus'); setModal(null) }) }
+  function handleSelesaiCutting(fd: FormData) { if(!active)return; setErr(''); start(async()=>{ const r=await selesaiCutting(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Cutting diterima'); setModal(null) }) }
+  function handleSerahStage(fd: FormData)  { if(!active)return; setErr(''); start(async()=>{ const r=await serahStageProduksi(active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast(`✅ Diserahkan ke ${activeTahap.replace('_',' ')}`); setModal(null) }) }
+  function handleTerimaStage(fd: FormData) { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await terimaStageProduksi(activeHandoverId,active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast(`✅ Terima berhasil`); setModal(null) }) }
+
+  // ── Stats ──────────────────────────────────────────────────────────────────
+  const active_count   = produksiList.filter(i=>!['Sudah Packing','Reject'].includes(i.current_status)).length
+  const siap_count     = produksiList.filter(i=>i.current_status==='Siap Packing').length
+  const totalLosses    = produksiList.reduce((s,i)=>{
+    const evts: any[] = Array.isArray(i.produksi_event)?i.produksi_event:[]
+    return s + evts.filter((e:any)=>!e.voided_at).reduce((a:number,e:any)=>a+(Number(e.losses)||0),0)
+  },0)
+  const handoverLosses = produksiList.reduce((s,i)=>{
+    const hs: any[] = Array.isArray(i.stage_handover)?i.stage_handover.filter((h:any)=>!h.voided_at):[]
+    return s + hs.reduce((a:number,h:any)=>a+(Number(h.losses_gram)||0),0)
+  },0)
+
+  // ── Filter ────────────────────────────────────────────────────────────────
+  const STATUS_TABS = ['Semua','Cutting','Pas Berat','Annealing','Siap Packing','Sudah Packing','Reject']
+  const filtered = produksiList.filter(i=>{
+    if(filterStatus!=='Semua' && i.current_status!==filterStatus) return false
+    if(!search) return true
+    const q=search.toLowerCase()
+    return i.kode?.toLowerCase().includes(q)||i.nama_item?.toLowerCase().includes(q)||i.batch_kode?.toLowerCase().includes(q)||i.gramasi?.toString().includes(q)
   })
 
-  // Reset pagination when filter changes
-  useEffect(() => { setVisible(20) }, [tab, search])
-
-  const counts = produksiList.reduce((a, i) => { a[i.current_status] = (a[i.current_status] ?? 0) + 1; return a }, {} as Record<string,number>)
-  const activeCount = produksiList.filter(i => i.current_status !== 'Sudah Packing' && i.current_status !== 'Reject').length
-  const overdueCount = produksiList.filter(i => {
-    if (!i.target_selesai) return false
-    if (i.current_status === 'Sudah Packing') return false
-    return new Date(i.target_selesai) < new Date(today)
-  }).length
-  const totalLoses = produksiList.reduce((s, item) => {
-    const evs = Array.isArray(item.produksi_event) ? item.produksi_event : []
-    return s + evs.reduce((es: number, ev: any) => es + (Number(ev.losses) || 0), 0)
-  }, 0)
-
-  const tabs = ['Semua', ...STATUS_FLOW, 'Sudah Packing', 'Reject']
-  const visible = filtered.slice(0, visibleCount)
-
-  function openModal(type: 'create'|'edit'|'update'|'delete'|'cuttingTerima'|'serahStage'|'terimaStage', item?: any) { setActive(item ?? null); setErr(''); setModal(type) }
-  function handleCreate(fd: FormData) { setErr(''); startTransition(async () => { const r = await createProduksi(fd); if (r?.error) { setErr(r.error); return }; showToast(`✅ ${r?.kode} berhasil dibuat`); setModal(null) }) }
-  function handleEdit(fd: FormData)   { if (!active) return; setErr(''); startTransition(async () => { const r = await editProduksi(active.id, active.kode, fd); if (r?.error) { setErr(r.error); return }; showToast('✅ Data diperbarui'); setModal(null) }) }
-  function handleSelesaiCutting(fd: FormData) { if (!active) return; setErr(''); startTransition(async () => { const r = await selesaiCutting(active.id, active.kode, fd); if (r?.error) { setErr(r.error); return }; showToast('✅ Cutting diterima'); setModal(null) }) }
-  function handleSerahStage(fd: FormData) { if (!active) return; setErr(''); startTransition(async () => { const r = await serahStageProduksi(active.id, active.kode, activeTahap, fd); if (r?.error) { setErr(r.error); return }; showToast(`✅ Diserahkan ke ${activeTahap.replace('_',' ')}`); setModal(null) }) }
-  function handleTerimaStage(fd: FormData) { if (!active || !activeHandoverId) return; setErr(''); startTransition(async () => { const r = await terimaStageProduksi(activeHandoverId, active.id, active.kode, activeTahap, fd); if (r?.error) { setErr(r.error); return }; showToast(`✅ Terima ${activeTahap.replace('_',' ')} berhasil`); setModal(null) }) }
-  function openSerahStage(item: any, tahap: string) { setActive(item); setActiveTahap(tahap); setErr(''); setModal('serahStage') }
-  function openTerimaStage(item: any, tahap: string, handoverId: number) { setActive(item); setActiveTahap(tahap); setActiveHandoverId(handoverId); setErr(''); setModal('terimaStage') }
-  function handleUpdate(fd: FormData) {
-    if (!active) return; setErr('')
-    const isReject = fd.get('is_reject') === '1'
-    startTransition(async () => {
-      const r = isReject ? await inputReject(active.id, active.kode, fd) : await updateStatusProduksi(active.id, active.kode, fd)
-      if (r?.error) { setErr(r.error); return }
-      showToast(isReject ? '✅ Reject dicatat' : '✅ Status diperbarui'); setModal(null)
-    })
+  const STATUS_COLOR: Record<string,{bg:string;text:string;dot:string}> = {
+    'Cutting':      {bg:'rgba(59,130,246,0.1)',   text:'#2563EB', dot:'#3B82F6'},
+    'Pas Berat':    {bg:'rgba(249,115,22,0.1)',   text:'#EA580C', dot:'#F97316'},
+    'Annealing':    {bg:'rgba(234,179,8,0.1)',    text:'#CA8A04', dot:'#EAB308'},
+    'Siap Packing': {bg:'rgba(139,92,246,0.12)',  text:'#7C3AED', dot:'#8B5CF6'},
+    'Sudah Packing':{bg:'rgba(34,197,94,0.1)',    text:'#15803D', dot:'#22C55E'},
+    'Reject':       {bg:'rgba(239,68,68,0.1)',    text:'#DC2626', dot:'#EF4444'},
   }
-  function handleDelete() { if (!active) return; startTransition(async () => { const r = await deleteProduksi(active.id, active.kode); if (r?.error) { showToast(r.error, false); return }; showToast('🗑️ Batch dihapus'); setModal(null) }) }
 
   return (
-    <div className="min-h-screen pb-24" style={{ background: 'linear-gradient(160deg,#F2F2F7 0%,#EBEBF0 50%,#F2F2F7 100%)' }}>
-
-      {/* Offline Banner */}
-      <OfflineIndicator />
+    <div className="min-h-screen pb-24" style={{background:'linear-gradient(160deg,#F5F5F7 0%,#EFEFF4 60%,#F5F5F7 100%)'}}>
 
       {/* Toast */}
-      {toast && (
-        <div className={cn('fixed top-4 right-4 left-4 sm:left-auto z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-2xl text-sm font-semibold text-white shadow-2xl', toast.ok ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 'bg-gradient-to-r from-red-500 to-rose-600')}>
-          {toast.ok ? <Check size={15} /> : <AlertTriangle size={15} />}{toast.msg}
+      {toast&&(
+        <div className={`fixed top-4 right-4 z-[200] flex items-center gap-2.5 px-5 py-3.5 rounded-2xl text-sm font-semibold text-white shadow-2xl transition-all ${toast.ok?'bg-gradient-to-r from-emerald-500 to-green-600':'bg-gradient-to-r from-red-500 to-rose-600'}`}>
+          {toast.ok?<Check size={15}/>:<AlertTriangle size={15}/>}{toast.msg}
         </div>
       )}
 
-      <div className="p-4 lg:p-6 max-w-[1100px] mx-auto space-y-5">
+      <div className="p-4 lg:p-6 max-w-4xl mx-auto space-y-5">
 
-        {/* ── Header ── */}
-        <div className="flex items-center justify-between flex-wrap gap-3 pt-1">
+        {/* ── Header ──────────────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900" style={{ fontFamily: "'SF Pro Display','Inter',sans-serif" }}>Produksi</h1>
-            <p className="text-sm text-gray-400 mt-0.5 font-medium">{activeCount} batch aktif</p>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">Produksi</h1>
+            <p className="text-sm text-gray-400 mt-0.5 font-medium">{produksiList.length} item total</p>
           </div>
-          {canEdit && (
-            <button onClick={() => openModal('create')}
-              className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white rounded-2xl transition-all hover:-translate-y-0.5 active:translate-y-0"
-              style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', boxShadow: '0 4px 20px rgba(139,92,246,0.38)' }}>
-              <Plus size={15} /> Cetak Baru
+          {canEdit&&(
+            <button onClick={()=>openModal('create')}
+              className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white rounded-2xl hover:-translate-y-0.5 transition-all"
+              style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)',boxShadow:'0 4px 20px rgba(139,92,246,0.4)'}}>
+              <Plus size={15}/> Cetak Baru
             </button>
           )}
         </div>
 
-        {/* ── Summary Stats ── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <StatChip label="Batch Aktif"   value={activeCount}                              accent="violet" />
-          <StatChip label="Siap Packing"  value={counts['Siap Packing']  ?? 0}             accent="green"  />
-          <StatChip label="Total Losses"  value={totalLoses > 0 ? `${fgr(totalLoses)} gr` : '0'} accent={totalLoses > 0 ? 'orange' : undefined} />
-          <StatChip label="Terlambat"
-            value={<span className="flex items-center gap-1">{overdueCount > 0 && <Clock size={11} />}{overdueCount}</span>}
-            accent={overdueCount > 0 ? 'red' : undefined}
-          />
+        {/* ── Stat cards ──────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          {[
+            {label:'Batch Aktif', val:String(active_count), accent:'#8B5CF6'},
+            {label:'Siap Packing', val:String(siap_count), accent:'#22C55E'},
+            {label:'Total Losses', val:fgr(totalLosses+handoverLosses)+' gr', accent:'#EF4444'},
+            {label:'Total Item', val:String(produksiList.length), accent:'#3B82F6'},
+          ].map(s=>(
+            <div key={s.label} className="rounded-2xl px-4 py-3 overflow-hidden"
+              style={{background:'rgba(255,255,255,0.8)',backdropFilter:'blur(20px)',border:'1px solid rgba(255,255,255,0.6)',boxShadow:'0 2px 12px rgba(0,0,0,0.04)'}}>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">{s.label}</p>
+              <p className="text-lg font-extrabold mt-0.5" style={{color:s.accent}}>{s.val}</p>
+            </div>
+          ))}
         </div>
 
-        {/* ── Search ── */}
+        {/* ── Search ──────────────────────────────────────────────────────── */}
         <div className="relative">
-          <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari kode batch, gramasi, nama…"
+          <Search size={13} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
+          <input value={search} onChange={e=>setSearch(e.target.value)}
+            placeholder="Cari kode, nama item, gramasi, batch..."
             className="w-full pl-10 pr-4 py-3 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all"
-            style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(0,0,0,0.07)' }} />
+            style={{background:'rgba(255,255,255,0.8)',backdropFilter:'blur(12px)',border:'1px solid rgba(209,213,219,0.5)'}}/>
         </div>
 
-        {/* ── Filter tabs ── */}
-        <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-          {tabs.map(t => {
-            const isAct = tab === t
-            const cfg   = STATUS_CFG[t]
-            // 'Semua' shows active count (excl. Sudah Packing), others show exact count
-            const cnt = t === 'Semua' ? activeCount : (counts[t] ?? 0)
+        {/* ── Filter tabs ─────────────────────────────────────────────────── */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {STATUS_TABS.map(tab=>{
+            const count = tab==='Semua' ? produksiList.length : produksiList.filter(i=>i.current_status===tab).length
+            const active = filterStatus===tab
             return (
-              <button key={t} onClick={() => changeTab(t)}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap flex-shrink-0"
-                style={isAct
-                  ? { background: cfg?.dot ?? 'linear-gradient(135deg,#8B5CF6,#7C3AED)', color: '#fff', boxShadow: `0 4px 12px ${cfg?.dot ?? '#8B5CF6'}40` }
-                  : { background: 'rgba(255,255,255,0.85)', color: '#6B7280', border: '1px solid rgba(0,0,0,0.07)' }}>
-                {t === 'Sudah Packing' && <Archive size={10} className="flex-shrink-0" />}
-                {t}{cnt > 0 && <span className="px-1.5 py-0.5 rounded-full text-[10px]" style={{ background: isAct ? 'rgba(255,255,255,0.25)' : 'rgba(107,114,128,0.12)' }}>{cnt}</span>}
+              <button key={tab} onClick={()=>setFilter(tab)}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-all"
+                style={active
+                  ? {background:'linear-gradient(135deg,#8B5CF6,#7C3AED)',color:'#fff',boxShadow:'0 4px 12px rgba(139,92,246,0.35)'}
+                  : {background:'rgba(255,255,255,0.8)',color:'#6B7280',border:'1px solid rgba(209,213,219,0.5)'}}>
+                {tab} <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${active?'bg-white/20':'bg-gray-100'}`}>{count}</span>
               </button>
             )
           })}
         </div>
 
-        {/* ── Cards ── */}
-        {visible.length === 0 ? (
-          <div className="rounded-3xl p-14 text-center" style={{ background: 'rgba(255,255,255,0.75)', border: '1px solid rgba(0,0,0,0.06)' }}>
-            <div className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(139,92,246,0.07)' }}>
-              <Package size={28} className="text-violet-300" />
+        {/* ── Item cards ──────────────────────────────────────────────────── */}
+        <div className="space-y-3">
+          {filtered.length===0?(
+            <div className="text-center py-16 rounded-3xl"
+              style={{background:'rgba(255,255,255,0.6)',backdropFilter:'blur(20px)',border:'1px solid rgba(255,255,255,0.5)'}}>
+              <div className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4"
+                style={{background:'rgba(139,92,246,0.08)'}}>
+                <Package size={28} className="text-violet-300"/>
+              </div>
+              <p className="text-sm font-medium text-gray-400">
+                {search ? `Tidak ada hasil untuk "${search}"` : 'Belum ada item produksi'}
+              </p>
             </div>
-            <p className="text-sm font-medium text-gray-400">Tidak ada batch produksi</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {visible.map(item => {
-              const events     = Array.isArray(item.produksi_event) ? item.produksi_event : []
-              const packings   = Array.isArray(item.packing) ? (item.packing as any[]).filter((p: any) => !p.voided_at) : []
-              const sortedEvs  = sortEvents(events)
-              const lastEv     = sortedEvs.length > 0 ? sortedEvs[sortedEvs.length - 1] : null
-              const isExp      = exp === item.id
-              const pcsGood    = item.pcs_good ?? item.pcs ?? 0
-              const totalPacked = packings.reduce((s: number, p: any) => s + (p.pcs_dipack || 0), 0)
-              const totalST    = packings.reduce((s: number, p: any) => s + (p.shieldtag_count || 0), 0)
-              const totalSerbuk = events.reduce((s: number, ev: any) => s + (Number(ev.sisa_serbuk) || 0), 0)
-              const totalLoses  = events.reduce((s: number, ev: any) => s + (Number(ev.losses)      || 0), 0)
+          ):filtered.map(item=>{
+            const isExp     = expanded.has(item.id)
+            const sc        = STATUS_COLOR[item.current_status] ?? {bg:'rgba(156,163,175,0.1)',text:'#6B7280',dot:'#9CA3AF'}
+            const events: any[] = Array.isArray(item.produksi_event)?item.produksi_event.filter((e:any)=>!e.voided_at):[]
+            const handovers: any[] = Array.isArray(item.stage_handover)?item.stage_handover.filter((h:any)=>!h.voided_at).sort((a:any,b:any)=>['pas_berat','annealing','siap_packing'].indexOf(a.tahap)-['pas_berat','annealing','siap_packing'].indexOf(b.tahap)):[]
+            const pbH  = handovers.find((h:any)=>h.tahap==='pas_berat')
+            const annH = handovers.find((h:any)=>h.tahap==='annealing')
+            const spH  = handovers.find((h:any)=>h.tahap==='siap_packing')
+            const s    = item.current_status
+            const isVoided = !!item.voided_at
 
-              // Bahan baku data
-              const b          = item.batch ? (Array.isArray(item.batch) ? item.batch[0] : item.batch) : null
-              const bahanAwal  = b ? Number(b.timbangan_akhir || 0) : 0
-              const sisaS      = b ? Number(b.sisa_bahan_seharusnya || 0) : 0
-              const terpakai   = bahanAwal - sisaS
-              const sisaF      = b && b.sisa_fisik !== null && b.sisa_fisik !== undefined ? Number(b.sisa_fisik) : null
-              const losesBahan = sisaF !== null ? sisaS - sisaF : null   // positif = ada kehilangan
+            // Cutting info
+            const cutLosses = Number(item.losses_cutting??0)
+            const cutReject = Number(item.reject_cutting_gram??0)
 
-              return (
-                <div key={item.id} className="rounded-3xl overflow-hidden transition-shadow hover:shadow-md"
-                  style={{ background: 'rgba(255,255,255,0.88)', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', backdropFilter: 'blur(20px)' }}>
+            // Losses total
+            const evtLosses = events.reduce((a:number,e:any)=>a+(Number(e.losses)||0),0)
+            const stgLosses = handovers.filter((h:any)=>h.status==='selesai').reduce((a:number,h:any)=>a+(Number(h.losses_gram)||0),0)
+            const totalItemLosses = cutLosses + stgLosses
 
-                  {/* ── Card Header ── */}
-                  <div className="px-5 pt-4 pb-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        {/* Overdue badge */}
-                        {item.target_selesai && item.current_status !== 'Sudah Packing' && new Date(item.target_selesai) < new Date(today) && (
-                          <div className="flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-50 border border-red-100 rounded-full px-2 py-0.5 mb-1.5 w-fit">
-                            <Clock size={9} /> Terlambat — target {formatDate(item.target_selesai)}
+            return (
+              <div key={item.id}
+                className="rounded-3xl overflow-hidden transition-all"
+                style={{
+                  background:'rgba(255,255,255,0.75)',
+                  backdropFilter:'blur(20px)',
+                  border:`1px solid rgba(255,255,255,0.6)`,
+                  boxShadow:`0 4px 24px rgba(139,92,246,0.06),0 1px 8px rgba(0,0,0,0.04)`,
+                  borderLeft:`3px solid ${sc.dot}`,
+                }}>
+
+                {/* ── Card Header ─────────────────────────────────────────── */}
+                <div className="flex items-center gap-3 px-5 pt-4 pb-3">
+                  {/* Avatar */}
+                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center font-extrabold text-sm flex-shrink-0"
+                    style={{background:`linear-gradient(135deg,${sc.dot}22,${sc.dot}10)`,color:sc.dot}}>
+                    {item.gramasi ?? '?'}
+                  </div>
+
+                  {/* Main info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-sm font-bold text-gray-900 truncate">{item.nama_item ?? item.kode}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+                        style={{background:sc.bg,color:sc.text}}>
+                        {item.current_status}
+                      </span>
+                      {item.status_cutting==='proses'&&<span className="text-[9px] bg-blue-100 text-blue-600 font-bold px-1.5 py-0.5 rounded-full">proses</span>}
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-0.5 font-medium">
+                      {item.kode} · {item.batch_kode}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-0.5">
+                      <span className="font-bold">{item.gramasi}gr</span>
+                      <span className="text-gray-300 mx-1">×</span>
+                      <span className="font-semibold">{item.pcs_good??item.pcs??'?'} pcs</span>
+                      <span className="text-gray-300 mx-1">=</span>
+                      <span className="font-bold text-gray-700">{fgr(item.total_gram)} gr</span>
+                      {item.jam_mulai_cutting&&<span className="text-violet-400 ml-2 font-semibold">⏱ {String(item.jam_mulai_cutting).slice(0,5)}</span>}
+                    </p>
+                  </div>
+
+                  {/* Action buttons */}
+                  {canEdit&&!isVoided&&(()=>{
+                    if(s==='Cutting'&&item.status_cutting==='proses')
+                      return <button onClick={()=>openModal('cuttingTerima',item)}
+                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all"
+                        style={{background:'rgba(34,197,94,0.12)',color:'#16A34A'}}>
+                        <Check size={11}/> Diterima
+                      </button>
+                    if(s==='Cutting'&&item.status_cutting==='selesai'&&!pbH)
+                      return <button onClick={()=>openSerahStage(item,'pas_berat')}
+                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all"
+                        style={{background:'rgba(249,115,22,0.12)',color:'#EA580C'}}>
+                        <Plus size={11}/> Pas Berat
+                      </button>
+                    if(s==='Pas Berat'&&pbH?.status==='proses')
+                      return <button onClick={()=>openTerimaStage(item,'pas_berat',pbH.id)}
+                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all"
+                        style={{background:'rgba(34,197,94,0.12)',color:'#16A34A'}}>
+                        <Check size={11}/> Diterima
+                      </button>
+                    if(s==='Pas Berat'&&!pbH)
+                      return <button onClick={()=>openTerimaStage(item,'pas_berat',0)}
+                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all"
+                        style={{background:'rgba(34,197,94,0.12)',color:'#16A34A'}}>
+                        <Check size={11}/> Terima
+                      </button>
+                    if(s==='Pas Berat'&&pbH?.status==='selesai'&&!annH)
+                      return <button onClick={()=>openSerahStage(item,'annealing')}
+                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all"
+                        style={{background:'rgba(234,179,8,0.12)',color:'#CA8A04'}}>
+                        <Plus size={11}/> Annealing
+                      </button>
+                    if(s==='Annealing'&&annH?.status==='proses')
+                      return <button onClick={()=>openTerimaStage(item,'annealing',annH.id)}
+                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all"
+                        style={{background:'rgba(34,197,94,0.12)',color:'#16A34A'}}>
+                        <Check size={11}/> Diterima
+                      </button>
+                    if(s==='Annealing'&&!annH)
+                      return <button onClick={()=>openTerimaStage(item,'annealing',0)}
+                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all"
+                        style={{background:'rgba(34,197,94,0.12)',color:'#16A34A'}}>
+                        <Check size={11}/> Terima
+                      </button>
+                    if(s==='Annealing'&&annH?.status==='selesai'&&!spH)
+                      return <button onClick={()=>openSerahStage(item,'siap_packing')}
+                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all"
+                        style={{background:'rgba(139,92,246,0.12)',color:'#7C3AED'}}>
+                        <Plus size={11}/> Siap Packing
+                      </button>
+                    if(s==='Siap Packing'&&spH?.status==='proses')
+                      return <button onClick={()=>openTerimaStage(item,'siap_packing',spH.id)}
+                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all"
+                        style={{background:'rgba(34,197,94,0.12)',color:'#16A34A'}}>
+                        <Check size={11}/> Diterima
+                      </button>
+                    if(s==='Siap Packing'&&!spH)
+                      return <button onClick={()=>openTerimaStage(item,'siap_packing',0)}
+                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all"
+                        style={{background:'rgba(34,197,94,0.12)',color:'#16A34A'}}>
+                        <Check size={11}/> Terima
+                      </button>
+                    return null
+                  })()}
+
+                  {/* Edit / Delete / Expand */}
+                  <div className="flex items-center gap-1 flex-shrink-0 ml-1">
+                    {canEdit&&!isVoided&&<button onClick={()=>openModal('edit',item)}
+                      className="w-7 h-7 rounded-xl bg-blue-50 flex items-center justify-center hover:scale-110 transition-all">
+                      <Edit2 size={12} className="text-blue-400"/>
+                    </button>}
+                    {canDelete&&!isVoided&&<button onClick={()=>openModal('delete',item)}
+                      className="w-7 h-7 rounded-xl bg-red-50 flex items-center justify-center hover:scale-110 transition-all">
+                      <Trash2 size={12} className="text-red-400"/>
+                    </button>}
+                    <button onClick={()=>toggleExp(item.id)}
+                      className="w-7 h-7 rounded-xl bg-gray-100 flex items-center justify-center hover:bg-gray-200 hover:scale-110 transition-all">
+                      {isExp?<ChevronUp size={13} className="text-gray-500"/>:<ChevronDown size={13} className="text-gray-500"/>}
+                    </button>
+                  </div>
+                </div>
+
+                {/* ── Expanded ────────────────────────────────────────────── */}
+                {isExp&&(
+                  <div className="px-5 pb-5 border-t space-y-4"
+                    style={{borderColor:'rgba(139,92,246,0.08)',background:'rgba(139,92,246,0.015)'}}>
+
+                    {/* Grid info */}
+                    <div className="pt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {[
+                        {label:'Gramasi', val:`${item.gramasi} gr`},
+                        {label:'Tanggal Mulai', val:item.tanggal_mulai?new Date(item.tanggal_mulai).toLocaleDateString('id-ID'):new Date(item.tanggal||item.tanggal_produksi).toLocaleDateString('id-ID')},
+                        {label:'Jam Mulai', val:item.jam_mulai_cutting?String(item.jam_mulai_cutting).slice(0,5):'—'},
+                        {label:'Operator', val:item.operator||'—'},
+                      ].map(g=>(
+                        <div key={g.label} className="rounded-2xl p-3"
+                          style={{background:'rgba(255,255,255,0.8)',border:'1px solid rgba(209,213,219,0.4)'}}>
+                          <p className="text-[10px] text-gray-400 font-medium">{g.label}</p>
+                          <p className="text-sm font-bold text-gray-700 mt-0.5">{g.val}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Cutting summary */}
+                    {(item.terima_gram||item.status_cutting==='selesai')&&(
+                      <div className="rounded-2xl overflow-hidden border border-blue-100">
+                        <div className="px-4 py-2 text-[10px] font-bold text-blue-600 uppercase tracking-wide"
+                          style={{background:'rgba(59,130,246,0.05)'}}>
+                          🔪 Cutting
+                        </div>
+                        <div className="px-4 py-3">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                            <div><p className="text-gray-400">Serah</p><p className="font-bold text-gray-700">{fgr(item.serah_gram??item.berat_awal)} gr</p></div>
+                            <div><p className="text-gray-400">Terima</p><p className="font-bold text-gray-700">{item.terima_gram?fgr(item.terima_gram)+' gr':'—'}</p></div>
+                            <div><p className="text-gray-400">Reject</p><p className={`font-bold ${cutReject>0?'text-red-500':'text-gray-400'}`}>{cutReject>0?fgr(cutReject)+' gr':'—'}</p></div>
+                            <div><p className="text-gray-400">Losses</p><p className={`font-bold ${cutLosses>0?'text-orange-500':'text-gray-400'}`}>{cutLosses>0?fgr(cutLosses)+' gr':'—'}</p></div>
                           </div>
-                        )}
-                        {item.target_selesai && item.current_status !== 'Sudah Packing' && new Date(item.target_selesai) >= new Date(today) && (
-                          <div className="flex items-center gap-1 text-[10px] font-medium text-gray-400 mb-1.5 w-fit">
-                            <Clock size={9} /> Target {formatDate(item.target_selesai)}
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                          <Sbadge s={item.current_status} />
-                          {item.operator && (
-                            <span className="text-[10px] text-gray-400 font-medium bg-gray-100 px-2 py-0.5 rounded-full">
-                              👤 {item.operator}
-                            </span>
+                          {item.jam_mulai_cutting&&item.jam_selesai&&(
+                            <p className="text-[11px] text-gray-400 mt-2">
+                              ⏱ {String(item.jam_mulai_cutting).slice(0,5)} → {String(item.jam_selesai).slice(0,5)}
+                              {(()=>{const d=getDurasi(item.jam_mulai_cutting,item.jam_selesai);return d?` (${d})`:null})()}
+                            </p>
                           )}
                         </div>
-                        <h3 className="text-[15px] font-bold text-gray-900 leading-snug break-words">{item.nama_item || item.kode}</h3>
-                        <p className="text-[11px] text-gray-400 mt-0.5 font-medium">{item.kode} · {item.batch_kode}</p>
                       </div>
-                      {/* Actions */}
-                      <div className="flex items-center gap-1.5 flex-shrink-0 pt-0.5">
-                        {/* Stage-aware action buttons */}
-                        {canEdit && (() => {
-                          const handovers: any[] = Array.isArray(item.stage_handover) ? item.stage_handover.filter((h:any) => !h.voided_at) : []
-                          const pbH = handovers.find((h:any) => h.tahap === 'pas_berat')
-                          const annH = handovers.find((h:any) => h.tahap === 'annealing')
-                          const spH = handovers.find((h:any) => h.tahap === 'siap_packing')
-                          const s = item.current_status
-                          
-                          // Cutting: Diterima button
-                          if (s === 'Cutting' && item.status_cutting === 'proses')
-                            return <button onClick={() => openModal('cuttingTerima', item)}
-                              className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all"
-                              style={{ background: 'rgba(34,197,94,0.12)', color: '#16A34A' }}>
-                              <Check size={11} /> Diterima
-                            </button>
+                    )}
 
-                          // Cutting selesai → Serah Pas Berat
-                          if (s === 'Cutting' && item.status_cutting === 'selesai' && !pbH)
-                            return <button onClick={() => openSerahStage(item, 'pas_berat')}
-                              className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all"
-                              style={{ background: 'rgba(249,115,22,0.12)', color: '#EA580C' }}>
-                              <Plus size={11} /> Pas Berat
-                            </button>
-
-                          // Pas Berat: Diterima
-                          if (s === 'Pas Berat' && pbH?.status === 'proses')
-                            return <button onClick={() => openTerimaStage(item, 'pas_berat', pbH.id)}
-                              className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all"
-                              style={{ background: 'rgba(34,197,94,0.12)', color: '#16A34A' }}>
-                              <Check size={11} /> Diterima
-                            </button>
-
-                          // Pas Berat tidak ada handover (item lama) → bisa input terima
-                          if (s === 'Pas Berat' && !pbH)
-                            return <button onClick={() => openTerimaStage(item, 'pas_berat', 0)}
-                              className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all"
-                              style={{ background: 'rgba(34,197,94,0.12)', color: '#16A34A' }}>
-                              <Check size={11} /> Input Terima
-                            </button>
-
-                          // Pas Berat selesai → Serah Annealing
-                          if (s === 'Pas Berat' && pbH?.status === 'selesai' && !annH)
-                            return <button onClick={() => openSerahStage(item, 'annealing')}
-                              className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all"
-                              style={{ background: 'rgba(234,179,8,0.12)', color: '#CA8A04' }}>
-                              <Plus size={11} /> Annealing
-                            </button>
-
-                          // Annealing: Diterima
-                          if (s === 'Annealing' && annH?.status === 'proses')
-                            return <button onClick={() => openTerimaStage(item, 'annealing', annH.id)}
-                              className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all"
-                              style={{ background: 'rgba(34,197,94,0.12)', color: '#16A34A' }}>
-                              <Check size={11} /> Diterima
-                            </button>
-
-                          // Annealing tidak ada handover (item lama) → input terima
-                          if (s === 'Annealing' && !annH)
-                            return <button onClick={() => openTerimaStage(item, 'annealing', 0)}
-                              className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all"
-                              style={{ background: 'rgba(34,197,94,0.12)', color: '#16A34A' }}>
-                              <Check size={11} /> Input Terima
-                            </button>
-
-                          // Annealing selesai → Serah Siap Packing
-                          if (s === 'Annealing' && annH?.status === 'selesai' && !spH)
-                            return <button onClick={() => openSerahStage(item, 'siap_packing')}
-                              className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all"
-                              style={{ background: 'rgba(139,92,246,0.12)', color: '#7C3AED' }}>
-                              <Plus size={11} /> Siap Packing
-                            </button>
-
-                          // Siap Packing: Diterima
-                          if (s === 'Siap Packing' && spH?.status === 'proses')
-                            return <button onClick={() => openTerimaStage(item, 'siap_packing', spH.id)}
-                              className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all"
-                              style={{ background: 'rgba(34,197,94,0.12)', color: '#16A34A' }}>
-                              <Check size={11} /> Diterima
-                            </button>
-
-                          // Siap Packing tidak ada handover (item lama) → input terima
-                          if (s === 'Siap Packing' && !spH)
-                            return <button onClick={() => openTerimaStage(item, 'siap_packing', 0)}
-                              className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all"
-                              style={{ background: 'rgba(34,197,94,0.12)', color: '#16A34A' }}>
-                              <Check size={11} /> Input Terima
-                            </button>
-
-                          return null
-                        })()}
-                        {canEdit && (
-                          <button onClick={() => openModal('edit', item)}
-                            className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-105"
-                            style={{ background: 'rgba(59,130,246,0.08)', color: '#3B82F6' }} title="Edit">
-                            <Edit2 size={12} />
-                          </button>
-                        )}
-                        {canDelete && (
-                          <button onClick={() => openModal('delete', item)}
-                            className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-105"
-                            style={{ background: 'rgba(239,68,68,0.08)', color: '#EF4444' }} title="Hapus">
-                            <Trash2 size={12} />
-                          </button>
-                        )}
-                        <button onClick={() => setExp(isExp ? null : item.id)}
-                          className="w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-105"
-                          style={{ background: 'rgba(0,0,0,0.05)', color: '#6B7280' }}>
-                          {isExp ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ── Stats Row ── */}
-                  <div className="px-5 pb-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    <StatChip label="Gramasi × PCS" value={`${item.gramasi}gr × ${pcsGood}`} />
-                    <StatChip label="Total Berat" value={`${item.total_gram}gr`} />
-                    <StatChip label="Serbuk / Loses" value={
-                      <span>
-                        <span style={{ color: totalSerbuk > 0 ? '#7C3AED' : '#9CA3AF' }}>
-                          {totalSerbuk > 0 ? `${fgr(totalSerbuk)}gr` : '—'}
-                        </span>
-                        <span className="text-gray-300 mx-1">·</span>
-                        <span style={{ color: totalLoses > 0 ? '#EA580C' : '#9CA3AF' }}>
-                          {totalLoses > 0 ? `${fgr(totalLoses)}gr` : '0'}
-                        </span>
-                      </span>
-                    } />
-                    <StatChip label="Packing / Shield"
-                      value={<span style={{ color: totalPacked > 0 ? (totalPacked >= pcsGood ? '#7C3AED' : '#3B82F6') : '#9CA3AF' }}>
-                        {totalPacked}/{pcsGood} · 🏷{totalST}
-                      </span>}
-                    />
-                  </div>
-
-                  {/* ── Bahan Baku Section ── */}
-                  {b && (
-                    <div className="mx-5 mb-3 rounded-2xl overflow-hidden" style={{ background: 'rgba(139,92,246,0.04)', border: '1px solid rgba(139,92,246,0.10)' }}>
-                      <div className="px-3 pt-2.5 pb-1">
-                        <p className="text-[9.5px] font-bold tracking-widest uppercase" style={{ color: '#8B5CF6', opacity: 0.8 }}>Bahan Baku Batch</p>
-                      </div>
-                      <div className="px-2 pb-2 grid grid-cols-2 sm:grid-cols-5 gap-1.5">
-                        {/* Bahan Awal */}
-                        <div className="rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,0.7)' }}>
-                          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Bahan Awal</p>
-                          <p className="text-[12px] font-bold text-gray-700 mt-0.5">{fgr(bahanAwal)} gr</p>
+                    {/* Stage handover timeline */}
+                    {handovers.length>0&&(
+                      <div className="rounded-2xl overflow-hidden border border-violet-100">
+                        <div className="px-4 py-2 text-[10px] font-bold text-violet-600 uppercase tracking-wide"
+                          style={{background:'rgba(139,92,246,0.05)'}}>
+                          ⛓ Alur Serah-Terima
                         </div>
-                        {/* Terpakai */}
-                        <div className="rounded-xl px-3 py-2" style={{ background: 'rgba(59,130,246,0.06)' }}>
-                          <p className="text-[9px] font-bold uppercase tracking-wide" style={{ color: '#3B82F6', opacity: 0.8 }}>Terpakai</p>
-                          <p className="text-[12px] font-bold mt-0.5" style={{ color: '#2563EB' }}>{fgr(terpakai)} gr</p>
-                        </div>
-                        {/* Sisa Seharusnya */}
-                        <div className="rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,0.7)' }}>
-                          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Sisa (Seharusnya)</p>
-                          <p className="text-[12px] font-bold text-gray-700 mt-0.5">{fgr(sisaS)} gr</p>
-                        </div>
-                        {/* Sisa Fisik — editable */}
-                        <div className="rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,0.7)' }}>
-                          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Sisa Fisik</p>
-                          <div className="mt-0.5">
-                            <SisaFisikInput batchKode={item.batch_kode} initialValue={sisaF} />
-                          </div>
-                        </div>
-                        {/* Loses Bahan */}
-                        <div className="rounded-xl px-3 py-2" style={{ background: losesBahan !== null && losesBahan > 0 ? 'rgba(239,68,68,0.06)' : losesBahan === 0 ? 'rgba(34,197,94,0.06)' : 'rgba(255,255,255,0.7)' }}>
-                          <p className="text-[9px] font-bold uppercase tracking-wide" style={{ color: losesBahan !== null && losesBahan > 0 ? '#DC2626' : losesBahan === 0 ? '#16A34A' : '#9CA3AF', opacity: 0.9 }}>Loses Bahan</p>
-                          <p className="text-[12px] font-bold mt-0.5"
-                            style={{ color: losesBahan === null ? '#9CA3AF' : losesBahan > 0 ? '#DC2626' : losesBahan < 0 ? '#F97316' : '#16A34A' }}>
-                            {losesBahan === null ? '—' : losesBahan === 0 ? 'Sesuai' : (losesBahan > 0 ? `${fgr(losesBahan)} gr` : `+${fgr(Math.abs(losesBahan))} gr`)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ── Timeline ── */}
-                  <div className="px-5 pb-4 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-[9.5px] font-bold text-gray-400 tracking-widest uppercase">Timeline</span>
-                      <TLine events={events} />
-                    </div>
-                    <span className="text-[11px] text-gray-400 font-medium flex-shrink-0">
-                      {lastEv ? formatDate(lastEv.tanggal) : formatDate(item.tanggal_produksi ?? item.tanggal)}
-                    </span>
-                  </div>
-
-                  {/* ── Expanded: Event History ── */}
-                  {isExp && (
-                    <div className="border-t px-5 pb-5 pt-4 space-y-3" style={{ borderColor: 'rgba(139,92,246,0.08)', background: 'rgba(139,92,246,0.015)' }}>
-                      {/* Losses table per item */}
-                      {(() => {
-                        const lCutting = Number(item.losses_cutting ?? 0)
-                        const lReject  = Number(item.reject_cutting_gram ?? 0)
-                        const lPasBerat = (item.produksi_event ?? []).filter((e:any)=>!e.voided_at&&e.status==='Pas Berat')
-                          .reduce((s:number,e:any)=>{const r=(e.berat_sebelumnya??0)-(e.total_gram??0)-(e.sisa_serbuk??0);return s+(r>0?r:0)},0)
-                        const totalL = lCutting + lPasBerat
-                        if (totalL < 0.001 && lReject < 0.001) return null
-                        return (
-                          <div className="rounded-xl overflow-hidden border border-red-100">
-                            <div className="px-3 py-1.5 text-[9px] font-bold text-red-500 uppercase tracking-wide" style={{background:'rgba(239,68,68,0.04)'}}>
-                              📉 Losses Item
-                            </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y" style={{borderColor:'rgba(239,68,68,0.07)'}}>
-                              {[
-                                {label:'Losses Cutting',   val:lCutting>0.001?lCutting.toFixed(3)+' gr':'—',   color:'text-orange-500'},
-                                {label:'Reject Cutting',   val:lReject>0.001?lReject.toFixed(3)+' gr':'—',     color:'text-red-500'},
-                                {label:'Losses Pas Berat', val:lPasBerat>0.001?lPasBerat.toFixed(3)+' gr':'—', color:'text-amber-500'},
-                                {label:'Total Losses',     val:totalL>0.001?totalL.toFixed(3)+' gr':'—',       color:'text-red-600 font-extrabold'},
-                              ].map(col=>(
-                                <div key={col.label} className="px-2 py-2 text-center">
-                                  <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">{col.label}</p>
-                                  <p className={`text-[11px] font-bold ${col.color}`}>{col.val}</p>
+                        {handovers.map((h:any)=>{
+                          const tl: Record<string,string> = {pas_berat:'Pas Berat',annealing:'Annealing',siap_packing:'Siap Packing'}
+                          const tc: Record<string,string> = {pas_berat:'#F97316',annealing:'#EAB308',siap_packing:'#8B5CF6'}
+                          return (
+                            <div key={h.id} className="px-4 py-3 border-t"
+                              style={{borderColor:'rgba(139,92,246,0.07)'}}>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
+                                  style={{background:tc[h.tahap]}}>{tl[h.tahap]}</span>
+                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${h.status==='selesai'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>
+                                  {h.status==='selesai'?'✓ Selesai':'⏳ Proses'}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="rounded-xl p-2.5 text-xs"
+                                  style={{background:'rgba(59,130,246,0.04)'}}>
+                                  <p className="text-[9px] font-bold text-blue-400 uppercase mb-1">📤 Diserahkan</p>
+                                  <p className="font-semibold text-gray-700">{h.serah_gram?`${parseFloat(h.serah_gram).toFixed(3)} gr`:'—'} · {h.serah_pcs??'—'} PCS</p>
+                                  {h.serah_tanggal&&<p className="text-gray-400 text-[10px] mt-0.5">{new Date(h.serah_tanggal).toLocaleDateString('id-ID')}{h.serah_jam?` ${String(h.serah_jam).slice(0,5)}`:''}</p>}
+                                  {h.serah_catatan&&<p className="text-gray-400 italic text-[10px]">{h.serah_catatan}</p>}
                                 </div>
-                              ))}
-                            </div>
-                          </div>
-                        )
-                      })()}
-
-                      {/* Stage Handover Timeline */}
-                      {(() => {
-                        const handovers: any[] = Array.isArray(item.stage_handover) ? item.stage_handover.filter((h:any)=>!h.voided_at).sort((a:any,b:any)=>['pas_berat','annealing','siap_packing'].indexOf(a.tahap)-['pas_berat','annealing','siap_packing'].indexOf(b.tahap)) : []
-                        if (handovers.length === 0) return null
-                        const tahapLabel: Record<string,string> = {pas_berat:'Pas Berat',annealing:'Annealing',siap_packing:'Siap Packing'}
-                        const tahapColor: Record<string,string> = {pas_berat:'#F97316',annealing:'#EAB308',siap_packing:'#8B5CF6'}
-                        return (
-                          <div className="rounded-xl overflow-hidden border border-violet-100">
-                            <div className="px-3 py-2 text-[9px] font-bold text-violet-600 uppercase tracking-wide" style={{background:'rgba(139,92,246,0.05)'}}>
-                              ⛓ Alur Serah-Terima
-                            </div>
-                            {handovers.map((h:any) => (
-                              <div key={h.id} className="px-3 py-3 border-t" style={{borderColor:'rgba(139,92,246,0.07)'}}>
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white" style={{background:tahapColor[h.tahap]}}>{tahapLabel[h.tahap]}</span>
-                                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${h.status==='selesai'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>{h.status==='selesai'?'✓ Selesai':'⏳ Proses'}</span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div className="rounded-lg p-2 text-xs" style={{background:'rgba(59,130,246,0.05)'}}>
-                                    <p className="text-[9px] font-bold text-blue-400 uppercase mb-1">📤 Diserahkan</p>
-                                    <p className="font-semibold text-gray-700">{h.serah_gram ? `${parseFloat(h.serah_gram).toFixed(3)} gr` : '—'} · {h.serah_pcs ?? '—'} PCS</p>
-                                    {h.serah_tanggal && <p className="text-gray-400 mt-0.5">{new Date(h.serah_tanggal).toLocaleDateString('id-ID')}{h.serah_jam ? ` ${String(h.serah_jam).slice(0,5)}` : ''}</p>}
-                                    {h.serah_catatan && <p className="text-gray-400 italic text-[10px]">{h.serah_catatan}</p>}
-                                  </div>
-                                  <div className="rounded-lg p-2 text-xs" style={{background:'rgba(34,197,94,0.05)'}}>
-                                    <p className="text-[9px] font-bold text-green-500 uppercase mb-1">📥 Diterima</p>
-                                    {h.terima_gram ? <>
-                                      <p className="font-semibold text-gray-700">{parseFloat(h.terima_gram).toFixed(3)} gr · {h.terima_pcs ?? '—'} PCS</p>
-                                      {h.terima_tanggal && <p className="text-gray-400 mt-0.5">{new Date(h.terima_tanggal).toLocaleDateString('id-ID')}{h.terima_jam ? ` ${String(h.terima_jam).slice(0,5)}` : ''}</p>}
-                                      {h.sisa_serbuk > 0 && <p className="text-violet-500">Serbuk: {parseFloat(h.sisa_serbuk).toFixed(3)} gr</p>}
-                                      {h.reject_gram > 0 && <p className="text-red-500 font-semibold">Reject: {parseFloat(h.reject_gram).toFixed(3)} gr · {h.reject_pcs} PCS</p>}
-                                      {h.losses_gram > 0 && <p className="text-orange-500 font-semibold">Losses: {parseFloat(h.losses_gram).toFixed(3)} gr</p>}
-                                      {h.terima_catatan && <p className="text-gray-400 italic text-[10px]">{h.terima_catatan}</p>}
-                                    </> : <p className="text-gray-400 italic text-[10px]">Belum diterima</p>}
-                                  </div>
+                                <div className="rounded-xl p-2.5 text-xs"
+                                  style={{background:'rgba(34,197,94,0.04)'}}>
+                                  <p className="text-[9px] font-bold text-green-500 uppercase mb-1">📥 Diterima</p>
+                                  {h.terima_gram ? (<>
+                                    <p className="font-semibold text-gray-700">{parseFloat(h.terima_gram).toFixed(3)} gr · {h.terima_pcs??'—'} PCS</p>
+                                    {h.terima_tanggal&&<p className="text-gray-400 text-[10px] mt-0.5">{new Date(h.terima_tanggal).toLocaleDateString('id-ID')}{h.terima_jam?` ${String(h.terima_jam).slice(0,5)}`:''}</p>}
+                                    {h.sisa_serbuk>0&&<p className="text-violet-500 text-[10px]">Serbuk: {parseFloat(h.sisa_serbuk).toFixed(3)} gr</p>}
+                                    {h.reject_gram>0&&<p className="text-red-500 font-semibold text-[10px]">Reject: {parseFloat(h.reject_gram).toFixed(3)} gr · {h.reject_pcs} PCS</p>}
+                                    {h.losses_gram>0&&<p className="text-orange-500 font-semibold text-[10px]">Losses: {parseFloat(h.losses_gram).toFixed(3)} gr</p>}
+                                    {h.terima_catatan&&<p className="text-gray-400 italic text-[10px]">{h.terima_catatan}</p>}
+                                  </>) : <p className="text-gray-400 italic text-[10px]">Belum diterima</p>}
                                 </div>
                               </div>
-                            ))}
-                          </div>
-                        )
-                      })()}
-                      <p className="text-[9.5px] font-bold text-gray-400 tracking-widest uppercase">Riwayat Proses</p>
-                      {events.length === 0
-                        ? <p className="text-xs text-gray-400 italic">Belum ada event tercatat</p>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    {/* Losses summary */}
+                    {totalItemLosses>0.001&&(
+                      <div className="rounded-2xl overflow-hidden border border-red-100">
+                        <div className="px-4 py-2 text-[10px] font-bold text-red-500 uppercase tracking-wide"
+                          style={{background:'rgba(239,68,68,0.04)'}}>
+                          📉 Ringkasan Losses
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y"
+                          style={{borderColor:'rgba(239,68,68,0.07)'}}>
+                          {[
+                            {label:'Cutting',    val:cutLosses,   color:'text-orange-500'},
+                            {label:'Reject Cut', val:cutReject,   color:'text-red-500'},
+                            {label:'Tahap Lain', val:stgLosses,   color:'text-amber-500'},
+                            {label:'Total',      val:cutLosses+stgLosses, color:'text-red-600 font-extrabold'},
+                          ].map(c=>(
+                            <div key={c.label} className="px-3 py-2.5 text-center">
+                              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">{c.label}</p>
+                              <p className={`text-xs font-bold ${c.color}`}>{c.val>0.001?fgr(c.val)+' gr':'—'}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Riwayat Proses */}
+                    <div>
+                      <p className="text-[9px] font-bold text-gray-300 uppercase tracking-widest mb-3">Riwayat Proses</p>
+                      {events.length===0
+                        ? <p className="text-xs text-gray-400 italic">Belum ada riwayat proses</p>
                         : <EventHistory events={events} item={item} />
                       }
                     </div>
-                  )}
-                </div>
-              )
-            })}
-            {/* Load More */}
-            {filtered.length > visibleCount && (
-              <button
-                onClick={() => setVisible(v => v + 20)}
-                className="w-full py-3 text-sm font-semibold text-violet-600 rounded-3xl transition-all hover:bg-violet-50"
-                style={{ background: 'rgba(139,92,246,0.05)', border: '1px dashed rgba(139,92,246,0.25)' }}>
-                Tampilkan {Math.min(20, filtered.length - visibleCount)} batch lagi ({filtered.length - visibleCount} tersisa)
-              </button>
-            )}
-          </div>
-        )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
       </div>
 
-      {/* ── Modals ── */}
-      {modal === 'create' && batches.length > 0 && <CreateModal batches={batches} onClose={() => setModal(null)} onSubmit={handleCreate} isPending={isPending} error={err} />}
-      {modal === 'edit'   && active           && <EditModal   item={active}      onClose={() => setModal(null)} onSubmit={handleEdit}   isPending={isPending} error={err} />}
-      {modal === 'update' && active           && <UpdateModal item={active}      onClose={() => setModal(null)} onSubmit={handleUpdate} isPending={isPending} error={err} />}
-      {modal === 'cuttingTerima' && active   && <SelesaiCuttingModal item={active} onClose={() => setModal(null)} onSubmit={handleSelesaiCutting} isPending={isPending} error={err} />}
-      {modal === 'serahStage'    && active   && <SerahStageModal item={active} tahap={activeTahap} onClose={() => setModal(null)} onSubmit={handleSerahStage} isPending={isPending} error={err} />}
-      {modal === 'terimaStage'   && active   && <TerimaStageModal item={active} tahap={activeTahap} handoverId={activeHandoverId ?? 0} onClose={() => setModal(null)} onSubmit={handleTerimaStage} isPending={isPending} error={err} />}
-      {modal === 'delete' && active           && <DelModal    item={active}      onClose={() => setModal(null)} onConfirm={handleDelete} isPending={isPending} />}
+      {/* ── Modals ──────────────────────────────────────────────────────────── */}
+      {modal==='create'        && batches.length>0 && <CreateModal batches={batches} onClose={()=>setModal(null)} onSubmit={handleCreate} isPending={isPending} error={err}/>}
+      {modal==='edit'          && active            && <EditModal item={active} onClose={()=>setModal(null)} onSubmit={handleEdit} isPending={isPending} error={err}/>}
+      {modal==='update'        && active            && <UpdateModal item={active} onClose={()=>setModal(null)} onSubmit={handleUpdate} isPending={isPending} error={err}/>}
+      {modal==='cuttingTerima' && active            && <SelesaiCuttingModal item={active} onClose={()=>setModal(null)} onSubmit={handleSelesaiCutting} isPending={isPending} error={err}/>}
+      {modal==='serahStage'    && active            && <SerahStageModal item={active} tahap={activeTahap} onClose={()=>setModal(null)} onSubmit={handleSerahStage} isPending={isPending} error={err}/>}
+      {modal==='terimaStage'   && active            && <TerimaStageModal item={active} tahap={activeTahap} handoverId={activeHandoverId??0} onClose={()=>setModal(null)} onSubmit={handleTerimaStage} isPending={isPending} error={err}/>}
+      {modal==='delete'        && active            && <DelModal item={active} onClose={()=>setModal(null)} onConfirm={handleDelete} isPending={isPending}/>}
     </div>
   )
 }
