@@ -4,7 +4,8 @@ import { useState, useEffect, useTransition, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Plus, Search, Edit2, Trash2, Check, AlertTriangle,
-  X, Camera, ChevronDown, ChevronUp, Package, Pencil, ZoomIn
+  X, Camera, ChevronDown, ChevronUp, Package, Pencil, WifiOff,
+  Clock, Archive,
 } from 'lucide-react'
 import { cn, formatDate } from '@/lib/utils'
 import {
@@ -43,14 +44,22 @@ function getDurasi(jamMulai: string | null, createdAt: string | null): string {
 }
 
 const GRAMASI_OPTIONS = ['0.1','0.5','1','2','5','10','20','25','50','100','250','500','1000']
-const STATUS_FLOW     = ['Cutting','Pas Berat','Annealing','Siap Packing']
+const STATUS_FLOW     = ['Cutting','Pas Berat','Annealing','Press Stamp','Siap Packing']
 const STATUS_NEXT: Record<string,string> = {
-  'Cutting':'Pas Berat','Pas Berat':'Annealing','Annealing':'Siap Packing',
+  'Cutting':'Pas Berat','Pas Berat':'Annealing','Annealing':'Press Stamp','Press Stamp':'Siap Packing',
 }
+const KATEGORI_LOSSES_OPTIONS = [
+  'Oksidasi / Terbakar',
+  'Serbuk Tercecer',
+  'Pemotongan Berlebih',
+  'Kikisan Mesin',
+  'Lainnya',
+]
 const STATUS_CFG: Record<string,{dot:string;bg:string;text:string}> = {
   'Cutting':       {dot:'#3B82F6',bg:'rgba(59,130,246,0.10)',  text:'#2563EB'},
   'Pas Berat':     {dot:'#F97316',bg:'rgba(249,115,22,0.10)', text:'#EA580C'},
   'Annealing':     {dot:'#EAB308',bg:'rgba(234,179,8,0.10)',  text:'#CA8A04'},
+  'Press Stamp':   {dot:'#06B6D4',bg:'rgba(6,182,212,0.10)',  text:'#0891B2'},
   'Siap Packing':  {dot:'#22C55E',bg:'rgba(34,197,94,0.10)',  text:'#16A34A'},
   'Sudah Packing': {dot:'#8B5CF6',bg:'rgba(139,92,246,0.10)', text:'#7C3AED'},
   'Reject':        {dot:'#EF4444',bg:'rgba(239,68,68,0.10)',  text:'#DC2626'},
@@ -97,6 +106,29 @@ function Lightbox({ url, onClose }: { url: string; onClose: () => void }) {
       <button onClick={onClose} className="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-all">
         <X size={18} />
       </button>
+    </div>
+  )
+}
+
+// ─── Offline Indicator ────────────────────────────────────────────────────────
+function OfflineIndicator() {
+  const [offline, setOffline] = useState(false)
+  useEffect(() => {
+    const goOnline  = () => setOffline(false)
+    const goOffline = () => setOffline(true)
+    window.addEventListener('online',  goOnline)
+    window.addEventListener('offline', goOffline)
+    setOffline(!navigator.onLine)
+    return () => {
+      window.removeEventListener('online',  goOnline)
+      window.removeEventListener('offline', goOffline)
+    }
+  }, [])
+  if (!offline) return null
+  return (
+    <div className="fixed top-0 inset-x-0 z-[200] flex items-center justify-center gap-2 py-2 px-4 text-xs font-bold text-white"
+      style={{ background: 'linear-gradient(90deg,#F97316,#EF4444)' }}>
+      <WifiOff size={13} /> Tidak ada koneksi — data belum tersimpan
     </div>
   )
 }
@@ -336,6 +368,11 @@ function EventHistory({ events }: { events: any[] }) {
                 {Number(ev.losses)      > 0 && <span className="text-xs text-orange-500">losses {ev.losses} gr</span>}
                 {ev.user_name && <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">· {ev.user_name}</span>}
               </div>
+              {ev.kategori_losses && (
+                <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mt-0.5" style={{ background: 'rgba(249,115,22,0.10)', color: '#EA580C' }}>
+                  ⚠ {ev.kategori_losses}
+                </span>
+              )}
               {ev.catatan && <p className="text-xs text-gray-400 mt-0.5 italic truncate">{ev.catatan}</p>}
               {(fotos.length > 0 || serbuk.length > 0) && (
                 <div className="flex gap-1.5 flex-wrap mt-2">
@@ -371,7 +408,7 @@ const F = ({ label, req, children }: { label: string; req?: boolean; children: R
 function CreateModal({ batches, onClose, onSubmit, isPending, error }: {
   batches: any[]; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
 }) {
-  const [f, setF] = useState({ batch_kode: batches[0]?.kode ?? '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, operator: '' })
+  const [f, setF] = useState({ batch_kode: batches[0]?.kode ?? '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, operator: '', target_selesai: '' })
   const [fotos, setFotos] = useState<File[]>([])
   const [up, setUp] = useState(false)
   const s = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
@@ -412,8 +449,9 @@ function CreateModal({ batches, onClose, onSubmit, isPending, error }: {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <F label="Tanggal Produksi" req><input name="tanggal_produksi" type="date" value={f.tanggal_produksi} onChange={e => s('tanggal_produksi', e.target.value)} className={inp} required /></F>
-            <F label="Operator / PIC"><input name="operator" value={f.operator} onChange={e => s('operator', e.target.value)} placeholder="Nama operator" className={inp} /></F>
+            <F label="Target Selesai"><input name="target_selesai" type="date" value={f.target_selesai} onChange={e => s('target_selesai', e.target.value)} className={inp} /></F>
           </div>
+          <F label="Operator / PIC"><input name="operator" value={f.operator} onChange={e => s('operator', e.target.value)} placeholder="Nama operator" className={inp} /></F>
           <F label="Catatan"><input name="catatan" placeholder="Keterangan tambahan..." className={inp} /></F>
           <F label="Foto Proses (opsional, max 10)">
             <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto proses awal" />
@@ -441,6 +479,7 @@ function EditModal({ item, onClose, onSubmit, isPending, error }: {
     pcs: String(item.pcs ?? ''), berat_awal: String(item.berat_awal ?? item.total_gram ?? ''),
     operator: item.operator ?? '', catatan: item.catatan ?? '',
     tanggal_produksi: item.tanggal_produksi ?? item.tanggal ?? today,
+    target_selesai: item.target_selesai ?? '',
   })
   const s = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
   function submit(e: React.FormEvent) {
@@ -464,7 +503,10 @@ function EditModal({ item, onClose, onSubmit, isPending, error }: {
             <F label="Total Berat (gr)" req><input type="number" step="0.01" value={f.berat_awal} onChange={e => s('berat_awal', e.target.value)} className={inp} /></F>
             <F label="Tanggal"><input type="date" value={f.tanggal_produksi} onChange={e => s('tanggal_produksi', e.target.value)} className={inp} /></F>
           </div>
-          <F label="Operator / PIC"><input value={f.operator} onChange={e => s('operator', e.target.value)} placeholder="Nama operator" className={inp} /></F>
+          <div className="grid grid-cols-2 gap-3">
+            <F label="Operator / PIC"><input value={f.operator} onChange={e => s('operator', e.target.value)} placeholder="Nama operator" className={inp} /></F>
+            <F label="Target Selesai"><input type="date" value={f.target_selesai} onChange={e => s('target_selesai', e.target.value)} className={inp} /></F>
+          </div>
           <F label="Catatan"><input value={f.catatan} onChange={e => s('catatan', e.target.value)} placeholder="Catatan tambahan…" className={inp} /></F>
           {error && <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600"><AlertTriangle size={14} />{error}</div>}
           <div className="flex gap-3 justify-end pt-1">
@@ -546,6 +588,14 @@ function UpdateModal({ item, onClose, onSubmit, isPending, error }: {
               )}
             </>
           )}
+          {status !== 'Reject' && (
+            <F label="Kategori Losses (opsional)">
+              <select name="kategori_losses" className={inp} defaultValue="">
+                <option value="">— Pilih kategori —</option>
+                {KATEGORI_LOSSES_OPTIONS.map(k => <option key={k} value={k}>{k}</option>)}
+              </select>
+            </F>
+          )}
           <F label="Catatan"><input name="catatan" className={inp} placeholder="Keterangan…" /></F>
           {error && <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600"><AlertTriangle size={14} />{error}</div>}
           <div className="flex gap-3 justify-end pt-1 pb-2">
@@ -562,15 +612,26 @@ function UpdateModal({ item, onClose, onSubmit, isPending, error }: {
 }
 
 function DelModal({ item, onClose, onConfirm, isPending }: { item: any; onClose: () => void; onConfirm: () => void; isPending: boolean }) {
+  const [confirm, setConfirm] = useState('')
+  const canConfirm = confirm.trim() === item.kode
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
-      <div className="w-full max-w-sm rounded-3xl p-6 text-center" style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(24px)', boxShadow: '0 32px 64px rgba(239,68,68,0.15)' }}>
+      <div className="w-full max-w-sm rounded-3xl p-6" style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(24px)', boxShadow: '0 32px 64px rgba(239,68,68,0.15)' }}>
         <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><Trash2 size={24} className="text-red-500" /></div>
-        <h2 className="text-lg font-bold text-gray-900">Hapus Batch Produksi?</h2>
-        <p className="text-sm text-gray-500 mt-2 mb-6"><span className="font-semibold text-gray-700">{item.kode}</span> akan dihapus permanen.</p>
+        <h2 className="text-lg font-bold text-gray-900 text-center">Hapus Batch Produksi?</h2>
+        <p className="text-sm text-gray-500 mt-2 text-center"><span className="font-semibold text-gray-700">{item.kode}</span> akan dihapus permanen beserta semua event-nya.</p>
+        <div className="mt-5 mb-4">
+          <label className="text-[11px] font-bold text-gray-400 tracking-widest uppercase">Ketik kode batch untuk konfirmasi</label>
+          <input
+            value={confirm} onChange={e => setConfirm(e.target.value)}
+            placeholder={item.kode}
+            className="mt-1.5 w-full px-4 py-3 text-sm bg-white border border-red-200/80 rounded-2xl focus:outline-none focus:ring-2 focus:ring-red-300/40 font-mono"
+          />
+        </div>
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
-          <button onClick={onConfirm} disabled={isPending} className="flex-1 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2">
+          <button onClick={onConfirm} disabled={!canConfirm || isPending}
+            className="flex-1 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-2xl disabled:opacity-40 flex items-center justify-center gap-2 transition-opacity">
             {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
             {isPending ? 'Menghapus…' : 'Ya, Hapus'}
           </button>
@@ -601,25 +662,58 @@ function StatChip({ label, value, accent }: { label: string; value: React.ReactN
 // ─── Main ──────────────────────────────────────────────────────────────────────
 export default function ProduksiClient({ produksiList, batches, userRole, userName }: Props) {
   const [isPending, startTransition] = useTransition()
-  const [search,    setSearch]       = useState('')
-  const [tab,       setTab]          = useState('Semua')
-  const [exp,       setExp]          = useState<number | null>(null)
-  const [modal,     setModal]        = useState<'create'|'edit'|'update'|'delete'|null>(null)
-  const [active,    setActive]       = useState<any | null>(null)
-  const [err,       setErr]          = useState('')
-  const [toast,     setToast]        = useState<{ msg: string; ok: boolean } | null>(null)
+  const [search,       setSearch]    = useState('')
+  const [tab,          setTab]       = useState('Semua')
+  const [exp,          setExp]       = useState<number | null>(null)
+  const [modal,        setModal]     = useState<'create'|'edit'|'update'|'delete'|null>(null)
+  const [active,       setActive]    = useState<any | null>(null)
+  const [err,          setErr]       = useState('')
+  const [toast,        setToast]     = useState<{ msg: string; ok: boolean } | null>(null)
+  const [visibleCount, setVisible]   = useState(20)
+
+  // Restore last active tab from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('produksi_tab')
+      if (saved) setTab(saved)
+    } catch {}
+  }, [])
+
+  function changeTab(t: string) {
+    setTab(t)
+    setVisible(20)
+    try { localStorage.setItem('produksi_tab', t) } catch {}
+  }
 
   function showToast(msg: string, ok = true) { setToast({ msg, ok }); setTimeout(() => setToast(null), 3500) }
   const canEdit   = ['owner','admin_pusat','spv','operator_produksi'].includes(userRole)
   const canDelete = ['owner','admin_pusat'].includes(userRole)
 
+  // 'Semua' hides archived (Sudah Packing) items — only shown when that tab is active
   const filtered = produksiList.filter(item => {
+    if (tab === 'Semua' && item.current_status === 'Sudah Packing') return false
     if (tab !== 'Semua' && item.current_status !== tab) return false
     const q = search.toLowerCase()
     return !q || item.kode?.toLowerCase().includes(q) || item.batch_kode?.toLowerCase().includes(q) || item.gramasi?.includes(q) || item.nama_item?.toLowerCase().includes(q)
   })
+
+  // Reset pagination when filter changes
+  useEffect(() => { setVisible(20) }, [tab, search])
+
   const counts = produksiList.reduce((a, i) => { a[i.current_status] = (a[i.current_status] ?? 0) + 1; return a }, {} as Record<string,number>)
+  const activeCount = produksiList.filter(i => i.current_status !== 'Sudah Packing' && i.current_status !== 'Reject').length
+  const overdueCount = produksiList.filter(i => {
+    if (!i.target_selesai) return false
+    if (i.current_status === 'Sudah Packing') return false
+    return new Date(i.target_selesai) < new Date(today)
+  }).length
+  const totalLoses = produksiList.reduce((s, item) => {
+    const evs = Array.isArray(item.produksi_event) ? item.produksi_event : []
+    return s + evs.reduce((es: number, ev: any) => es + (Number(ev.losses) || 0), 0)
+  }, 0)
+
   const tabs = ['Semua', ...STATUS_FLOW, 'Sudah Packing', 'Reject']
+  const visible = filtered.slice(0, visibleCount)
 
   function openModal(type: 'create'|'edit'|'update'|'delete', item?: any) { setActive(item ?? null); setErr(''); setModal(type) }
   function handleCreate(fd: FormData) { setErr(''); startTransition(async () => { const r = await createProduksi(fd); if (r?.error) { setErr(r.error); return }; showToast(`✅ ${r?.kode} berhasil dibuat`); setModal(null) }) }
@@ -638,6 +732,9 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
   return (
     <div className="min-h-screen pb-24" style={{ background: 'linear-gradient(160deg,#F2F2F7 0%,#EBEBF0 50%,#F2F2F7 100%)' }}>
 
+      {/* Offline Banner */}
+      <OfflineIndicator />
+
       {/* Toast */}
       {toast && (
         <div className={cn('fixed top-4 right-4 left-4 sm:left-auto z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-2xl text-sm font-semibold text-white shadow-2xl', toast.ok ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 'bg-gradient-to-r from-red-500 to-rose-600')}>
@@ -651,7 +748,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
         <div className="flex items-center justify-between flex-wrap gap-3 pt-1">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-gray-900" style={{ fontFamily: "'SF Pro Display','Inter',sans-serif" }}>Produksi</h1>
-            <p className="text-sm text-gray-400 mt-0.5 font-medium">{produksiList.length} batch aktif</p>
+            <p className="text-sm text-gray-400 mt-0.5 font-medium">{activeCount} batch aktif</p>
           </div>
           {canEdit && (
             <button onClick={() => openModal('create')}
@@ -660,6 +757,17 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
               <Plus size={15} /> Cetak Baru
             </button>
           )}
+        </div>
+
+        {/* ── Summary Stats ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <StatChip label="Batch Aktif"   value={activeCount}                              accent="violet" />
+          <StatChip label="Siap Packing"  value={counts['Siap Packing']  ?? 0}             accent="green"  />
+          <StatChip label="Total Losses"  value={totalLoses > 0 ? `${fgr(totalLoses)} gr` : '0'} accent={totalLoses > 0 ? 'orange' : undefined} />
+          <StatChip label="Terlambat"
+            value={<span className="flex items-center gap-1">{overdueCount > 0 && <Clock size={11} />}{overdueCount}</span>}
+            accent={overdueCount > 0 ? 'red' : undefined}
+          />
         </div>
 
         {/* ── Search ── */}
@@ -673,13 +781,17 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
         {/* ── Filter tabs ── */}
         <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
           {tabs.map(t => {
-            const isAct = tab === t; const cfg = STATUS_CFG[t]; const cnt = t === 'Semua' ? produksiList.length : (counts[t] ?? 0)
+            const isAct = tab === t
+            const cfg   = STATUS_CFG[t]
+            // 'Semua' shows active count (excl. Sudah Packing), others show exact count
+            const cnt = t === 'Semua' ? activeCount : (counts[t] ?? 0)
             return (
-              <button key={t} onClick={() => setTab(t)}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all"
+              <button key={t} onClick={() => changeTab(t)}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap flex-shrink-0"
                 style={isAct
                   ? { background: cfg?.dot ?? 'linear-gradient(135deg,#8B5CF6,#7C3AED)', color: '#fff', boxShadow: `0 4px 12px ${cfg?.dot ?? '#8B5CF6'}40` }
                   : { background: 'rgba(255,255,255,0.85)', color: '#6B7280', border: '1px solid rgba(0,0,0,0.07)' }}>
+                {t === 'Sudah Packing' && <Archive size={10} className="flex-shrink-0" />}
                 {t}{cnt > 0 && <span className="px-1.5 py-0.5 rounded-full text-[10px]" style={{ background: isAct ? 'rgba(255,255,255,0.25)' : 'rgba(107,114,128,0.12)' }}>{cnt}</span>}
               </button>
             )
@@ -687,7 +799,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
         </div>
 
         {/* ── Cards ── */}
-        {filtered.length === 0 ? (
+        {visible.length === 0 ? (
           <div className="rounded-3xl p-14 text-center" style={{ background: 'rgba(255,255,255,0.75)', border: '1px solid rgba(0,0,0,0.06)' }}>
             <div className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(139,92,246,0.07)' }}>
               <Package size={28} className="text-violet-300" />
@@ -696,7 +808,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
           </div>
         ) : (
           <div className="space-y-3">
-            {filtered.map(item => {
+            {visible.map(item => {
               const events     = Array.isArray(item.produksi_event) ? item.produksi_event : []
               const packings   = Array.isArray(item.packing) ? (item.packing as any[]).filter((p: any) => !p.voided_at) : []
               const sortedEvs  = sortEvents(events)
@@ -724,6 +836,17 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                   <div className="px-5 pt-4 pb-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
+                        {/* Overdue badge */}
+                        {item.target_selesai && item.current_status !== 'Sudah Packing' && new Date(item.target_selesai) < new Date(today) && (
+                          <div className="flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-50 border border-red-100 rounded-full px-2 py-0.5 mb-1.5 w-fit">
+                            <Clock size={9} /> Terlambat — target {formatDate(item.target_selesai)}
+                          </div>
+                        )}
+                        {item.target_selesai && item.current_status !== 'Sudah Packing' && new Date(item.target_selesai) >= new Date(today) && (
+                          <div className="flex items-center gap-1 text-[10px] font-medium text-gray-400 mb-1.5 w-fit">
+                            <Clock size={9} /> Target {formatDate(item.target_selesai)}
+                          </div>
+                        )}
                         <div className="flex items-center gap-2 flex-wrap mb-1.5">
                           <Sbadge s={item.current_status} />
                           {item.operator && (
@@ -854,6 +977,15 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                 </div>
               )
             })}
+            {/* Load More */}
+            {filtered.length > visibleCount && (
+              <button
+                onClick={() => setVisible(v => v + 20)}
+                className="w-full py-3 text-sm font-semibold text-violet-600 rounded-3xl transition-all hover:bg-violet-50"
+                style={{ background: 'rgba(139,92,246,0.05)', border: '1px dashed rgba(139,92,246,0.25)' }}>
+                Tampilkan {Math.min(20, filtered.length - visibleCount)} batch lagi ({filtered.length - visibleCount} tersisa)
+              </button>
+            )}
           </div>
         )}
       </div>

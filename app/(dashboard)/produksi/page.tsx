@@ -17,7 +17,8 @@ export default async function ProduksiPage() {
     supabase.from('produksi_item')
       .select(`*, produksi_event(*), packing!left(pcs_dipack, shieldtag_count, voided_at), batch!left(sisa_bahan_seharusnya, sisa_fisik, timbangan_akhir, bahan_dari_pusat)`)
       .is('voided_at', null)
-      .order('created_at', { ascending: false }),
+      .order('created_at', { ascending: false })
+      .limit(500),
     supabase.from('batch')
       .select('kode, nama_batch, sisa_bahan_seharusnya, timbangan_akhir')
       .is('voided_at', null)

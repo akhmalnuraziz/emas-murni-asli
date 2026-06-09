@@ -82,11 +82,14 @@ export async function createProduksi(formData: FormData) {
   const kode = await generateProduksiCode(supabase)
   const sisaSerbuk = statusAwal === 'Pas Berat' ? parseFloat(formData.get('sisa_serbuk') as string || '0') : 0
 
+  const targetSelesai = (formData.get('target_selesai') as string) || null
+
   const { data: produksi, error } = await supabase.from('produksi_item').insert({
     kode, batch_kode: batchKode, gramasi, pcs, pcs_awal: pcs, pcs_good: pcs, pcs_reject: 0,
     nama_item: formData.get('nama_item') as string || null,
     berat_awal: beratAwal, total_gram: beratAwal, current_status: statusAwal,
     tanggal_produksi: tanggalProduksi, tanggal: tanggalProduksi,
+    target_selesai: targetSelesai,
     memo: formData.get('memo') as string || null,
     operator: formData.get('operator') as string || profile?.name || null,
     catatan: formData.get('catatan') as string || null,
@@ -147,10 +150,13 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
   const fotosSerbukB64 = fotosSerbukB64Raw ? JSON.parse(fotosSerbukB64Raw) : []
   const fotoSerbukUrls = fotosSerbukB64.length > 0 ? await uploadBase64Fotos(supabase, fotosSerbukB64, `${produksiKode}-serbuk`) : []
 
+  const kategoriLosses = (formData.get('kategori_losses') as string) || null
+
   await supabase.from('produksi_event').insert({
     produksi_item_id: produksiId, tanggal, status: statusBaru,
     total_gram: totalGramBaru, berat_sebelumnya: beratSebelumnya,
     sisa_serbuk: sisaSerbuk, losses,
+    kategori_losses: kategoriLosses,
     jam_mulai: jamMulai,
     catatan: formData.get('catatan') as string || null,
     user_name: profile?.name || null,
@@ -393,6 +399,7 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   const catatan        = formData.get('catatan') as string
   const tanggal        = formData.get('tanggal_produksi') as string
   const memo           = formData.get('memo') as string
+  const targetSelesai  = (formData.get('target_selesai') as string) || null
 
   if (!gramasi) return { error: 'Gramasi wajib diisi' }
   if (!pcs || pcs <= 0) return { error: 'PCS wajib diisi' }
@@ -405,6 +412,7 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
     gramasi, pcs, pcs_awal: pcs, pcs_good: pcs, berat_awal: beratAwal, total_gram: beratAwal,
     operator: operator || null, catatan: catatan || null,
     tanggal_produksi: tanggal, tanggal, memo: memo || null,
+    target_selesai: targetSelesai,
   }).eq('id', produksiId)
 
   if (error) return { error: error.message }
