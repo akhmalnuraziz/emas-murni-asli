@@ -336,7 +336,7 @@ function SisaFisikInput({ batchKode, initialValue }: { batchKode: string; initia
 }
 
 // ─── Event History ─────────────────────────────────────────────────────────────
-function EventHistory({ events }: { events: any[] }) {
+function EventHistory({ events, item }: { events: any[]; item?: any }) {
   const sorted = sortEvents(events)
   const [lightbox, setLightbox] = useState<string | null>(null)
   return (
@@ -437,15 +437,15 @@ function CreateModal({ batches, onClose, onSubmit, isPending, error }: {
                 {GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} Gram</option>)}
               </select>
             </F>
-            <F label="Jumlah PCS" req><input name="pcs" type="number" min="1" value={f.pcs} onChange={e => s('pcs', e.target.value)} placeholder="50" className={inp} required /></F>
+            <F label="Jumlah PCS"><input name="pcs" type="number" min="1" value={f.pcs} onChange={e => s('pcs', e.target.value)} placeholder="50 — opsional, isi saat terima cutting" className={inp} /></F>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <F label="Total Berat (gram)" req><input name="berat_awal" type="number" step="0.01" value={f.berat_awal} onChange={e => s('berat_awal', e.target.value)} placeholder="500.15" className={inp} required /></F>
-            <F label="Status Awal" req>
-              <select name="status_awal" value={f.status_awal} onChange={e => s('status_awal', e.target.value)} className={inp} required>
-                {STATUS_FLOW.slice(0, 3).map(st => <option key={st} value={st}>{st}</option>)}
-              </select>
-            </F>
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm" style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.15)'}}>
+              <span className="text-xs font-bold text-violet-700">🔪 Status Awal</span>
+              <span className="ml-auto text-xs font-semibold text-violet-600 bg-violet-100 px-2 py-0.5 rounded-full">Cutting</span>
+              <input type="hidden" name="status_awal" value="Cutting" />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <F label="Tanggal Produksi" req><input name="tanggal_produksi" type="date" value={f.tanggal_produksi} onChange={e => s('tanggal_produksi', e.target.value)} className={inp} required /></F>
@@ -966,11 +966,40 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
 
                   {/* ── Expanded: Event History ── */}
                   {isExp && (
-                    <div className="border-t px-5 pb-5 pt-4" style={{ borderColor: 'rgba(139,92,246,0.08)', background: 'rgba(139,92,246,0.015)' }}>
-                      <p className="text-[9.5px] font-bold text-gray-400 tracking-widest uppercase mb-3">Riwayat Proses</p>
+                    <div className="border-t px-5 pb-5 pt-4 space-y-3" style={{ borderColor: 'rgba(139,92,246,0.08)', background: 'rgba(139,92,246,0.015)' }}>
+                      {/* Losses table per item */}
+                      {(() => {
+                        const lCutting = Number(item.losses_cutting ?? 0)
+                        const lReject  = Number(item.reject_cutting_gram ?? 0)
+                        const lPasBerat = (item.produksi_event ?? []).filter((e:any)=>!e.voided_at&&e.status==='Pas Berat')
+                          .reduce((s:number,e:any)=>{const r=(e.berat_sebelumnya??0)-(e.total_gram??0)-(e.sisa_serbuk??0);return s+(r>0?r:0)},0)
+                        const totalL = lCutting + lPasBerat
+                        if (totalL < 0.001 && lReject < 0.001) return null
+                        return (
+                          <div className="rounded-xl overflow-hidden border border-red-100">
+                            <div className="px-3 py-1.5 text-[9px] font-bold text-red-500 uppercase tracking-wide" style={{background:'rgba(239,68,68,0.04)'}}>
+                              📉 Losses Item
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y" style={{borderColor:'rgba(239,68,68,0.07)'}}>
+                              {[
+                                {label:'Losses Cutting',   val:lCutting>0.001?lCutting.toFixed(3)+' gr':'—',   color:'text-orange-500'},
+                                {label:'Reject Cutting',   val:lReject>0.001?lReject.toFixed(3)+' gr':'—',     color:'text-red-500'},
+                                {label:'Losses Pas Berat', val:lPasBerat>0.001?lPasBerat.toFixed(3)+' gr':'—', color:'text-amber-500'},
+                                {label:'Total Losses',     val:totalL>0.001?totalL.toFixed(3)+' gr':'—',       color:'text-red-600 font-extrabold'},
+                              ].map(col=>(
+                                <div key={col.label} className="px-2 py-2 text-center">
+                                  <p className="text-[8px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">{col.label}</p>
+                                  <p className={`text-[11px] font-bold ${col.color}`}>{col.val}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      })()}
+                      <p className="text-[9.5px] font-bold text-gray-400 tracking-widest uppercase">Riwayat Proses</p>
                       {events.length === 0
                         ? <p className="text-xs text-gray-400 italic">Belum ada event tercatat</p>
-                        : <EventHistory events={events} />
+                        : <EventHistory events={events} item={item} />
                       }
                     </div>
                   )}
