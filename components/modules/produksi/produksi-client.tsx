@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { cn, formatDate } from '@/lib/utils'
 import {
-  createProduksi, updateStatusProduksi, editProduksi,
+  createProduksi, updateStatusProduksi, editProduksi, selesaiCutting,
   inputReject, leburReject, deleteProduksi, updateSisaFisikBatch
 } from '@/app/(dashboard)/produksi/actions'
 import type { UserRole } from '@/lib/types/database'
@@ -46,7 +46,7 @@ function getDurasi(jamMulai: string | null, createdAt: string | null): string {
 const GRAMASI_OPTIONS = ['0.1','0.5','1','2','5','10','20','25','50','100','250','500','1000']
 const STATUS_FLOW     = ['Cutting','Pas Berat','Annealing','Press Stamp','Siap Packing']
 const STATUS_NEXT: Record<string,string> = {
-  'Cutting':'Pas Berat','Pas Berat':'Annealing','Annealing':'Press Stamp','Press Stamp':'Siap Packing',
+  'Cutting':'Pas Berat','Pas Berat':'Annealing','Annealing':'Siap Packing',
 }
 const KATEGORI_LOSSES_OPTIONS = [
   'Oksidasi / Terbakar',
@@ -475,7 +475,7 @@ function EditModal({ item, onClose, onSubmit, isPending, error }: {
   item: any; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
 }) {
   const [f, setF] = useState({
-    nama_item: item.nama_item ?? '', gramasi: item.gramasi ?? '',
+    nama_item: item.nama_item ?? `LM REI ${item.gramasi ?? ''}GR`, gramasi: item.gramasi ?? '',
     pcs: String(item.pcs ?? ''), berat_awal: String(item.berat_awal ?? item.total_gram ?? ''),
     operator: item.operator ?? '', catatan: item.catatan ?? '',
     tanggal_produksi: item.tanggal_produksi ?? item.tanggal ?? today,
@@ -496,7 +496,8 @@ function EditModal({ item, onClose, onSubmit, isPending, error }: {
         <form onSubmit={submit} className="px-6 py-5 space-y-4 overflow-y-auto max-h-[calc(100dvh-140px)]">
           <F label="Nama / Label Batch"><input value={f.nama_item} onChange={e => s('nama_item', e.target.value)} placeholder="cth: LM REI 10GR BATCH 26" className={inp} /></F>
           <div className="grid grid-cols-2 gap-3">
-            <F label="Gramasi" req><select value={f.gramasi} onChange={e => s('gramasi', e.target.value)} className={inp}>{GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} Gram</option>)}</select></F>
+            <F label="Nama Item"><input value={f.nama_item} onChange={e => s('nama_item', e.target.value)} placeholder="Nama produk (auto-generate dari gramasi)" className={inp} name="nama_item"/></F>
+            <F label="Gramasi" req><select value={f.gramasi} onChange={e => { s('gramasi', e.target.value); s('nama_item', `LM REI ${e.target.value}GR`) }} className={inp}>{GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} Gram</option>)}</select></F>
             <F label="PCS" req><input type="number" min="1" value={f.pcs} onChange={e => s('pcs', e.target.value)} className={inp} /></F>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -514,6 +515,144 @@ function EditModal({ item, onClose, onSubmit, isPending, error }: {
             <button type="submit" disabled={isPending} className="px-6 py-2.5 text-sm font-bold text-white rounded-2xl flex items-center gap-2 disabled:opacity-60" style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
               {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
               {isPending ? 'Menyimpan…' : 'Simpan Perubahan'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+
+// ─── Selesai Cutting Modal ────────────────────────────────────────────────────
+function SelesaiCuttingModal({ item, onClose, onSubmit, isPending, error }: {
+  item: any; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
+}) {
+  const [fotos, setFotos] = useState<File[]>([])
+  const [uploading, setUploading] = useState(false)
+  const serahGram = Number(item.serah_gram ?? item.berat_awal ?? 0)
+
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const formEl = e.currentTarget
+    setUploading(true)
+    try {
+      const b64s = fotos.length > 0 ? await filesToBase64(fotos) : []
+      const fd = new FormData(formEl)
+      fd.set('fotos_b64', JSON.stringify(b64s))
+      onSubmit(fd)
+    } finally { setUploading(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)' }}>
+      <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[92vh] flex flex-col"
+        style={{ boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }}>
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0 border-b border-gray-100">
+          <div>
+            <h2 className="text-base font-bold text-gray-900">✓ Konfirmasi Terima Cutting</h2>
+            <p className="text-xs text-violet-500 font-semibold mt-0.5">{item.kode} — {item.nama_item}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+            <X size={14} className="text-gray-500" />
+          </button>
+        </div>
+        <form onSubmit={submit} className="px-5 pb-6 pt-4 space-y-4 overflow-y-auto flex-1">
+          {/* Info Diserahkan */}
+          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+            style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.15)' }}>
+            <div className="text-xs">
+              <span className="text-gray-400">Diserahkan: </span>
+              <span className="font-bold text-violet-700">{fgr(serahGram)} gr</span>
+              {item.pcs ? <span className="text-gray-400 ml-2">· {item.pcs} PCS</span> : null}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Tanggal Selesai *</label>
+              <input name="tanggal_selesai" type="date" defaultValue={new Date().toISOString().split('T')[0]}
+                className={inp} required />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Jam Selesai *</label>
+              <input name="jam_selesai" type="time" className={inp} required />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Berat Diterima (gr) *</label>
+            <input name="terima_gram" type="number" step="0.001"
+              placeholder={`Max ${fgr(serahGram)} gr`}
+              className={inp} required />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Reject Cutting (gr)</label>
+              <input name="reject_cutting_gram" type="number" step="0.001"
+                defaultValue="0" className={inp} />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">PCS Reject</label>
+              <input name="pcs_reject" type="number" min="0" defaultValue="0" className={inp} />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">
+              PCS Berhasil <span className="text-gray-400 font-normal">(opsional, isi jika sudah tahu)</span>
+            </label>
+            <input name="pcs_good" type="number" min="1"
+              placeholder="Isi jika sudah dihitung" className={inp} />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">
+              Catatan <span className="text-gray-400 font-normal">(alasan losses, kondisi bahan, dll)</span>
+            </label>
+            <input name="catatan" type="text" placeholder="Misal: losses karena serbuk tercecer..."
+              className={inp} />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Foto Bukti Terima</label>
+            <label className="flex items-center gap-2 h-11 px-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-violet-50 transition-colors border border-gray-200">
+              <Camera size={14} className="text-gray-400 flex-shrink-0" />
+              <span className="text-xs text-gray-400">{fotos.length > 0 ? `${fotos.length} foto` : 'Tambah foto (opsional)'}</span>
+              <input type="file" accept="image/*" multiple className="hidden"
+                onChange={e => setFotos(p => [...p, ...Array.from(e.target.files ?? [])].slice(0, 5))} />
+            </label>
+            {fotos.length > 0 && (
+              <div className="flex gap-2 mt-2 flex-wrap">
+                {fotos.map((f, i) => (
+                  <div key={i} className="relative">
+                    <img src={URL.createObjectURL(f)} alt="" className="w-14 h-14 rounded-xl object-cover border border-violet-200" />
+                    <button type="button" onClick={() => setFotos(p => p.filter((_, j) => j !== i))}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[9px] flex items-center justify-center">×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <div className="flex items-center gap-2 px-3 py-2.5 bg-red-50 rounded-2xl text-xs text-red-600 border border-red-100">
+              <AlertTriangle size={13} className="flex-shrink-0" /><span>{error}</span>
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <button type="button" onClick={onClose}
+              className="flex-1 h-11 rounded-2xl bg-gray-100 text-sm font-semibold text-gray-600 hover:bg-gray-200">
+              Batal
+            </button>
+            <button type="submit" disabled={isPending || uploading}
+              className="flex-1 h-11 rounded-2xl text-sm font-bold text-white disabled:opacity-50 flex items-center justify-center gap-2"
+              style={{ background: 'linear-gradient(135deg,#059669,#047857)' }}>
+              {(isPending || uploading) && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+              {uploading ? 'Upload...' : isPending ? 'Menyimpan...' : 'Konfirmasi Diterima'}
             </button>
           </div>
         </form>
@@ -718,6 +857,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
   function openModal(type: 'create'|'edit'|'update'|'delete', item?: any) { setActive(item ?? null); setErr(''); setModal(type) }
   function handleCreate(fd: FormData) { setErr(''); startTransition(async () => { const r = await createProduksi(fd); if (r?.error) { setErr(r.error); return }; showToast(`✅ ${r?.kode} berhasil dibuat`); setModal(null) }) }
   function handleEdit(fd: FormData)   { if (!active) return; setErr(''); startTransition(async () => { const r = await editProduksi(active.id, active.kode, fd); if (r?.error) { setErr(r.error); return }; showToast('✅ Data diperbarui'); setModal(null) }) }
+  function handleSelesaiCutting(fd: FormData) { if (!active) return; setErr(''); startTransition(async () => { const r = await selesaiCutting(active.id, active.kode, fd); if (r?.error) { setErr(r.error); return }; showToast('✅ Cutting diterima'); setModal(null) }) }
   function handleUpdate(fd: FormData) {
     if (!active) return; setErr('')
     const isReject = fd.get('is_reject') === '1'
@@ -860,7 +1000,16 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                       </div>
                       {/* Actions */}
                       <div className="flex items-center gap-1.5 flex-shrink-0 pt-0.5">
-                        {canEdit && STATUS_NEXT[item.current_status] !== undefined && (
+                        {/* Diterima Cutting — hanya saat proses cutting */}
+                        {canEdit && item.current_status === 'Cutting' && item.status_cutting === 'proses' && (
+                          <button onClick={() => openModal('cuttingTerima', item)}
+                            className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 transition-all hover:scale-105"
+                            style={{ background: 'rgba(34,197,94,0.12)', color: '#16A34A' }}>
+                            <Check size={11} /> Diterima
+                          </button>
+                        )}
+                        {/* Update — hanya setelah cutting selesai */}
+                        {canEdit && STATUS_NEXT[item.current_status] !== undefined && (item.current_status !== 'Cutting' || item.status_cutting === 'selesai') && (
                           <button onClick={() => openModal('update', item)}
                             className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 transition-all hover:scale-105"
                             style={{ background: 'rgba(139,92,246,0.1)', color: '#7C3AED' }}>
@@ -1023,6 +1172,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
       {modal === 'create' && batches.length > 0 && <CreateModal batches={batches} onClose={() => setModal(null)} onSubmit={handleCreate} isPending={isPending} error={err} />}
       {modal === 'edit'   && active           && <EditModal   item={active}      onClose={() => setModal(null)} onSubmit={handleEdit}   isPending={isPending} error={err} />}
       {modal === 'update' && active           && <UpdateModal item={active}      onClose={() => setModal(null)} onSubmit={handleUpdate} isPending={isPending} error={err} />}
+      {modal === 'cuttingTerima' && active   && <SelesaiCuttingModal item={active} onClose={() => setModal(null)} onSubmit={handleSelesaiCutting} isPending={isPending} error={err} />}
       {modal === 'delete' && active           && <DelModal    item={active}      onClose={() => setModal(null)} onConfirm={handleDelete} isPending={isPending} />}
     </div>
   )
