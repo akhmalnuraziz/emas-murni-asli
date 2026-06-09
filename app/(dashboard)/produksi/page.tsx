@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import ProduksiClient from '@/components/modules/produksi/produksi-client'
 
-// Never cache — must always reflect latest mutations from server actions
 export const dynamic = 'force-dynamic'
 
 export default async function ProduksiPage() {
@@ -15,7 +14,7 @@ export default async function ProduksiPage() {
   ] = await Promise.all([
     supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
     supabase.from('produksi_item')
-      .select(`*, produksi_event(*), packing!left(pcs_dipack, shieldtag_count, voided_at), batch!left(sisa_bahan_seharusnya, sisa_fisik, timbangan_akhir, bahan_dari_pusat)`)
+      .select(`*, produksi_event(*), packing!left(pcs_dipack, shieldtag_count, voided_at), batch!left(sisa_bahan_seharusnya, sisa_fisik, timbangan_akhir, bahan_dari_pusat), stage_handover(*)`)
       .is('voided_at', null)
       .order('created_at', { ascending: false })
       .limit(500),
