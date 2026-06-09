@@ -804,7 +804,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
   const [search,       setSearch]    = useState('')
   const [tab,          setTab]       = useState('Semua')
   const [exp,          setExp]       = useState<number | null>(null)
-  const [modal,        setModal]     = useState<'create'|'edit'|'update'|'delete'|null>(null)
+  const [modal,        setModal]     = useState<'create'|'edit'|'update'|'delete'|'cuttingTerima'|null>(null)
   const [active,       setActive]    = useState<any | null>(null)
   const [err,          setErr]       = useState('')
   const [toast,        setToast]     = useState<{ msg: string; ok: boolean } | null>(null)
@@ -854,7 +854,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
   const tabs = ['Semua', ...STATUS_FLOW, 'Sudah Packing', 'Reject']
   const visible = filtered.slice(0, visibleCount)
 
-  function openModal(type: 'create'|'edit'|'update'|'delete', item?: any) { setActive(item ?? null); setErr(''); setModal(type) }
+  function openModal(type: 'create'|'edit'|'update'|'delete'|'cuttingTerima', item?: any) { setActive(item ?? null); setErr(''); setModal(type) }
   function handleCreate(fd: FormData) { setErr(''); startTransition(async () => { const r = await createProduksi(fd); if (r?.error) { setErr(r.error); return }; showToast(`✅ ${r?.kode} berhasil dibuat`); setModal(null) }) }
   function handleEdit(fd: FormData)   { if (!active) return; setErr(''); startTransition(async () => { const r = await editProduksi(active.id, active.kode, fd); if (r?.error) { setErr(r.error); return }; showToast('✅ Data diperbarui'); setModal(null) }) }
   function handleSelesaiCutting(fd: FormData) { if (!active) return; setErr(''); startTransition(async () => { const r = await selesaiCutting(active.id, active.kode, fd); if (r?.error) { setErr(r.error); return }; showToast('✅ Cutting diterima'); setModal(null) }) }
