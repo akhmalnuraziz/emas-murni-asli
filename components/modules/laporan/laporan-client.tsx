@@ -149,8 +149,11 @@ export default function LaporanClient({ batches, userRole }: { batches:any[]; us
       gramasiMap[g].total_gram += Number(i.terima_gram??i.total_gram??0)
     })
 
+    const gramasiTotalPcs  = Object.values(gramasiMap).reduce((s,d)=>s+d.jml_pcs, 0)
+    const gramasiTotalGram = Object.values(gramasiMap).reduce((s,d)=>s+d.total_gram, 0)
     return { bahan, peleburIn, peleburOut, lossLebur, lossCutting, rejCutting, lossStage, totalLoss,
              serahTotal, efisiensi, yieldAkhir, lossRate, packedPcs, statusMap, gramasiMap,
+             gramasiTotalPcs, gramasiTotalGram,
              itemCount: items.length, peleburanCount: pbs.length }
   })() : null
 
@@ -428,8 +431,8 @@ export default function LaporanClient({ batches, userRole }: { batches:any[]; us
                         <tfoot>
                           <tr className="border-t-2" style={{borderColor:'rgba(59,130,246,0.2)',background:'rgba(59,130,246,0.03)'}}>
                             <td className="px-5 py-3 font-extrabold text-gray-700 text-[11px] uppercase">Total</td>
-                            <td className="px-5 py-3 font-extrabold text-gray-700">{Object.values(S.gramasiMap as any).reduce((s:any,d:any)=>s+d.jml_pcs,0)} pcs</td>
-                            <td className="px-5 py-3 font-mono font-extrabold text-gray-700">{fg(Object.values(S.gramasiMap as any).reduce((s:any,d:any)=>s+d.total_gram,0))} gr</td>
+                            <td className="px-5 py-3 font-extrabold text-gray-700">{S.gramasiTotalPcs} pcs</td>
+                            <td className="px-5 py-3 font-mono font-extrabold text-gray-700">{fg(S.gramasiTotalGram)} gr</td>
                             <td className="px-5 py-3 font-bold text-blue-600">100%</td>
                           </tr>
                         </tfoot>
