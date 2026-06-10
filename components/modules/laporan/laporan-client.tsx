@@ -1,5 +1,5 @@
 'use client'
-import { useState, useCallback } from 'react'
+import React, { useState, useCallback } from 'react'
 import { fetchBatchReport } from '@/app/(dashboard)/laporan/actions'
 import { ChevronDown, Printer, RefreshCw, TrendingDown, Package, Layers, BarChart2, Hammer, Box, Search } from 'lucide-react'
 
