@@ -1375,14 +1375,43 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                       ))}
                     </div>
 
-                    {/* ④ Stage handover */}
-                    {handovers.length>0&&(
+                    {/* ④ Stage handover + Cutting */}
+                    {(item.serah_gram||item.terima_gram||handovers.length>0)&&(
                       <div className="rounded-2xl overflow-hidden"
                         style={{border:'1px solid rgba(139,92,246,0.15)',background:'rgba(255,255,255,0.8)'}}>
                         <div className="px-4 py-2 text-[10px] font-bold text-violet-600 uppercase tracking-wide"
                           style={{background:'rgba(139,92,246,0.05)'}}>
                           ⛓ Alur Serah-Terima
                         </div>
+
+                        {/* Cutting card */}
+                        {(item.serah_gram||item.terima_gram)&&(
+                          <div className="px-4 py-3.5 border-t" style={{borderColor:'rgba(139,92,246,0.07)'}}>
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full text-white" style={{background:'#3B82F6'}}>Cutting</span>
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${item.status_cutting==='selesai'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>
+                                {item.status_cutting==='selesai'?'✓ Selesai':'⏳ Proses'}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <div className="rounded-xl p-3 space-y-1" style={{background:'rgba(59,130,246,0.04)',border:'1px solid rgba(59,130,246,0.1)'}}>
+                                <p className="text-[9px] font-bold text-blue-500 uppercase tracking-wide">📤 Diserahkan</p>
+                                <p className="font-bold text-gray-800">{item.serah_gram?`${parseFloat(item.serah_gram).toFixed(3)} gr`:'—'}</p>
+                                {item.jam_mulai_cutting&&<p className="text-[11px] text-gray-400">⏱ {String(item.jam_mulai_cutting).slice(0,5)}</p>}
+                                {item.operator&&<p className="text-[11px] text-gray-400">👤 {item.operator}</p>}
+                              </div>
+                              <div className="rounded-xl p-3 space-y-1" style={{background:item.terima_gram?'rgba(34,197,94,0.04)':'rgba(0,0,0,0.02)',border:`1px solid ${item.terima_gram?'rgba(34,197,94,0.15)':'rgba(0,0,0,0.06)'}`}}>
+                                <p className="text-[9px] font-bold text-green-500 uppercase tracking-wide">📥 Diterima</p>
+                                {item.terima_gram?(<>
+                                  <p className="font-bold text-gray-800">{parseFloat(item.terima_gram).toFixed(3)} gr{item.terima_pcs?` · ${item.terima_pcs} PCS`:''}</p>
+                                  {item.jam_selesai&&<p className="text-[11px] text-gray-400">⏱ {String(item.jam_selesai).slice(0,5)}</p>}
+                                  {Number(item.reject_cutting_gram)>0&&<p className="text-[11px] font-semibold text-red-500">Reject: {parseFloat(item.reject_cutting_gram).toFixed(3)} gr{item.reject_cutting_pcs?` · ${item.reject_cutting_pcs} PCS`:''}</p>}
+                                  {Number(item.losses_cutting)>0&&<p className="text-[11px] font-semibold text-orange-500">Losses: {parseFloat(item.losses_cutting).toFixed(3)} gr</p>}
+                                </>):<p className="text-[11px] text-gray-400 italic">Belum diterima</p>}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                         {handovers.map((h:any)=>{
                           const tl:Record<string,string>={pas_berat:'Pas Berat',annealing:'Annealing',siap_packing:'Siap Packing'}
                           const tc:Record<string,string>={pas_berat:'#F97316',annealing:'#EAB308',siap_packing:'#8B5CF6'}
