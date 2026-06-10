@@ -1382,65 +1382,6 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                       ))}
                     </div>
 
-                    {/* ② Ringkasan Losses — DI ATAS */}
-                    {totalItemLosses>0.001&&(
-                      <div className="rounded-2xl overflow-hidden"
-                        style={{border:'1px solid rgba(239,68,68,0.15)',background:'rgba(255,255,255,0.8)'}}>
-                        <div className="px-4 py-2 text-[10px] font-bold text-red-500 uppercase tracking-wide"
-                          style={{background:'rgba(239,68,68,0.05)'}}>
-                          📉 Ringkasan Losses
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4"
-                          style={{borderColor:'rgba(239,68,68,0.08)'}}>
-                          {[
-                            {label:'Losses Cutting', val:cutLosses,              color:'text-orange-500'},
-                            {label:'Reject Cutting', val:cutReject,              color:'text-red-500'},
-                            {label:'Losses Tahap',   val:stgLosses,              color:'text-amber-500'},
-                            {label:'Total Losses',   val:cutLosses+stgLosses,    color:'text-red-700'},
-                          ].map((c,ci)=>(
-                            <div key={c.label} className={`px-3 py-3 text-center ${ci<3?'border-r':''}`}
-                              style={{borderColor:'rgba(239,68,68,0.08)'}}>
-                              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide leading-tight mb-1">{c.label}</p>
-                              <p className={`text-sm font-extrabold ${c.color}`}>{c.val>0.001?fgr(c.val)+' gr':'—'}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* ③ Cutting summary */}
-                    {(item.terima_gram||item.status_cutting==='selesai')&&(
-                      <div className="rounded-2xl overflow-hidden"
-                        style={{border:'1px solid rgba(59,130,246,0.15)',background:'rgba(255,255,255,0.8)'}}>
-                        <div className="px-4 py-2 text-[10px] font-bold text-blue-600 uppercase tracking-wide"
-                          style={{background:'rgba(59,130,246,0.05)'}}>
-                          🔪 Cutting
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-0">
-                          {[
-                            {label:'Serah',   val:fgr(item.serah_gram??item.berat_awal)+' gr', hi:false, color:''},
-                            {label:'Terima',  val:item.terima_gram?fgr(item.terima_gram)+' gr':'—', hi:false, color:''},
-                            {label:'Reject',  val:cutReject>0?fgr(cutReject)+' gr':'—', hi:cutReject>0, color:'text-red-500'},
-                            {label:'Losses',  val:cutLosses>0?fgr(cutLosses)+' gr':'—', hi:cutLosses>0, color:'text-orange-500'},
-                          ].map((f,fi)=>(
-                            <div key={f.label} className={`px-3 py-3 ${fi<3?'border-r':''}`}
-                              style={{borderColor:'rgba(59,130,246,0.08)'}}>
-                              <p className="text-[10px] text-gray-400 font-medium mb-1">{f.label}</p>
-                              <p className={`text-sm font-bold ${f.hi?(f.color||'text-gray-700'):'text-gray-700'}`}>{f.val}</p>
-                            </div>
-                          ))}
-                        </div>
-                        {item.jam_mulai_cutting&&item.jam_selesai&&(
-                          <div className="px-4 pb-3">
-                            <p className="text-[11px] text-gray-400">
-                              ⏱ {String(item.jam_mulai_cutting).slice(0,5)} → {String(item.jam_selesai).slice(0,5)}
-                              {(()=>{const d=getDurasi(item.jam_mulai_cutting,item.jam_selesai);return d?` (${d})`:''})()}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
                     {/* ④ Stage handover */}
                     {handovers.length>0&&(
                       <div className="rounded-2xl overflow-hidden"
@@ -1503,11 +1444,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                       </div>
                     )}
 
-                    {/* ⑤ Riwayat Proses */}
-                    <div>
-                      <p className="text-[9px] font-bold text-gray-300 uppercase tracking-widest mb-2.5">Riwayat Proses</p>
-                      <EventHistory events={events} item={item} />
-                    </div>
+
                   </div>
                 )}
               </div>
@@ -1528,3 +1465,4 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     </div>
   )
 }
+
