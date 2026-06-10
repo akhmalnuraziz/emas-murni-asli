@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useCallback } from 'react'
+import { useState, useCallback, type ReactNode } from 'react'
 import { fetchBatchReport } from '@/app/(dashboard)/laporan/actions'
 import { ChevronDown, Printer, RefreshCw, TrendingDown, Package, Layers, BarChart2, Hammer, Box, Search } from 'lucide-react'
 
@@ -54,7 +54,7 @@ function ProgressBar({ value, max, color, label, sub }: { value:number; max:numb
 }
 
 // ── KPI Card ─────────────────────────────────────────────────────────────────
-function KPICard({ label, value, sub, accent, icon }: { label:string; value:string; sub?:string; accent:string; icon:React.ReactNode }) {
+function KPICard({ label, value, sub, accent, icon }: { label:string; value:string; sub?:string; accent:string; icon:ReactNode }) {
   return (
     <div className="rounded-3xl p-4 flex flex-col justify-between min-h-[110px] overflow-hidden relative"
       style={{background:'rgba(255,255,255,0.75)',backdropFilter:'blur(20px)',border:'1px solid rgba(255,255,255,0.6)',boxShadow:'0 4px 24px rgba(0,0,0,0.04)'}}>
