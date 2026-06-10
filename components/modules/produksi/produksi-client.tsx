@@ -1228,14 +1228,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
             const s    = item.current_status
             const isVoided = !!item.voided_at
 
-            // Cutting info
-            const cutLosses = Number(item.losses_cutting??0)
-            const cutReject = Number(item.reject_cutting_gram??0)
 
-            // Losses total
-            const evtLosses = events.reduce((a:number,e:any)=>a+(Number(e.losses)||0),0)
-            const stgLosses = handovers.filter((h:any)=>h.status==='selesai').reduce((a:number,h:any)=>a+(Number(h.losses_gram)||0),0)
-            const totalItemLosses = cutLosses + stgLosses
 
             return (
               <div key={item.id}
