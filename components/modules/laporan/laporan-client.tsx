@@ -1,6 +1,6 @@
 'use client'
 import { useState, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { fetchBatchReport } from '@/app/(dashboard)/laporan/actions'
 import { FileText, ChevronDown, Package, Layers, BarChart2, Printer, RefreshCw, TrendingDown, CheckCircle, Clock, AlertTriangle, Hammer, Box } from 'lucide-react'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -28,24 +28,20 @@ export default function LaporanClient({ batches, userRole }: Props) {
   const fetchDetail = useCallback(async (kode: string) => {
     if (!kode) return
     setLoading(true)
+    setData(null)
     try {
-      const supabase = createClient()
-      const [
-        { data: batch },
-        { data: peleburan },
-        { data: produksiItems },
-      ] = await Promise.all([
-        supabase.from('batch').select('*').eq('kode', kode).single(),
-        supabase.from('peleburan').select('*').eq('batch_kode', kode).is('voided_at', null).order('created_at'),
-        supabase.from('produksi_item')
-          .select('*, produksi_event(*), packing!left(*), stage_handover(*)')
-          .eq('batch_kode', kode)
-          .is('voided_at', null)
-          .order('created_at'),
-      ])
-      setData({ batch, peleburan: peleburan??[], produksiItems: produksiItems??[] })
+      const result = await fetchBatchReport(kode)
+      if ('error' in result && result.error) {
+        console.error('Laporan error:', result.error)
+        return
+      }
+      setData(result as any)
       setTab('ringkasan')
-    } finally { setLoading(false) }
+    } catch (e) {
+      console.error('fetchDetail error:', e)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   function handleSelect(kode: string) {
