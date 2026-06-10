@@ -338,57 +338,72 @@ function SisaFisikInput({ batchKode, initialValue }: { batchKode: string; initia
 
 // ─── Event History ─────────────────────────────────────────────────────────────
 function EventHistory({ events, item }: { events: any[]; item?: any }) {
-  const sorted = sortEvents(events)
   const [lightbox, setLightbox] = useState<string | null>(null)
+
+  // Filter: sembunyikan event Cutting awal (tanpa jam_mulai = event create, bukan proses)
+  const filtered = sortEvents(events).filter((ev: any) => {
+    if (ev.status === 'Cutting' && !ev.jam_mulai && (!ev.catatan || !ev.catatan.includes('Serah:'))) return false
+    return true
+  })
+
   return (
-    <div className="space-y-1">
+    <div className="space-y-2">
       {lightbox && <Lightbox url={lightbox} onClose={() => setLightbox(null)} />}
-      {sorted.map((ev, i) => {
+      {filtered.length === 0 && <p className="text-xs text-gray-400 italic">Belum ada riwayat proses</p>}
+      {filtered.map((ev: any, i: number) => {
         const c = STATUS_CFG[ev.status] ?? { dot: '#94A3B8', bg: 'rgba(148,163,184,0.1)', text: '#64748B' }
         const fotos  = Array.isArray(ev.fotos) ? ev.fotos : []
         const serbuk = Array.isArray(ev.fotos_sisa_serbuk) ? ev.fotos_sisa_serbuk : []
+        // Cutting: sisa_serbuk field is actually reject (see selesaiCutting action)
+        const isCuttingTerima = ev.status === 'Cutting' && ev.jam_mulai
+        const serbukLabel = isCuttingTerima ? 'reject' : 'serbuk'
+        const serbukColor = isCuttingTerima ? 'text-red-500' : 'text-violet-500'
+        // Parse catatan for clean display
+        const hasCatatanBreakdown = ev.catatan?.includes('Serah:')
         return (
-          <div key={ev.id ?? i} className="flex gap-3">
-            <div className="flex flex-col items-center pt-1">
-              <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: c.dot }} />
-              {i < sorted.length - 1 && <div className="w-px flex-1 mt-1 opacity-20" style={{ background: c.dot }} />}
-            </div>
-            <div className="flex-1 pb-3 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <Sbadge s={ev.status} />
-                <span className="text-xs text-gray-400">{formatDate(ev.tanggal)}</span>
-                {ev.jam_mulai && (
-                  <span className="text-xs text-gray-400">
-                    🕐{fmtTime(ev.jam_mulai)}
-                    {ev.created_at && ` → ${new Date(ev.created_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}`}
-                    {getDurasi(ev.jam_mulai, ev.created_at) && ` (${getDurasi(ev.jam_mulai, ev.created_at)})`}
-                  </span>
-                )}
-                <span className="text-xs font-semibold text-gray-700">{ev.total_gram} gr</span>
-                {Number(ev.sisa_serbuk) > 0 && <span className="text-xs text-violet-500">serbuk {ev.sisa_serbuk} gr</span>}
-                {Number(ev.losses)      > 0 && <span className="text-xs text-orange-500">losses {ev.losses} gr</span>}
-                {ev.user_name && <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">· {ev.user_name}</span>}
-              </div>
-              {ev.kategori_losses && (
-                <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mt-0.5" style={{ background: 'rgba(249,115,22,0.10)', color: '#EA580C' }}>
-                  ⚠ {ev.kategori_losses}
+          <div key={ev.id ?? i} className="rounded-2xl overflow-hidden"
+            style={{background:'rgba(255,255,255,0.6)',border:'1px solid rgba(0,0,0,0.05)'}}>
+            {/* Header row */}
+            <div className="flex items-center gap-2 px-3 py-2 border-b" style={{borderColor:'rgba(0,0,0,0.04)',background:c.bg+'66'}}>
+              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{background:c.dot}}/>
+              <Sbadge s={ev.status} />
+              <span className="text-[11px] text-gray-400 font-medium">{formatDate(ev.tanggal)}</span>
+              {ev.jam_mulai && (
+                <span className="text-[11px] text-gray-400 flex items-center gap-0.5">
+                  ⏱ {fmtTime(ev.jam_mulai)}
+                  {ev.created_at && ` → ${new Date(ev.created_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}`}
+                  {getDurasi(ev.jam_mulai, ev.created_at) && <span className="text-gray-300 ml-1">({getDurasi(ev.jam_mulai, ev.created_at)})</span>}
                 </span>
               )}
-              {ev.catatan && <p className="text-xs text-gray-400 mt-0.5 italic truncate">{ev.catatan}</p>}
-              {(fotos.length > 0 || serbuk.length > 0) && (
-                <div className="flex gap-1.5 flex-wrap mt-2">
-                  {fotos.map((u: string, fi: number) => (
-                    <img key={fi} src={u} onClick={() => setLightbox(u)} className="w-10 h-10 rounded-xl object-cover cursor-pointer border border-gray-100 hover:scale-110 transition-transform" />
-                  ))}
-                  {serbuk.map((u: string, fi: number) => (
-                    <div key={`s${fi}`} className="relative">
-                      <img src={u} onClick={() => setLightbox(u)} className="w-10 h-10 rounded-xl object-cover cursor-pointer border-2 border-violet-300 hover:scale-110 transition-transform" />
-                      <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-violet-500 rounded-full text-[8px] text-white flex items-center justify-center font-bold">S</div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {ev.user_name && <span className="text-[10px] text-gray-400 ml-auto bg-white/80 px-2 py-0.5 rounded-full border border-gray-100">👤 {ev.user_name}</span>}
             </div>
+            {/* Data row */}
+            <div className="px-3 py-2 flex flex-wrap gap-3 items-center text-xs">
+              <div><span className="text-gray-400">Berat: </span><span className="font-bold text-gray-700">{ev.total_gram} gr</span></div>
+              {Number(ev.sisa_serbuk) > 0 && <div><span className="text-gray-400">{serbukLabel}: </span><span className={`font-semibold ${serbukColor}`}>{fgr(Number(ev.sisa_serbuk))} gr</span></div>}
+              {Number(ev.losses) > 0 && <div><span className="text-gray-400">losses: </span><span className="font-semibold text-orange-500">{fgr(Number(ev.losses))} gr</span></div>}
+              {ev.kategori_losses && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{background:'rgba(249,115,22,0.10)',color:'#EA580C'}}>⚠ {ev.kategori_losses}</span>}
+            </div>
+            {/* Catatan — only show if it's not the auto-generated breakdown from selesaiCutting */}
+            {ev.catatan && !hasCatatanBreakdown && (
+              <div className="px-3 pb-2">
+                <p className="text-[11px] text-gray-400 italic">{ev.catatan}</p>
+              </div>
+            )}
+            {/* Fotos */}
+            {(fotos.length > 0 || serbuk.length > 0) && (
+              <div className="px-3 pb-2 flex gap-1.5 flex-wrap">
+                {fotos.map((u: string, fi: number) => (
+                  <img key={fi} src={u} onClick={() => setLightbox(u)} className="w-12 h-12 rounded-xl object-cover cursor-pointer border border-gray-100 hover:scale-110 transition-transform shadow-sm" />
+                ))}
+                {serbuk.map((u: string, fi: number) => (
+                  <div key={`s${fi}`} className="relative">
+                    <img src={u} onClick={() => setLightbox(u)} className="w-12 h-12 rounded-xl object-cover cursor-pointer border-2 border-violet-200 hover:scale-110 transition-transform" />
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-violet-500 rounded-full text-[8px] text-white flex items-center justify-center font-bold">S</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )
       })}
@@ -766,8 +781,8 @@ function SerahStageModal({ item, tahap, onClose, onSubmit, isPending, error }: {
 }
 
 // ─── Terima Stage Modal ───────────────────────────────────────────────────────
-function TerimaStageModal({ item, tahap, handoverId, onClose, onSubmit, isPending, error }: {
-  item: any; tahap: string; handoverId: number; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
+function TerimaStageModal({ item, tahap, handoverId, onClose, onSubmit, isPending, error, initialData }: {
+  item: any; tahap: string; handoverId: number; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string; initialData?: any
 }) {
   const [fotos, setFotos] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
@@ -825,7 +840,7 @@ function TerimaStageModal({ item, tahap, handoverId, onClose, onSubmit, isPendin
 
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Total Berat Setelah Diproses (gr) *</label>
-            <input name="terima_gram" type="number" step="0.001" placeholder={`Max ${Number(serahGram).toFixed(3)} gr`} className={inp} required/>
+            <input name="terima_gram" type="number" step="0.001" placeholder={`Max ${Number(serahGram).toFixed(3)} gr`} defaultValue={initialData?.terima_gram??''} className={inp} required/>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -885,9 +900,22 @@ function TerimaStageModal({ item, tahap, handoverId, onClose, onSubmit, isPendin
             <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Foto Bukti</label>
             <label className="flex items-center gap-2 h-11 px-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-violet-50 transition-colors border border-gray-200">
               <Camera size={14} className="text-gray-400 flex-shrink-0"/>
-              <span className="text-xs text-gray-400">{fotos.length > 0 ? `${fotos.length} foto` : 'Tambah foto (opsional)'}</span>
+              <span className="text-xs text-gray-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto (opsional, max 5)'}</span>
               <input type="file" accept="image/*" multiple className="hidden" onChange={e=>setFotos(p=>[...p,...Array.from(e.target.files??[])].slice(0,5))}/>
             </label>
+            {fotos.length > 0 && (
+              <div className="flex gap-2 mt-2 flex-wrap">
+                {fotos.map((f, i) => (
+                  <div key={i} className="relative">
+                    <img src={URL.createObjectURL(f)} alt="" className="w-16 h-16 rounded-2xl object-cover border-2 border-emerald-200 shadow-sm"/>
+                    <button type="button" onClick={() => setFotos(p => p.filter((_, j) => j !== i))}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center font-bold shadow-md hover:bg-red-600 transition-colors">
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {error && <div className="flex items-center gap-2 px-3 py-2.5 bg-red-50 rounded-2xl text-xs text-red-600 border border-red-100"><AlertTriangle size={13}/><span>{error}</span></div>}
@@ -1049,10 +1077,11 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
   const [search, setSearch]     = useState('')
   const [filterStatus, setFilter] = useState<string>('Semua')
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
-  const [modal, setModal]       = useState<'create'|'edit'|'update'|'delete'|'cuttingTerima'|'serahStage'|'terimaStage'|null>(null)
+  const [modal, setModal]       = useState<'create'|'edit'|'update'|'delete'|'cuttingTerima'|'serahStage'|'terimaStage'|'editHandover'|null>(null)
   const [active, setActive]     = useState<any>(null)
   const [activeTahap, setActiveTahap]   = useState<string>('')
   const [activeHandoverId, setActiveHandoverId] = useState<number|null>(null)
+  const [activeHandoverData, setActiveHandoverData] = useState<any>(null)
   const [err, setErr]           = useState('')
   const [toast, setToast]       = useState<{msg:string;ok:boolean}|null>(null)
   const [isPending, start]      = useTransition()
@@ -1064,6 +1093,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
   function openModal(type: typeof modal, item?: any) { setActive(item??null); setErr(''); setModal(type) }
   function openSerahStage(item: any, tahap: string)  { setActive(item); setActiveTahap(tahap); setErr(''); setModal('serahStage') }
   function openTerimaStage(item: any, tahap: string, hid: number) { setActive(item); setActiveTahap(tahap); setActiveHandoverId(hid); setErr(''); setModal('terimaStage') }
+  function openEditHandover(item: any, h: any) { setActive(item); setActiveTahap(h.tahap); setActiveHandoverId(h.id); setActiveHandoverData(h); setErr(''); setModal('editHandover') }
   function toggleExp(id: number) { setExpanded(prev => { const n=new Set(prev); n.has(id)?n.delete(id):n.add(id); return n }) }
 
   function handleCreate(fd: FormData) { setErr(''); start(async()=>{ const r=await createProduksi(fd); if(r?.error){setErr(r.error);return}; showToast(`✅ ${r.kode} dibuat`); setModal(null) }) }
@@ -1073,6 +1103,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
   function handleSelesaiCutting(fd: FormData) { if(!active)return; setErr(''); start(async()=>{ const r=await selesaiCutting(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Cutting diterima'); setModal(null) }) }
   function handleSerahStage(fd: FormData)  { if(!active)return; setErr(''); start(async()=>{ const r=await serahStageProduksi(active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast(`✅ Diserahkan ke ${activeTahap.replace('_',' ')}`); setModal(null) }) }
   function handleTerimaStage(fd: FormData) { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await terimaStageProduksi(activeHandoverId,active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast(`✅ Terima berhasil`); setModal(null) }) }
+  function handleEditHandover(fd: FormData) { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await terimaStageProduksi(activeHandoverId,active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Data diperbarui'); setModal(null) }) }
 
   // ── Stats ──────────────────────────────────────────────────────────────────
   const active_count   = produksiList.filter(i=>!['Sudah Packing','Reject'].includes(i.current_status)).length
@@ -1332,88 +1363,138 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
 
                 {/* ── Expanded ────────────────────────────────────────────── */}
                 {isExp&&(
-                  <div className="px-5 pb-5 border-t space-y-4"
-                    style={{borderColor:'rgba(139,92,246,0.08)',background:'rgba(139,92,246,0.015)'}}>
+                  <div className="px-4 pb-5 pt-4 border-t space-y-3"
+                    style={{borderColor:'rgba(139,92,246,0.08)',background:'rgba(248,246,255,0.6)'}}>
 
-                    {/* Grid info */}
-                    <div className="pt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {/* ① Grid info */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[
                         {label:'Gramasi', val:`${item.gramasi} gr`},
                         {label:'Tanggal Mulai', val:item.tanggal_mulai?new Date(item.tanggal_mulai).toLocaleDateString('id-ID'):new Date(item.tanggal||item.tanggal_produksi).toLocaleDateString('id-ID')},
                         {label:'Jam Mulai', val:item.jam_mulai_cutting?String(item.jam_mulai_cutting).slice(0,5):'—'},
                         {label:'Operator', val:item.operator||'—'},
                       ].map(g=>(
-                        <div key={g.label} className="rounded-2xl p-3"
-                          style={{background:'rgba(255,255,255,0.8)',border:'1px solid rgba(209,213,219,0.4)'}}>
+                        <div key={g.label} className="rounded-xl p-2.5"
+                          style={{background:'rgba(255,255,255,0.9)',border:'1px solid rgba(209,213,219,0.3)'}}>
                           <p className="text-[10px] text-gray-400 font-medium">{g.label}</p>
-                          <p className="text-sm font-bold text-gray-700 mt-0.5">{g.val}</p>
+                          <p className="text-sm font-bold text-gray-700 mt-0.5 truncate">{g.val}</p>
                         </div>
                       ))}
                     </div>
 
-                    {/* Cutting summary */}
-                    {(item.terima_gram||item.status_cutting==='selesai')&&(
-                      <div className="rounded-2xl overflow-hidden border border-blue-100">
-                        <div className="px-4 py-2 text-[10px] font-bold text-blue-600 uppercase tracking-wide"
-                          style={{background:'rgba(59,130,246,0.05)'}}>
-                          🔪 Cutting
+                    {/* ② Ringkasan Losses — DI ATAS */}
+                    {totalItemLosses>0.001&&(
+                      <div className="rounded-2xl overflow-hidden"
+                        style={{border:'1px solid rgba(239,68,68,0.15)',background:'rgba(255,255,255,0.8)'}}>
+                        <div className="px-4 py-2 text-[10px] font-bold text-red-500 uppercase tracking-wide"
+                          style={{background:'rgba(239,68,68,0.05)'}}>
+                          📉 Ringkasan Losses
                         </div>
-                        <div className="px-4 py-3">
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                            <div><p className="text-gray-400">Serah</p><p className="font-bold text-gray-700">{fgr(item.serah_gram??item.berat_awal)} gr</p></div>
-                            <div><p className="text-gray-400">Terima</p><p className="font-bold text-gray-700">{item.terima_gram?fgr(item.terima_gram)+' gr':'—'}</p></div>
-                            <div><p className="text-gray-400">Reject</p><p className={`font-bold ${cutReject>0?'text-red-500':'text-gray-400'}`}>{cutReject>0?fgr(cutReject)+' gr':'—'}</p></div>
-                            <div><p className="text-gray-400">Losses</p><p className={`font-bold ${cutLosses>0?'text-orange-500':'text-gray-400'}`}>{cutLosses>0?fgr(cutLosses)+' gr':'—'}</p></div>
-                          </div>
-                          {item.jam_mulai_cutting&&item.jam_selesai&&(
-                            <p className="text-[11px] text-gray-400 mt-2">
-                              ⏱ {String(item.jam_mulai_cutting).slice(0,5)} → {String(item.jam_selesai).slice(0,5)}
-                              {(()=>{const d=getDurasi(item.jam_mulai_cutting,item.jam_selesai);return d?` (${d})`:null})()}
-                            </p>
-                          )}
+                        <div className="grid grid-cols-2 sm:grid-cols-4"
+                          style={{borderColor:'rgba(239,68,68,0.08)'}}>
+                          {[
+                            {label:'Losses Cutting', val:cutLosses,              color:'text-orange-500'},
+                            {label:'Reject Cutting', val:cutReject,              color:'text-red-500'},
+                            {label:'Losses Tahap',   val:stgLosses,              color:'text-amber-500'},
+                            {label:'Total Losses',   val:cutLosses+stgLosses,    color:'text-red-700'},
+                          ].map((c,ci)=>(
+                            <div key={c.label} className={`px-3 py-3 text-center ${ci<3?'border-r':''}`}
+                              style={{borderColor:'rgba(239,68,68,0.08)'}}>
+                              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide leading-tight mb-1">{c.label}</p>
+                              <p className={`text-sm font-extrabold ${c.color}`}>{c.val>0.001?fgr(c.val)+' gr':'—'}</p>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
 
-                    {/* Stage handover timeline */}
+                    {/* ③ Cutting summary */}
+                    {(item.terima_gram||item.status_cutting==='selesai')&&(
+                      <div className="rounded-2xl overflow-hidden"
+                        style={{border:'1px solid rgba(59,130,246,0.15)',background:'rgba(255,255,255,0.8)'}}>
+                        <div className="px-4 py-2 text-[10px] font-bold text-blue-600 uppercase tracking-wide"
+                          style={{background:'rgba(59,130,246,0.05)'}}>
+                          🔪 Cutting
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-0">
+                          {[
+                            {label:'Serah',   val:fgr(item.serah_gram??item.berat_awal)+' gr', hi:false, color:''},
+                            {label:'Terima',  val:item.terima_gram?fgr(item.terima_gram)+' gr':'—', hi:false, color:''},
+                            {label:'Reject',  val:cutReject>0?fgr(cutReject)+' gr':'—', hi:cutReject>0, color:'text-red-500'},
+                            {label:'Losses',  val:cutLosses>0?fgr(cutLosses)+' gr':'—', hi:cutLosses>0, color:'text-orange-500'},
+                          ].map((f,fi)=>(
+                            <div key={f.label} className={`px-3 py-3 ${fi<3?'border-r':''}`}
+                              style={{borderColor:'rgba(59,130,246,0.08)'}}>
+                              <p className="text-[10px] text-gray-400 font-medium mb-1">{f.label}</p>
+                              <p className={`text-sm font-bold ${f.hi?(f.color||'text-gray-700'):'text-gray-700'}`}>{f.val}</p>
+                            </div>
+                          ))}
+                        </div>
+                        {item.jam_mulai_cutting&&item.jam_selesai&&(
+                          <div className="px-4 pb-3">
+                            <p className="text-[11px] text-gray-400">
+                              ⏱ {String(item.jam_mulai_cutting).slice(0,5)} → {String(item.jam_selesai).slice(0,5)}
+                              {(()=>{const d=getDurasi(item.jam_mulai_cutting,item.jam_selesai);return d?` (${d})`:''})()}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ④ Stage handover */}
                     {handovers.length>0&&(
-                      <div className="rounded-2xl overflow-hidden border border-violet-100">
+                      <div className="rounded-2xl overflow-hidden"
+                        style={{border:'1px solid rgba(139,92,246,0.15)',background:'rgba(255,255,255,0.8)'}}>
                         <div className="px-4 py-2 text-[10px] font-bold text-violet-600 uppercase tracking-wide"
                           style={{background:'rgba(139,92,246,0.05)'}}>
                           ⛓ Alur Serah-Terima
                         </div>
                         {handovers.map((h:any)=>{
-                          const tl: Record<string,string> = {pas_berat:'Pas Berat',annealing:'Annealing',siap_packing:'Siap Packing'}
-                          const tc: Record<string,string> = {pas_berat:'#F97316',annealing:'#EAB308',siap_packing:'#8B5CF6'}
+                          const tl:Record<string,string>={pas_berat:'Pas Berat',annealing:'Annealing',siap_packing:'Siap Packing'}
+                          const tc:Record<string,string>={pas_berat:'#F97316',annealing:'#EAB308',siap_packing:'#8B5CF6'}
+                          const serahFotos:string[]=Array.isArray(h.serah_fotos)?h.serah_fotos:[]
+                          const terimaFotos:string[]=Array.isArray(h.terima_fotos)?h.terima_fotos:[]
                           return (
-                            <div key={h.id} className="px-4 py-3 border-t"
+                            <div key={h.id} className="px-4 py-3.5 border-t"
                               style={{borderColor:'rgba(139,92,246,0.07)'}}>
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-white"
+                              {/* Badge row */}
+                              <div className="flex items-center gap-2 mb-3">
+                                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full text-white"
                                   style={{background:tc[h.tahap]}}>{tl[h.tahap]}</span>
-                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${h.status==='selesai'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>
+                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${h.status==='selesai'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>
                                   {h.status==='selesai'?'✓ Selesai':'⏳ Proses'}
                                 </span>
+                                {canEdit&&(
+                                  <button onClick={()=>openEditHandover(item,h)}
+                                    className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-semibold text-blue-500 hover:bg-blue-50 transition-colors border border-blue-100">
+                                    <Edit2 size={9}/> Edit
+                                  </button>
+                                )}
                               </div>
-                              <div className="grid grid-cols-2 gap-3">
-                                <div className="rounded-xl p-2.5 text-xs"
-                                  style={{background:'rgba(59,130,246,0.04)'}}>
-                                  <p className="text-[9px] font-bold text-blue-400 uppercase mb-1">📤 Diserahkan</p>
-                                  <p className="font-semibold text-gray-700">{h.serah_gram?`${parseFloat(h.serah_gram).toFixed(3)} gr`:'—'} · {h.serah_pcs??'—'} PCS</p>
-                                  {h.serah_tanggal&&<p className="text-gray-400 text-[10px] mt-0.5">{new Date(h.serah_tanggal).toLocaleDateString('id-ID')}{h.serah_jam?` ${String(h.serah_jam).slice(0,5)}`:''}</p>}
-                                  {h.serah_catatan&&<p className="text-gray-400 italic text-[10px]">{h.serah_catatan}</p>}
+                              {/* Serah / Terima cards */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div className="rounded-xl p-3 space-y-1"
+                                  style={{background:'rgba(59,130,246,0.04)',border:'1px solid rgba(59,130,246,0.1)'}}>
+                                  <p className="text-[9px] font-bold text-blue-500 uppercase tracking-wide">📤 Diserahkan</p>
+                                  <p className="font-bold text-gray-800">{h.serah_gram?`${parseFloat(h.serah_gram).toFixed(3)} gr`:'—'}{h.serah_pcs?` · ${h.serah_pcs} PCS`:''}</p>
+                                  {h.serah_tanggal&&<p className="text-[11px] text-gray-400">{new Date(h.serah_tanggal).toLocaleDateString('id-ID')}{h.serah_jam?` · ${String(h.serah_jam).slice(0,5)}`:''}</p>}
+                                  {h.serah_operator&&<p className="text-[11px] text-gray-400">👤 {h.serah_operator}</p>}
+                                  {h.serah_catatan&&<p className="text-[11px] text-gray-400 italic">{h.serah_catatan}</p>}
+                                  {serahFotos.length>0&&<div className="flex gap-1.5 flex-wrap pt-1">{serahFotos.map((u:string,fi:number)=><img key={fi} src={u} className="w-14 h-14 rounded-xl object-cover border-2 border-blue-100 hover:scale-110 transition-transform shadow-sm cursor-pointer"/>)}</div>}
                                 </div>
-                                <div className="rounded-xl p-2.5 text-xs"
-                                  style={{background:'rgba(34,197,94,0.04)'}}>
-                                  <p className="text-[9px] font-bold text-green-500 uppercase mb-1">📥 Diterima</p>
-                                  {h.terima_gram ? (<>
-                                    <p className="font-semibold text-gray-700">{parseFloat(h.terima_gram).toFixed(3)} gr · {h.terima_pcs??'—'} PCS</p>
-                                    {h.terima_tanggal&&<p className="text-gray-400 text-[10px] mt-0.5">{new Date(h.terima_tanggal).toLocaleDateString('id-ID')}{h.terima_jam?` ${String(h.terima_jam).slice(0,5)}`:''}</p>}
-                                    {h.sisa_serbuk>0&&<p className="text-violet-500 text-[10px]">Serbuk: {parseFloat(h.sisa_serbuk).toFixed(3)} gr</p>}
-                                    {h.reject_gram>0&&<p className="text-red-500 font-semibold text-[10px]">Reject: {parseFloat(h.reject_gram).toFixed(3)} gr · {h.reject_pcs} PCS</p>}
-                                    {h.losses_gram>0&&<p className="text-orange-500 font-semibold text-[10px]">Losses: {parseFloat(h.losses_gram).toFixed(3)} gr</p>}
-                                    {h.terima_catatan&&<p className="text-gray-400 italic text-[10px]">{h.terima_catatan}</p>}
-                                  </>) : <p className="text-gray-400 italic text-[10px]">Belum diterima</p>}
+                                <div className="rounded-xl p-3 space-y-1"
+                                  style={{background:h.terima_gram?'rgba(34,197,94,0.04)':'rgba(0,0,0,0.02)',border:`1px solid ${h.terima_gram?'rgba(34,197,94,0.15)':'rgba(0,0,0,0.06)'}`}}>
+                                  <p className="text-[9px] font-bold text-green-500 uppercase tracking-wide">📥 Diterima</p>
+                                  {h.terima_gram?(<>
+                                    <p className="font-bold text-gray-800">{parseFloat(h.terima_gram).toFixed(3)} gr{h.terima_pcs?` · ${h.terima_pcs} PCS`:''}</p>
+                                    {h.terima_tanggal&&<p className="text-[11px] text-gray-400">{new Date(h.terima_tanggal).toLocaleDateString('id-ID')}{h.terima_jam?` · ${String(h.terima_jam).slice(0,5)}`:''}</p>}
+                                    {h.terima_operator&&<p className="text-[11px] text-gray-400">👤 {h.terima_operator}</p>}
+                                    {Number(h.sisa_serbuk)>0&&<p className="text-[11px] font-semibold text-violet-600">Serbuk: {parseFloat(h.sisa_serbuk).toFixed(3)} gr</p>}
+                                    {Number(h.reject_gram)>0&&<p className="text-[11px] font-semibold text-red-500">Reject: {parseFloat(h.reject_gram).toFixed(3)} gr{h.reject_pcs?` · ${h.reject_pcs} PCS`:''}</p>}
+                                    {Number(h.losses_gram)>0&&<p className="text-[11px] font-semibold text-orange-500">Losses: {parseFloat(h.losses_gram).toFixed(3)} gr</p>}
+                                    {h.terima_catatan&&<p className="text-[11px] text-gray-400 italic">{h.terima_catatan}</p>}
+                                    {terimaFotos.length>0&&<div className="flex gap-1.5 flex-wrap pt-1">{terimaFotos.map((u:string,fi:number)=><img key={fi} src={u} className="w-14 h-14 rounded-xl object-cover border-2 border-green-100 hover:scale-110 transition-transform shadow-sm cursor-pointer"/>)}</div>}
+                                  </>):<p className="text-[11px] text-gray-400 italic">Belum diterima</p>}
                                 </div>
                               </div>
                             </div>
@@ -1422,37 +1503,10 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                       </div>
                     )}
 
-                    {/* Losses summary */}
-                    {totalItemLosses>0.001&&(
-                      <div className="rounded-2xl overflow-hidden border border-red-100">
-                        <div className="px-4 py-2 text-[10px] font-bold text-red-500 uppercase tracking-wide"
-                          style={{background:'rgba(239,68,68,0.04)'}}>
-                          📉 Ringkasan Losses
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y"
-                          style={{borderColor:'rgba(239,68,68,0.07)'}}>
-                          {[
-                            {label:'Cutting',    val:cutLosses,   color:'text-orange-500'},
-                            {label:'Reject Cut', val:cutReject,   color:'text-red-500'},
-                            {label:'Tahap Lain', val:stgLosses,   color:'text-amber-500'},
-                            {label:'Total',      val:cutLosses+stgLosses, color:'text-red-600 font-extrabold'},
-                          ].map(c=>(
-                            <div key={c.label} className="px-3 py-2.5 text-center">
-                              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">{c.label}</p>
-                              <p className={`text-xs font-bold ${c.color}`}>{c.val>0.001?fgr(c.val)+' gr':'—'}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Riwayat Proses */}
+                    {/* ⑤ Riwayat Proses */}
                     <div>
-                      <p className="text-[9px] font-bold text-gray-300 uppercase tracking-widest mb-3">Riwayat Proses</p>
-                      {events.length===0
-                        ? <p className="text-xs text-gray-400 italic">Belum ada riwayat proses</p>
-                        : <EventHistory events={events} item={item} />
-                      }
+                      <p className="text-[9px] font-bold text-gray-300 uppercase tracking-widest mb-2.5">Riwayat Proses</p>
+                      <EventHistory events={events} item={item} />
                     </div>
                   </div>
                 )}
@@ -1470,6 +1524,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
       {modal==='serahStage'    && active            && <SerahStageModal item={active} tahap={activeTahap} onClose={()=>setModal(null)} onSubmit={handleSerahStage} isPending={isPending} error={err}/>}
       {modal==='terimaStage'   && active            && <TerimaStageModal item={active} tahap={activeTahap} handoverId={activeHandoverId??0} onClose={()=>setModal(null)} onSubmit={handleTerimaStage} isPending={isPending} error={err}/>}
       {modal==='delete'        && active            && <DelModal item={active} onClose={()=>setModal(null)} onConfirm={handleDelete} isPending={isPending}/>}
+      {modal==='editHandover'  && active&&activeHandoverData && <TerimaStageModal item={active} tahap={activeTahap} handoverId={activeHandoverId??0} initialData={activeHandoverData} onClose={()=>setModal(null)} onSubmit={handleEditHandover} isPending={isPending} error={err}/>}
     </div>
   )
 }
