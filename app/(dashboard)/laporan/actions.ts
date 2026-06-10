@@ -1,0 +1,28 @@
+'use server'
+import { createClient } from '@/lib/supabase/server'
+
+export async function fetchBatchReport(batchKode: string) {
+  if (!batchKode) return { error: 'Kode batch kosong' }
+  const supabase = await createClient()
+
+  const [
+    { data: batch, error: batchErr },
+    { data: peleburan },
+    { data: produksiItems },
+  ] = await Promise.all([
+    supabase.from('batch').select('*').eq('kode', batchKode).single(),
+    supabase.from('peleburan')
+      .select('*')
+      .eq('batch_kode', batchKode)
+      .is('voided_at', null)
+      .order('created_at'),
+    supabase.from('produksi_item')
+      .select('*, produksi_event(*), packing!left(id,kode,tanggal,pcs,pcs_dipack,total_gram,shieldtag_count,catatan,voided_at,gramasi), stage_handover(*)')
+      .eq('batch_kode', batchKode)
+      .is('voided_at', null)
+      .order('created_at'),
+  ])
+
+  if (batchErr) return { error: batchErr.message }
+  return { batch, peleburan: peleburan ?? [], produksiItems: produksiItems ?? [] }
+}
