@@ -21,7 +21,7 @@ export function useAuth() {
           .from('users_profile')
           .select('*')
           .eq('id', user.id)
-          .single()
+          .maybeSingle()
         setProfile(data)
       }
       setLoading(false)
@@ -37,7 +37,7 @@ export function useAuth() {
             .from('users_profile')
             .select('*')
             .eq('id', session.user.id)
-            .single()
+            .maybeSingle()
           setProfile(data)
         } else {
           setProfile(null)
@@ -62,3 +62,4 @@ export function useAuth() {
 
   return { user, profile, loading, signOut, hasAccess }
 }
+
