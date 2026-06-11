@@ -179,8 +179,8 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
               <p className={cn('text-xs font-medium',si.color)}>{si.desc}</p>
             </div>
           )}
-          <F label="Harga Beli (IDR)" req>
-            <input name="harga_beli" type="number" value={harga} onChange={e=>setHarga(e.target.value)} placeholder="100000000" className={inp} required/>
+          <F label="Harga Beli (IDR)">
+            <input name="harga_beli" type="number" value={harga} onChange={e=>setHarga(e.target.value)} placeholder="Opsional — kosongkan jika belum ada" className={inp}/>
             {hargaNum>0&&<p className="text-xs text-violet-500 font-semibold px-1 mt-1">{formatRupiah(hargaNum)}</p>}
           </F>
           <div className="flex flex-col gap-2">
@@ -1313,3 +1313,4 @@ function EditPeleburanModal({ peleburan, onClose, showToast }: {
     </div>
   )
 }
+
