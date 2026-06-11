@@ -955,12 +955,22 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                 <div>
                   <p className="text-xs font-semibold text-gray-700 mb-2">Reject (Cutting / Pas Berat / Annealing)</p>
                   <div className="space-y-2">
-                    {rejectOptions.map((rej:any)=>(
+                    {rejectOptions.map((rej:any)=>{
+                      // Tentukan asal reject berdasarkan data
+                      const rc = Number(rej.reject_cutting_gram ?? 0)
+                      const br = Number(rej.berat_reject ?? 0)
+                      const prosesLabel = rc > 0 && Math.abs(rc - br) < 0.001
+                        ? 'Reject Cutting'
+                        : rc > 0
+                          ? 'Reject Cutting + Stage'
+                          : `Reject ${rej.current_status ?? 'Proses'}`
+                      return (
                       <div key={rej.id}>
                         <label className="flex items-center gap-2 cursor-pointer select-none">
                           <input type="checkbox" checked={rejGram[rej.id]!==undefined} onChange={()=>toggleRej(rej.id,rej.berat_reject)} className="w-4 h-4 rounded accent-violet-600"/>
                           <span className="text-xs font-medium text-gray-700">{rej.kode??rej.nama_item}</span>
-                          <span className="text-[10px] text-gray-400 ml-1">({rej.gramasi})</span>
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">{prosesLabel}</span>
+                          <span className="text-[10px] text-gray-400">({rej.gramasi}gr)</span>
                           <span className="ml-auto text-[10px] text-red-400 font-semibold">{formatGram(rej.berat_reject)} gr{rej.pcs_reject?` · ${rej.pcs_reject} pcs`:''}</span>
                         </label>
                         {rejGram[rej.id]!==undefined&&(
@@ -970,7 +980,8 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                           </div>
                         )}
                       </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               )}
@@ -1320,4 +1331,5 @@ function EditPeleburanModal({ peleburan, onClose, showToast }: {
     </div>
   )
 }
+
 
