@@ -463,6 +463,8 @@ export async function selesaiCutting(produksiId: number, produksiKode: string, f
     fotos: fotoUrls,
   })
 
+  const isEdit = formData.get('is_edit') === '1'
+
   // Update produksi_item
   const updateData: any = {
     terima_gram: terimaGram,
@@ -477,12 +479,18 @@ export async function selesaiCutting(produksiId: number, produksiKode: string, f
     updateData.pcs_good = pcsGood
     updateData.pcs = pcsGood
   }
-  if (pcsReject > 0) {
-    // Cutting biasanya reject pertama, tapi akumulatif untuk aman jika ada re-input
-    const { data: cur } = await supabase.from('produksi_item')
-      .select('berat_reject, pcs_reject').eq('id', produksiId).single()
-    updateData.pcs_reject    = Number(cur?.pcs_reject ?? 0) + pcsReject
-    updateData.berat_reject  = Number(cur?.berat_reject ?? 0) + rejectGram
+
+  // Reject cutting → akumulasi total berat_reject.
+  // Saat edit: ganti kontribusi cutting lama (reject_cutting_gram lama) dengan yang baru.
+  const rejectCuttingLama = Number(produksi.reject_cutting_gram ?? 0)
+  const beratRejectTotalLama = Number(produksi.berat_reject ?? 0)
+  if (isEdit) {
+    const beratRejectBaru = Math.max(0, beratRejectTotalLama - rejectCuttingLama + rejectGram)
+    updateData.berat_reject = beratRejectBaru
+    updateData.status_reject = beratRejectBaru > 0 ? 'belum_dilebur' : (produksi.status_reject ?? null)
+  } else if (rejectGram > 0 || pcsReject > 0) {
+    updateData.pcs_reject    = Number(produksi.pcs_reject ?? 0) + pcsReject
+    updateData.berat_reject  = beratRejectTotalLama + rejectGram
     updateData.status_reject = 'belum_dilebur'
   }
   await supabase.from('produksi_item').update(updateData).eq('id', produksiId)
