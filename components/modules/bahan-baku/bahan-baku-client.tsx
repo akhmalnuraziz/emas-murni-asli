@@ -628,32 +628,38 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                       )
                     )}
 
-                    {/* ─── Rekonsiliasi 6-kolom ─────────────── */}
+                    {/* ─── Rekonsiliasi (iOS card style) ─────────────── */}
                     {(()=>{
                       const plbList = (peleburanList as any[]).filter((p:any)=>p.batch_kode===batch.kode)
                       const sudahDilebur = plbList.reduce((s:number,p:any)=>s+Number(p.dikasih_gram??0),0)
                       const losses      = plbList.filter((p:any)=>p.status==='selesai').reduce((s:number,p:any)=>s+Number(p.losses_gram??0),0)
                       const terpakai    = batchProdItems.reduce((s:number,i:any)=>s+Number(i.total_gram??0),0)
                       const bahanMasuk  = timbAkhir
+                      const siapCetak   = Number((batch as any).bahan_siap_cetak ?? 0)
                       const cols = [
-                        {label:'Bahan Masuk',    val:`${formatGram(bahanMasuk)}`,  color:'text-gray-700'},
-                        {label:'Sudah Dilebur',  val:`${formatGram(sudahDilebur)}`, color:'text-blue-600'},
-                        {label:'Terpakai',       val:`${formatGram(terpakai)}`,    color:'text-violet-600'},
-                        {label:'Sisa Seharusnya',val:`${formatGram(sisaSeharusnya)}`,color:sisaSeharusnya<0?'text-red-500':'text-gray-700'},
-                        {label:'Sisa Fisik',     val:sisaFisik!=null?`${formatGram(sisaFisik)}`:'—', color:'text-green-600'},
-                        {label:'Losses Lebur',   val:`${formatGram(losses)}`,      color:losses>0?'text-red-400':'text-gray-400'},
+                        {label:'Bahan Masuk',     val:formatGram(bahanMasuk),  accent:'#64748B', sub:'total raw'},
+                        {label:'Sudah Dilebur',   val:formatGram(sudahDilebur),accent:'#3B82F6', sub:'diproses'},
+                        {label:'Siap Cetak',      val:formatGram(siapCetak),   accent:'#8B5CF6', sub:'bisa dipakai', highlight:true},
+                        {label:'Terpakai Cetak',  val:formatGram(terpakai),    accent:'#A855F7', sub:'sudah dicetak'},
+                        {label:'Sisa Seharusnya', val:formatGram(sisaSeharusnya), accent:sisaSeharusnya<0?'#EF4444':'#64748B', sub:'belum dilebur'},
+                        {label:'Sisa Fisik',      val:sisaFisik!=null?formatGram(sisaFisik):'—', accent:'#22C55E', sub:'input manual'},
+                        {label:'Losses Lebur',    val:formatGram(losses),      accent:losses>0?'#F87171':'#94A3B8', sub:'menyusut'},
                       ]
                       return (
-                        <div className="rounded-2xl overflow-hidden border border-violet-100">
-                          <div className="px-4 py-2 text-[10px] font-bold text-violet-600 uppercase tracking-wide"
-                            style={{background:'rgba(139,92,246,0.05)'}}>
-                            📊 Rekonsiliasi Detail
-                          </div>
-                          <div className="grid grid-cols-3 sm:grid-cols-6 divide-x divide-y" style={{borderColor:'rgba(139,92,246,0.08)'}}>
+                        <div>
+                          <p className="text-[11px] font-bold text-violet-600 uppercase tracking-wide mb-2.5 px-1">Rekonsiliasi Detail</p>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                             {cols.map(col=>(
-                              <div key={col.label} className="px-2 py-2.5 text-center">
-                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide leading-tight mb-1">{col.label}</p>
-                                <p className={`text-[11px] font-bold ${col.color}`}>{col.val}</p>
+                              <div key={col.label} className="rounded-2xl px-3.5 py-3"
+                                style={col.highlight
+                                  ? {background:'linear-gradient(135deg,rgba(139,92,246,0.12),rgba(124,58,237,0.06))',border:'1px solid rgba(139,92,246,0.25)'}
+                                  : {background:'rgba(255,255,255,0.7)',border:'1px solid rgba(0,0,0,0.05)'}}>
+                                <div className="flex items-center gap-1.5 mb-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full" style={{background:col.accent}}/>
+                                  <p className="text-[10px] font-semibold text-slate-500 leading-tight">{col.label}</p>
+                                </div>
+                                <p className="text-base font-extrabold" style={{color:col.accent}}>{col.val}<span className="text-[10px] font-medium text-slate-400 ml-0.5">gr</span></p>
+                                <p className="text-[9px] text-slate-400 mt-0.5">{col.sub}</p>
                               </div>
                             ))}
                           </div>
