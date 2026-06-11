@@ -18,8 +18,8 @@ const NAV_ITEMS = [
   { href: '/shieldtag',  label: 'Shieldtag',     icon: Tag,             module: 'shieldtag'  },
   { href: '/inventory',  label: 'Inventory',     icon: Warehouse,       module: 'inventory'  },
   { href: '/mutasi',     label: 'Mutasi Cabang', icon: ArrowLeftRight,  module: 'mutasi'     },
-  { href: '/penjualan',  label: 'Penjualan',     icon: ShoppingCart,    module: 'penjualan'  },
-  { href: '/po-cabang',  label: 'PO Cabang',     icon: Store,           module: 'po-cabang'  },
+  { href: '/po-cabang',  label: 'PO Cabang',     icon: Store,           module: 'po-cabang', disabled: true },
+  { href: '/penjualan',  label: 'Penjualan',     icon: ShoppingCart,    module: 'penjualan', disabled: true },
   { href: '/laporan',    label: 'Laporan',       icon: FileText,        module: 'laporan'    },
 ]
 
@@ -80,6 +80,19 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
           {NAV_ITEMS.filter(item => hasAccess(item.module as any)).map(item => {
             const Icon = item.icon
             const active = isActive(item.href)
+            if (item.disabled) {
+              return (
+                <div
+                  key={item.href}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-300 cursor-not-allowed select-none"
+                  title="Modul ini belum aktif"
+                >
+                  <Icon size={16} className="text-slate-300" />
+                  <span className="flex-1 truncate">{item.label}</span>
+                  <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-400">Segera</span>
+                </div>
+              )
+            }
             return (
               <Link
                 key={item.href}
@@ -143,3 +156,4 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
     </>
   )
 }
+
