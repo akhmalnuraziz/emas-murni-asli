@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { cn, formatDate } from '@/lib/utils'
 import {
-  createProduksi, updateStatusProduksi, editProduksi, selesaiCutting,
+  createProduksi, updateStatusProduksi, editProduksi, selesaiCutting, fetchPeleburanTersedia,
   inputReject, leburReject, deleteProduksi, updateSisaFisikBatch,
   serahStageProduksi, terimaStageProduksi, voidStageHandover
 } from '@/app/(dashboard)/produksi/actions'
@@ -425,10 +425,25 @@ function CreateModal({ batches, onClose, onSubmit, isPending, error }: {
   batches: any[]; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
 }) {
   const nowTime = new Date().toTimeString().slice(0,5)
-  const [f, setF] = useState({ batch_kode: batches[0]?.kode ?? '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime, operator: '', target_selesai: '' })
+  const [f, setF] = useState({ batch_kode: batches[0]?.kode ?? '', peleburan_id: '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime, operator: '', target_selesai: '' })
   const [fotos, setFotos] = useState<File[]>([])
   const [up, setUp] = useState(false)
+  const [plbList, setPlbList] = useState<any[]>([])
+  const [plbLoading, setPlbLoading] = useState(false)
   const s = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
+
+  useEffect(() => {
+    if (!f.batch_kode) { setPlbList([]); return }
+    setPlbLoading(true)
+    fetchPeleburanTersedia(f.batch_kode).then(res => {
+      setPlbList(res.rows)
+      setF(p => ({ ...p, peleburan_id: res.rows[0] ? String(res.rows[0].id) : '' }))
+      setPlbLoading(false)
+    })
+  }, [f.batch_kode])
+
+  const selectedPlb = plbList.find(p => String(p.id) === f.peleburan_id)
+
   async function submit(e: React.FormEvent) {
     e.preventDefault(); const el = e.currentTarget as HTMLFormElement
     setUp(true); const b64 = fotos.length > 0 ? await filesToBase64(fotos) : []; setUp(false)
@@ -447,6 +462,22 @@ function CreateModal({ batches, onClose, onSubmit, isPending, error }: {
             <select name="batch_kode" value={f.batch_kode} onChange={e => s('batch_kode', e.target.value)} className={inp} required>
               {batches.map(b => <option key={b.kode} value={b.kode}>{b.kode} — {b.nama_batch} (Siap cetak: {(b.bahan_siap_cetak ?? 0).toFixed(2)} gr)</option>)}
             </select>
+          </F>
+          <F label="Peleburan Asal" req>
+            {plbLoading ? (
+              <div className="text-xs text-gray-400 px-1 py-2.5">Memuat peleburan…</div>
+            ) : plbList.length === 0 ? (
+              <div className="text-xs text-amber-600 px-3 py-2.5 rounded-xl" style={{background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.2)'}}>
+                Belum ada hasil lebur siap cetak di batch ini. Lebur bahan dulu di halaman Bahan Baku.
+              </div>
+            ) : (
+              <>
+                <select name="peleburan_id" value={f.peleburan_id} onChange={e => s('peleburan_id', e.target.value)} className={inp} required>
+                  {plbList.map(p => <option key={p.id} value={p.id}>{p.kode} — sisa {p.sisa.toFixed(3)} gr (dari {p.diterima.toFixed(3)})</option>)}
+                </select>
+                {selectedPlb && <p className="text-[11px] text-violet-500 font-semibold mt-1 px-1">Bisa dicetak dari peleburan ini: {selectedPlb.sisa.toFixed(3)} gr</p>}
+              </>
+            )}
           </F>
           <div className="grid grid-cols-2 gap-3">
             <F label="Pilih Gramasi yang ingin di cetak" req>
@@ -1212,7 +1243,28 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                 {search ? `Tidak ada hasil untuk "${search}"` : 'Belum ada item produksi'}
               </p>
             </div>
-          ):filtered.map(item=>{
+          ):(()=>{
+            // Kelompokkan per peleburan asal — produksi nyambung di bawah peleburan-nya
+            const groups = new Map<string, any[]>()
+            for (const it of filtered) {
+              const key = it.peleburan_kode || '__no_plb__'
+              if (!groups.has(key)) groups.set(key, [])
+              groups.get(key)!.push(it)
+            }
+            const groupKeys = [...groups.keys()]
+            return groupKeys.map(gk => {
+              const gItems = groups.get(gk)!
+              const plbTotal = gItems.reduce((a,i)=>a+Number(i.berat_awal||0),0)
+              return (
+                <div key={gk} className="space-y-3">
+                  {gk!=='__no_plb__' && (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-2xl mt-1"
+                      style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.12)'}}>
+                      <span className="text-[11px] font-bold text-violet-700">🔥 {gk}</span>
+                      <span className="text-[10px] text-violet-400 font-semibold">{gItems.length} produksi · {plbTotal.toFixed(2)} gr dipakai</span>
+                    </div>
+                  )}
+                  {gItems.map(item=>{
             const isExp     = expanded.has(item.id)
             const sc        = STATUS_COLOR[item.current_status] ?? {bg:'rgba(156,163,175,0.1)',text:'#6B7280',dot:'#9CA3AF'}
             const events: any[] = Array.isArray(item.produksi_event)?item.produksi_event.filter((e:any)=>!e.voided_at):[]
@@ -1455,8 +1507,12 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                   </div>
                 )}
               </div>
-            )
-          })}
+                )
+              })}
+                </div>
+              )
+            })
+          })()}
         </div>
       </div>
 
@@ -1473,5 +1529,6 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     </div>
   )
 }
+
 
 
