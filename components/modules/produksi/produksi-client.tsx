@@ -45,7 +45,7 @@ function getDurasi(jamMulai: string | null, createdAt: string | null): string {
 }
 
 const GRAMASI_OPTIONS = ['0.1','0.5','1','2','5','10','20','25','50','100','250','500','1000']
-const STATUS_FLOW     = ['Cutting','Pas Berat','Annealing','Press Stamp','Siap Packing']
+const STATUS_FLOW     = ['Cutting','Pas Berat','Annealing','Siap Packing']
 const STATUS_NEXT: Record<string,string> = {
   'Cutting':'Pas Berat','Pas Berat':'Annealing','Annealing':'Siap Packing',
 }
