@@ -542,7 +542,7 @@ export async function editPeleburan(id: number, formData: FormData) {
     await supabase.from('batch').update({ sisa_bahan_seharusnya: sisaBaru }).eq('kode', plb.batch_kode)
   }
 
-  // Handle foto - keep existing + add new
+  // Handle foto serahkan - keep existing + add new
   const existingRaw = formData.get('existing_fotos') as string
   const existing = existingRaw ? JSON.parse(existingRaw) : []
   const newFotosRaw = formData.get('foto_serahkan_b64') as string
@@ -551,11 +551,46 @@ export async function editPeleburan(id: number, formData: FormData) {
     ? await uploadBase64Fotos(supabase, newFotosB64, plb.kode + '_edit', existing)
     : { urls: existing }
 
-  const { error } = await supabase.from('peleburan').update({
+  const updatePayload: any = {
     dikasih_gram: dikasih, tanggal, jam_mulai: jamMulai,
     operator, keterangan_serahkan: keterangan,
     foto_serahkan: fotoUrls,
-  }).eq('id', id)
+  }
+
+  // ── Handle bagian DITERIMA (jika peleburan sudah selesai) ────────────────
+  const diterimaRaw = formData.get('diterima_gram') as string
+  if (diterimaRaw !== null && diterimaRaw !== '') {
+    const diterimaBaru = parseFloat(diterimaRaw)
+    if (diterimaBaru > dikasih) return { error: `Diterima tidak boleh melebihi dikasih (${dikasih} gr)` }
+
+    // foto diterima
+    const existingDtRaw = formData.get('existing_fotos_diterima') as string
+    const existingDt = existingDtRaw ? JSON.parse(existingDtRaw) : []
+    const newDtRaw = formData.get('foto_diterima_b64') as string
+    const newDtB64 = newDtRaw ? JSON.parse(newDtRaw) : []
+    const { urls: fotoDtUrls } = newDtB64.length > 0
+      ? await uploadBase64Fotos(supabase, newDtB64, plb.kode + '_done_edit', existingDt)
+      : { urls: existingDt }
+
+    updatePayload.diterima_gram      = diterimaBaru
+    updatePayload.tanggal_diterima   = formData.get('tanggal_diterima') as string || null
+    updatePayload.jam_selesai        = formData.get('jam_selesai') as string || null
+    updatePayload.operator_diterima  = formData.get('operator_diterima') as string || null
+    updatePayload.keterangan_diterima = formData.get('keterangan_diterima') as string || null
+    updatePayload.foto_diterima      = fotoDtUrls
+
+    // Sesuaikan bahan_siap_cetak: ganti kontribusi lama dengan baru
+    const diterimaLama = Number(plb.diterima_gram ?? 0)
+    const selisihDiterima = diterimaBaru - diterimaLama
+    if (selisihDiterima !== 0 && plb.batch_kode) {
+      const { data: b } = await supabase.from('batch').select('bahan_siap_cetak').eq('kode', plb.batch_kode).single()
+      await supabase.from('batch').update({
+        bahan_siap_cetak: Math.max(0, Number(b?.bahan_siap_cetak ?? 0) + selisihDiterima)
+      }).eq('kode', plb.batch_kode)
+    }
+  }
+
+  const { error } = await supabase.from('peleburan').update(updatePayload).eq('id', id)
 
   if (error) return { error: error.message }
 
@@ -602,4 +637,5 @@ export async function getPeleburanByBatch(batchKode: string) {
     .order('created_at', { ascending: false })
   return data ?? []
 }
+
 
