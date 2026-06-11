@@ -259,20 +259,34 @@ export async function leburReject(produksiId: number, produksiKode: string, batc
   const { data: produksi } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
   if (!produksi || produksi.status_reject !== 'belum_dilebur') return { error: 'Tidak ada reject yang perlu dilebur' }
 
+  // Lebur hanya bagian reject yang BELUM dilebur (total reject - yang sudah dilebur)
+  const totalRejectGram   = Number(produksi.berat_reject ?? 0)
+  const totalRejectPcs    = Number(produksi.pcs_reject ?? 0)
+  const sudahDileburGram  = Number(produksi.berat_reject_dilebur ?? 0)
+  const sudahDileburPcs   = Number(produksi.pcs_reject_dilebur ?? 0)
+  const beratLebur = Math.max(0, totalRejectGram - sudahDileburGram)
+  const pcsLebur   = Math.max(0, totalRejectPcs - sudahDileburPcs)
+
+  if (beratLebur <= 0) return { error: 'Semua reject sudah dilebur' }
+
   const { data: batch } = await supabase.from('batch').select('sisa_fisik').eq('kode', batchKode).single()
   if (batch) {
     await supabase.from('batch').update({
-      sisa_fisik: (batch.sisa_fisik ?? 0) + (produksi.berat_reject ?? 0)
+      sisa_fisik: (batch.sisa_fisik ?? 0) + beratLebur
     }).eq('kode', batchKode)
   }
 
-  await supabase.from('produksi_item').update({ status_reject: 'sudah_dilebur' }).eq('id', produksiId)
+  await supabase.from('produksi_item').update({
+    status_reject: 'sudah_dilebur',
+    berat_reject_dilebur: totalRejectGram,
+    pcs_reject_dilebur: totalRejectPcs,
+  }).eq('id', produksiId)
 
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'LEBUR_REJECT', module: 'PRODUKSI',
     record_key: produksiKode, record_id: String(produksiId),
-    after_data: { berat_kembali: produksi.berat_reject, batch_kode: batchKode },
+    after_data: { berat_kembali: beratLebur, pcs_kembali: pcsLebur, batch_kode: batchKode },
   })
 
   revalidatePath('/produksi')
@@ -458,8 +472,11 @@ export async function selesaiCutting(produksiId: number, produksiKode: string, f
     updateData.pcs = pcsGood
   }
   if (pcsReject > 0) {
-    updateData.pcs_reject = pcsReject
-    updateData.berat_reject = rejectGram
+    // Cutting biasanya reject pertama, tapi akumulatif untuk aman jika ada re-input
+    const { data: cur } = await supabase.from('produksi_item')
+      .select('berat_reject, pcs_reject').eq('id', produksiId).single()
+    updateData.pcs_reject    = Number(cur?.pcs_reject ?? 0) + pcsReject
+    updateData.berat_reject  = Number(cur?.berat_reject ?? 0) + rejectGram
     updateData.status_reject = 'belum_dilebur'
   }
   await supabase.from('produksi_item').update(updateData).eq('id', produksiId)
@@ -640,8 +657,12 @@ export async function terimaStageProduksi(
   const updateData: any = { total_gram: terimaGram }
   if (terimaPcs && terimaPcs > 0) { updateData.pcs_good = terimaPcs }
   if (rejectPcs > 0 || rejectGram > 0) {
-    updateData.pcs_reject = rejectPcs
-    updateData.berat_reject = rejectGram
+    // Akumulatif: reject dari stage ini ditambahkan ke total reject item
+    // (detail per-stage tetap tersimpan di stage_handover.reject_gram/reject_pcs)
+    const { data: cur } = await supabase.from('produksi_item')
+      .select('berat_reject, pcs_reject').eq('id', produksiId).single()
+    updateData.berat_reject  = Number(cur?.berat_reject ?? 0) + rejectGram
+    updateData.pcs_reject    = Number(cur?.pcs_reject ?? 0) + rejectPcs
     updateData.status_reject = 'belum_dilebur'
   }
   await supabase.from('produksi_item').update(updateData).eq('id', produksiId)
@@ -674,4 +695,5 @@ export async function voidStageHandover(
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
