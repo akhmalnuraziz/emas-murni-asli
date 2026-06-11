@@ -9,7 +9,7 @@ import {
 import { cn, formatRupiah, formatDate, formatGram } from '@/lib/utils'
 import {
   createBatch, updateBatch, deleteBatch,
-  lockBatch, unlockBatch, updateSisaFisik,
+  lockBatch, unlockBatch, updateSisaFisik, hapusSisaFisik,
   createPeleburan, voidPeleburan, editPeleburan
 } from '@/app/(dashboard)/bahan-baku/actions'
 import type { UserRole } from '@/lib/types/database'
@@ -306,6 +306,13 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
     }finally{setSfUploading(p=>({...p,[batch.id]:false}))}
   }
 
+  async function handleHapusSisaFisik(batch:any){
+    if(!confirm('Hapus data sisa fisik batch ini?'))return
+    const r=await hapusSisaFisik(batch.id,batch.kode)
+    if(r?.error){showToast(r.error,false);return}
+    showToast('✅ Sisa fisik dihapus')
+  }
+
   // ─── Duration helper ──────────────────────────────────────────────────────
   function durasiText(mulai: string|null|undefined, selesai: string|null|undefined): string|null {
     if (!mulai || !selesai) return null
@@ -514,50 +521,6 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                       </div>
                     )}
 
-                    {/* Rekonsiliasi */}
-                    <div className="rounded-2xl p-4 space-y-3"style={{background:'rgba(139,92,246,0.05)',border:'1px solid rgba(139,92,246,0.12)'}}>
-                      <p className="text-xs font-bold text-violet-700">📊 Rekonsiliasi Bahan Baku</p>
-                      <div className="grid grid-cols-3 gap-3">
-                        {[
-                          {label:'Sisa Seharusnya',val:`${formatGram(sisaSeharusnya)}`,sub:'Otomatis'},
-                          {label:'Sisa Fisik (timbang)',val:sisaFisik!=null?`${formatGram(sisaFisik)}`:null,sub:'Manual'},
-                          {label:'Selisih',val:loses!=null?(loses>0?`+${formatGram(loses)}`:`${formatGram(loses)}`):null,sub:'Seharusnya − Fisik',red:loses!=null&&loses>0},
-                        ].map(item=>(
-                          <div key={item.label}className="rounded-xl p-3"style={{background:'rgba(255,255,255,0.7)'}}>
-                            <p className="text-[10px] text-gray-400">{item.label}</p>
-                            {item.val?<p className={cn('text-sm font-bold mt-0.5',item.red?'text-red-600':'text-gray-700')}>{item.val}</p>:<p className="text-xs text-gray-400 italic mt-0.5">Belum diisi</p>}
-                            <p className="text-[10px] text-violet-400 mt-0.5">{item.sub}</p>
-                          </div>
-                        ))}
-                      </div>
-                      {batch.catatan_sisa_fisik&&(
-                        <p className="text-xs text-gray-500 italic px-1">📝 {batch.catatan_sisa_fisik}</p>
-                      )}
-                    </div>
-
-                    {/* FIX poin 8: Tabel Losses */}
-                    {(lossesLebur > 0 || lossesCutting > 0 || sisaFisik != null) && (
-                      <div className="rounded-2xl overflow-hidden border border-red-100">
-                        <div className="px-4 py-2 text-[10px] font-bold text-red-600 uppercase tracking-wide"
-                          style={{background:'rgba(239,68,68,0.05)'}}>
-                          📉 Ringkasan Losses
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y"style={{borderColor:'rgba(239,68,68,0.08)'}}>
-                          {[
-                            {label:'Sisa Fisik', val: sisaFisik!=null?formatGram(sisaFisik):'—', color:'text-gray-700'},
-                            {label:'Losses Lebur', val: lossesLebur>0?formatGram(lossesLebur):'—', color:'text-orange-500'},
-                            {label:'Losses Cutting', val: lossesCutting>0?formatGram(lossesCutting):'—', color:'text-red-500'},
-                            {label:'Total Losses', val: totalLosses>0?formatGram(totalLosses):'—', color:totalLosses>0?'text-red-600 font-extrabold':'text-gray-400'},
-                          ].map(col=>(
-                            <div key={col.label} className="px-3 py-2.5 text-center">
-                              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide leading-tight mb-1">{col.label}</p>
-                              <p className={`text-xs font-bold ${col.color}`}>{col.val}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
                     {/* Foto sisa fisik */}
                     {fotoSF.length>0&&!isEditSF&&(
                       <div>
@@ -587,11 +550,20 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                     {/* Input sisa fisik */}
                     {status==='aktif'&&(
                       !isEditSF?(
-                        <button onClick={()=>{setEditingSF(batch.id);setSfInput(p=>({...p,[batch.id]:String(sisaFisik??'')}));setSfExisting(p=>({...p,[batch.id]:[...fotoSF]}))}}
-                          className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-violet-600 rounded-xl transition-all hover:scale-105"
-                          style={{background:'rgba(255,255,255,0.9)',border:'1px solid rgba(139,92,246,0.2)'}}>
-                          <Edit2 size={11}/>{sisaFisik!=null?'Edit Sisa Fisik':'Input Sisa Fisik'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button onClick={()=>{setEditingSF(batch.id);setSfInput(p=>({...p,[batch.id]:String(sisaFisik??'')}));setSfExisting(p=>({...p,[batch.id]:[...fotoSF]}))}}
+                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-violet-600 rounded-xl transition-all hover:scale-105"
+                            style={{background:'rgba(255,255,255,0.9)',border:'1px solid rgba(139,92,246,0.2)'}}>
+                            <Edit2 size={11}/>{sisaFisik!=null?'Edit Sisa Fisik':'Input Sisa Fisik'}
+                          </button>
+                          {sisaFisik!=null&&(
+                            <button onClick={()=>handleHapusSisaFisik(batch)}
+                              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-red-500 rounded-xl transition-all hover:scale-105"
+                              style={{background:'rgba(255,255,255,0.9)',border:'1px solid rgba(239,68,68,0.2)'}}>
+                              <Trash2 size={11}/>Hapus
+                            </button>
+                          )}
+                        </div>
                       ):(
                         <div className="rounded-2xl p-4 space-y-3"style={{background:'rgba(255,255,255,0.9)',border:'1px solid rgba(139,92,246,0.2)'}}>
                           <div className="flex items-center justify-between">
@@ -810,12 +782,20 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
 
       {/* Modals */}
       {showCreate&&<BatchFormModal onSubmit={handleCreate} onClose={()=>setShowCreate(false)} isPending={isPending} error={formError}/>}
-      {peleburanModalBatch&&<CreatePeleburanModal
-        batchKode={peleburanModalBatch}
-        batchNama={batches.find((b:any)=>b.kode===peleburanModalBatch)?.nama_batch??''}
-        sisaBahan={Number(batches.find((b:any)=>b.kode===peleburanModalBatch)?.sisa_bahan_seharusnya??0)}
-        rejectOptions={(rejectItems as any[]).filter((r:any)=>r.batch_kode===peleburanModalBatch)}
-        onClose={()=>setPeleburanModalBatch(null)} showToast={showToast}/>}
+      {peleburanModalBatch&&(()=>{
+        const pb = batches.find((b:any)=>b.kode===peleburanModalBatch)
+        const plbBatch = (peleburanList as any[]).filter((p:any)=>p.batch_kode===peleburanModalBatch)
+        const totalDilebur = plbBatch.reduce((s:number,p:any)=>s+Number(p.dikasih_gram??0),0)
+        const mentahBelumLebur = Math.max(0, Number(pb?.timbangan_akhir??0) - totalDilebur)
+        const hasilLeburBelumCetak = Number(pb?.bahan_siap_cetak??0)
+        return <CreatePeleburanModal
+          batchKode={peleburanModalBatch}
+          batchNama={pb?.nama_batch??''}
+          sisaMentahBelumLebur={mentahBelumLebur}
+          hasilLeburBelumCetak={hasilLeburBelumCetak}
+          rejectOptions={(rejectItems as any[]).filter((r:any)=>r.batch_kode===peleburanModalBatch)}
+          onClose={()=>setPeleburanModalBatch(null)} showToast={showToast}/>
+      })()}
       {selesaiLeburItem&&<SelesaiLeburModal peleburan={selesaiLeburItem} onClose={()=>setSelesaiLeburItem(null)} showToast={showToast}/>}
       {editPlbItem&&<EditPeleburanModal peleburan={editPlbItem} onClose={()=>setEditPlbItem(null)} showToast={showToast}/>}
       {editItem&&<BatchFormModal initial={editItem} onSubmit={handleUpdate} onClose={()=>setEditItem(null)} isPending={isPending} error={formError} isEdit/>}
@@ -860,17 +840,20 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
   )
 }
 
-// ─── Create Peleburan Modal (FIX poin 11: hanya 2 sumber) ───────────────────
-function CreatePeleburanModal({ batchKode, batchNama, sisaBahan, rejectOptions, onClose, showToast }: {
-  batchKode: string; batchNama: string; sisaBahan: number
+// ─── Create Peleburan Modal (3 sumber: mentah / hasil lebur belum cetak / reject) ───
+function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasilLeburBelumCetak, rejectOptions, onClose, showToast }: {
+  batchKode: string; batchNama: string
+  sisaMentahBelumLebur: number; hasilLeburBelumCetak: number
   rejectOptions: any[]
   onClose: () => void; showToast: (m: string, ok?: boolean) => void
 }) {
   const [pend, start]     = useTransition()
   const [err, setErr]     = useState('')
   const [fotos, setFotos] = useState<File[]>([])
-  const [batchChecked, setBatchChecked] = useState(false)
-  const [batchGram, setBatchGram]       = useState('')
+  const [mentahChecked, setMentahChecked] = useState(false)
+  const [mentahGram, setMentahGram]       = useState('')
+  const [leburChecked, setLeburChecked]   = useState(false)
+  const [leburGram, setLeburGram]         = useState('')
   const [rejGram, setRejGram]   = useState<Record<number,string>>({})
   const router = useRouter()
 
@@ -879,10 +862,11 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaBahan, rejectOptions, 
   }
 
   const totalDikasih =
-    (batchChecked ? (Number(batchGram)||0) : 0) +
+    (mentahChecked ? (Number(mentahGram)||0) : 0) +
+    (leburChecked ? (Number(leburGram)||0) : 0) +
     Object.values(rejGram).reduce((s,v)=>s+(Number(v)||0),0)
 
-  const batchNaik = batchChecked && (Number(batchGram)||0) > sisaBahan && sisaBahan >= 0
+  const mentahNaik = mentahChecked && (Number(mentahGram)||0) > sisaMentahBelumLebur && sisaMentahBelumLebur >= 0
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -892,8 +876,10 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaBahan, rejectOptions, 
 
     type SI = { tipe:string; ref_id:string|null; ref_label:string; gram_otomatis:number; gram_aktual:number }
     const sumber: SI[] = []
-    if (batchChecked && (Number(batchGram)||0) > 0)
-      sumber.push({ tipe:'batch_mentah', ref_id:null, ref_label:'Batch Mentah', gram_otomatis:sisaBahan, gram_aktual:Number(batchGram) })
+    if (mentahChecked && (Number(mentahGram)||0) > 0)
+      sumber.push({ tipe:'batch_mentah', ref_id:null, ref_label:'Sisa Bahan Mentah Belum Di Lebur', gram_otomatis:sisaMentahBelumLebur, gram_aktual:Number(mentahGram) })
+    if (leburChecked && (Number(leburGram)||0) > 0)
+      sumber.push({ tipe:'sisa_peleburan', ref_id:null, ref_label:'Hasil Lebur Belum Dicetak', gram_otomatis:hasilLeburBelumCetak, gram_aktual:Number(leburGram) })
     for (const [id,gram] of Object.entries(rejGram)) {
       const rej = rejectOptions.find((r:any)=>r.id===Number(id))
       if (rej && (Number(gram)||0) > 0)
@@ -926,33 +912,48 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaBahan, rejectOptions, 
         </div>
         <form onSubmit={handleSubmit} className="px-5 pb-6 space-y-4 overflow-y-auto flex-1">
 
-          {/* SUMBER BAHAN — FIX poin 11: hanya 2 pilihan */}
+          {/* SUMBER BAHAN — 3 pilihan */}
           <div className="rounded-2xl overflow-hidden border border-violet-100">
             <div className="px-4 py-2.5 text-xs font-bold text-violet-700 uppercase tracking-wide" style={{background:'rgba(139,92,246,0.06)'}}>
               🧱 Sumber Bahan
             </div>
             <div className="p-4 space-y-4">
 
-              {/* 1. Sisa Bahan Mentah Batch */}
+              {/* 1. Sisa Bahan Mentah Belum Di Lebur */}
               <div>
                 <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input type="checkbox" checked={batchChecked} onChange={e=>setBatchChecked(e.target.checked)} className="w-4 h-4 rounded accent-violet-600"/>
-                  <span className="text-xs font-semibold text-gray-700">Sisa Bahan Mentah Batch</span>
-                  <span className="ml-auto text-[10px] text-gray-400">{(Math.round(sisaBahan*100)/100).toFixed(2).replace('.',',')} gr tersisa</span>
+                  <input type="checkbox" checked={mentahChecked} onChange={e=>setMentahChecked(e.target.checked)} className="w-4 h-4 rounded accent-violet-600"/>
+                  <span className="text-xs font-semibold text-gray-700">Sisa Bahan Mentah Belum Di Lebur</span>
+                  <span className="ml-auto text-[10px] text-gray-400">{formatGram(sisaMentahBelumLebur)} gr</span>
                 </label>
-                {batchChecked&&(
+                {mentahChecked&&(
                   <div className="mt-2 pl-6">
-                    <input type="number" step="0.001" placeholder={`cth: ${sisaBahan.toFixed(3)}`}
-                      value={batchGram} onChange={e=>setBatchGram(e.target.value)} className={inp}/>
-                    {batchNaik&&<p className="text-[11px] text-amber-600 font-semibold mt-1">⚠ Timbangan naik {((Number(batchGram)||0)-sisaBahan).toFixed(3)} gr — wajib isi Keterangan</p>}
+                    <input type="number" step="0.001" placeholder={`cth: ${sisaMentahBelumLebur.toFixed(3)}`}
+                      value={mentahGram} onChange={e=>setMentahGram(e.target.value)} className={inp}/>
+                    {mentahNaik&&<p className="text-[11px] text-amber-600 font-semibold mt-1">⚠ Timbangan naik {((Number(mentahGram)||0)-sisaMentahBelumLebur).toFixed(3)} gr — wajib isi Keterangan</p>}
                   </div>
                 )}
               </div>
 
-              {/* 2. Reject Cutting */}
+              {/* 2. Hasil Lebur Belum Dicetak */}
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input type="checkbox" checked={leburChecked} onChange={e=>setLeburChecked(e.target.checked)} className="w-4 h-4 rounded accent-violet-600"/>
+                  <span className="text-xs font-semibold text-gray-700">Hasil Lebur Belum Dicetak</span>
+                  <span className="ml-auto text-[10px] text-violet-400 font-semibold">{formatGram(hasilLeburBelumCetak)} gr</span>
+                </label>
+                {leburChecked&&(
+                  <div className="mt-2 pl-6">
+                    <input type="number" step="0.001" max={hasilLeburBelumCetak} placeholder={`Max ${hasilLeburBelumCetak.toFixed(3)}`}
+                      value={leburGram} onChange={e=>setLeburGram(e.target.value)} className={inp}/>
+                  </div>
+                )}
+              </div>
+
+              {/* 3. Reject Cutting / Reject PCS */}
               {rejectOptions.length>0&&(
                 <div>
-                  <p className="text-xs font-semibold text-gray-700 mb-2">Reject Cutting</p>
+                  <p className="text-xs font-semibold text-gray-700 mb-2">Reject (Cutting / Pas Berat / Annealing)</p>
                   <div className="space-y-2">
                     {rejectOptions.map((rej:any)=>(
                       <div key={rej.id}>
@@ -960,7 +961,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaBahan, rejectOptions, 
                           <input type="checkbox" checked={rejGram[rej.id]!==undefined} onChange={()=>toggleRej(rej.id,rej.berat_reject)} className="w-4 h-4 rounded accent-violet-600"/>
                           <span className="text-xs font-medium text-gray-700">{rej.kode??rej.nama_item}</span>
                           <span className="text-[10px] text-gray-400 ml-1">({rej.gramasi})</span>
-                          <span className="ml-auto text-[10px] text-red-400 font-semibold">{formatGram(rej.berat_reject)}</span>
+                          <span className="ml-auto text-[10px] text-red-400 font-semibold">{formatGram(rej.berat_reject)} gr{rej.pcs_reject?` · ${rej.pcs_reject} pcs`:''}</span>
                         </label>
                         {rejGram[rej.id]!==undefined&&(
                           <div className="mt-1 pl-6">
@@ -974,7 +975,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaBahan, rejectOptions, 
                 </div>
               )}
 
-              {rejectOptions.length===0&&!batchChecked&&(
+              {rejectOptions.length===0&&!mentahChecked&&!leburChecked&&(
                 <p className="text-xs text-gray-400 italic text-center py-2">Centang sumber bahan di atas</p>
               )}
 
@@ -1028,11 +1029,11 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaBahan, rejectOptions, 
               </div>
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">
-                  Keterangan {batchNaik&&<span className="text-red-500">* (wajib — timbangan naik)</span>}
+                  Keterangan {mentahNaik&&<span className="text-red-500">* (wajib — timbangan naik)</span>}
                 </label>
                 <input name="keterangan_serahkan" type="text"
-                  placeholder={batchNaik?'Jelaskan alasan timbangan naik...':'Opsional'}
-                  className={inp} required={batchNaik}/>
+                  placeholder={mentahNaik?'Jelaskan alasan timbangan naik...':'Opsional'}
+                  className={inp} required={mentahNaik}/>
               </div>
             </div>
           </div>
