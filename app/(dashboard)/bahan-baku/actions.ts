@@ -429,7 +429,7 @@ export async function selesaiLebur(id: number, formData: FormData) {
   if (!tanggalTerima)             return { error: 'Tanggal diterima wajib diisi' }
   if (!jamSelesai)                return { error: 'Jam selesai wajib diisi' }
 
-  const { data: plb } = await supabase.from('peleburan').select('dikasih_gram, kode').eq('id', id).single()
+  const { data: plb } = await supabase.from('peleburan').select('dikasih_gram, kode, batch_kode, diterima_gram, status').eq('id', id).single()
   if (!plb) return { error: 'Peleburan tidak ditemukan' }
   if (diterima > plb.dikasih_gram) return { error: 'Diterima tidak boleh melebihi dikasih' }
 
@@ -450,6 +450,19 @@ export async function selesaiLebur(id: number, formData: FormData) {
   }).eq('id', id)
 
   if (error) return { error: error.message }
+
+  // ── Hasil lebur jadi bahan siap cetak ────────────────────────────────────
+  // Jika sebelumnya sudah selesai (re-edit), tambahkan hanya selisihnya
+  if (plb.batch_kode) {
+    const sudahMasuk = (plb.status === 'selesai' && plb.diterima_gram) ? Number(plb.diterima_gram) : 0
+    const tambahan = diterima - sudahMasuk
+    if (tambahan !== 0) {
+      const { data: batch } = await supabase.from('batch').select('bahan_siap_cetak').eq('kode', plb.batch_kode).single()
+      await supabase.from('batch').update({
+        bahan_siap_cetak: Math.max(0, Number(batch?.bahan_siap_cetak ?? 0) + tambahan)
+      }).eq('kode', plb.batch_kode)
+    }
+  }
 
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
@@ -552,3 +565,4 @@ export async function getPeleburanByBatch(batchKode: string) {
     .order('created_at', { ascending: false })
   return data ?? []
 }
+
