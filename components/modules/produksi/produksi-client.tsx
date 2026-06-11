@@ -445,11 +445,11 @@ function CreateModal({ batches, onClose, onSubmit, isPending, error }: {
           <F label="Nama / Label Batch" req><input name="nama_item" value={f.nama_item} onChange={e => s('nama_item', e.target.value)} placeholder="cth: LM REI 10GR BATCH 26" className={inp} required /></F>
           <F label="Batch Bahan Baku" req>
             <select name="batch_kode" value={f.batch_kode} onChange={e => s('batch_kode', e.target.value)} className={inp} required>
-              {batches.map(b => <option key={b.kode} value={b.kode}>{b.kode} — {b.nama_batch} (Sisa: {(b.sisa_bahan_seharusnya ?? b.timbangan_akhir ?? 0).toFixed(2)} gr)</option>)}
+              {batches.map(b => <option key={b.kode} value={b.kode}>{b.kode} — {b.nama_batch} (Siap cetak: {(b.bahan_siap_cetak ?? 0).toFixed(2)} gr)</option>)}
             </select>
           </F>
           <div className="grid grid-cols-2 gap-3">
-            <F label="Gramasi Target" req>
+            <F label="Pilih Gramasi yang ingin di cetak" req>
               <select name="gramasi" value={f.gramasi} onChange={e => s('gramasi', e.target.value)} className={inp} required>
                 {GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} Gram</option>)}
               </select>
@@ -457,12 +457,12 @@ function CreateModal({ batches, onClose, onSubmit, isPending, error }: {
             <F label="Jumlah PCS"><input name="pcs" type="number" min="1" value={f.pcs} onChange={e => s('pcs', e.target.value)} placeholder="50 — opsional, isi saat terima cutting" className={inp} /></F>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <F label="Total Berat (gram)" req><input name="berat_awal" type="number" step="0.01" value={f.berat_awal} onChange={e => s('berat_awal', e.target.value)} placeholder="500.15" className={inp} required /></F>
-            <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm" style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.15)'}}>
-              <span className="text-xs font-bold text-violet-700">🔪 Status Awal</span>
-              <span className="ml-auto text-xs font-semibold text-violet-600 bg-violet-100 px-2 py-0.5 rounded-full">Cutting</span>
-              <input type="hidden" name="status_awal" value="Cutting" />
-            </div>
+            <F label="Total bahan yang di serahkan" req><input name="berat_awal" type="number" step="0.01" value={f.berat_awal} onChange={e => s('berat_awal', e.target.value)} placeholder="500.15" className={inp} required /></F>
+            <F label="Status Awal" req>
+              <select name="status_awal" value={f.status_awal} onChange={e => s('status_awal', e.target.value)} className={inp} required>
+                {['Cutting','Pas Berat','Annealing','Siap Packing'].map(st => <option key={st} value={st}>{st}</option>)}
+              </select>
+            </F>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="grid grid-cols-2 gap-3">
@@ -1487,4 +1487,5 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     </div>
   )
 }
+
 
