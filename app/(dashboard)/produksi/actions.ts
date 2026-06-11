@@ -50,6 +50,23 @@ async function uploadBase64Fotos(supabase: any, b64Array: string[], prefix: stri
   return urls
 }
 
+export async function fetchPeleburanTersedia(batchKode: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { rows: [] }
+  const { data } = await supabase.from('peleburan')
+    .select('id, kode, diterima_gram, terpakai_cetak, tanggal_diterima')
+    .eq('batch_kode', batchKode).eq('status', 'selesai').is('voided_at', null)
+    .order('id')
+  const rows = (data ?? []).map(p => ({
+    id: p.id, kode: p.kode,
+    diterima: Number(p.diterima_gram ?? 0),
+    terpakai: Number(p.terpakai_cetak ?? 0),
+    sisa: Number(p.diterima_gram ?? 0) - Number(p.terpakai_cetak ?? 0),
+  })).filter(p => p.sisa > 0.001)
+  return { rows }
+}
+
 export async function createProduksi(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -62,28 +79,34 @@ export async function createProduksi(formData: FormData) {
   const beratAwal = parseFloat(formData.get('berat_awal') as string)
   const statusAwal = formData.get('status_awal') as string
   const tanggalProduksi = formData.get('tanggal_produksi') as string
+  const peleburanId = parseInt(formData.get('peleburan_id') as string) || null
 
   if (!batchKode) return { error: 'Batch wajib dipilih' }
   if (!gramasi) return { error: 'Gramasi wajib dipilih' }
   if (!beratAwal || beratAwal <= 0) return { error: 'Total berat (serah gram) wajib diisi' }
   if (!statusAwal) return { error: 'Status awal wajib dipilih' }
   if (!tanggalProduksi) return { error: 'Tanggal produksi wajib diisi' }
+  if (!peleburanId) return { error: 'Peleburan asal wajib dipilih' }
 
   const { data: batch } = await supabase.from('batch').select('*').eq('kode', batchKode).single()
   if (!batch) return { error: 'Batch tidak ditemukan' }
   if (batch.voided_at && batch.void_reason === 'LOCKED_BY_USER') return { error: 'Batch terkunci' }
 
-  // Bahan yang bisa dipakai cetak = hasil lebur yang sudah diterima
+  // Ambil peleburan asal & validasi jatah cetak per-peleburan
+  const { data: plb } = await supabase.from('peleburan')
+    .select('id, kode, diterima_gram, terpakai_cetak, status').eq('id', peleburanId).single()
+  if (!plb) return { error: 'Peleburan asal tidak ditemukan' }
+  if (plb.status !== 'selesai') return { error: 'Peleburan asal belum selesai' }
+
+  const jatahPLB = Number(plb.diterima_gram ?? 0) - Number(plb.terpakai_cetak ?? 0)
+  if (beratAwal > jatahPLB + 0.01) {
+    return { error: `Berat melebihi sisa bahan dari peleburan ${plb.kode} (${jatahPLB.toFixed(2)} gr tersisa).` }
+  }
+
+  // Bahan total siap cetak (batch level) sebagai guard tambahan
   const bahanSiapCetak = Number(batch.bahan_siap_cetak ?? 0)
   if (beratAwal > bahanSiapCetak + 0.01) {
     return { error: `Berat melebihi bahan siap cetak (${bahanSiapCetak.toFixed(2)} gr tersedia). Lebur bahan terlebih dahulu.` }
-  }
-
-  // Validasi: minimal ada 1 peleburan selesai dari batch ini
-  const { data: peleburanSelesai } = await supabase
-    .from('peleburan').select('id').eq('batch_kode', batchKode).eq('status', 'selesai').limit(1)
-  if (!peleburanSelesai || peleburanSelesai.length === 0) {
-    return { error: 'Batch ini belum memiliki peleburan yang selesai. Buat dan selesaikan peleburan terlebih dahulu sebelum memulai produksi.' }
   }
 
   const kode = await generateProduksiCode(supabase)
@@ -104,6 +127,8 @@ export async function createProduksi(formData: FormData) {
     jam_mulai_cutting: jamMulai,
     jam_mulai_produksi: jamMulai,
     target_selesai: targetSelesai,
+    peleburan_id: peleburanId,
+    peleburan_kode: plb.kode,
     memo: formData.get('memo') as string || null,
     operator: formData.get('operator') as string || profile?.name || null,
     catatan: formData.get('catatan') as string || null,
@@ -128,6 +153,11 @@ export async function createProduksi(formData: FormData) {
   await supabase.from('batch').update({
     bahan_siap_cetak: Math.max(0, bahanSiapCetak - beratAwal)
   }).eq('kode', batchKode)
+
+  // Tambah jatah terpakai pada peleburan asal
+  await supabase.from('peleburan').update({
+    terpakai_cetak: Number(plb.terpakai_cetak ?? 0) + beratAwal
+  }).eq('id', peleburanId)
 
   await updateBatchSisaSeharusnya(supabase, batchKode)
   await supabase.from('audit_log').insert({
@@ -324,6 +354,21 @@ export async function deleteProduksi(produksiId: number, produksiKode: string) {
   await supabase.from('produksi_item').update({
     voided_at: new Date().toISOString(), void_reason: 'DELETED_BY_USER',
   }).eq('id', produksiId)
+
+  // Kembalikan bahan ke siap cetak & jatah peleburan
+  const beratAwal = Number(existing.berat_awal ?? 0)
+  if (beratAwal > 0 && existing.batch_kode) {
+    const { data: b } = await supabase.from('batch').select('bahan_siap_cetak').eq('kode', existing.batch_kode).single()
+    if (b) await supabase.from('batch').update({
+      bahan_siap_cetak: Number(b.bahan_siap_cetak ?? 0) + beratAwal
+    }).eq('kode', existing.batch_kode)
+  }
+  if (beratAwal > 0 && existing.peleburan_id) {
+    const { data: p } = await supabase.from('peleburan').select('terpakai_cetak').eq('id', existing.peleburan_id).single()
+    if (p) await supabase.from('peleburan').update({
+      terpakai_cetak: Math.max(0, Number(p.terpakai_cetak ?? 0) - beratAwal)
+    }).eq('id', existing.peleburan_id)
+  }
 
   if (existing.batch_kode) await updateBatchSisaSeharusnya(supabase, existing.batch_kode)
 
@@ -709,5 +754,6 @@ export async function voidStageHandover(
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
