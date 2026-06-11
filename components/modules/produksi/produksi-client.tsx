@@ -464,11 +464,9 @@ function CreateModal({ batches, onClose, onSubmit, isPending, error }: {
               </select>
             </F>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <F label="Tanggal Mulai" req><input name="tanggal_produksi" type="date" value={f.tanggal_produksi} onChange={e => s('tanggal_produksi', e.target.value)} className={inp} required /></F>
             <F label="Jam Mulai" req><input name="jam_mulai" type="time" value={f.jam_mulai ?? ''} onChange={e => s('jam_mulai', e.target.value)} className={inp} required /></F>
-          </div>
             <F label="Target Selesai"><input name="target_selesai" type="date" value={f.target_selesai} onChange={e => s('target_selesai', e.target.value)} className={inp} /></F>
           </div>
           <F label="Operator / PIC"><input name="operator" value={f.operator} onChange={e => s('operator', e.target.value)} placeholder="Nama operator" className={inp} /></F>
@@ -545,8 +543,8 @@ function EditModal({ item, onClose, onSubmit, isPending, error }: {
 
 
 // ─── Selesai Cutting Modal ────────────────────────────────────────────────────
-function SelesaiCuttingModal({ item, onClose, onSubmit, isPending, error }: {
-  item: any; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
+function SelesaiCuttingModal({ item, onClose, onSubmit, isPending, error, isEdit }: {
+  item: any; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string; isEdit?: boolean
 }) {
   const [fotos, setFotos] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
@@ -571,7 +569,7 @@ function SelesaiCuttingModal({ item, onClose, onSubmit, isPending, error }: {
         style={{ boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }}>
         <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0 border-b border-gray-100">
           <div>
-            <h2 className="text-base font-bold text-gray-900">✓ Konfirmasi Terima Cutting</h2>
+            <h2 className="text-base font-bold text-gray-900">{isEdit ? '✎ Edit Cutting' : '✓ Konfirmasi Terima Cutting'}</h2>
             <p className="text-xs text-violet-500 font-semibold mt-0.5">{item.kode} — {item.nama_item}</p>
           </div>
           <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
@@ -592,32 +590,27 @@ function SelesaiCuttingModal({ item, onClose, onSubmit, isPending, error }: {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Tanggal Selesai *</label>
-              <input name="tanggal_selesai" type="date" defaultValue={new Date().toISOString().split('T')[0]}
+              <input name="tanggal_selesai" type="date" defaultValue={isEdit&&item.tanggal_selesai?item.tanggal_selesai:new Date().toISOString().split('T')[0]}
                 className={inp} required />
             </div>
             <div>
               <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Jam Selesai *</label>
-              <input name="jam_selesai" type="time" className={inp} required />
+              <input name="jam_selesai" type="time" defaultValue={isEdit&&item.jam_selesai?String(item.jam_selesai).slice(0,5):undefined} className={inp} required />
             </div>
           </div>
 
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Berat Diterima (gr) *</label>
             <input name="terima_gram" type="number" step="0.001"
+              defaultValue={isEdit&&item.terima_gram?Number(item.terima_gram):undefined}
               placeholder={`Max ${fgr(serahGram)} gr`}
               className={inp} required />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Reject Cutting (gr)</label>
-              <input name="reject_cutting_gram" type="number" step="0.001"
-                defaultValue="0" className={inp} />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">PCS Reject</label>
-              <input name="pcs_reject" type="number" min="0" defaultValue="0" className={inp} />
-            </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Reject Cutting (gr)</label>
+            <input name="reject_cutting_gram" type="number" step="0.001"
+              defaultValue={isEdit?Number(item.reject_cutting_gram??0):0} className={inp} />
           </div>
 
           <div>
@@ -625,6 +618,7 @@ function SelesaiCuttingModal({ item, onClose, onSubmit, isPending, error }: {
               PCS Berhasil <span className="text-gray-400 font-normal">(opsional, isi jika sudah tahu)</span>
             </label>
             <input name="pcs_good" type="number" min="1"
+              defaultValue={isEdit&&item.pcs_good?Number(item.pcs_good):undefined}
               placeholder="Isi jika sudah dihitung" className={inp} />
           </div>
 
@@ -1077,7 +1071,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
   const [search, setSearch]     = useState('')
   const [filterStatus, setFilter] = useState<string>('Semua')
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
-  const [modal, setModal]       = useState<'create'|'edit'|'update'|'delete'|'cuttingTerima'|'serahStage'|'terimaStage'|'editHandover'|null>(null)
+  const [modal, setModal]       = useState<'create'|'edit'|'update'|'delete'|'cuttingTerima'|'editCutting'|'serahStage'|'terimaStage'|'editHandover'|null>(null)
   const [active, setActive]     = useState<any>(null)
   const [activeTahap, setActiveTahap]   = useState<string>('')
   const [activeHandoverId, setActiveHandoverId] = useState<number|null>(null)
@@ -1101,6 +1095,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
   function handleUpdate(fd: FormData) { if(!active)return; setErr(''); start(async()=>{ const r=await updateStatusProduksi(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Status diperbarui'); setModal(null) }) }
   function handleDelete()             { if(!active)return; start(async()=>{ await deleteProduksi(active.id,active.kode); showToast('🗑️ Dihapus'); setModal(null) }) }
   function handleSelesaiCutting(fd: FormData) { if(!active)return; setErr(''); start(async()=>{ const r=await selesaiCutting(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Cutting diterima'); setModal(null) }) }
+  function handleEditCutting(fd: FormData) { if(!active)return; setErr(''); fd.set('is_edit','1'); start(async()=>{ const r=await selesaiCutting(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Cutting diperbarui'); setModal(null) }) }
   function handleSerahStage(fd: FormData)  { if(!active)return; setErr(''); start(async()=>{ const r=await serahStageProduksi(active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast(`✅ Diserahkan ke ${activeTahap.replace('_',' ')}`); setModal(null) }) }
   function handleTerimaStage(fd: FormData) { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await terimaStageProduksi(activeHandoverId,active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast(`✅ Terima berhasil`); setModal(null) }) }
   function handleEditHandover(fd: FormData) { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await terimaStageProduksi(activeHandoverId,active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Data diperbarui'); setModal(null) }) }
@@ -1359,22 +1354,6 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                   <div className="px-4 pb-5 pt-4 border-t space-y-3"
                     style={{borderColor:'rgba(139,92,246,0.08)',background:'rgba(248,246,255,0.6)'}}>
 
-                    {/* ① Grid info */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {[
-                        {label:'Gramasi', val:`${item.gramasi} gr`},
-                        {label:'Tanggal Mulai', val:item.tanggal_mulai?new Date(item.tanggal_mulai).toLocaleDateString('id-ID'):new Date(item.tanggal||item.tanggal_produksi).toLocaleDateString('id-ID')},
-                        {label:'Jam Mulai', val:item.jam_mulai_cutting?String(item.jam_mulai_cutting).slice(0,5):'—'},
-                        {label:'Operator', val:item.operator||'—'},
-                      ].map(g=>(
-                        <div key={g.label} className="rounded-xl p-2.5"
-                          style={{background:'rgba(255,255,255,0.9)',border:'1px solid rgba(209,213,219,0.3)'}}>
-                          <p className="text-[10px] text-gray-400 font-medium">{g.label}</p>
-                          <p className="text-sm font-bold text-gray-700 mt-0.5 truncate">{g.val}</p>
-                        </div>
-                      ))}
-                    </div>
-
                     {/* ④ Stage handover + Cutting */}
                     {(item.serah_gram||item.terima_gram||handovers.length>0)&&(
                       <div className="rounded-2xl overflow-hidden"
@@ -1392,6 +1371,12 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                               <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${item.status_cutting==='selesai'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>
                                 {item.status_cutting==='selesai'?'✓ Selesai':'⏳ Proses'}
                               </span>
+                              {canEdit&&!isVoided&&(
+                                <button onClick={()=>openModal('editCutting',item)}
+                                  className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-semibold text-blue-500 hover:bg-blue-50 transition-colors border border-blue-100">
+                                  <Edit2 size={9}/> Edit
+                                </button>
+                              )}
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               <div className="rounded-xl p-3 space-y-1" style={{background:'rgba(59,130,246,0.04)',border:'1px solid rgba(59,130,246,0.1)'}}>
@@ -1405,7 +1390,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                                 {item.terima_gram?(<>
                                   <p className="font-bold text-gray-800">{parseFloat(item.terima_gram).toFixed(3)} gr{item.terima_pcs?` · ${item.terima_pcs} PCS`:''}</p>
                                   {item.jam_selesai&&<p className="text-[11px] text-gray-400">⏱ {String(item.jam_selesai).slice(0,5)}</p>}
-                                  {Number(item.reject_cutting_gram)>0&&<p className="text-[11px] font-semibold text-red-500">Reject: {parseFloat(item.reject_cutting_gram).toFixed(3)} gr{item.reject_cutting_pcs?` · ${item.reject_cutting_pcs} PCS`:''}</p>}
+                                  {Number(item.reject_cutting_gram)>0&&<p className="text-[11px] font-semibold text-red-500">Reject Cutting: {parseFloat(item.reject_cutting_gram).toFixed(3)} gr</p>}
                                   {Number(item.losses_cutting)>0&&<p className="text-[11px] font-semibold text-orange-500">Losses: {parseFloat(item.losses_cutting).toFixed(3)} gr</p>}
                                 </>):<p className="text-[11px] text-gray-400 italic">Belum diterima</p>}
                               </div>
@@ -1480,6 +1465,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
       {modal==='edit'          && active            && <EditModal item={active} onClose={()=>setModal(null)} onSubmit={handleEdit} isPending={isPending} error={err}/>}
       {modal==='update'        && active            && <UpdateModal item={active} onClose={()=>setModal(null)} onSubmit={handleUpdate} isPending={isPending} error={err}/>}
       {modal==='cuttingTerima' && active            && <SelesaiCuttingModal item={active} onClose={()=>setModal(null)} onSubmit={handleSelesaiCutting} isPending={isPending} error={err}/>}
+      {modal==='editCutting'   && active            && <SelesaiCuttingModal item={active} isEdit onClose={()=>setModal(null)} onSubmit={handleEditCutting} isPending={isPending} error={err}/>}
       {modal==='serahStage'    && active            && <SerahStageModal item={active} tahap={activeTahap} onClose={()=>setModal(null)} onSubmit={handleSerahStage} isPending={isPending} error={err}/>}
       {modal==='terimaStage'   && active            && <TerimaStageModal item={active} tahap={activeTahap} handoverId={activeHandoverId??0} onClose={()=>setModal(null)} onSubmit={handleTerimaStage} isPending={isPending} error={err}/>}
       {modal==='delete'        && active            && <DelModal item={active} onClose={()=>setModal(null)} onConfirm={handleDelete} isPending={isPending}/>}
