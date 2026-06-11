@@ -305,12 +305,30 @@ export async function updateSisaFisik(formData: FormData) {
   return { success: true, fotosCount: fotoUrls.length }
 }
 
+export async function hapusSisaFisik(batchId: number, batchKode: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
 
+  const { error } = await supabase.rpc('update_sisa_fisik', {
+    p_id: batchId,
+    p_sisa_fisik: null,
+    p_fotos: [],
+  })
+  if (error) return { error: `DB error: ${error.message}` }
 
+  await supabase.from('batch').update({ catatan_sisa_fisik: null }).eq('id', batchId)
 
-// ═══════════════════════════════════════════════════════════════════
-// PELEBURAN
-// ═══════════════════════════════════════════════════════════════════
+  await supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'HAPUS_SISA_FISIK', module: 'BAHAN_BAKU',
+    record_key: batchKode, record_id: String(batchId),
+  })
+
+  revalidatePath('/bahan-baku')
+  return { success: true }
+}
 
 export async function createPeleburan(formData: FormData) {
   const supabase = await createClient()
@@ -344,15 +362,26 @@ export async function createPeleburan(formData: FormData) {
   const totalDikasih    = sumberList.reduce((s, x) => s + Number(x.gram_aktual), 0)
   const sumberBatchGram = sumberList.filter(x => x.tipe === 'batch_mentah')
                                     .reduce((s, x) => s + Number(x.gram_aktual), 0)
+  const sumberLeburGram = sumberList.filter(x => x.tipe === 'sisa_peleburan')
+                                    .reduce((s, x) => s + Number(x.gram_aktual), 0)
 
   if (totalDikasih <= 0) return { error: 'Total bahan dikasih harus lebih dari 0' }
 
+  const { data: batchRow } = await supabase.from('batch')
+    .select('sisa_bahan_seharusnya, bahan_siap_cetak, timbangan_akhir').eq('kode', batchKode).single()
+
   // Validasi: timbangan naik pada batch_mentah → wajib keterangan
   if (sumberBatchGram > 0) {
-    const { data: batch } = await supabase.from('batch').select('sisa_bahan_seharusnya').eq('kode', batchKode).single()
-    const sisaTersedia = Number(batch?.sisa_bahan_seharusnya ?? 0)
+    const sisaTersedia = Number(batchRow?.sisa_bahan_seharusnya ?? 0)
     if (sumberBatchGram > sisaTersedia && !keterangan)
       return { error: `Timbangan naik ${(sumberBatchGram - sisaTersedia).toFixed(3)} gr dari sisa batch (${sisaTersedia.toFixed(3)} gr). Wajib isi Keterangan.` }
+  }
+
+  // Validasi: lebur ulang hasil lebur tidak boleh melebihi bahan_siap_cetak
+  if (sumberLeburGram > 0) {
+    const siapCetak = Number(batchRow?.bahan_siap_cetak ?? 0)
+    if (sumberLeburGram > siapCetak + 0.01)
+      return { error: `Hasil lebur yang dilebur ulang (${sumberLeburGram.toFixed(3)} gr) melebihi yang tersedia (${siapCetak.toFixed(3)} gr).` }
   }
 
   // ── Upload foto ──────────────────────────────────────────────────────────
@@ -393,6 +422,14 @@ export async function createPeleburan(formData: FormData) {
         gram_aktual:   s.gram_aktual,
       }))
     )
+  }
+
+  // ── Lebur ulang hasil lebur → kurangi bahan_siap_cetak ───────────────────
+  if (sumberLeburGram > 0) {
+    const siapCetakNow = Number(batchRow?.bahan_siap_cetak ?? 0)
+    await supabase.from('batch').update({
+      bahan_siap_cetak: Math.max(0, siapCetakNow - sumberLeburGram)
+    }).eq('kode', batchKode)
   }
 
   // ── Update reject items → sudah_dilebur ──────────────────────────────────
