@@ -26,7 +26,7 @@ export default async function BahanBakuPage() {
       .not('peleburan_id', 'is', null),
     // Reject items belum dilebur ulang
     supabase.from('produksi_item')
-      .select('id, kode, gramasi, nama_item, berat_reject, batch_kode')
+      .select('id, kode, gramasi, nama_item, berat_reject, reject_cutting_gram, current_status, batch_kode')
       .eq('status_reject', 'belum_dilebur')
       .gt('berat_reject', 0)
       .is('voided_at', null)
@@ -70,3 +70,4 @@ export default async function BahanBakuPage() {
     />
   )
 }
+
