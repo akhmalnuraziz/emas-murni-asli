@@ -1,7 +1,16 @@
-export default function Page() {
-  return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 text-center py-20">
-      <p className="text-slate-400 text-sm">Modul mutasi — sedang dibangun</p>
-    </div>
-  )
+import { createClient } from '@/lib/supabase/server'
+import MutasiClient from '@/components/modules/mutasi/mutasi-client'
+
+export const dynamic = 'force-dynamic'
+
+export default async function Page() {
+  const supabase = await createClient()
+  const { data: cabang } = await supabase
+    .from('cabang')
+    .select('kode, nama')
+    .is('voided_at', null)
+    .eq('aktif', true)
+    .order('id')
+
+  return <MutasiClient cabangList={cabang ?? []} />
 }
