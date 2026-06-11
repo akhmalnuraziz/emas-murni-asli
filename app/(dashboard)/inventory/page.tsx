@@ -1,7 +1,7 @@
+import InventoryClient from '@/components/modules/inventory/inventory-client'
+
+export const dynamic = 'force-dynamic'
+
 export default function Page() {
-  return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 text-center py-20">
-      <p className="text-slate-400 text-sm">Modul inventory — sedang dibangun</p>
-    </div>
-  )
+  return <InventoryClient />
 }
