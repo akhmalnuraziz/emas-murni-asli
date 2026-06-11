@@ -1203,6 +1203,10 @@ function EditPeleburanModal({ peleburan, onClose, showToast }: {
   const [existingFotos, setExistingFotos] = useState<string[]>(
     Array.isArray(peleburan.foto_serahkan) ? peleburan.foto_serahkan : []
   )
+  const [newFotosDiterima, setNewFotosDiterima] = useState<File[]>([])
+  const [existingFotosDiterima, setExistingFotosDiterima] = useState<string[]>(
+    Array.isArray(peleburan.foto_diterima) ? peleburan.foto_diterima : []
+  )
   const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -1213,6 +1217,11 @@ function EditPeleburanModal({ peleburan, onClose, showToast }: {
     if (newFotos.length > 0) {
       const b64s = await filesToBase64(newFotos)
       fd.set('foto_serahkan_b64', JSON.stringify(b64s))
+    }
+    fd.set('existing_fotos_diterima', JSON.stringify(existingFotosDiterima))
+    if (newFotosDiterima.length > 0) {
+      const b64s = await filesToBase64(newFotosDiterima)
+      fd.set('foto_diterima_b64', JSON.stringify(b64s))
     }
     setErr('')
     start(async () => {
@@ -1310,9 +1319,66 @@ function EditPeleburanModal({ peleburan, onClose, showToast }: {
               </div>
             </div>
           </div>
-          {err && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-red-50 rounded-xl text-xs text-red-600">
-              <AlertTriangle size={13} className="flex-shrink-0"/><span>{err}</span>
+
+          {/* DITERIMA — hanya jika sudah selesai */}
+          {peleburan.status === 'selesai' && (
+            <div className="rounded-2xl overflow-hidden border border-green-100">
+              <div className="px-4 py-2.5 text-xs font-bold text-green-700 uppercase tracking-wide"
+                style={{background:'rgba(34,197,94,0.06)'}}>
+                📥 Diterima
+              </div>
+              <div className="p-4 space-y-3">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Berat Diterima (gr) *</label>
+                  <input name="diterima_gram" type="number" step="0.001"
+                    defaultValue={peleburan.diterima_gram ?? ''} className={inp} required/>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Tanggal Selesai</label>
+                    <input name="tanggal_diterima" type="date"
+                      defaultValue={peleburan.tanggal_diterima ?? ''} className={inp}/>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Jam Selesai</label>
+                    <input name="jam_selesai" type="time"
+                      defaultValue={toTime(peleburan.jam_selesai)} className={inp}/>
+                  </div>
+                </div>
+                {existingFotosDiterima.length > 0 && (
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Foto diterima saat ini</label>
+                    <div className="flex flex-wrap gap-2">
+                      {existingFotosDiterima.map((url,i) => (
+                        <div key={i} className="relative">
+                          <img src={url} alt="" className="w-14 h-14 rounded-xl object-cover border border-green-200"/>
+                          <button type="button" onClick={() => setExistingFotosDiterima(p => p.filter((_,j) => j!==i))}
+                            className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">×</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Tambah Foto Diterima</label>
+                  <label className="flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-green-50">
+                    <Camera size={14} className="text-gray-400 flex-shrink-0"/>
+                    <span className="text-xs text-gray-400">{newFotosDiterima.length > 0 ? `${newFotosDiterima.length} foto baru` : 'Tambah foto'}</span>
+                    <input type="file" accept="image/*" multiple className="hidden"
+                      onChange={e => setNewFotosDiterima(p => [...p, ...Array.from(e.target.files??[])].slice(0,5))}/>
+                  </label>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Operator Diterima</label>
+                  <input name="operator_diterima" type="text" defaultValue={peleburan.operator_diterima??''}
+                    placeholder="Nama operator" className={inp}/>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Keterangan Diterima</label>
+                  <input name="keterangan_diterima" type="text" defaultValue={peleburan.keterangan_diterima??''}
+                    placeholder="Opsional" className={inp}/>
+                </div>
+              </div>
             </div>
           )}
           <div className="flex gap-2">
@@ -1331,5 +1397,6 @@ function EditPeleburanModal({ peleburan, onClose, showToast }: {
     </div>
   )
 }
+
 
 
