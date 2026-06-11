@@ -44,6 +44,18 @@ function getDurasi(jamMulai: string | null, createdAt: string | null): string {
   return jam > 0 ? `${jam}j ${mnt}mnt` : `${mnt}mnt`
 }
 
+function getDurasiJam(mulai: string | null, selesai: string | null): string {
+  if (!mulai || !selesai) return ''
+  const [h1, m1] = String(mulai).slice(0,5).split(':').map(Number)
+  const [h2, m2] = String(selesai).slice(0,5).split(':').map(Number)
+  if ([h1,m1,h2,m2].some(isNaN)) return ''
+  let diff = (h2 * 60 + m2) - (h1 * 60 + m1)
+  if (diff < 0) diff += 24 * 60 // lewat tengah malam
+  if (diff <= 0) return ''
+  const jam = Math.floor(diff / 60); const mnt = diff % 60
+  return jam > 0 ? `${jam}j ${mnt}mnt` : `${mnt}mnt`
+}
+
 const GRAMASI_OPTIONS = ['0.1','0.5','1','2','5','10','20','25','50','100','250','500','1000']
 const STATUS_FLOW     = ['Cutting','Pas Berat','Annealing','Siap Packing']
 const STATUS_NEXT: Record<string,string> = {
@@ -431,6 +443,7 @@ function CreateModal({ batches, onClose, onSubmit, isPending, error }: {
   const [plbList, setPlbList] = useState<any[]>([])
   const [plbLoading, setPlbLoading] = useState(false)
   const s = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
+  const selectedPlb = plbList.find(p => String(p.id) === f.peleburan_id)
 
   useEffect(() => {
     if (!f.batch_kode) { setPlbList([]); return }
@@ -461,13 +474,22 @@ function CreateModal({ batches, onClose, onSubmit, isPending, error }: {
               {batches.map(b => <option key={b.kode} value={b.kode}>{b.kode} — {b.nama_batch} (Siap cetak: {(b.bahan_siap_cetak ?? 0).toFixed(2)} gr)</option>)}
             </select>
           </F>
-          {/* Peleburan asal otomatis (sumber pertama yang tersedia) */}
-          <input type="hidden" name="peleburan_id" value={f.peleburan_id} />
-          {!plbLoading && plbList.length === 0 && (
-            <div className="text-xs text-amber-600 px-3 py-2.5 rounded-xl" style={{background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.2)'}}>
-              Belum ada hasil lebur siap cetak di batch ini. Lebur bahan dulu di halaman Bahan Baku.
-            </div>
-          )}
+          <F label="Peleburan Asal (Bahan)" req>
+            {plbLoading ? (
+              <div className="text-xs text-gray-400 px-1 py-2.5">Memuat peleburan…</div>
+            ) : plbList.length === 0 ? (
+              <div className="text-xs text-amber-600 px-3 py-2.5 rounded-xl" style={{background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.2)'}}>
+                Belum ada hasil lebur siap cetak di batch ini. Lebur bahan dulu di halaman Bahan Baku.
+              </div>
+            ) : (
+              <>
+                <select name="peleburan_id" value={f.peleburan_id} onChange={e => s('peleburan_id', e.target.value)} className={inp} required>
+                  {plbList.map(p => <option key={p.id} value={p.id}>{p.kode} — sisa {p.sisa.toFixed(3)} gr</option>)}
+                </select>
+                {selectedPlb && <p className="text-[11px] text-violet-500 font-semibold mt-1 px-1">Tersedia dari peleburan ini: {selectedPlb.sisa.toFixed(3)} gr</p>}
+              </>
+            )}
+          </F>
           <div className="grid grid-cols-2 gap-3 items-end">
             <F label="Pilih Gramasi yang ingin di cetak" req>
               <select name="gramasi" value={f.gramasi} onChange={e => s('gramasi', e.target.value)} className={inp} required>
@@ -1226,18 +1248,6 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
   function handleTerimaStage(fd: FormData) { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await terimaStageProduksi(activeHandoverId,active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast(`✅ Terima berhasil`); setModal(null) }) }
   function handleEditHandover(fd: FormData) { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await terimaStageProduksi(activeHandoverId,active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Data diperbarui'); setModal(null) }) }
 
-  // ── Stats ──────────────────────────────────────────────────────────────────
-  const active_count   = produksiList.filter(i=>!['Sudah Packing','Reject'].includes(i.current_status)).length
-  const siap_count     = produksiList.filter(i=>i.current_status==='Siap Packing').length
-  const totalLosses    = produksiList.reduce((s,i)=>{
-    const evts: any[] = Array.isArray(i.produksi_event)?i.produksi_event:[]
-    return s + evts.filter((e:any)=>!e.voided_at).reduce((a:number,e:any)=>a+(Number(e.losses)||0),0)
-  },0)
-  const handoverLosses = produksiList.reduce((s,i)=>{
-    const hs: any[] = Array.isArray(i.stage_handover)?i.stage_handover.filter((h:any)=>!h.voided_at):[]
-    return s + hs.reduce((a:number,h:any)=>a+(Number(h.losses_gram)||0),0)
-  },0)
-
   // ── Filter ────────────────────────────────────────────────────────────────
   const STATUS_TABS = ['Semua','Cutting','Pas Berat','Annealing','Siap Packing','Sudah Packing','Reject']
   const filtered = produksiList.filter(i=>{
@@ -1281,22 +1291,6 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
               <Plus size={15}/> Cetak Baru
             </button>
           )}
-        </div>
-
-        {/* ── Stat cards ──────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          {[
-            {label:'Batch Aktif', val:String(active_count), accent:'#8B5CF6'},
-            {label:'Siap Packing', val:String(siap_count), accent:'#22C55E'},
-            {label:'Total Losses', val:fgr(totalLosses+handoverLosses)+' gr', accent:'#EF4444'},
-            {label:'Total Item', val:String(produksiList.length), accent:'#3B82F6'},
-          ].map(s=>(
-            <div key={s.label} className="rounded-2xl px-4 py-3 overflow-hidden"
-              style={{background:'rgba(255,255,255,0.8)',backdropFilter:'blur(20px)',border:'1px solid rgba(255,255,255,0.6)',boxShadow:'0 2px 12px rgba(0,0,0,0.04)'}}>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">{s.label}</p>
-              <p className="text-lg font-extrabold mt-0.5" style={{color:s.accent}}>{s.val}</p>
-            </div>
-          ))}
         </div>
 
         {/* ── Search ──────────────────────────────────────────────────────── */}
@@ -1410,7 +1404,13 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                       <span className="font-semibold">{item.pcs_good??item.pcs??'?'} pcs</span>
                       <span className="text-gray-300 mx-1">=</span>
                       <span className="font-bold text-gray-700">{fgr(item.total_gram)} gr</span>
-                      {item.jam_mulai_cutting&&<span className="text-violet-400 ml-2 font-semibold">⏱ {String(item.jam_mulai_cutting).slice(0,5)}</span>}
+                      {item.jam_mulai_cutting&&(
+                        <span className="text-violet-400 ml-2 font-semibold">
+                          ⏱ {String(item.jam_mulai_cutting).slice(0,5)}
+                          {item.jam_selesai&&<>→{String(item.jam_selesai).slice(0,5)}</>}
+                          {item.jam_mulai_cutting&&item.jam_selesai&&(()=>{const d=getDurasiJam(item.jam_mulai_cutting,item.jam_selesai);return d?<span className="text-gray-400 ml-1">({d})</span>:null})()}
+                        </span>
+                      )}
                     </p>
                   </div>
 
@@ -1633,6 +1633,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     </div>
   )
 }
+
 
 
 
