@@ -73,9 +73,10 @@ export async function createProduksi(formData: FormData) {
   if (!batch) return { error: 'Batch tidak ditemukan' }
   if (batch.voided_at && batch.void_reason === 'LOCKED_BY_USER') return { error: 'Batch terkunci' }
 
-  const sisaSeharusnya = batch.sisa_bahan_seharusnya ?? batch.timbangan_akhir ?? 0
-  if (beratAwal > sisaSeharusnya + 0.01) {
-    return { error: `Berat melebihi sisa bahan batch (${sisaSeharusnya.toFixed(2)} gr tersisa)` }
+  // Bahan yang bisa dipakai cetak = hasil lebur yang sudah diterima
+  const bahanSiapCetak = Number(batch.bahan_siap_cetak ?? 0)
+  if (beratAwal > bahanSiapCetak + 0.01) {
+    return { error: `Berat melebihi bahan siap cetak (${bahanSiapCetak.toFixed(2)} gr tersedia). Lebur bahan terlebih dahulu.` }
   }
 
   // Validasi: minimal ada 1 peleburan selesai dari batch ini
@@ -122,6 +123,11 @@ export async function createProduksi(formData: FormData) {
     catatan: formData.get('catatan') as string || null,
     user_name: profile?.name || null, fotos: fotoUrls,
   })
+
+  // Kurangi bahan siap cetak (bahan yang dipakai untuk cetak ini)
+  await supabase.from('batch').update({
+    bahan_siap_cetak: Math.max(0, bahanSiapCetak - beratAwal)
+  }).eq('kode', batchKode)
 
   await updateBatchSisaSeharusnya(supabase, batchKode)
   await supabase.from('audit_log').insert({
@@ -269,10 +275,10 @@ export async function leburReject(produksiId: number, produksiKode: string, batc
 
   if (beratLebur <= 0) return { error: 'Semua reject sudah dilebur' }
 
-  const { data: batch } = await supabase.from('batch').select('sisa_fisik').eq('kode', batchKode).single()
+  const { data: batch } = await supabase.from('batch').select('bahan_siap_cetak').eq('kode', batchKode).single()
   if (batch) {
     await supabase.from('batch').update({
-      sisa_fisik: (batch.sisa_fisik ?? 0) + beratLebur
+      bahan_siap_cetak: (batch.bahan_siap_cetak ?? 0) + beratLebur
     }).eq('kode', batchKode)
   }
 
