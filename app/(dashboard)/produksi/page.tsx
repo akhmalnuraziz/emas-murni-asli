@@ -19,7 +19,7 @@ export default async function ProduksiPage() {
       .order('created_at', { ascending: false })
       .limit(500),
     supabase.from('batch')
-      .select('kode, nama_batch, sisa_bahan_seharusnya, timbangan_akhir')
+      .select('kode, nama_batch, sisa_bahan_seharusnya, timbangan_akhir, bahan_siap_cetak')
       .is('voided_at', null)
       .order('created_at', { ascending: false }),
   ])
@@ -33,3 +33,4 @@ export default async function ProduksiPage() {
     />
   )
 }
+
