@@ -489,7 +489,11 @@ export async function selesaiCutting(produksiId: number, produksiKode: string, f
 
   const fotosB64Raw = formData.get('fotos_b64') as string
   const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
-  const fotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, `${produksiKode}-terima`) : []
+  const newFotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, `${produksiKode}-terima`) : []
+  // Gabung foto lama (yang dipertahankan saat edit) + foto baru
+  const existingFotosRaw = formData.get('existing_fotos') as string
+  const existingFotos: string[] = existingFotosRaw ? JSON.parse(existingFotosRaw) : []
+  const fotoUrls = [...existingFotos, ...newFotoUrls]
 
   const { data: produksi } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
   if (!produksi) return { error: 'Item tidak ditemukan' }
@@ -503,7 +507,7 @@ export async function selesaiCutting(produksiId: number, produksiKode: string, f
     status: 'Cutting',
     total_gram: terimaGram,
     berat_sebelumnya: serahGram,
-    sisa_serbuk: rejectGram, // abuse sisa_serbuk field for reject gram display
+    sisa_serbuk: rejectGram,
     losses,
     jam_mulai: jamSelesai,
     catatan: catatan
@@ -525,6 +529,8 @@ export async function selesaiCutting(produksiId: number, produksiKode: string, f
     total_gram: terimaGram,
     foto_diterima_cutting: fotoUrls,
   }
+  // Catatan terima cutting → simpan ke item agar tampil di kartu
+  if (catatan) updateData.catatan = catatan
   if (pcsGood && pcsGood > 0) {
     updateData.pcs_good = pcsGood
     updateData.pcs = pcsGood
@@ -759,6 +765,7 @@ export async function voidStageHandover(
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
