@@ -13,8 +13,8 @@ export default function Header({ title, subtitle, onMenuClick }: HeaderProps) {
   const [searchValue, setSearchValue] = useState('')
 
   return (
-    <header className="sticky top-0 z-30 bg-white border-b border-slate-100 px-4 lg:px-6 py-3.5">
-      <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-30 bg-white border-b border-slate-100 px-4 lg:px-6 h-[65px] flex items-center">
+      <div className="flex items-center gap-3 w-full">
         <button
           type="button"
           onClick={onMenuClick}
@@ -50,3 +50,4 @@ export default function Header({ title, subtitle, onMenuClick }: HeaderProps) {
     </header>
   )
 }
+
