@@ -630,9 +630,22 @@ function EditModal({ item, onClose, onSubmit, isPending, error }: {
     target_selesai: item.target_selesai ?? '',
   })
   const s = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
-  function submit(e: React.FormEvent) {
-    e.preventDefault(); const fd = new FormData()
-    Object.entries(f).forEach(([k, v]) => fd.set(k, v)); onSubmit(fd)
+  const [fotos, setFotos] = useState<File[]>([])
+  const [existingFotos, setExistingFotos] = useState<string[]>(
+    Array.isArray(item.foto_serahkan_cutting) ? item.foto_serahkan_cutting : []
+  )
+  const [uploading, setUploading] = useState(false)
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    const fd = new FormData()
+    Object.entries(f).forEach(([k, v]) => fd.set(k, v))
+    setUploading(true)
+    try {
+      const b64s = fotos.length > 0 ? await filesToBase64(fotos) : []
+      fd.set('foto_serahkan_b64', JSON.stringify(b64s))
+      fd.set('existing_fotos_serah', JSON.stringify(existingFotos))
+      onSubmit(fd)
+    } finally { setUploading(false) }
   }
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
@@ -656,12 +669,27 @@ function EditModal({ item, onClose, onSubmit, isPending, error }: {
             <F label="Target Selesai"><input type="date" value={f.target_selesai} onChange={e => s('target_selesai', e.target.value)} className={inp} /></F>
           </div>
           <F label="Catatan"><input value={f.catatan} onChange={e => s('catatan', e.target.value)} placeholder="Catatan tambahan…" className={inp} /></F>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Foto Diserahkan</label>
+            {existingFotos.length > 0 && (
+              <div className="flex gap-2 mb-2 flex-wrap">
+                {existingFotos.map((url, i) => (
+                  <div key={i} className="relative">
+                    <img src={url} alt="" className="w-14 h-14 rounded-xl object-cover border border-blue-200" />
+                    <button type="button" onClick={() => setExistingFotos(p => p.filter((_, j) => j !== i))}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[9px] flex items-center justify-center">×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 5))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label={existingFotos.length > 0 ? 'Tambah foto lagi' : 'Tambah foto (opsional)'} />
+          </div>
           {error && <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600"><AlertTriangle size={14} />{error}</div>}
           <div className="flex gap-3 justify-end pt-1">
             <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
-            <button type="submit" disabled={isPending} className="px-6 py-2.5 text-sm font-bold text-white rounded-2xl flex items-center gap-2 disabled:opacity-60" style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
-              {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-              {isPending ? 'Menyimpan…' : 'Simpan Perubahan'}
+            <button type="submit" disabled={isPending || uploading} className="px-6 py-2.5 text-sm font-bold text-white rounded-2xl flex items-center gap-2 disabled:opacity-60" style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+              {(isPending || uploading) && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+              {uploading ? 'Upload…' : isPending ? 'Menyimpan…' : 'Simpan Perubahan'}
             </button>
           </div>
         </form>
@@ -897,11 +925,7 @@ function SerahStageModal({ item, tahap, onClose, onSubmit, isPending, error }: {
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Foto</label>
-            <label className="flex items-center gap-2 h-11 px-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-violet-50 transition-colors border border-gray-200">
-              <Camera size={14} className="text-gray-400 flex-shrink-0"/>
-              <span className="text-xs text-gray-400">{fotos.length > 0 ? `${fotos.length} foto` : 'Tambah foto (opsional)'}</span>
-              <input type="file" accept="image/*" multiple className="hidden" onChange={e=>setFotos(p=>[...p,...Array.from(e.target.files??[])].slice(0,5))}/>
-            </label>
+            <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 5))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto (opsional)" />
           </div>
           {error && <div className="flex items-center gap-2 px-3 py-2.5 bg-red-50 rounded-2xl text-xs text-red-600 border border-red-100"><AlertTriangle size={13}/><span>{error}</span></div>}
           <div className="flex gap-3">
@@ -1656,6 +1680,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
     </div>
   )
 }
+
 
 
 
