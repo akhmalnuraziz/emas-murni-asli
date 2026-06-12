@@ -81,7 +81,7 @@ const inp = "w-full px-4 py-3 text-sm rounded-2xl focus:outline-none focus:ring-
   + " bg-white/80 border border-gray-200/70"
 const F = ({label,req,children}:{label:string;req?:boolean;children:React.ReactNode}) => (
   <div className="flex flex-col gap-1.5">
-    <label className="text-[11px] font-bold text-gray-400 tracking-widest uppercase">{label}{req&&<span className="text-red-400 ml-0.5">*</span>}</label>
+    <label className="text-[11px] font-bold text-gray-400 tracking-widest uppercase leading-tight min-h-[28px] flex items-end">{label}{req&&<span className="text-red-400 ml-0.5">*</span>}</label>
     {children}
   </div>
 )
@@ -169,7 +169,7 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
             <F label="Tanggal Pembelian" req><input name="tanggal_beli" type="date" defaultValue={initial?.tanggal_beli??today} className={inp} required/></F>
           </div>
           <F label="Supplier / Sumber"><input name="supplier" defaultValue={initial?.supplier??'GUDANG PUSAT'} className={inp}/></F>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 items-end">
             <F label="Berat Pusat / Supplier (gr)" req><input name="bahan_dari_pusat" type="number" step="0.001" value={pusat} onChange={e=>setPusat(e.target.value)} placeholder="1000.000" className={inp} required/></F>
             <F label="Berat Timbangan Gudang (gr)" req><input name="timbangan_akhir" type="number" step="0.001" value={gudang} onChange={e=>setGudang(e.target.value)} placeholder="999.890" className={inp} required/></F>
           </div>
@@ -1397,6 +1397,7 @@ function EditPeleburanModal({ peleburan, onClose, showToast }: {
     </div>
   )
 }
+
 
 
 
