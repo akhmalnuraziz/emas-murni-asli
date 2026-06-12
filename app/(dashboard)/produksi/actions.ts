@@ -141,6 +141,11 @@ export async function createProduksi(formData: FormData) {
   const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
   const fotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, kode) : []
 
+  // Simpan foto serah ke item agar tampil di kartu alur serah-terima
+  if (fotoUrls.length > 0) {
+    await supabase.from('produksi_item').update({ foto_serahkan_cutting: fotoUrls }).eq('id', produksi.id)
+  }
+
   await supabase.from('produksi_event').insert({
     produksi_item_id: produksi.id, tanggal: tanggalProduksi,
     status: statusAwal, total_gram: beratAwal, berat_sebelumnya: beratAwal,
