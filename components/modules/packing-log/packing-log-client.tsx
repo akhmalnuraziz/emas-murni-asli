@@ -336,10 +336,20 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
   })
 
   // Date filter
-  const [dateFilter,setDateFilter]=useState<'all'|'week'|'month'>('all')
+  const [dateFilter,setDateFilter]=useState<'all'|'week'|'month'|'custom'>('all')
+  const [dateFrom,setDateFrom]=useState('')
+  const [dateTo,setDateTo]=useState('')
   const now=new Date()
   const filteredByDate=(records:any[])=>{
     if(dateFilter==='all')return records
+    if(dateFilter==='custom'){
+      return records.filter(p=>{
+        const t=String(p.tanggal).slice(0,10)
+        if(dateFrom&&t<dateFrom)return false
+        if(dateTo&&t>dateTo)return false
+        return true
+      })
+    }
     const cutoff=new Date()
     if(dateFilter==='week')cutoff.setDate(now.getDate()-7)
     else cutoff.setDate(now.getDate()-30)
@@ -423,8 +433,8 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
 
         {/* Summary cards */}
         {/* Date filter */}
-        <div className="flex gap-2 flex-wrap">
-          {([['all','Semua'],['week','7 Hari'],['month','30 Hari']] as const).map(([val,label])=>(
+        <div className="flex gap-2 flex-wrap items-center">
+          {([['all','Semua'],['week','7 Hari'],['month','30 Hari'],['custom','Pilih Tanggal']] as const).map(([val,label])=>(
             <button key={val} onClick={()=>setDateFilter(val)}
               className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all"
               style={dateFilter===val
@@ -433,6 +443,19 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
               {label}
             </button>
           ))}
+          {dateFilter==='custom'&&(
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl" style={{background:'rgba(139,92,246,0.05)',border:'1px solid rgba(139,92,246,0.15)'}}>
+              <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)}
+                className="text-xs bg-white border border-gray-200 rounded-lg px-2 py-1 text-gray-700 focus:outline-none focus:border-violet-400"/>
+              <span className="text-xs text-gray-400 font-medium">s/d</span>
+              <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)}
+                className="text-xs bg-white border border-gray-200 rounded-lg px-2 py-1 text-gray-700 focus:outline-none focus:border-violet-400"/>
+              {(dateFrom||dateTo)&&(
+                <button onClick={()=>{setDateFrom('');setDateTo('')}}
+                  className="text-xs text-red-400 hover:text-red-600 font-semibold ml-1">✕</button>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-3 gap-3">
@@ -475,8 +498,8 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
                       onChange={()=>toggleSelectAll(filteredByDate(filtered))}/>
                   )}
                 </th>
-                {['KODE','TANGGAL','BATCH','GRAMASI','PCS TOTAL','DIPACK','TOTAL GRAM','PIC','FOTO','SHIELDTAG','STATUS','AKSI'].map(h=>(
-                  <th key={h}className="px-4 py-3 text-left text-[10px] font-bold text-gray-400 tracking-widest uppercase whitespace-nowrap">{h}</th>
+                {([['KODE','left'],['TANGGAL','left'],['BATCH','center'],['GRAMASI','center'],['PCS TOTAL','left'],['DIPACK','left'],['TOTAL GRAM','left'],['PIC','left'],['FOTO','left'],['SHIELDTAG','center'],['STATUS','center'],['AKSI','left']] as const).map(([h,al])=>(
+                  <th key={h}className={cn('px-4 py-3 text-[10px] font-bold text-gray-400 tracking-widest uppercase whitespace-nowrap align-middle',al==='center'?'text-center':'text-left')}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -492,22 +515,22 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
                 const isPrinted=p.status_surat==='sudah_cetak'
                 const pcsGood=p.produksi_item?.pcs_good??p.produksi_item?.pcs??'—'
                 return(
-                  <tr key={p.id}className={cn('border-t transition-colors hover:bg-violet-50/20',idx===0?'border-transparent':'',selectedIds.has(p.id)?'bg-violet-50/40':'')}
+                  <tr key={p.id}className={cn('border-t transition-colors hover:bg-violet-50/20 align-middle',idx===0?'border-transparent':'',selectedIds.has(p.id)?'bg-violet-50/40':'')}
                     style={{borderColor:'rgba(243,244,246,0.7)'}}>
-                    <td className="px-4 py-3 w-10">
+                    <td className="px-4 py-3 w-10 align-middle">
                       <input type="checkbox" className="rounded accent-violet-600 cursor-pointer"
                         checked={selectedIds.has(p.id)}
                         onChange={()=>toggleSelect(p.id)}/>
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs font-bold text-violet-600 whitespace-nowrap">{p.kode}</td>
-                    <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">{formatDate(p.tanggal)}</td>
-                    <td className="px-4 py-3"><span className="text-xs font-bold px-2 py-0.5 rounded-full text-violet-700"style={{background:'rgba(139,92,246,0.1)'}}>{p.batch_kode}</span></td>
-                    <td className="px-4 py-3"><span className="text-xs font-bold px-2 py-0.5 rounded-full text-amber-700"style={{background:'rgba(245,158,11,0.1)'}}>{p.gramasi} gr</span></td>
-                    <td className="px-4 py-3 text-sm font-semibold text-gray-600">{pcsGood}</td>
-                    <td className="px-4 py-3 text-sm font-bold text-gray-800">{p.pcs_dipack} pcs</td>
-                    <td className="px-4 py-3 text-sm font-semibold text-gray-700 whitespace-nowrap">{Number(p.total_gram_aktual).toFixed(3)} gr</td>
-                    <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{p.pic_packing||'—'}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 font-mono text-xs font-bold text-violet-600 whitespace-nowrap align-middle">{p.kode}</td>
+                    <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap align-middle">{formatDate(p.tanggal)}</td>
+                    <td className="px-4 py-3 align-middle text-center"><span className="inline-block text-xs font-bold px-2 py-0.5 rounded-full text-violet-700 whitespace-nowrap"style={{background:'rgba(139,92,246,0.1)'}}>{p.batch_kode}</span></td>
+                    <td className="px-4 py-3 align-middle text-center"><span className="inline-block text-xs font-bold px-2 py-0.5 rounded-full text-amber-700 whitespace-nowrap"style={{background:'rgba(245,158,11,0.1)'}}>{p.gramasi} gr</span></td>
+                    <td className="px-4 py-3 text-sm font-semibold text-gray-600 whitespace-nowrap align-middle">{pcsGood}</td>
+                    <td className="px-4 py-3 text-sm font-bold text-gray-800 whitespace-nowrap align-middle">{p.pcs_dipack} pcs</td>
+                    <td className="px-4 py-3 text-sm font-semibold text-gray-700 whitespace-nowrap align-middle">{Number(p.total_gram_aktual).toFixed(3)} gr</td>
+                    <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap align-middle">{p.pic_packing||'—'}</td>
+                    <td className="px-4 py-3 align-middle">
                       {fotos.length>0?(
                         <div className="flex gap-1">
                           {fotos.slice(0,3).map((u:string,i:number)=>(
@@ -517,19 +540,19 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
                         </div>
                       ):<span className="text-xs text-gray-300">—</span>}
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={cn('text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap',stCount>0?'text-emerald-700':'text-gray-400')}
+                    <td className="px-4 py-3 align-middle text-center">
+                      <span className={cn('inline-block text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap',stCount>0?'text-emerald-700':'text-gray-400')}
                         style={{background:stCount>0?'rgba(34,197,94,0.1)':'rgba(107,114,128,0.08)'}}>
                         🏷 {stCount}/{p.pcs_dipack}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={cn('text-[10px] font-bold px-2.5 py-1 rounded-full',isPrinted?'text-emerald-700':'text-gray-500')}
+                    <td className="px-4 py-3 align-middle text-center">
+                      <span className={cn('inline-block text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap',isPrinted?'text-emerald-700':'text-gray-500')}
                         style={{background:isPrinted?'rgba(34,197,94,0.1)':'rgba(107,114,128,0.1)'}}>
                         {isPrinted?'✓ Cetak':'Belum Cetak'}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 align-middle">
                       <div className="flex items-center gap-1.5">
                         <button onClick={()=>handlePrint(p)} className={cn('w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110',isPrinted?'bg-emerald-50 text-emerald-500':'bg-violet-50 text-violet-500')} title="Print"><Printer size={13}/></button>
                         {canManage&&<button onClick={()=>{setActive(p);setErr('');setModal('edit')}}className="w-8 h-8 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center hover:scale-110 transition-all"title="Edit"><Edit2 size={13}/></button>}
@@ -565,4 +588,5 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
     </div>
   )
 }
+
 
