@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
+import { ROLE_ACCESS } from '@/lib/types/database'
 
 const NAV_ITEMS = [
   { href: '/dashboard',  label: 'Dashboard',     icon: LayoutDashboard, module: 'dashboard'  },
@@ -36,15 +37,22 @@ function getInitials(name?: string | null) {
 interface SidebarProps {
   mobileOpen?: boolean
   onClose?: () => void
+  serverProfile?: { id: string; name: string | null; role: string } | null
 }
 
-export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
+export default function Sidebar({ mobileOpen, onClose, serverProfile }: SidebarProps) {
   const pathname = usePathname()
-  const { profile, loading, signOut, hasAccess } = useAuth()
+  const { profile: clientProfile, signOut } = useAuth()
+  // Utamakan profile dari server (instan, tidak blank). Fallback ke client.
+  const profile = serverProfile ?? clientProfile
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
-  // Saat profile masih loading, tampilkan semua menu agar sidebar tidak blank.
-  // Setelah profile siap, baru filter sesuai akses role.
-  const canShow = (module: string) => (loading || !profile) ? true : hasAccess(module)
+  // Filter akses; kalau owner atau server profile ada, langsung pakai role.
+  const roleAccess = (module: string) => {
+    if (!profile) return true // belum ada profile → tampilkan dulu (anti-blank)
+    if (profile.role === 'owner') return true
+    return ROLE_ACCESS[profile.role as keyof typeof ROLE_ACCESS]?.includes(module) ?? false
+  }
+  const canShow = (module: string) => roleAccess(module)
 
   return (
     <>
@@ -63,7 +71,7 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
         mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       )}>
         {/* Logo */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 h-[65px] flex-shrink-0 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 bg-gradient-to-br from-violet-600 to-violet-500 rounded-lg flex items-center justify-center">
               <span className="text-white text-[10px] font-black">EMA</span>
@@ -159,5 +167,6 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
     </>
   )
 }
+
 
 
