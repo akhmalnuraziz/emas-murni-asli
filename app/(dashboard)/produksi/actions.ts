@@ -577,6 +577,14 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
 
   const { data: before } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
 
+  // Foto serahkan: gabung existing yang dipertahankan + upload baru
+  const existingSerahRaw = formData.get('existing_fotos_serah') as string
+  const existingSerah: string[] = existingSerahRaw ? JSON.parse(existingSerahRaw) : (Array.isArray(before?.foto_serahkan_cutting) ? before.foto_serahkan_cutting : [])
+  const newSerahRaw = formData.get('foto_serahkan_b64') as string
+  const newSerahB64 = newSerahRaw ? JSON.parse(newSerahRaw) : []
+  const newSerahUrls = newSerahB64.length > 0 ? await uploadBase64Fotos(supabase, newSerahB64, `${produksiKode}-serah-edit`) : []
+  const fotoSerahFinal = [...existingSerah, ...newSerahUrls]
+
   const namaItemBaru = (formData.get('nama_item') as string) || `LM REI ${gramasi}GR`
   const { error } = await supabase.from('produksi_item').update({
     gramasi, pcs, pcs_awal: pcs, pcs_good: pcs, berat_awal: beratAwal,
@@ -585,6 +593,7 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
     operator: operator || null, catatan: catatan || null,
     tanggal_produksi: tanggal, tanggal, memo: memo || null,
     target_selesai: targetSelesai,
+    foto_serahkan_cutting: fotoSerahFinal,
   }).eq('id', produksiId)
 
   if (error) return { error: error.message }
@@ -765,6 +774,7 @@ export async function voidStageHandover(
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
