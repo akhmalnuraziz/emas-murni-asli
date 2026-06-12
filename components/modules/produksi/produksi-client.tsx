@@ -676,6 +676,9 @@ function SelesaiCuttingModal({ item, onClose, onSubmit, isPending, error, isEdit
   item: any; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string; isEdit?: boolean
 }) {
   const [fotos, setFotos] = useState<File[]>([])
+  const [existingFotos, setExistingFotos] = useState<string[]>(
+    isEdit && Array.isArray(item.foto_diterima_cutting) ? item.foto_diterima_cutting : []
+  )
   const [uploading, setUploading] = useState(false)
   const serahGram = Number(item.serah_gram ?? item.berat_awal ?? 0)
 
@@ -687,6 +690,7 @@ function SelesaiCuttingModal({ item, onClose, onSubmit, isPending, error, isEdit
       const b64s = fotos.length > 0 ? await filesToBase64(fotos) : []
       const fd = new FormData(formEl)
       fd.set('fotos_b64', JSON.stringify(b64s))
+      fd.set('existing_fotos', JSON.stringify(existingFotos))
       onSubmit(fd)
     } finally { setUploading(false) }
   }
@@ -756,14 +760,26 @@ function SelesaiCuttingModal({ item, onClose, onSubmit, isPending, error, isEdit
               Catatan <span className="text-gray-400 font-normal">(alasan losses, kondisi bahan, dll)</span>
             </label>
             <input name="catatan" type="text" placeholder="Misal: losses karena serbuk tercecer..."
+              defaultValue={isEdit ? (item.catatan ?? '') : ''}
               className={inp} />
           </div>
 
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Foto Bukti Terima</label>
+            {existingFotos.length > 0 && (
+              <div className="flex gap-2 mb-2 flex-wrap">
+                {existingFotos.map((url, i) => (
+                  <div key={i} className="relative">
+                    <img src={url} alt="" className="w-14 h-14 rounded-xl object-cover border border-green-200" />
+                    <button type="button" onClick={() => setExistingFotos(p => p.filter((_, j) => j !== i))}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[9px] flex items-center justify-center">×</button>
+                  </div>
+                ))}
+              </div>
+            )}
             <label className="flex items-center gap-2 h-11 px-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-violet-50 transition-colors border border-gray-200">
               <Camera size={14} className="text-gray-400 flex-shrink-0" />
-              <span className="text-xs text-gray-400">{fotos.length > 0 ? `${fotos.length} foto` : 'Tambah foto (opsional)'}</span>
+              <span className="text-xs text-gray-400">{fotos.length > 0 ? `${fotos.length} foto baru` : (existingFotos.length > 0 ? 'Tambah foto lagi' : 'Tambah foto (opsional)')}</span>
               <input type="file" accept="image/*" multiple className="hidden"
                 onChange={e => setFotos(p => [...p, ...Array.from(e.target.files ?? [])].slice(0, 5))} />
             </label>
@@ -1640,6 +1656,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
     </div>
   )
 }
+
 
 
 
