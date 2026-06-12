@@ -9,13 +9,13 @@ import {
 } from 'lucide-react'
 import { cn, formatDate } from '@/lib/utils'
 import {
-  createProduksi, updateStatusProduksi, editProduksi, selesaiCutting, fetchPeleburanTersedia,
+  createProduksi, updateStatusProduksi, editProduksi, selesaiCutting,
   inputReject, leburReject, deleteProduksi, updateSisaFisikBatch,
   serahStageProduksi, terimaStageProduksi, voidStageHandover
 } from '@/app/(dashboard)/produksi/actions'
 import type { UserRole } from '@/lib/types/database'
 
-interface Props { produksiList: any[]; batches: any[]; userRole: UserRole; userName: string }
+interface Props { produksiList: any[]; batches: any[]; peleburanByBatch: Record<string, any[]>; userRole: UserRole; userName: string }
 
 function fgr(n: number | null | undefined, dec = 3): string {
   if (n === null || n === undefined || isNaN(Number(n))) return '—'
@@ -433,26 +433,23 @@ const F = ({ label, req, children }: { label: string; req?: boolean; children: R
 )
 
 // ─── Create Modal ──────────────────────────────────────────────────────────────
-function CreateModal({ batches, onClose, onSubmit, isPending, error }: {
-  batches: any[]; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
+function CreateModal({ batches, peleburanByBatch, onClose, onSubmit, isPending, error }: {
+  batches: any[]; peleburanByBatch: Record<string, any[]>; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
 }) {
   const nowTime = new Date().toTimeString().slice(0,5)
-  const [f, setF] = useState({ batch_kode: batches[0]?.kode ?? '', peleburan_id: '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime, operator: '', target_selesai: '' })
+  const firstBatch = batches[0]?.kode ?? ''
+  const firstPlb = (peleburanByBatch[firstBatch] ?? [])[0]
+  const [f, setF] = useState({ batch_kode: firstBatch, peleburan_id: firstPlb ? String(firstPlb.id) : '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime, operator: '', target_selesai: '' })
   const [fotos, setFotos] = useState<File[]>([])
   const [up, setUp] = useState(false)
-  const [plbList, setPlbList] = useState<any[]>([])
-  const [plbLoading, setPlbLoading] = useState(false)
   const s = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
+  const plbList = peleburanByBatch[f.batch_kode] ?? []
   const selectedPlb = plbList.find(p => String(p.id) === f.peleburan_id)
 
+  // Saat ganti batch, set peleburan ke yang pertama (langsung, tanpa fetch)
   useEffect(() => {
-    if (!f.batch_kode) { setPlbList([]); return }
-    setPlbLoading(true)
-    fetchPeleburanTersedia(f.batch_kode).then(res => {
-      setPlbList(res.rows)
-      setF(p => ({ ...p, peleburan_id: res.rows[0] ? String(res.rows[0].id) : '' }))
-      setPlbLoading(false)
-    })
+    const list = peleburanByBatch[f.batch_kode] ?? []
+    setF(p => ({ ...p, peleburan_id: list[0] ? String(list[0].id) : '' }))
   }, [f.batch_kode])
 
   async function submit(e: React.FormEvent) {
@@ -475,9 +472,7 @@ function CreateModal({ batches, onClose, onSubmit, isPending, error }: {
             </select>
           </F>
           <F label="Peleburan Asal (Bahan)" req>
-            {plbLoading ? (
-              <div className="text-xs text-gray-400 px-1 py-2.5">Memuat peleburan…</div>
-            ) : plbList.length === 0 ? (
+            {plbList.length === 0 ? (
               <div className="text-xs text-amber-600 px-3 py-2.5 rounded-xl" style={{background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.2)'}}>
                 Belum ada hasil lebur siap cetak di batch ini. Lebur bahan dulu di halaman Bahan Baku.
               </div>
@@ -531,25 +526,16 @@ function CreateModal({ batches, onClose, onSubmit, isPending, error }: {
 }
 
 // ─── Tambah Produksi Modal (lanjut cetak dari batch yang sama) ──────────────────
-function TambahProduksiModal({ item, onClose, onSubmit, isPending, error }: {
-  item: any; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
+function TambahProduksiModal({ item, peleburanByBatch, onClose, onSubmit, isPending, error }: {
+  item: any; peleburanByBatch: Record<string, any[]>; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
 }) {
   const nowTime = new Date().toTimeString().slice(0,5)
   const batchKode = item.batch_kode
-  const [f, setF] = useState({ peleburan_id: '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime, operator: '', target_selesai: '' })
-  const [plbList, setPlbList] = useState<any[]>([])
-  const [plbLoading, setPlbLoading] = useState(true)
+  const plbList = peleburanByBatch[batchKode] ?? []
+  const [f, setF] = useState({ peleburan_id: plbList[0] ? String(plbList[0].id) : '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime, operator: '', target_selesai: '' })
   const [fotos, setFotos] = useState<File[]>([])
   const [up, setUp] = useState(false)
   const s = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
-
-  useEffect(() => {
-    fetchPeleburanTersedia(batchKode).then(res => {
-      setPlbList(res.rows)
-      setF(p => ({ ...p, peleburan_id: res.rows[0] ? String(res.rows[0].id) : '' }))
-      setPlbLoading(false)
-    })
-  }, [batchKode])
 
   const selectedPlb = plbList.find(p => String(p.id) === f.peleburan_id)
 
@@ -576,9 +562,7 @@ function TambahProduksiModal({ item, onClose, onSubmit, isPending, error }: {
           <F label="Nama / Label" req><input name="nama_item" value={f.nama_item} onChange={e => s('nama_item', e.target.value)} placeholder={`cth: LM REI ${f.gramasi}GR`} className={inp} required /></F>
 
           <F label="Pilih Bahan dari Peleburan" req>
-            {plbLoading ? (
-              <div className="text-xs text-gray-400 px-1 py-2.5">Memuat peleburan…</div>
-            ) : plbList.length === 0 ? (
+            {plbList.length === 0 ? (
               <div className="text-xs text-amber-600 px-3 py-2.5 rounded-xl" style={{background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.2)'}}>
                 Belum ada bahan siap cetak. Jika ada reject, lebur dulu di halaman Bahan Baku — setelah dilebur baru bisa dipakai cetak.
               </div>
@@ -654,15 +638,14 @@ function EditModal({ item, onClose, onSubmit, isPending, error }: {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
       <div className="w-full max-w-md rounded-3xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 32px 64px rgba(139,92,246,0.18)' }}>
         <div className="px-6 pt-5 pb-4 border-b border-gray-100/80 flex items-center justify-between">
-          <div><h2 className="text-lg font-bold text-gray-900">Edit Batch Produksi</h2><p className="text-xs text-violet-500 font-medium mt-0.5">{item.kode}</p></div>
+          <div><h2 className="text-lg font-bold text-gray-900">Edit Diserahkan</h2><p className="text-xs text-violet-500 font-medium mt-0.5">{item.kode}</p></div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><X size={15} /></button>
         </div>
         <form onSubmit={submit} className="px-6 py-5 space-y-4 overflow-y-auto max-h-[calc(100dvh-140px)]">
           <F label="Nama / Label Batch"><input value={f.nama_item} onChange={e => s('nama_item', e.target.value)} placeholder="cth: LM REI 10GR BATCH 26" className={inp} /></F>
-          <div className="grid grid-cols-2 gap-3">
-            <F label="Nama Item"><input value={f.nama_item} onChange={e => s('nama_item', e.target.value)} placeholder="Nama produk (auto-generate dari gramasi)" className={inp} name="nama_item"/></F>
-            <F label="Pilih Gramasi Yang Ingin Di Produksi" req><select value={f.gramasi} onChange={e => { s('gramasi', e.target.value); s('nama_item', `LM REI ${e.target.value}GR`) }} className={inp}>{GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} Gram</option>)}</select></F>
-            <F label="PCS" req><input type="number" min="1" value={f.pcs} onChange={e => s('pcs', e.target.value)} className={inp} /></F>
+          <div className="grid grid-cols-2 gap-3 items-end">
+            <F label="Pilih Gramasi" req><select value={f.gramasi} onChange={e => { s('gramasi', e.target.value); s('nama_item', `LM REI ${e.target.value}GR`) }} className={inp}>{GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} Gram</option>)}</select></F>
+            <F label="Jumlah PCS"><input type="number" min="1" value={f.pcs} onChange={e => s('pcs', e.target.value)} className={inp} /></F>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <F label="Total Berat (gr)" req><input type="number" step="0.01" value={f.berat_awal} onChange={e => s('berat_awal', e.target.value)} className={inp} /></F>
@@ -715,7 +698,7 @@ function SelesaiCuttingModal({ item, onClose, onSubmit, isPending, error, isEdit
         style={{ boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }}>
         <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0 border-b border-gray-100">
           <div>
-            <h2 className="text-base font-bold text-gray-900">{isEdit ? '✎ Edit Cutting' : '✓ Konfirmasi Terima Cutting'}</h2>
+            <h2 className="text-base font-bold text-gray-900">{isEdit ? 'Edit Diterima' : '✓ Konfirmasi Terima Cutting'}</h2>
             <p className="text-xs text-violet-500 font-semibold mt-0.5">{item.kode} — {item.nama_item}</p>
           </div>
           <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
@@ -1213,7 +1196,7 @@ function StatChip({ label, value, accent }: { label: string; value: React.ReactN
 }
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
-export default function ProduksiClient({ produksiList, batches, userRole, userName }: Props) {
+export default function ProduksiClient({ produksiList, batches, peleburanByBatch, userRole, userName }: Props) {
   const [search, setSearch]     = useState('')
   const [filterStatus, setFilter] = useState<string>('Semua')
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
@@ -1404,13 +1387,6 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                       <span className="font-semibold">{item.pcs_good??item.pcs??'?'} pcs</span>
                       <span className="text-gray-300 mx-1">=</span>
                       <span className="font-bold text-gray-700">{fgr(item.total_gram)} gr</span>
-                      {item.jam_mulai_cutting&&(
-                        <span className="text-violet-400 ml-2 font-semibold">
-                          ⏱ {String(item.jam_mulai_cutting).slice(0,5)}
-                          {item.jam_selesai&&<>→{String(item.jam_selesai).slice(0,5)}</>}
-                          {item.jam_mulai_cutting&&item.jam_selesai&&(()=>{const d=getDurasiJam(item.jam_mulai_cutting,item.jam_selesai);return d?<span className="text-gray-400 ml-1">({d})</span>:null})()}
-                        </span>
-                      )}
                     </p>
                   </div>
 
@@ -1511,39 +1487,70 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
                         </div>
 
                         {/* Cutting card */}
-                        {(item.serah_gram||item.terima_gram)&&(
+                        {(item.serah_gram||item.terima_gram)&&(()=>{
+                          const serahFotosC: string[] = Array.isArray(item.foto_serahkan_cutting) ? item.foto_serahkan_cutting : []
+                          const terimaFotosC: string[] = Array.isArray(item.foto_diterima_cutting) ? item.foto_diterima_cutting : []
+                          const tglMulai = item.tanggal_mulai || item.tanggal_produksi
+                          const durasiC = getDurasiJam(item.jam_mulai_cutting, item.jam_selesai)
+                          return (
                           <div className="px-4 py-3.5 border-t" style={{borderColor:'rgba(139,92,246,0.07)'}}>
-                            <div className="flex items-center gap-2 mb-3">
+                            <div className="flex items-center gap-2 mb-2.5 flex-wrap">
                               <span className="text-[10px] font-bold px-2.5 py-1 rounded-full text-white" style={{background:'#3B82F6'}}>Cutting</span>
                               <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${item.status_cutting==='selesai'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>
                                 {item.status_cutting==='selesai'?'✓ Selesai':'⏳ Proses'}
                               </span>
                               {canEdit&&!isVoided&&(
-                                <button onClick={()=>openModal('editCutting',item)}
-                                  className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-semibold text-blue-500 hover:bg-blue-50 transition-colors border border-blue-100">
-                                  <Edit2 size={9}/> Edit
-                                </button>
+                                <div className="ml-auto flex items-center gap-1.5">
+                                  <button onClick={()=>openModal('edit',item)}
+                                    className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-semibold text-blue-500 hover:bg-blue-50 transition-colors border border-blue-100">
+                                    <Edit2 size={9}/> Edit Diserahkan
+                                  </button>
+                                  {item.terima_gram&&(
+                                    <button onClick={()=>openModal('editCutting',item)}
+                                      className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-semibold text-green-600 hover:bg-green-50 transition-colors border border-green-100">
+                                      <Edit2 size={9}/> Edit Diterima
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            {/* Jam & tanggal detail */}
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 mb-3 text-[11px]">
+                              {item.jam_mulai_cutting&&(
+                                <span className="text-gray-500">⏱ <span className="font-semibold text-gray-700">{String(item.jam_mulai_cutting).slice(0,5)}{item.jam_selesai?` – ${String(item.jam_selesai).slice(0,5)}`:''}</span>{durasiC&&<span className="text-violet-500 font-semibold ml-1">({durasiC})</span>}</span>
+                              )}
+                              {tglMulai&&(
+                                <span className="text-gray-500">📅 <span className="font-semibold text-gray-700">{new Date(tglMulai).toLocaleDateString('id-ID')}{item.tanggal_selesai&&item.tanggal_selesai!==tglMulai?` – ${new Date(item.tanggal_selesai).toLocaleDateString('id-ID')}`:''}</span></span>
                               )}
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              <div className="rounded-xl p-3 space-y-1" style={{background:'rgba(59,130,246,0.04)',border:'1px solid rgba(59,130,246,0.1)'}}>
+                              {/* Diserahkan */}
+                              <div className="rounded-xl p-3 space-y-1.5" style={{background:'rgba(59,130,246,0.04)',border:'1px solid rgba(59,130,246,0.1)'}}>
                                 <p className="text-[9px] font-bold text-blue-500 uppercase tracking-wide">📤 Diserahkan</p>
                                 <p className="font-bold text-gray-800">{item.serah_gram?`${parseFloat(item.serah_gram).toFixed(3)} gr`:'—'}</p>
-                                {item.jam_mulai_cutting&&<p className="text-[11px] text-gray-400">⏱ {String(item.jam_mulai_cutting).slice(0,5)}</p>}
                                 {item.operator&&<p className="text-[11px] text-gray-400">👤 {item.operator}</p>}
+                                {serahFotosC.length>0&&<div className="flex gap-1.5 flex-wrap pt-1">{serahFotosC.map((u,fi)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-12 h-12 rounded-lg object-cover border-2 border-blue-100 hover:opacity-80"/></a>)}</div>}
                               </div>
-                              <div className="rounded-xl p-3 space-y-1" style={{background:item.terima_gram?'rgba(34,197,94,0.04)':'rgba(0,0,0,0.02)',border:`1px solid ${item.terima_gram?'rgba(34,197,94,0.15)':'rgba(0,0,0,0.06)'}`}}>
+                              {/* Diterima */}
+                              <div className="rounded-xl p-3 space-y-1.5" style={{background:item.terima_gram?'rgba(34,197,94,0.04)':'rgba(0,0,0,0.02)',border:`1px solid ${item.terima_gram?'rgba(34,197,94,0.15)':'rgba(0,0,0,0.06)'}`}}>
                                 <p className="text-[9px] font-bold text-green-500 uppercase tracking-wide">📥 Diterima</p>
                                 {item.terima_gram?(<>
                                   <p className="font-bold text-gray-800">{parseFloat(item.terima_gram).toFixed(3)} gr{item.terima_pcs?` · ${item.terima_pcs} PCS`:''}</p>
-                                  {item.jam_selesai&&<p className="text-[11px] text-gray-400">⏱ {String(item.jam_selesai).slice(0,5)}</p>}
                                   {Number(item.reject_cutting_gram)>0&&<p className="text-[11px] font-semibold text-red-500">Reject Cutting: {parseFloat(item.reject_cutting_gram).toFixed(3)} gr</p>}
                                   {Number(item.losses_cutting)>0&&<p className="text-[11px] font-semibold text-orange-500">Losses: {parseFloat(item.losses_cutting).toFixed(3)} gr</p>}
+                                  {terimaFotosC.length>0&&<div className="flex gap-1.5 flex-wrap pt-1">{terimaFotosC.map((u,fi)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-12 h-12 rounded-lg object-cover border-2 border-green-100 hover:opacity-80"/></a>)}</div>}
                                 </>):<p className="text-[11px] text-gray-400 italic">Belum diterima</p>}
                               </div>
                             </div>
+                            {/* Catatan */}
+                            {item.catatan&&(
+                              <div className="mt-2 px-3 py-2 rounded-xl text-[11px] text-gray-500 italic" style={{background:'rgba(139,92,246,0.04)'}}>
+                                📝 {item.catatan}
+                              </div>
+                            )}
                           </div>
-                        )}
+                          )
+                        })()}
                         {handovers.map((h:any)=>{
                           const tl:Record<string,string>={pas_berat:'Pas Berat',annealing:'Annealing',siap_packing:'Siap Packing'}
                           const tc:Record<string,string>={pas_berat:'#F97316',annealing:'#EAB308',siap_packing:'#8B5CF6'}
@@ -1620,8 +1627,8 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
       </div>
 
       {/* ── Modals ──────────────────────────────────────────────────────────── */}
-      {modal==='create'        && batches.length>0 && <CreateModal batches={batches} onClose={()=>setModal(null)} onSubmit={handleCreate} isPending={isPending} error={err}/>}
-      {modal==='tambahProduksi'&& active            && <TambahProduksiModal item={active} onClose={()=>setModal(null)} onSubmit={handleTambahProduksi} isPending={isPending} error={err}/>}
+      {modal==='create'        && batches.length>0 && <CreateModal batches={batches} peleburanByBatch={peleburanByBatch} onClose={()=>setModal(null)} onSubmit={handleCreate} isPending={isPending} error={err}/>}
+      {modal==='tambahProduksi'&& active            && <TambahProduksiModal item={active} peleburanByBatch={peleburanByBatch} onClose={()=>setModal(null)} onSubmit={handleTambahProduksi} isPending={isPending} error={err}/>}
       {modal==='edit'          && active            && <EditModal item={active} onClose={()=>setModal(null)} onSubmit={handleEdit} isPending={isPending} error={err}/>}
       {modal==='update'        && active            && <UpdateModal item={active} onClose={()=>setModal(null)} onSubmit={handleUpdate} isPending={isPending} error={err}/>}
       {modal==='cuttingTerima' && active            && <SelesaiCuttingModal item={active} onClose={()=>setModal(null)} onSubmit={handleSelesaiCutting} isPending={isPending} error={err}/>}
@@ -1633,6 +1640,7 @@ export default function ProduksiClient({ produksiList, batches, userRole, userNa
     </div>
   )
 }
+
 
 
 
