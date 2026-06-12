@@ -40,8 +40,11 @@ interface SidebarProps {
 
 export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
   const pathname = usePathname()
-  const { profile, signOut, hasAccess } = useAuth()
+  const { profile, loading, signOut, hasAccess } = useAuth()
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
+  // Saat profile masih loading, tampilkan semua menu agar sidebar tidak blank.
+  // Setelah profile siap, baru filter sesuai akses role.
+  const canShow = (module: string) => (loading || !profile) ? true : hasAccess(module)
 
   return (
     <>
@@ -77,7 +80,7 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5">
-          {NAV_ITEMS.filter(item => hasAccess(item.module as any)).map(item => {
+          {NAV_ITEMS.filter(item => canShow(item.module as any)).map(item => {
             const Icon = item.icon
             const active = isActive(item.href)
             if (item.disabled) {
@@ -115,7 +118,7 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
 
         {/* Bottom nav */}
         <div className="px-3 py-2 border-t border-slate-100 space-y-0.5">
-          {BOTTOM_NAV.filter(item => hasAccess(item.module as any)).map(item => {
+          {BOTTOM_NAV.filter(item => canShow(item.module as any)).map(item => {
             const Icon = item.icon
             const active = isActive(item.href)
             return (
@@ -156,4 +159,5 @@ export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
     </>
   )
 }
+
 
