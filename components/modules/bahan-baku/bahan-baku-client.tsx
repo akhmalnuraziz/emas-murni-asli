@@ -13,8 +13,9 @@ import {
   createPeleburan, voidPeleburan, editPeleburan
 } from '@/app/(dashboard)/bahan-baku/actions'
 import type { UserRole } from '@/lib/types/database'
+import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
 
-interface Props { batches: any[]; peleburanList?: any[]; rejectItems?: any[]; produksiItems?: any[]; rejectCountMap: Record<string, number>; userRole: UserRole; userName: string }
+interface Props { batches: any[]; peleburanList?: any[]; rejectItems?: any[]; produksiItems?: any[]; rejectCountMap: Record<string, number>; toleransiPeleburan?: number; userRole: UserRole; userName: string }
 
 // ─── Selisih helper ──────────────────────────────────────────────────────────
 function hitungSelisih(pusat: number, gudang: number) {
@@ -246,7 +247,7 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
-export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[],produksiItems=[],rejectCountMap,userRole,userName}:Props){
+export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[],produksiItems=[],rejectCountMap,toleransiPeleburan=0.05,userRole,userName}:Props){
   const [filter,setFilter]=useState<'semua'|'aktif'|'terkunci'>('semua')
   const router = useRouter()
   const [peleburanModalBatch,setPeleburanModalBatch]=useState<string|null>(null)
@@ -796,7 +797,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
           rejectOptions={(rejectItems as any[]).filter((r:any)=>r.batch_kode===peleburanModalBatch)}
           onClose={()=>setPeleburanModalBatch(null)} showToast={showToast}/>
       })()}
-      {selesaiLeburItem&&<SelesaiLeburModal peleburan={selesaiLeburItem} onClose={()=>setSelesaiLeburItem(null)} showToast={showToast}/>}
+      {selesaiLeburItem&&<SelesaiLeburModal peleburan={selesaiLeburItem} toleransi={toleransiPeleburan} onClose={()=>setSelesaiLeburItem(null)} showToast={showToast}/>}
       {editPlbItem&&<EditPeleburanModal peleburan={editPlbItem} onClose={()=>setEditPlbItem(null)} showToast={showToast}/>}
       {editItem&&<BatchFormModal initial={editItem} onSubmit={handleUpdate} onClose={()=>setEditItem(null)} isPending={isPending} error={formError} isEdit/>}
 
@@ -1070,21 +1071,43 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
 }
 
 // ─── Selesai Lebur Modal ──────────────────────────────────────────────────────
-function SelesaiLeburModal({ peleburan, onClose, showToast }: {
-  peleburan: any; onClose: () => void; showToast: (m: string, ok?: boolean) => void
+function SelesaiLeburModal({ peleburan, toleransi = 0.05, onClose, showToast }: {
+  peleburan: any; toleransi?: number; onClose: () => void; showToast: (m: string, ok?: boolean) => void
 }) {
   const [pend, start]   = useTransition()
   const [err, setErr]   = useState('')
   const [fotos, setFotos] = useState<File[]>([])
   const router = useRouter()
 
+  // Loss realtime
+  const [diterimaVal, setDiterimaVal] = useState('')
+  const lossNow = Math.max(0, Number(peleburan.dikasih_gram ?? 0) - (parseFloat(diterimaVal) || 0))
+  const overTol = diterimaVal !== '' && lossNow > toleransi + 0.0001
+  const [lossAlasan, setLossAlasan] = useState('')
+  const [lossOpNama, setLossOpNama] = useState('')
+  const [lossAdminNama, setLossAdminNama] = useState('')
+  const [ttdOp, setTtdOp] = useState<string | null>(null)
+  const [ttdAdmin, setTtdAdmin] = useState<string | null>(null)
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const form = e.currentTarget
+    if (overTol) {
+      if (!lossAlasan.trim()) { setErr('Alasan loss wajib diisi (loss melebihi toleransi)'); return }
+      if (!ttdOp) { setErr('Tanda tangan operator wajib'); return }
+      if (!ttdAdmin) { setErr('Tanda tangan admin wajib'); return }
+    }
     const fd = new FormData(form)
     if (fotos.length > 0) {
       const b64s = await filesToBase64(fotos)
       fd.set('foto_diterima_b64', JSON.stringify(b64s))
+    }
+    if (overTol) {
+      fd.set('loss_alasan', lossAlasan)
+      fd.set('loss_operator_nama', lossOpNama)
+      fd.set('loss_admin_nama', lossAdminNama)
+      if (ttdOp) fd.set('loss_ttd_operator', ttdOp)
+      if (ttdAdmin) fd.set('loss_ttd_admin', ttdAdmin)
     }
     setErr('')
     start(async () => {
@@ -1125,6 +1148,7 @@ function SelesaiLeburModal({ peleburan, onClose, showToast }: {
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Berat Diterima (gr) *</label>
                 <input name="diterima_gram" type="number" step="0.001"
+                  value={diterimaVal} onChange={e=>setDiterimaVal(e.target.value)}
                   max={peleburan.dikasih_gram} placeholder="cth: 499.980" className={inp} required/>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -1145,7 +1169,7 @@ function SelesaiLeburModal({ peleburan, onClose, showToast }: {
                   <Camera size={14} className="text-gray-400 flex-shrink-0"/>
                   <span className="text-xs text-gray-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto'}</span>
                   <input type="file" accept="image/*" multiple className="hidden"
-                    onChange={e => setFotos(p => [...p, ...Array.from(e.target.files??[])].slice(0,5))}/>
+                    onChange={e => setFotos(p => [...p, ...Array.from(e.target.files??[])].slice(0,10))}/>
                 </label>
                 {fotos.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
@@ -1169,6 +1193,25 @@ function SelesaiLeburModal({ peleburan, onClose, showToast }: {
               </div>
             </div>
           </div>
+
+          {/* Loss indicator realtime */}
+          {diterimaVal !== '' && (
+            <div className="px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between"
+              style={{ background: overTol ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)', color: overTol ? '#DC2626' : '#16A34A' }}>
+              <span>Loss: {lossNow.toFixed(3)} gr</span>
+              <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
+            </div>
+          )}
+
+          {overTol && (
+            <LossApprovalPanel
+              lossGram={lossNow} toleransiGram={toleransi} proses="Peleburan"
+              alasan={lossAlasan} setAlasan={setLossAlasan}
+              operatorNama={lossOpNama} setOperatorNama={setLossOpNama}
+              adminNama={lossAdminNama} setAdminNama={setLossAdminNama}
+              setTtdOperator={setTtdOp} setTtdAdmin={setTtdAdmin}
+            />
+          )}
 
           {err && (
             <div className="flex items-center gap-2 px-3 py-2 bg-red-50 rounded-xl text-xs text-red-600">
@@ -1397,6 +1440,7 @@ function EditPeleburanModal({ peleburan, onClose, showToast }: {
     </div>
   )
 }
+
 
 
 
