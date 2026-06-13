@@ -12,6 +12,7 @@ export default async function BahanBakuPage() {
     { data: produksiUsage },
     { data: rejectItems },
     { data: produksiItems },
+    { data: tolPlbRow },
   ] = await Promise.all([
     supabase.from('batch').select('*').order('created_at', { ascending: false }),
     supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
@@ -35,6 +36,7 @@ export default async function BahanBakuPage() {
     supabase.from('produksi_item')
       .select('batch_kode, total_gram, losses_cutting, reject_cutting_gram, voided_at')
       .is('voided_at', null),
+    supabase.from('pengaturan').select('value').eq('key', 'toleransi_loss_peleburan').maybeSingle(),
   ])
 
   // Compute sisa_gram per peleburan = diterima - sudah dipakai produksi
@@ -65,9 +67,11 @@ export default async function BahanBakuPage() {
       rejectItems={rejectItems ?? []}
       produksiItems={produksiItems ?? []}
       rejectCountMap={rejectCountMap}
+      toleransiPeleburan={parseFloat(tolPlbRow?.value ?? '0.05') || 0.05}
       userRole={profile?.role ?? 'operator_produksi'}
       userName={profile?.name ?? ''}
     />
   )
 }
+
 
