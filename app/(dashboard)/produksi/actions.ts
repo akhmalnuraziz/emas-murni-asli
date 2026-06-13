@@ -50,6 +50,50 @@ async function uploadBase64Fotos(supabase: any, b64Array: string[], prefix: stri
   return urls
 }
 
+async function uploadSignature(supabase: any, dataUrl: string, prefix: string): Promise<string | null> {
+  try {
+    const base64Data = dataUrl.replace(/^data:image\/[^;]+;base64,/, '')
+    const buffer = Buffer.from(base64Data, 'base64')
+    const safe = prefix.replace(/[^a-zA-Z0-9_-]/g, '_')
+    const path = `ttd/${safe}/${Date.now()}.png`
+    const { error } = await supabase.storage.from('emas-fotos').upload(path, buffer, { contentType: 'image/png', upsert: true })
+    if (error) return null
+    const { data } = supabase.storage.from('emas-fotos').getPublicUrl(path)
+    return data.publicUrl
+  } catch { return null }
+}
+
+export async function getToleransiLoss(): Promise<Record<string, number>> {
+  const supabase = await createClient()
+  const { data } = await supabase.from('pengaturan').select('key, value').like('key', 'toleransi_loss%')
+  const out: Record<string, number> = {}
+  for (const p of data ?? []) {
+    const proses = p.key.replace('toleransi_loss_', '')
+    out[proses] = parseFloat(p.value) || 0.05
+  }
+  return out
+}
+
+// Simpan approval loss (saat loss > toleransi). Dipanggil dari dalam action terima/selesai.
+async function saveLossApproval(supabase: any, params: {
+  batchKode: string | null; proses: string; refTable: string; refId: number | null
+  timId: number | null; timNama: string | null
+  masukGram: number; keluarGram: number; lossGram: number; toleransiGram: number
+  alasan: string; ttdOperatorDataUrl: string | null; operatorNama: string | null
+  ttdAdminDataUrl: string | null; adminUserId: string | null; adminNama: string | null
+}) {
+  const ttdOp = params.ttdOperatorDataUrl ? await uploadSignature(supabase, params.ttdOperatorDataUrl, `${params.proses}_op`) : null
+  const ttdAd = params.ttdAdminDataUrl ? await uploadSignature(supabase, params.ttdAdminDataUrl, `${params.proses}_admin`) : null
+  await supabase.from('loss_approval').insert({
+    batch_kode: params.batchKode, proses: params.proses, ref_table: params.refTable, ref_id: params.refId,
+    tim_id: params.timId, tim_nama: params.timNama,
+    masuk_gram: params.masukGram, keluar_gram: params.keluarGram, loss_gram: params.lossGram, toleransi_gram: params.toleransiGram,
+    alasan: params.alasan, ttd_operator_url: ttdOp, operator_nama: params.operatorNama,
+    ttd_admin_url: ttdAd, admin_user_id: params.adminUserId, admin_nama: params.adminNama,
+  })
+}
+
+
 export async function fetchPeleburanTersedia(batchKode: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -502,6 +546,26 @@ export async function selesaiCutting(produksiId: number, produksiKode: string, f
   const serahGram = produksi.serah_gram ?? produksi.berat_awal ?? 0
   const losses = Math.max(0, serahGram - terimaGram - rejectGram)
 
+  // ── Validasi loss vs toleransi ──────────────────────────────────────────────
+  const tolMap = await getToleransiLoss()
+  const toleransi = tolMap['cutting'] ?? 0.05
+  const lossAlasan = (formData.get('loss_alasan') as string) || ''
+  if (losses > toleransi + 0.0001) {
+    // Loss melebihi toleransi → wajib alasan + 2 TTD
+    const ttdOp = formData.get('loss_ttd_operator') as string
+    const ttdAdmin = formData.get('loss_ttd_admin') as string
+    if (!lossAlasan.trim()) return { error: `Loss ${losses.toFixed(3)}gr melebihi toleransi ${toleransi}gr. Alasan wajib diisi.` }
+    if (!ttdOp) return { error: 'Tanda tangan operator wajib.' }
+    if (!ttdAdmin) return { error: 'Tanda tangan admin/manager wajib.' }
+    await saveLossApproval(supabase, {
+      batchKode: produksi.batch_kode, proses: 'cutting', refTable: 'produksi_item', refId: produksiId,
+      timId: produksi.tim_id ?? null, timNama: produksi.tim_nama ?? null,
+      masukGram: serahGram, keluarGram: terimaGram, lossGram: losses, toleransiGram: toleransi,
+      alasan: lossAlasan, ttdOperatorDataUrl: ttdOp, operatorNama: (formData.get('loss_operator_nama') as string) || produksi.operator || null,
+      ttdAdminDataUrl: ttdAdmin, adminUserId: user.id, adminNama: (formData.get('loss_admin_nama') as string) || profile?.name || null,
+    })
+  }
+
   // Insert event (Diterima Cutting)
   await supabase.from('produksi_event').insert({
     produksi_item_id: produksiId,
@@ -728,6 +792,29 @@ export async function terimaStageProduksi(
   }
 
   if (!targetHandoverId) return { error: 'Handover tidak ditemukan' }
+
+  // ── Validasi loss vs toleransi ──────────────────────────────────────────────
+  const { data: hCur } = await supabase.from('stage_handover').select('serah_gram, produksi_item:produksi_item_id(batch_kode)').eq('id', targetHandoverId).single()
+  const serahGramStage = Number(hCur?.serah_gram ?? 0)
+  const lossStage = Math.max(0, serahGramStage - terimaGram - rejectGram - sisaSerbuk)
+  const tolMap = await getToleransiLoss()
+  const toleransiStage = tolMap[tahap] ?? 0.05
+  const lossAlasan = (formData.get('loss_alasan') as string) || ''
+  if (lossStage > toleransiStage + 0.0001) {
+    const ttdOp = formData.get('loss_ttd_operator') as string
+    const ttdAdmin = formData.get('loss_ttd_admin') as string
+    if (!lossAlasan.trim()) return { error: `Loss ${lossStage.toFixed(3)}gr melebihi toleransi ${toleransiStage}gr. Alasan wajib diisi.` }
+    if (!ttdOp) return { error: 'Tanda tangan operator wajib.' }
+    if (!ttdAdmin) return { error: 'Tanda tangan admin/manager wajib.' }
+    const { data: itemBatch } = await supabase.from('produksi_item').select('batch_kode').eq('id', produksiId).single()
+    await saveLossApproval(supabase, {
+      batchKode: itemBatch?.batch_kode ?? null, proses: tahap, refTable: 'stage_handover', refId: targetHandoverId,
+      timId: terimaTimId, timNama: terimaTimNama,
+      masukGram: serahGramStage, keluarGram: terimaGram, lossGram: lossStage, toleransiGram: toleransiStage,
+      alasan: lossAlasan, ttdOperatorDataUrl: ttdOp, operatorNama: (formData.get('loss_operator_nama') as string) || terimaOp,
+      ttdAdminDataUrl: ttdAdmin, adminUserId: user.id, adminNama: (formData.get('loss_admin_nama') as string) || profile?.name || null,
+    })
+  }
 
   // Update stage_handover record
   await supabase.from('stage_handover').update({
