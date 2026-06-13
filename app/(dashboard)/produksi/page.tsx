@@ -12,6 +12,7 @@ export default async function ProduksiPage() {
     { data: produksiList },
     { data: batches },
     { data: peleburanRaw },
+    { data: tims },
   ] = await Promise.all([
     supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
     supabase.from('produksi_item')
@@ -28,6 +29,9 @@ export default async function ProduksiPage() {
       .eq('status', 'selesai')
       .is('voided_at', null)
       .order('id'),
+    supabase.from('tim_produksi')
+      .select('id, nama, warna, aktif, anggota:tim_anggota(id, nama, aktif)')
+      .eq('aktif', true).is('voided_at', null).order('id'),
   ])
 
   // Map peleburan tersedia per batch (sisa jatah > 0) — di-pass ke client biar tidak loading saat modal dibuka
@@ -49,9 +53,11 @@ export default async function ProduksiPage() {
       produksiList={produksiList ?? []}
       batches={batches ?? []}
       peleburanByBatch={peleburanByBatch}
+      tims={tims ?? []}
       userRole={profile?.role ?? 'operator_produksi'}
       userName={profile?.name ?? ''}
     />
   )
 }
+
 
