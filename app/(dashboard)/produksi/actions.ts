@@ -129,6 +129,8 @@ export async function createProduksi(formData: FormData) {
     target_selesai: targetSelesai,
     peleburan_id: peleburanId,
     peleburan_kode: plb.kode,
+    tim_id: formData.get('tim_id') ? Number(formData.get('tim_id')) : null,
+    tim_nama: (formData.get('tim_nama') as string) || null,
     memo: formData.get('memo') as string || null,
     operator: formData.get('operator') as string || profile?.name || null,
     catatan: formData.get('catatan') as string || null,
@@ -644,8 +646,10 @@ export async function serahStageProduksi(
 
   const serahTanggal = (formData.get('serah_tanggal') as string) || new Date().toISOString().split('T')[0]
   const serahJam     = (formData.get('serah_jam') as string) || null
-  const serahOp      = (formData.get('serah_operator') as string) || profile?.name || null
+  const serahOp      = (formData.get('serah_operator') as string) || (formData.get('serah_operator_manual') as string) || profile?.name || null
   const serahCatatan = (formData.get('serah_catatan') as string) || null
+  const serahTimId   = formData.get('serah_tim_id') ? Number(formData.get('serah_tim_id')) : null
+  const serahTimNama = (formData.get('serah_tim_nama') as string) || null
 
   const fotosB64Raw = formData.get('fotos_b64') as string
   const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
@@ -662,6 +666,7 @@ export async function serahStageProduksi(
     serah_tanggal: serahTanggal, serah_jam: serahJam,
     serah_operator: serahOp, serah_catatan: serahCatatan,
     serah_fotos: fotoUrls, status: 'proses',
+    tim_id: serahTimId, tim_nama: serahTimNama,
   })
 
   // Update current_status
@@ -690,6 +695,8 @@ export async function terimaStageProduksi(
   const terimaJam      = (formData.get('terima_jam') as string) || null
   const terimaOp       = (formData.get('terima_operator') as string) || profile?.name || null
   const terimaCatatan  = (formData.get('terima_catatan') as string) || null
+  const terimaTimId    = formData.get('terima_tim_id') ? Number(formData.get('terima_tim_id')) : null
+  const terimaTimNama  = (formData.get('terima_tim_nama') as string) || null
   const sisaSerbuk     = tahap === 'pas_berat' ? parseFloat(formData.get('sisa_serbuk') as string || '0') : 0
   const rejectGram     = parseFloat(formData.get('reject_gram') as string || '0') || 0
   const rejectPcs      = parseInt(formData.get('reject_pcs') as string || '0') || 0
@@ -730,6 +737,7 @@ export async function terimaStageProduksi(
     terima_fotos: fotoUrls,
     sisa_serbuk: sisaSerbuk, reject_gram: rejectGram, reject_pcs: rejectPcs,
     status: 'selesai',
+    ...(terimaTimId ? { tim_id: terimaTimId, tim_nama: terimaTimNama } : {}),
   }).eq('id', targetHandoverId)
 
   // Update produksi_item total_gram
@@ -774,6 +782,7 @@ export async function voidStageHandover(
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
