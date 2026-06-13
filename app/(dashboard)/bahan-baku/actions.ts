@@ -53,6 +53,27 @@ async function uploadBase64Fotos(
   return { urls }
 }
 
+// Upload tanda tangan PNG (loss approval peleburan)
+async function uploadSignaturePlb(supabase: any, dataUrl: string, prefix: string): Promise<string | null> {
+  try {
+    const base64Data = dataUrl.replace(/^data:image\/[^;]+;base64,/, '')
+    if (!base64Data) return null
+    const buffer = Buffer.from(base64Data, 'base64')
+    const safe = prefix.replace(/[^a-zA-Z0-9_-]/g, '_')
+    const path = `ttd/${safe}/${Date.now()}.png`
+    const { error } = await supabase.storage.from('fotos').upload(path, buffer, { contentType: 'image/png', upsert: true })
+    if (error) return null
+    const { data } = supabase.storage.from('fotos').getPublicUrl(path)
+    return data.publicUrl
+  } catch { return null }
+}
+
+// Ambil toleransi loss peleburan dari pengaturan
+async function getToleransiPeleburan(supabase: any): Promise<number> {
+  const { data } = await supabase.from('pengaturan').select('value').eq('key', 'toleransi_loss_peleburan').maybeSingle()
+  return parseFloat(data?.value ?? '0.05') || 0.05
+}
+
 export async function createBatch(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -466,9 +487,31 @@ export async function selesaiLebur(id: number, formData: FormData) {
   if (!tanggalTerima)             return { error: 'Tanggal diterima wajib diisi' }
   if (!jamSelesai)                return { error: 'Jam selesai wajib diisi' }
 
-  const { data: plb } = await supabase.from('peleburan').select('dikasih_gram, kode, batch_kode, diterima_gram, status').eq('id', id).single()
+  const { data: plb } = await supabase.from('peleburan').select('dikasih_gram, kode, batch_kode, diterima_gram, status, tim_id, tim_nama').eq('id', id).single()
   if (!plb) return { error: 'Peleburan tidak ditemukan' }
   if (diterima > plb.dikasih_gram) return { error: 'Diterima tidak boleh melebihi dikasih' }
+
+  // ── Validasi loss vs toleransi peleburan ────────────────────────────────────
+  const lossLebur = Math.max(0, Number(plb.dikasih_gram) - diterima)
+  const toleransiLebur = await getToleransiPeleburan(supabase)
+  const lossAlasan = (formData.get('loss_alasan') as string) || ''
+  if (lossLebur > toleransiLebur + 0.0001) {
+    const ttdOp = formData.get('loss_ttd_operator') as string
+    const ttdAdmin = formData.get('loss_ttd_admin') as string
+    if (!lossAlasan.trim()) return { error: `Loss ${lossLebur.toFixed(3)}gr melebihi toleransi ${toleransiLebur}gr. Alasan wajib diisi.` }
+    if (!ttdOp) return { error: 'Tanda tangan operator wajib (loss melebihi toleransi).' }
+    if (!ttdAdmin) return { error: 'Tanda tangan admin/manager wajib (loss melebihi toleransi).' }
+    const ttdOpUrl = await uploadSignaturePlb(supabase, ttdOp, `${plb.kode}_op`)
+    const ttdAdminUrl = await uploadSignaturePlb(supabase, ttdAdmin, `${plb.kode}_admin`)
+    await supabase.from('loss_approval').insert({
+      batch_kode: plb.batch_kode, proses: 'peleburan', ref_table: 'peleburan', ref_id: id,
+      tim_id: plb.tim_id ?? null, tim_nama: plb.tim_nama ?? null,
+      masuk_gram: plb.dikasih_gram, keluar_gram: diterima, loss_gram: lossLebur, toleransi_gram: toleransiLebur,
+      alasan: lossAlasan,
+      ttd_operator_url: ttdOpUrl, operator_nama: (formData.get('loss_operator_nama') as string) || operatorTerima,
+      ttd_admin_url: ttdAdminUrl, admin_user_id: user.id, admin_nama: (formData.get('loss_admin_nama') as string) || profile?.name || null,
+    })
+  }
 
   const fotosRaw  = formData.get('foto_diterima_b64') as string
   const fotosB64  = fotosRaw ? JSON.parse(fotosRaw) : []
@@ -637,5 +680,6 @@ export async function getPeleburanByBatch(batchKode: string) {
     .order('created_at', { ascending: false })
   return data ?? []
 }
+
 
 
