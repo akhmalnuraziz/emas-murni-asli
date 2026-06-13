@@ -391,14 +391,26 @@ export async function deleteProduksi(produksiId: number, produksiKode: string) {
   const { data: existing } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
   if (!existing) return { error: 'Item produksi tidak ditemukan' }
 
-  const { count: packingCount } = await supabase.from('packing')
-    .select('*', { count: 'exact', head: true })
+  // Cek relasi turunan: Packing Log + Shieldtag.
+  // Aturan: Shieldtag → Hapus, Packing Log → Hapus, baru Produksi bisa dihapus.
+  const { data: packingRows } = await supabase.from('packing')
+    .select('id')
     .eq('produksi_item_id', produksiId).is('voided_at', null)
+  const packingIds = (packingRows ?? []).map(p => p.id)
+  const packingCount = packingIds.length
 
-  if ((packingCount ?? 0) > 0) {
+  let shieldtagCount = 0
+  if (packingIds.length > 0) {
+    const { count } = await supabase.from('shieldtag')
+      .select('*', { count: 'exact', head: true })
+      .in('packing_id', packingIds).is('voided_at', null)
+    shieldtagCount = count ?? 0
+  }
+
+  if (shieldtagCount > 0 || packingCount > 0) {
     return {
-      error: `Item produksi ini memiliki ${packingCount} data packing aktif. Hapus data packing terlebih dahulu.`,
-      step: 'packing',
+      error: 'Proses produksi tidak dapat dihapus karena sudah terhubung dengan Packing Log atau Shieldtag. Silakan hapus data Shieldtag dan Packing Log terlebih dahulu.',
+      step: shieldtagCount > 0 ? 'shieldtag' : 'packing',
     }
   }
 
@@ -869,6 +881,7 @@ export async function voidStageHandover(
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
