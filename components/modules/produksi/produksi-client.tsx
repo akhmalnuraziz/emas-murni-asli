@@ -15,7 +15,7 @@ import {
 } from '@/app/(dashboard)/produksi/actions'
 import type { UserRole } from '@/lib/types/database'
 
-interface Props { produksiList: any[]; batches: any[]; peleburanByBatch: Record<string, any[]>; userRole: UserRole; userName: string }
+interface Props { produksiList: any[]; batches: any[]; peleburanByBatch: Record<string, any[]>; tims: any[]; userRole: UserRole; userName: string }
 
 function fgr(n: number | null | undefined, dec = 3): string {
   if (n === null || n === undefined || isNaN(Number(n))) return '—'
@@ -181,6 +181,33 @@ function FotoPicker({ files, onAdd, onRemove, label='Tambah foto', small=false }
     </div>
   )
 }
+
+// ─── Tim Picker (dropdown tim + anggota PIC) ────────────────────────────────────
+function TimPicker({ tims, timId, setTimId, anggota, setAnggota, label = 'Tim Pengerjaan', req = false, namePrefix = '' }: {
+  tims: any[]; timId: string; setTimId: (v: string) => void
+  anggota: string; setAnggota: (v: string) => void
+  label?: string; req?: boolean; namePrefix?: string
+}) {
+  const selectedTim = tims.find(t => String(t.id) === timId)
+  const anggotaList = selectedTim?.anggota?.filter((a: any) => a.aktif) ?? []
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-[11px] font-bold text-gray-400 tracking-widest uppercase">{label}{req && <span className="text-red-400 ml-0.5">*</span>}</label>
+      <div className="grid grid-cols-2 gap-2">
+        <select name={`${namePrefix}tim_id`} value={timId} onChange={e => { setTimId(e.target.value); setAnggota('') }} className={inp} required={req}>
+          <option value="">Pilih tim…</option>
+          {tims.map(t => <option key={t.id} value={t.id}>{t.nama}</option>)}
+        </select>
+        <select name={`${namePrefix}operator`} value={anggota} onChange={e => setAnggota(e.target.value)} className={inp} disabled={!selectedTim}>
+          <option value="">{selectedTim ? 'Pilih PIC…' : 'Pilih tim dulu'}</option>
+          {anggotaList.map((a: any) => <option key={a.id} value={a.nama}>{a.nama}</option>)}
+        </select>
+      </div>
+      {selectedTim && <input type="hidden" name={`${namePrefix}tim_nama`} value={selectedTim.nama} />}
+    </div>
+  )
+}
+
 
 // ─── Status Badge ──────────────────────────────────────────────────────────────
 function Sbadge({ s }: { s: string }) {
@@ -433,8 +460,8 @@ const F = ({ label, req, children }: { label: string; req?: boolean; children: R
 )
 
 // ─── Create Modal ──────────────────────────────────────────────────────────────
-function CreateModal({ batches, peleburanByBatch, onClose, onSubmit, isPending, error }: {
-  batches: any[]; peleburanByBatch: Record<string, any[]>; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
+function CreateModal({ batches, peleburanByBatch, tims, onClose, onSubmit, isPending, error }: {
+  batches: any[]; peleburanByBatch: Record<string, any[]>; tims: any[]; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
 }) {
   const nowTime = new Date().toTimeString().slice(0,5)
   const firstBatch = batches[0]?.kode ?? ''
@@ -442,6 +469,8 @@ function CreateModal({ batches, peleburanByBatch, onClose, onSubmit, isPending, 
   const [f, setF] = useState({ batch_kode: firstBatch, peleburan_id: firstPlb ? String(firstPlb.id) : '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime, operator: '', target_selesai: '' })
   const [fotos, setFotos] = useState<File[]>([])
   const [up, setUp] = useState(false)
+  const [timId, setTimId] = useState('')
+  const [timAnggota, setTimAnggota] = useState('')
   const s = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
   const plbList = peleburanByBatch[f.batch_kode] ?? []
   const selectedPlb = plbList.find(p => String(p.id) === f.peleburan_id)
@@ -506,7 +535,8 @@ function CreateModal({ batches, peleburanByBatch, onClose, onSubmit, isPending, 
             <F label="Jam Mulai" req><input name="jam_mulai" type="time" value={f.jam_mulai ?? ''} onChange={e => s('jam_mulai', e.target.value)} className={inp} required /></F>
             <F label="Target Selesai"><input name="target_selesai" type="date" value={f.target_selesai} onChange={e => s('target_selesai', e.target.value)} className={inp} /></F>
           </div>
-          <F label="Operator / PIC"><input name="operator" value={f.operator} onChange={e => s('operator', e.target.value)} placeholder="Nama operator" className={inp} /></F>
+          <TimPicker tims={tims} timId={timId} setTimId={setTimId} anggota={timAnggota} setAnggota={v => { setTimAnggota(v); if (v) s('operator', v) }} label="Tim Pengerjaan" />
+          <F label="Operator / PIC (manual)"><input name="operator" value={f.operator} onChange={e => s('operator', e.target.value)} placeholder="Atau ketik manual" className={inp} /></F>
           <F label="Catatan"><input name="catatan" placeholder="Keterangan tambahan..." className={inp} /></F>
           <F label="Foto Proses (opsional, max 10)">
             <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto proses awal" />
@@ -526,8 +556,8 @@ function CreateModal({ batches, peleburanByBatch, onClose, onSubmit, isPending, 
 }
 
 // ─── Tambah Produksi Modal (lanjut cetak dari batch yang sama) ──────────────────
-function TambahProduksiModal({ item, peleburanByBatch, onClose, onSubmit, isPending, error }: {
-  item: any; peleburanByBatch: Record<string, any[]>; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
+function TambahProduksiModal({ item, peleburanByBatch, tims, onClose, onSubmit, isPending, error }: {
+  item: any; peleburanByBatch: Record<string, any[]>; tims: any[]; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
 }) {
   const nowTime = new Date().toTimeString().slice(0,5)
   const batchKode = item.batch_kode
@@ -535,6 +565,8 @@ function TambahProduksiModal({ item, peleburanByBatch, onClose, onSubmit, isPend
   const [f, setF] = useState({ peleburan_id: plbList[0] ? String(plbList[0].id) : '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime, operator: '', target_selesai: '' })
   const [fotos, setFotos] = useState<File[]>([])
   const [up, setUp] = useState(false)
+  const [timId, setTimId] = useState('')
+  const [timAnggota, setTimAnggota] = useState('')
   const s = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
 
   const selectedPlb = plbList.find(p => String(p.id) === f.peleburan_id)
@@ -600,7 +632,8 @@ function TambahProduksiModal({ item, peleburanByBatch, onClose, onSubmit, isPend
             <F label="Target Selesai"><input name="target_selesai" type="date" value={f.target_selesai} onChange={e => s('target_selesai', e.target.value)} className={inp} /></F>
           </div>
 
-          <F label="Operator / PIC"><input name="operator" value={f.operator} onChange={e => s('operator', e.target.value)} placeholder="Nama operator" className={inp} /></F>
+          <TimPicker tims={tims} timId={timId} setTimId={setTimId} anggota={timAnggota} setAnggota={v => { setTimAnggota(v); if (v) s('operator', v) }} label="Tim Pengerjaan" />
+          <F label="Operator / PIC (manual)"><input name="operator" value={f.operator} onChange={e => s('operator', e.target.value)} placeholder="Atau ketik manual" className={inp} /></F>
           <F label="Foto Proses (opsional, max 10)">
             <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto" />
           </F>
@@ -850,11 +883,13 @@ function SelesaiCuttingModal({ item, onClose, onSubmit, isPending, error, isEdit
 
 
 // ─── Serah Stage Modal ────────────────────────────────────────────────────────
-function SerahStageModal({ item, tahap, onClose, onSubmit, isPending, error }: {
-  item: any; tahap: string; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
+function SerahStageModal({ item, tahap, tims, onClose, onSubmit, isPending, error }: {
+  item: any; tahap: string; tims: any[]; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
 }) {
   const [fotos, setFotos] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
+  const [timId, setTimId] = useState('')
+  const [timAnggota, setTimAnggota] = useState('')
   const tahapLabel: Record<string,string> = { pas_berat: 'Pas Berat', annealing: 'Annealing', siap_packing: 'Siap Packing' }
   const label = tahapLabel[tahap] ?? tahap
 
@@ -915,9 +950,10 @@ function SerahStageModal({ item, tahap, onClose, onSubmit, isPending, error }: {
               <input name="serah_jam" type="time" className={inp}/>
             </div>
           </div>
+          <TimPicker tims={tims} timId={timId} setTimId={setTimId} anggota={timAnggota} setAnggota={setTimAnggota} label="Tim Pengerjaan" namePrefix="serah_" />
           <div>
-            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Operator</label>
-            <input name="serah_operator" type="text" placeholder="Nama operator (opsional)" className={inp}/>
+            <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Operator (manual)</label>
+            <input name="serah_operator_manual" type="text" placeholder="Atau ketik manual" className={inp}/>
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Catatan</label>
@@ -944,12 +980,14 @@ function SerahStageModal({ item, tahap, onClose, onSubmit, isPending, error }: {
 }
 
 // ─── Terima Stage Modal ───────────────────────────────────────────────────────
-function TerimaStageModal({ item, tahap, handoverId, onClose, onSubmit, isPending, error, initialData }: {
-  item: any; tahap: string; handoverId: number; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string; initialData?: any
+function TerimaStageModal({ item, tahap, tims, handoverId, onClose, onSubmit, isPending, error, initialData }: {
+  item: any; tahap: string; tims: any[]; handoverId: number; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string; initialData?: any
 }) {
   const [fotos, setFotos] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
   const [adaReject, setAdaReject] = useState(false)
+  const [timId, setTimId] = useState('')
+  const [timAnggota, setTimAnggota] = useState('')
   const tahapLabel: Record<string,string> = { pas_berat: 'Pas Berat', annealing: 'Annealing', siap_packing: 'Siap Packing' }
   const label = tahapLabel[tahap] ?? tahap
   const isPasBerat = tahap === 'pas_berat'
@@ -1051,6 +1089,8 @@ function TerimaStageModal({ item, tahap, handoverId, onClose, onSubmit, isPendin
               </div>
             )}
           </div>
+
+          <TimPicker tims={tims} timId={timId} setTimId={setTimId} anggota={timAnggota} setAnggota={setTimAnggota} label="Tim Pengerjaan" namePrefix="terima_" />
 
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1.5 block">
@@ -1236,7 +1276,7 @@ function StatChip({ label, value, accent }: { label: string; value: React.ReactN
 }
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
-export default function ProduksiClient({ produksiList, batches, peleburanByBatch, userRole, userName }: Props) {
+export default function ProduksiClient({ produksiList, batches, peleburanByBatch, tims, userRole, userName }: Props) {
   const [search, setSearch]     = useState('')
   const [filterStatus, setFilter] = useState<string>('Semua')
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
@@ -1667,19 +1707,20 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
       </div>
 
       {/* ── Modals ──────────────────────────────────────────────────────────── */}
-      {modal==='create'        && batches.length>0 && <CreateModal batches={batches} peleburanByBatch={peleburanByBatch} onClose={()=>setModal(null)} onSubmit={handleCreate} isPending={isPending} error={err}/>}
-      {modal==='tambahProduksi'&& active            && <TambahProduksiModal item={active} peleburanByBatch={peleburanByBatch} onClose={()=>setModal(null)} onSubmit={handleTambahProduksi} isPending={isPending} error={err}/>}
+      {modal==='create'        && batches.length>0 && <CreateModal batches={batches} peleburanByBatch={peleburanByBatch} tims={tims} onClose={()=>setModal(null)} onSubmit={handleCreate} isPending={isPending} error={err}/>}
+      {modal==='tambahProduksi'&& active            && <TambahProduksiModal item={active} peleburanByBatch={peleburanByBatch} tims={tims} onClose={()=>setModal(null)} onSubmit={handleTambahProduksi} isPending={isPending} error={err}/>}
       {modal==='edit'          && active            && <EditModal item={active} onClose={()=>setModal(null)} onSubmit={handleEdit} isPending={isPending} error={err}/>}
       {modal==='update'        && active            && <UpdateModal item={active} onClose={()=>setModal(null)} onSubmit={handleUpdate} isPending={isPending} error={err}/>}
       {modal==='cuttingTerima' && active            && <SelesaiCuttingModal item={active} onClose={()=>setModal(null)} onSubmit={handleSelesaiCutting} isPending={isPending} error={err}/>}
       {modal==='editCutting'   && active            && <SelesaiCuttingModal item={active} isEdit onClose={()=>setModal(null)} onSubmit={handleEditCutting} isPending={isPending} error={err}/>}
-      {modal==='serahStage'    && active            && <SerahStageModal item={active} tahap={activeTahap} onClose={()=>setModal(null)} onSubmit={handleSerahStage} isPending={isPending} error={err}/>}
-      {modal==='terimaStage'   && active            && <TerimaStageModal item={active} tahap={activeTahap} handoverId={activeHandoverId??0} onClose={()=>setModal(null)} onSubmit={handleTerimaStage} isPending={isPending} error={err}/>}
+      {modal==='serahStage'    && active            && <SerahStageModal item={active} tahap={activeTahap} tims={tims} onClose={()=>setModal(null)} onSubmit={handleSerahStage} isPending={isPending} error={err}/>}
+      {modal==='terimaStage'   && active            && <TerimaStageModal item={active} tahap={activeTahap} tims={tims} handoverId={activeHandoverId??0} onClose={()=>setModal(null)} onSubmit={handleTerimaStage} isPending={isPending} error={err}/>}
       {modal==='delete'        && active            && <DelModal item={active} onClose={()=>setModal(null)} onConfirm={handleDelete} isPending={isPending}/>}
-      {modal==='editHandover'  && active&&activeHandoverData && <TerimaStageModal item={active} tahap={activeTahap} handoverId={activeHandoverId??0} initialData={activeHandoverData} onClose={()=>setModal(null)} onSubmit={handleEditHandover} isPending={isPending} error={err}/>}
+      {modal==='editHandover'  && active&&activeHandoverData && <TerimaStageModal item={active} tahap={activeTahap} tims={tims} handoverId={activeHandoverId??0} initialData={activeHandoverData} onClose={()=>setModal(null)} onSubmit={handleEditHandover} isPending={isPending} error={err}/>}
     </div>
   )
 }
+
 
 
 
