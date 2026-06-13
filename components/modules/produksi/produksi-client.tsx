@@ -14,8 +14,9 @@ import {
   serahStageProduksi, terimaStageProduksi, voidStageHandover
 } from '@/app/(dashboard)/produksi/actions'
 import type { UserRole } from '@/lib/types/database'
+import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
 
-interface Props { produksiList: any[]; batches: any[]; peleburanByBatch: Record<string, any[]>; tims: any[]; userRole: UserRole; userName: string }
+interface Props { produksiList: any[]; batches: any[]; peleburanByBatch: Record<string, any[]>; tims: any[]; toleransi: Record<string, number>; userRole: UserRole; userName: string }
 
 function fgr(n: number | null | undefined, dec = 3): string {
   if (n === null || n === undefined || isNaN(Number(n))) return '—'
@@ -733,8 +734,8 @@ function EditModal({ item, onClose, onSubmit, isPending, error }: {
 
 
 // ─── Selesai Cutting Modal ────────────────────────────────────────────────────
-function SelesaiCuttingModal({ item, onClose, onSubmit, isPending, error, isEdit }: {
-  item: any; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string; isEdit?: boolean
+function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, error, isEdit }: {
+  item: any; toleransi: number; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string; isEdit?: boolean
 }) {
   const [fotos, setFotos] = useState<File[]>([])
   const [existingFotos, setExistingFotos] = useState<string[]>(
@@ -743,15 +744,38 @@ function SelesaiCuttingModal({ item, onClose, onSubmit, isPending, error, isEdit
   const [uploading, setUploading] = useState(false)
   const serahGram = Number(item.serah_gram ?? item.berat_awal ?? 0)
 
+  // Loss tracking realtime
+  const [terimaVal, setTerimaVal] = useState(isEdit && item.terima_gram ? String(item.terima_gram) : '')
+  const [rejectVal, setRejectVal] = useState(isEdit && item.reject_cutting_gram ? String(item.reject_cutting_gram) : '')
+  const lossNow = Math.max(0, serahGram - (parseFloat(terimaVal) || 0) - (parseFloat(rejectVal) || 0))
+  const overTol = lossNow > toleransi + 0.0001
+  const [lossAlasan, setLossAlasan] = useState('')
+  const [lossOpNama, setLossOpNama] = useState(item.operator ?? '')
+  const [lossAdminNama, setLossAdminNama] = useState('')
+  const [ttdOp, setTtdOp] = useState<string | null>(null)
+  const [ttdAdmin, setTtdAdmin] = useState<string | null>(null)
+
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const formEl = e.currentTarget
+    if (overTol) {
+      if (!lossAlasan.trim()) { alert('Alasan loss wajib diisi'); return }
+      if (!ttdOp) { alert('Tanda tangan operator wajib'); return }
+      if (!ttdAdmin) { alert('Tanda tangan admin wajib'); return }
+    }
     setUploading(true)
     try {
       const b64s = fotos.length > 0 ? await filesToBase64(fotos) : []
       const fd = new FormData(formEl)
       fd.set('fotos_b64', JSON.stringify(b64s))
       fd.set('existing_fotos', JSON.stringify(existingFotos))
+      if (overTol) {
+        fd.set('loss_alasan', lossAlasan)
+        fd.set('loss_operator_nama', lossOpNama)
+        fd.set('loss_admin_nama', lossAdminNama)
+        if (ttdOp) fd.set('loss_ttd_operator', ttdOp)
+        if (ttdAdmin) fd.set('loss_ttd_admin', ttdAdmin)
+      }
       onSubmit(fd)
     } finally { setUploading(false) }
   }
@@ -796,7 +820,7 @@ function SelesaiCuttingModal({ item, onClose, onSubmit, isPending, error, isEdit
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Berat Diterima (gr) *</label>
             <input name="terima_gram" type="number" step="0.001"
-              defaultValue={isEdit&&item.terima_gram?Number(item.terima_gram):undefined}
+              value={terimaVal} onChange={e => setTerimaVal(e.target.value)}
               placeholder={`Max ${fgr(serahGram)} gr`}
               className={inp} required />
           </div>
@@ -804,8 +828,27 @@ function SelesaiCuttingModal({ item, onClose, onSubmit, isPending, error, isEdit
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Reject Cutting (gr)</label>
             <input name="reject_cutting_gram" type="number" step="0.001"
-              defaultValue={isEdit?Number(item.reject_cutting_gram??0):0} className={inp} />
+              value={rejectVal} onChange={e => setRejectVal(e.target.value)} className={inp} />
           </div>
+
+          {/* Loss indicator realtime */}
+          {(terimaVal !== '') && (
+            <div className="px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between"
+              style={{ background: overTol ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)', color: overTol ? '#DC2626' : '#16A34A' }}>
+              <span>Loss: {lossNow.toFixed(3)} gr</span>
+              <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
+            </div>
+          )}
+
+          {overTol && (
+            <LossApprovalPanel
+              lossGram={lossNow} toleransiGram={toleransi} proses="Cutting"
+              alasan={lossAlasan} setAlasan={setLossAlasan}
+              operatorNama={lossOpNama} setOperatorNama={setLossOpNama}
+              adminNama={lossAdminNama} setAdminNama={setLossAdminNama}
+              setTtdOperator={setTtdOp} setTtdAdmin={setTtdAdmin}
+            />
+          )}
 
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1.5 block">
@@ -980,8 +1023,8 @@ function SerahStageModal({ item, tahap, tims, onClose, onSubmit, isPending, erro
 }
 
 // ─── Terima Stage Modal ───────────────────────────────────────────────────────
-function TerimaStageModal({ item, tahap, tims, handoverId, onClose, onSubmit, isPending, error, initialData }: {
-  item: any; tahap: string; tims: any[]; handoverId: number; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string; initialData?: any
+function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, onSubmit, isPending, error, initialData }: {
+  item: any; tahap: string; tims: any[]; toleransi: number; handoverId: number; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string; initialData?: any
 }) {
   const [fotos, setFotos] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
@@ -997,20 +1040,42 @@ function TerimaStageModal({ item, tahap, tims, handoverId, onClose, onSubmit, is
   const currentH = handovers.find((h:any) => h.tahap === tahap)
   const serahGram = currentH?.serah_gram ?? (tahap==='pas_berat' ? item.terima_gram : item.total_gram) ?? 0
 
+  // Loss tracking realtime
+  const [terimaVal, setTerimaVal] = useState(initialData?.terima_gram ? String(initialData.terima_gram) : '')
+  const [rejectVal, setRejectVal] = useState(initialData?.reject_gram ? String(initialData.reject_gram) : '0')
+  const [serbukVal, setSerbukVal] = useState(initialData?.sisa_serbuk ? String(initialData.sisa_serbuk) : '0')
+  const lossNow = Math.max(0, Number(serahGram) - (parseFloat(terimaVal) || 0) - (parseFloat(rejectVal) || 0) - (parseFloat(serbukVal) || 0))
+  const overTol = lossNow > toleransi + 0.0001
+  const [lossAlasan, setLossAlasan] = useState('')
+  const [lossOpNama, setLossOpNama] = useState('')
+  const [lossAdminNama, setLossAdminNama] = useState('')
+  const [ttdOp, setTtdOp] = useState<string | null>(null)
+  const [ttdAdmin, setTtdAdmin] = useState<string | null>(null)
+
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const formEl = e.currentTarget
+    if (overTol) {
+      if (!lossAlasan.trim()) { alert('Alasan loss wajib diisi'); return }
+      if (!ttdOp) { alert('Tanda tangan operator wajib'); return }
+      if (!ttdAdmin) { alert('Tanda tangan admin wajib'); return }
+    }
     setUploading(true)
     try {
       const b64s = fotos.length > 0 ? await filesToBase64(fotos) : []
       const fd = new FormData(formEl)
       fd.set('fotos_b64', JSON.stringify(b64s))
-      // If handoverId is 0 (old item without serah), create serah+terima in one call
-      // by adding serah data to the form
       if (handoverId === 0) {
         fd.set('create_serah_first', '1')
         fd.set('serah_gram', String(serahGram))
         fd.set('serah_pcs', String(item.pcs_good ?? item.pcs ?? 0))
+      }
+      if (overTol) {
+        fd.set('loss_alasan', lossAlasan)
+        fd.set('loss_operator_nama', lossOpNama)
+        fd.set('loss_admin_nama', lossAdminNama)
+        if (ttdOp) fd.set('loss_ttd_operator', ttdOp)
+        if (ttdAdmin) fd.set('loss_ttd_admin', ttdAdmin)
       }
       onSubmit(fd)
     } finally { setUploading(false) }
@@ -1041,7 +1106,7 @@ function TerimaStageModal({ item, tahap, tims, handoverId, onClose, onSubmit, is
 
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Total Berat Setelah Diproses (gr) *</label>
-            <input name="terima_gram" type="number" step="0.001" placeholder={`Max ${Number(serahGram).toFixed(3)} gr`} defaultValue={initialData?.terima_gram??''} className={inp} required/>
+            <input name="terima_gram" type="number" step="0.001" placeholder={`Max ${Number(serahGram).toFixed(3)} gr`} value={terimaVal} onChange={e=>setTerimaVal(e.target.value)} className={inp} required/>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -1066,7 +1131,7 @@ function TerimaStageModal({ item, tahap, tims, handoverId, onClose, onSubmit, is
           {isPasBerat && (
             <div>
               <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Sisa Serbuk (gr)</label>
-              <input name="sisa_serbuk" type="number" step="0.001" defaultValue="0" className={inp}/>
+              <input name="sisa_serbuk" type="number" step="0.001" value={serbukVal} onChange={e=>setSerbukVal(e.target.value)} className={inp}/>
             </div>
           )}
 
@@ -1080,7 +1145,7 @@ function TerimaStageModal({ item, tahap, tims, handoverId, onClose, onSubmit, is
               <div className="grid grid-cols-2 gap-3 mt-2">
                 <div>
                   <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Berat Reject (gr)</label>
-                  <input name="reject_gram" type="number" step="0.001" defaultValue="0" className={inp}/>
+                  <input name="reject_gram" type="number" step="0.001" value={rejectVal} onChange={e=>setRejectVal(e.target.value)} className={inp}/>
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-gray-500 mb-1.5 block">PCS Reject</label>
@@ -1089,6 +1154,25 @@ function TerimaStageModal({ item, tahap, tims, handoverId, onClose, onSubmit, is
               </div>
             )}
           </div>
+
+          {/* Loss indicator realtime */}
+          {(terimaVal !== '') && (
+            <div className="px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between"
+              style={{ background: overTol ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)', color: overTol ? '#DC2626' : '#16A34A' }}>
+              <span>Loss: {lossNow.toFixed(3)} gr</span>
+              <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
+            </div>
+          )}
+
+          {overTol && (
+            <LossApprovalPanel
+              lossGram={lossNow} toleransiGram={toleransi} proses={label}
+              alasan={lossAlasan} setAlasan={setLossAlasan}
+              operatorNama={lossOpNama} setOperatorNama={setLossOpNama}
+              adminNama={lossAdminNama} setAdminNama={setLossAdminNama}
+              setTtdOperator={setTtdOp} setTtdAdmin={setTtdAdmin}
+            />
+          )}
 
           <TimPicker tims={tims} timId={timId} setTimId={setTimId} anggota={timAnggota} setAnggota={setTimAnggota} label="Tim Pengerjaan" namePrefix="terima_" />
 
@@ -1276,7 +1360,7 @@ function StatChip({ label, value, accent }: { label: string; value: React.ReactN
 }
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
-export default function ProduksiClient({ produksiList, batches, peleburanByBatch, tims, userRole, userName }: Props) {
+export default function ProduksiClient({ produksiList, batches, peleburanByBatch, tims, toleransi, userRole, userName }: Props) {
   const [search, setSearch]     = useState('')
   const [filterStatus, setFilter] = useState<string>('Semua')
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
@@ -1711,15 +1795,16 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
       {modal==='tambahProduksi'&& active            && <TambahProduksiModal item={active} peleburanByBatch={peleburanByBatch} tims={tims} onClose={()=>setModal(null)} onSubmit={handleTambahProduksi} isPending={isPending} error={err}/>}
       {modal==='edit'          && active            && <EditModal item={active} onClose={()=>setModal(null)} onSubmit={handleEdit} isPending={isPending} error={err}/>}
       {modal==='update'        && active            && <UpdateModal item={active} onClose={()=>setModal(null)} onSubmit={handleUpdate} isPending={isPending} error={err}/>}
-      {modal==='cuttingTerima' && active            && <SelesaiCuttingModal item={active} onClose={()=>setModal(null)} onSubmit={handleSelesaiCutting} isPending={isPending} error={err}/>}
-      {modal==='editCutting'   && active            && <SelesaiCuttingModal item={active} isEdit onClose={()=>setModal(null)} onSubmit={handleEditCutting} isPending={isPending} error={err}/>}
+      {modal==='cuttingTerima' && active            && <SelesaiCuttingModal item={active} toleransi={toleransi.cutting??0.05} onClose={()=>setModal(null)} onSubmit={handleSelesaiCutting} isPending={isPending} error={err}/>}
+      {modal==='editCutting'   && active            && <SelesaiCuttingModal item={active} isEdit toleransi={toleransi.cutting??0.05} onClose={()=>setModal(null)} onSubmit={handleEditCutting} isPending={isPending} error={err}/>}
       {modal==='serahStage'    && active            && <SerahStageModal item={active} tahap={activeTahap} tims={tims} onClose={()=>setModal(null)} onSubmit={handleSerahStage} isPending={isPending} error={err}/>}
-      {modal==='terimaStage'   && active            && <TerimaStageModal item={active} tahap={activeTahap} tims={tims} handoverId={activeHandoverId??0} onClose={()=>setModal(null)} onSubmit={handleTerimaStage} isPending={isPending} error={err}/>}
+      {modal==='terimaStage'   && active            && <TerimaStageModal item={active} tahap={activeTahap} tims={tims} toleransi={toleransi[activeTahap]??0.05} handoverId={activeHandoverId??0} onClose={()=>setModal(null)} onSubmit={handleTerimaStage} isPending={isPending} error={err}/>}
       {modal==='delete'        && active            && <DelModal item={active} onClose={()=>setModal(null)} onConfirm={handleDelete} isPending={isPending}/>}
-      {modal==='editHandover'  && active&&activeHandoverData && <TerimaStageModal item={active} tahap={activeTahap} tims={tims} handoverId={activeHandoverId??0} initialData={activeHandoverData} onClose={()=>setModal(null)} onSubmit={handleEditHandover} isPending={isPending} error={err}/>}
+      {modal==='editHandover'  && active&&activeHandoverData && <TerimaStageModal item={active} tahap={activeTahap} tims={tims} toleransi={toleransi[activeTahap]??0.05} handoverId={activeHandoverId??0} initialData={activeHandoverData} onClose={()=>setModal(null)} onSubmit={handleEditHandover} isPending={isPending} error={err}/>}
     </div>
   )
 }
+
 
 
 
