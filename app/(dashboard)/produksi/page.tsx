@@ -13,6 +13,7 @@ export default async function ProduksiPage() {
     { data: batches },
     { data: peleburanRaw },
     { data: tims },
+    { data: toleransiRows },
   ] = await Promise.all([
     supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
     supabase.from('produksi_item')
@@ -32,7 +33,13 @@ export default async function ProduksiPage() {
     supabase.from('tim_produksi')
       .select('id, nama, warna, aktif, anggota:tim_anggota(id, nama, aktif)')
       .eq('aktif', true).is('voided_at', null).order('id'),
+    supabase.from('pengaturan').select('key, value').like('key', 'toleransi_loss%'),
   ])
+
+  const toleransi: Record<string, number> = {}
+  for (const r of toleransiRows ?? []) {
+    toleransi[r.key.replace('toleransi_loss_', '')] = parseFloat(r.value) || 0.05
+  }
 
   // Map peleburan tersedia per batch (sisa jatah > 0) — di-pass ke client biar tidak loading saat modal dibuka
   const peleburanByBatch: Record<string, { id: number; kode: string; diterima: number; terpakai: number; sisa: number }[]> = {}
@@ -54,10 +61,12 @@ export default async function ProduksiPage() {
       batches={batches ?? []}
       peleburanByBatch={peleburanByBatch}
       tims={tims ?? []}
+      toleransi={toleransi}
       userRole={profile?.role ?? 'operator_produksi'}
       userName={profile?.name ?? ''}
     />
   )
 }
+
 
 
