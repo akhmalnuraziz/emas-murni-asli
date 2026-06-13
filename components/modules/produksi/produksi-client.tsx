@@ -1311,7 +1311,7 @@ function UpdateModal({ item, onClose, onSubmit, isPending, error }: {
   )
 }
 
-function DelModal({ item, onClose, onConfirm, isPending }: { item: any; onClose: () => void; onConfirm: () => void; isPending: boolean }) {
+function DelModal({ item, onClose, onConfirm, isPending, error }: { item: any; onClose: () => void; onConfirm: () => void; isPending: boolean; error?: string }) {
   const [confirm, setConfirm] = useState('')
   const canConfirm = confirm.trim() === item.kode
   return (
@@ -1320,6 +1320,11 @@ function DelModal({ item, onClose, onConfirm, isPending }: { item: any; onClose:
         <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><Trash2 size={24} className="text-red-500" /></div>
         <h2 className="text-lg font-bold text-gray-900 text-center">Hapus Batch Produksi?</h2>
         <p className="text-sm text-gray-500 mt-2 text-center"><span className="font-semibold text-gray-700">{item.kode}</span> akan dihapus permanen beserta semua event-nya.</p>
+        {error && (
+          <div className="mt-4 flex items-start gap-2 px-3.5 py-3 bg-red-50 border border-red-100 rounded-2xl text-xs text-red-600 leading-relaxed">
+            <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" /><span>{error}</span>
+          </div>
+        )}
         <div className="mt-5 mb-4">
           <label className="text-[11px] font-bold text-gray-400 tracking-widest uppercase">Ketik kode batch untuk konfirmasi</label>
           <input
@@ -1388,7 +1393,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
   function handleTambahProduksi(fd: FormData) { setErr(''); start(async()=>{ const r=await createProduksi(fd); if(r?.error){setErr(r.error);return}; showToast(`✅ ${r.kode} ditambahkan`); setModal(null) }) }
   function handleEdit(fd: FormData)   { if(!active)return; setErr(''); start(async()=>{ const r=await editProduksi(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Diperbarui'); setModal(null) }) }
   function handleUpdate(fd: FormData) { if(!active)return; setErr(''); start(async()=>{ const r=await updateStatusProduksi(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Status diperbarui'); setModal(null) }) }
-  function handleDelete()             { if(!active)return; start(async()=>{ await deleteProduksi(active.id,active.kode); showToast('🗑️ Dihapus'); setModal(null) }) }
+  function handleDelete()             { if(!active)return; setErr(''); start(async()=>{ const r=await deleteProduksi(active.id,active.kode); if(r?.error){setErr(r.error); showToast(r.error,false); return}; showToast('🗑️ Dihapus'); setModal(null) }) }
   function handleSelesaiCutting(fd: FormData) { if(!active)return; setErr(''); start(async()=>{ const r=await selesaiCutting(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Cutting diterima'); setModal(null) }) }
   function handleEditCutting(fd: FormData) { if(!active)return; setErr(''); fd.set('is_edit','1'); start(async()=>{ const r=await selesaiCutting(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Cutting diperbarui'); setModal(null) }) }
   function handleSerahStage(fd: FormData)  { if(!active)return; setErr(''); start(async()=>{ const r=await serahStageProduksi(active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast(`✅ Diserahkan ke ${activeTahap.replace('_',' ')}`); setModal(null) }) }
@@ -1510,6 +1515,16 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
             const spH  = handovers.find((h:any)=>h.tahap==='siap_packing')
             const s    = item.current_status
             const isVoided = !!item.voided_at
+            // Status packing dinamis: hitung total PCS dipack vs total PCS produksi
+            const pkRows: any[] = Array.isArray(item.packing) ? item.packing.filter((p:any)=>!p.voided_at) : []
+            const totalDipack = pkRows.reduce((a:number,p:any)=>a+(p.pcs_dipack||0),0)
+            const totalPcsItem = item.pcs_good ?? item.pcs ?? 0
+            let statusLabel = item.current_status
+            if ((s === 'Siap Packing' || s === 'Sudah Packing') && totalPcsItem > 0) {
+              if (totalDipack <= 0)              statusLabel = 'Siap Packing'
+              else if (totalDipack < totalPcsItem) statusLabel = `Sebagian Dipacking (${totalDipack}/${totalPcsItem})`
+              else                                 statusLabel = `Semua Dipacking (${totalDipack}/${totalPcsItem})`
+            }
 
 
 
@@ -1538,7 +1553,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                       <span className="text-sm font-bold text-gray-900 truncate">{item.nama_item ?? item.kode}</span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
                         style={{background:sc.bg,color:sc.text}}>
-                        {item.current_status}
+                        {statusLabel}
                       </span>
                       {item.status_cutting==='proses'&&<span className="text-[9px] bg-blue-100 text-blue-600 font-bold px-1.5 py-0.5 rounded-full">proses</span>}
                     </div>
@@ -1799,11 +1814,12 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
       {modal==='editCutting'   && active            && <SelesaiCuttingModal item={active} isEdit toleransi={toleransi.cutting??0.05} onClose={()=>setModal(null)} onSubmit={handleEditCutting} isPending={isPending} error={err}/>}
       {modal==='serahStage'    && active            && <SerahStageModal item={active} tahap={activeTahap} tims={tims} onClose={()=>setModal(null)} onSubmit={handleSerahStage} isPending={isPending} error={err}/>}
       {modal==='terimaStage'   && active            && <TerimaStageModal item={active} tahap={activeTahap} tims={tims} toleransi={toleransi[activeTahap]??0.05} handoverId={activeHandoverId??0} onClose={()=>setModal(null)} onSubmit={handleTerimaStage} isPending={isPending} error={err}/>}
-      {modal==='delete'        && active            && <DelModal item={active} onClose={()=>setModal(null)} onConfirm={handleDelete} isPending={isPending}/>}
+      {modal==='delete'        && active            && <DelModal item={active} onClose={()=>setModal(null)} onConfirm={handleDelete} isPending={isPending} error={err}/>}
       {modal==='editHandover'  && active&&activeHandoverData && <TerimaStageModal item={active} tahap={activeTahap} tims={tims} toleransi={toleransi[activeTahap]??0.05} handoverId={activeHandoverId??0} initialData={activeHandoverData} onClose={()=>setModal(null)} onSubmit={handleEditHandover} isPending={isPending} error={err}/>}
     </div>
   )
 }
+
 
 
 
