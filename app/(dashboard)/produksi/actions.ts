@@ -613,6 +613,10 @@ export async function selesaiCutting(produksiId: number, produksiKode: string, f
     updateData.pcs_good = pcsGood
     updateData.pcs = pcsGood
   }
+  // Tim & admin dari form standar (terima_*)
+  if (formData.get('terima_tim_id')) { updateData.tim_id = Number(formData.get('terima_tim_id')); updateData.tim_nama = (formData.get('terima_tim_nama') as string) || null }
+  if (formData.get('terima_tim_anggota_aktif')) updateData.tim_anggota_aktif = formData.get('terima_tim_anggota_aktif') as string
+  if (formData.get('terima_admin_input')) updateData.admin_input = formData.get('terima_admin_input') as string
 
   // Reject cutting → akumulasi total berat_reject.
   // Saat edit: ganti kontribusi cutting lama (reject_cutting_gram lama) dengan yang baru.
@@ -867,6 +871,41 @@ export async function terimaStageProduksi(
 }
 
 // ─── Void/batalkan handover ───────────────────────────────────────────────────
+export async function editSerahStage(
+  handoverId: number, produksiKode: string, tahap: string, formData: FormData
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const serahGram    = parseFloat(formData.get('serah_gram') as string) || 0
+  const serahTanggal = (formData.get('serah_tanggal') as string) || null
+  const serahJam     = (formData.get('serah_jam') as string) || null
+  const serahOp      = (formData.get('serah_operator') as string) || null
+  const serahCatatan = (formData.get('serah_catatan') as string) || null
+  const serahTimId   = formData.get('serah_tim_id') ? Number(formData.get('serah_tim_id')) : null
+  const serahTimNama = (formData.get('serah_tim_nama') as string) || null
+
+  // Foto: gabung existing + baru
+  const { data: cur } = await supabase.from('stage_handover').select('serah_fotos').eq('id', handoverId).single()
+  const existing: string[] = Array.isArray(cur?.serah_fotos) ? cur.serah_fotos : []
+  const fotosB64Raw = formData.get('fotos_b64') as string
+  const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
+  const fotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, `${produksiKode}-serah-${tahap}-edit`) : []
+
+  await supabase.from('stage_handover').update({
+    serah_gram: serahGram, serah_tanggal: serahTanggal, serah_jam: serahJam,
+    serah_operator: serahOp, serah_catatan: serahCatatan,
+    tim_id: serahTimId, tim_nama: serahTimNama,
+    serah_admin_input: (formData.get('serah_admin_input') as string) || null,
+    tim_anggota_aktif: (formData.get('serah_tim_anggota_aktif') as string) || null,
+    serah_fotos: [...existing, ...fotoUrls],
+  }).eq('id', handoverId)
+
+  revalidatePath('/produksi')
+  return { success: true }
+}
+
 export async function voidStageHandover(
   handoverId: number, produksiId: number, tahap: string, alasan: string
 ) {
@@ -890,6 +929,7 @@ export async function voidStageHandover(
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
