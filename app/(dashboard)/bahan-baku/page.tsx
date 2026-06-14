@@ -13,11 +13,13 @@ export default async function BahanBakuPage() {
     { data: rejectItems },
     { data: produksiItems },
     { data: tolPlbRow },
+    { data: tims },
+    { data: adminRows },
   ] = await Promise.all([
     supabase.from('batch').select('*').order('created_at', { ascending: false }),
     supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
     supabase.from('peleburan')
-      .select('id, kode, batch_kode, tanggal, jam_mulai, dikasih_gram, diterima_gram, losses_gram, sumber_batch_gram, operator, keterangan_serahkan, foto_serahkan, tanggal_diterima, jam_selesai, operator_diterima, keterangan_diterima, foto_diterima, status')
+      .select('id, kode, batch_kode, tanggal, jam_mulai, dikasih_gram, diterima_gram, losses_gram, sumber_batch_gram, operator, keterangan_serahkan, foto_serahkan, tanggal_diterima, jam_selesai, operator_diterima, keterangan_diterima, foto_diterima, status, tim_id, tim_nama, admin_input')
       .is('voided_at', null)
       .order('created_at', { ascending: false }),
     // Hitung berapa dari tiap peleburan sudah dipakai produksi
@@ -37,6 +39,10 @@ export default async function BahanBakuPage() {
       .select('batch_kode, total_gram, losses_cutting, reject_cutting_gram, voided_at')
       .is('voided_at', null),
     supabase.from('pengaturan').select('value').eq('key', 'toleransi_loss_peleburan').maybeSingle(),
+    supabase.from('tim_produksi')
+      .select('id, nama, warna, aktif, anggota:tim_anggota(id, nama, aktif)')
+      .eq('aktif', true).is('voided_at', null).order('id'),
+    supabase.from('admin_input').select('id, nama').is('voided_at', null).order('id'),
   ])
 
   // Compute sisa_gram per peleburan = diterima - sudah dipakai produksi
@@ -68,10 +74,13 @@ export default async function BahanBakuPage() {
       produksiItems={produksiItems ?? []}
       rejectCountMap={rejectCountMap}
       toleransiPeleburan={parseFloat(tolPlbRow?.value ?? '0.05') || 0.05}
+      tims={tims ?? []}
+      adminList={adminRows ?? []}
       userRole={profile?.role ?? 'operator_produksi'}
       userName={profile?.name ?? ''}
     />
   )
 }
+
 
 
