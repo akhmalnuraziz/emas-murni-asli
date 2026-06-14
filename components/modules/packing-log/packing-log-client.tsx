@@ -12,6 +12,7 @@ import type { UserRole } from '@/lib/types/database'
 interface Props {
   packingList: any[]
   siapPackingItems: any[]
+  shieldtagByPacking?: Record<number, { kode: string; status: string; lokasi: string | null }[]>
   userRole: UserRole
   userName: string
 }
@@ -263,8 +264,8 @@ function EditModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;
 }
 
 // ─── Packing Card (mobile) ────────────────────────────────────────────────────
-function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint}:{
-  p:any;canManage:boolean;canDelete:boolean;onEdit:()=>void;onDelete:()=>void;onPrint:()=>void
+function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint,onShieldtagClick}:{
+  p:any;canManage:boolean;canDelete:boolean;onEdit:()=>void;onDelete:()=>void;onPrint:()=>void;onShieldtagClick?:()=>void
 }){
   const [lightbox,setLightbox]=useState<string|null>(null)
   const fotos=Array.isArray(p.fotos)?p.fotos:[]
@@ -290,7 +291,8 @@ function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint}:{
         <div><p className="text-[10px] text-gray-400">TOTAL GRAM</p><p className="text-xs font-semibold text-gray-700">{Number(p.total_gram_aktual).toFixed(3)} gr</p></div>
         <div>
           <p className="text-[10px] text-gray-400">SHIELDTAG</p>
-          <span className={cn('text-xs font-bold',stCount>0?'text-emerald-600':'text-gray-400')}>🏷 {stCount}/{p.pcs_dipack}</span>
+          <button type="button" onClick={()=>{ if(stCount>0&&onShieldtagClick) onShieldtagClick() }} disabled={stCount===0}
+            className={cn('text-xs font-bold',stCount>0?'text-emerald-600 underline decoration-dotted cursor-pointer':'text-gray-400 cursor-default')}>🏷 {stCount}/{p.pcs_dipack}</button>
         </div>
       </div>
       <div className="flex items-center gap-3 pt-1 border-t border-gray-100 flex-wrap">
@@ -309,7 +311,7 @@ function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint}:{
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
-export default function PackingLogClient({packingList,siapPackingItems,userRole,userName}:Props){
+export default function PackingLogClient({packingList,siapPackingItems,shieldtagByPacking={},userRole,userName}:Props){
   const [isPending,startTransition]=useTransition()
   const [modal,setModal]=useState<'create'|'edit'|'delete'|null>(null)
   const [active,setActive]=useState<any|null>(null)
@@ -318,6 +320,7 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
   const [lightbox,setLightbox]=useState<string|null>(null)
   const [toast,setToast]=useState<{msg:string;ok:boolean}|null>(null)
   const [selectedIds,setSelectedIds]=useState<Set<number>>(new Set())
+  const [stModal,setStModal]=useState<{kode:string;list:{kode:string;status:string;lokasi:string|null}[]}|null>(null)
 
   function toggleSelect(id:number){setSelectedIds(prev=>{const s=new Set(prev);s.has(id)?s.delete(id):s.add(id);return s})}
   function toggleSelectAll(records:any[]){
@@ -482,7 +485,8 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
             <PackingCard key={p.id} p={p} canManage={canManage} canDelete={canDelete}
               onEdit={()=>{setActive(p);setErr('');setModal('edit')}}
               onDelete={()=>{setActive(p);setModal('delete')}}
-              onPrint={()=>handlePrint(p)}/>
+              onPrint={()=>handlePrint(p)}
+              onShieldtagClick={()=>{ const list=shieldtagByPacking[p.id]??[]; if(list.length>0) setStModal({kode:p.kode,list}) }}/>
           ))}
         </div>
 
@@ -541,10 +545,13 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
                       ):<span className="text-xs text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-3 align-middle text-center">
-                      <span className={cn('inline-block text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap',stCount>0?'text-emerald-700':'text-gray-400')}
+                      <button type="button"
+                        onClick={()=>{ const list=shieldtagByPacking[p.id]??[]; if(list.length>0) setStModal({kode:p.kode,list}) }}
+                        disabled={stCount===0}
+                        className={cn('inline-block text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap transition-all',stCount>0?'text-emerald-700 hover:ring-2 hover:ring-emerald-300 cursor-pointer':'text-gray-400 cursor-default')}
                         style={{background:stCount>0?'rgba(34,197,94,0.1)':'rgba(107,114,128,0.08)'}}>
                         🏷 {stCount}/{p.pcs_dipack}
-                      </span>
+                      </button>
                     </td>
                     <td className="px-4 py-3 align-middle text-center">
                       <span className={cn('inline-block text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap',isPrinted?'text-emerald-700':'text-gray-500')}
@@ -585,8 +592,53 @@ export default function PackingLogClient({packingList,siapPackingItems,userRole,
           </div>
         </div>
       )}
+
+      {stModal && <ShieldtagListModal kode={stModal.kode} list={stModal.list} onClose={()=>setStModal(null)}/>}
     </div>
   )
 }
+
+// ─── Modal daftar Shieldtag dari satu Packing ────────────────────────────────
+function ShieldtagListModal({kode,list,onClose}:{kode:string;list:{kode:string;status:string;lokasi:string|null}[];onClose:()=>void}){
+  const statusColor:Record<string,{bg:string;text:string}>={
+    'Aktif':{bg:'rgba(34,197,94,0.1)',text:'#16A34A'},
+    'Terdistribusi':{bg:'rgba(59,130,246,0.1)',text:'#2563EB'},
+    'Transit':{bg:'rgba(249,115,22,0.1)',text:'#EA580C'},
+    'Terjual':{bg:'rgba(139,92,246,0.1)',text:'#7C3AED'},
+    'VOID':{bg:'rgba(239,68,68,0.1)',text:'#DC2626'},
+  }
+  return (
+    <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-0 sm:p-4" style={{background:'rgba(0,0,0,0.45)',backdropFilter:'blur(8px)'}} onClick={onClose}>
+      <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[85vh] flex flex-col" style={{boxShadow:'0 24px 64px rgba(0,0,0,0.18)'}} onClick={e=>e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100 flex-shrink-0">
+          <div>
+            <h2 className="text-base font-bold text-gray-900">Daftar Shieldtag</h2>
+            <p className="text-xs text-violet-500 font-semibold mt-0.5">{kode} · {list.length} tag</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><X size={15} className="text-gray-500"/></button>
+        </div>
+        <div className="px-5 py-4 overflow-y-auto flex-1 space-y-1.5">
+          {list.length===0 && <p className="text-sm text-gray-400 text-center py-8">Belum ada shieldtag.</p>}
+          {list.map((st,i)=>{
+            const sc=statusColor[st.status]??{bg:'rgba(107,114,128,0.08)',text:'#6B7280'}
+            return (
+              <div key={st.kode} className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl" style={{background:'rgba(139,92,246,0.04)'}}>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="text-[10px] font-bold text-gray-300 w-5 flex-shrink-0">{i+1}</span>
+                  <span className="text-sm font-mono font-bold text-gray-800 truncate">{st.kode}</span>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {st.lokasi && <span className="text-[10px] text-gray-400">{st.lokasi}</span>}
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{background:sc.bg,color:sc.text}}>{st.status}</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 
 
