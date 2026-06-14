@@ -906,6 +906,58 @@ export async function editSerahStage(
   return { success: true }
 }
 
+export async function resetCutting(produksiId: number, produksiKode: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+
+  const { data: item } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
+  if (!item) return { error: 'Item tidak ditemukan' }
+
+  // Tidak boleh hapus kalau sudah lanjut ke tahap berikutnya (ada stage handover aktif)
+  const { count: shCount } = await supabase.from('stage_handover')
+    .select('*', { count: 'exact', head: true })
+    .eq('produksi_item_id', produksiId).is('voided_at', null)
+  if ((shCount ?? 0) > 0) {
+    return { error: 'Tidak dapat menghapus Cutting karena sudah lanjut ke tahap berikutnya. Hapus proses Pas Berat/Annealing/Siap Packing terlebih dahulu.' }
+  }
+  // Tidak boleh kalau sudah ada packing
+  const { count: pkCount } = await supabase.from('packing')
+    .select('*', { count: 'exact', head: true })
+    .eq('produksi_item_id', produksiId).is('voided_at', null)
+  if ((pkCount ?? 0) > 0) {
+    return { error: 'Tidak dapat menghapus Cutting karena sudah ada Packing Log. Hapus Packing Log terlebih dahulu.' }
+  }
+
+  // Kembalikan kontribusi reject cutting dari total berat_reject
+  const rejectCuttingLama = Number(item.reject_cutting_gram ?? 0)
+  const beratRejectBaru = Math.max(0, Number(item.berat_reject ?? 0) - rejectCuttingLama)
+
+  // Reset data penerimaan cutting → balik ke proses
+  await supabase.from('produksi_item').update({
+    terima_gram: null, reject_cutting_gram: 0, tanggal_selesai: null, jam_selesai: null,
+    status_cutting: 'proses', current_status: 'Cutting',
+    foto_diterima_cutting: [], catatan_terima: null,
+    berat_reject: beratRejectBaru,
+    total_gram: item.serah_gram ?? item.berat_awal,
+  }).eq('id', produksiId)
+
+  // Void event diterima cutting
+  await supabase.from('produksi_event')
+    .update({ voided_at: new Date().toISOString() })
+    .eq('produksi_item_id', produksiId).eq('status', 'Cutting').not('jam_mulai', 'is', null)
+
+  await supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'RESET_CUTTING', module: 'PRODUKSI',
+    record_key: produksiKode, record_id: String(produksiId),
+  })
+
+  revalidatePath('/produksi')
+  return { success: true }
+}
+
 export async function voidStageHandover(
   handoverId: number, produksiId: number, tahap: string, alasan: string
 ) {
@@ -929,6 +981,7 @@ export async function voidStageHandover(
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
