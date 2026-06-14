@@ -14,8 +14,9 @@ import {
 } from '@/app/(dashboard)/bahan-baku/actions'
 import type { UserRole } from '@/lib/types/database'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
+import { TimPickerStd, AdminPickerStd } from '@/components/modules/produksi/serah-terima-modal'
 
-interface Props { batches: any[]; peleburanList?: any[]; rejectItems?: any[]; produksiItems?: any[]; rejectCountMap: Record<string, number>; toleransiPeleburan?: number; userRole: UserRole; userName: string }
+interface Props { batches: any[]; peleburanList?: any[]; rejectItems?: any[]; produksiItems?: any[]; rejectCountMap: Record<string, number>; toleransiPeleburan?: number; tims?: any[]; adminList?: any[]; userRole: UserRole; userName: string }
 
 // ─── Selisih helper ──────────────────────────────────────────────────────────
 function hitungSelisih(pusat: number, gudang: number) {
@@ -247,7 +248,7 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
-export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[],produksiItems=[],rejectCountMap,toleransiPeleburan=0.05,userRole,userName}:Props){
+export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[],produksiItems=[],rejectCountMap,toleransiPeleburan=0.05,tims=[],adminList=[],userRole,userName}:Props){
   const [filter,setFilter]=useState<'semua'|'aktif'|'terkunci'>('semua')
   const router = useRouter()
   const [peleburanModalBatch,setPeleburanModalBatch]=useState<string|null>(null)
@@ -684,7 +685,8 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                     <span className="text-[10px] text-gray-400">→ <span className="text-green-600 font-semibold">{String(plb.jam_selesai).slice(0,5)}</span></span>
                                   )}
                                   {durasi&&<span className="text-[10px] text-gray-400 italic">({durasi})</span>}
-                                  {plb.operator&&<span className="text-[10px] text-gray-400">· {plb.operator}</span>}
+                                  {(plb.tim_nama||plb.operator)&&<span className="text-[10px] text-gray-400">· 👥 {plb.tim_nama||plb.operator}</span>}
+                                  {plb.admin_input&&<span className="text-[10px] text-gray-400">· ✍️ {plb.admin_input}</span>}
                                 </div>
                               </div>
                               {/* FIX poin 12: Tombol hapus dengan konfirmasi yang lebih jelas */}
@@ -795,10 +797,11 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
           sisaMentahBelumLebur={mentahBelumLebur}
           hasilLeburBelumCetak={hasilLeburBelumCetak}
           rejectOptions={(rejectItems as any[]).filter((r:any)=>r.batch_kode===peleburanModalBatch)}
+          tims={tims} adminList={adminList}
           onClose={()=>setPeleburanModalBatch(null)} showToast={showToast}/>
       })()}
-      {selesaiLeburItem&&<SelesaiLeburModal peleburan={selesaiLeburItem} toleransi={toleransiPeleburan} onClose={()=>setSelesaiLeburItem(null)} showToast={showToast}/>}
-      {editPlbItem&&<EditPeleburanModal peleburan={editPlbItem} onClose={()=>setEditPlbItem(null)} showToast={showToast}/>}
+      {selesaiLeburItem&&<SelesaiLeburModal peleburan={selesaiLeburItem} toleransi={toleransiPeleburan} tims={tims} adminList={adminList} onClose={()=>setSelesaiLeburItem(null)} showToast={showToast}/>}
+      {editPlbItem&&<EditPeleburanModal peleburan={editPlbItem} tims={tims} adminList={adminList} onClose={()=>setEditPlbItem(null)} showToast={showToast}/>}
       {editItem&&<BatchFormModal initial={editItem} onSubmit={handleUpdate} onClose={()=>setEditItem(null)} isPending={isPending} error={formError} isEdit/>}
 
       {lockModal&&(
@@ -842,10 +845,10 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
 }
 
 // ─── Create Peleburan Modal (3 sumber: mentah / hasil lebur belum cetak / reject) ───
-function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasilLeburBelumCetak, rejectOptions, onClose, showToast }: {
+function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasilLeburBelumCetak, rejectOptions, tims = [], adminList = [], onClose, showToast }: {
   batchKode: string; batchNama: string
   sisaMentahBelumLebur: number; hasilLeburBelumCetak: number
-  rejectOptions: any[]
+  rejectOptions: any[]; tims?: any[]; adminList?: any[]
   onClose: () => void; showToast: (m: string, ok?: boolean) => void
 }) {
   const [pend, start]     = useTransition()
@@ -1021,7 +1024,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                   <Camera size={14} className="text-gray-400 flex-shrink-0"/>
                   <span className="text-xs text-gray-400">{fotos.length>0?`${fotos.length} foto dipilih`:'Tambah foto'}</span>
                   <input type="file" accept="image/*" multiple className="hidden"
-                    onChange={e=>setFotos(p=>[...p,...Array.from(e.target.files??[])].slice(0,5))}/>
+                    onChange={e=>setFotos(p=>[...p,...Array.from(e.target.files??[])].slice(0,10))}/>
                 </label>
                 {fotos.length>0&&(
                   <div className="flex flex-wrap gap-2 mt-2">
@@ -1035,10 +1038,8 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                   </div>
                 )}
               </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Operator</label>
-                <input name="operator" type="text" placeholder="Nama operator" className={inp}/>
-              </div>
+              <TimPickerStd tims={tims} prefix="" />
+              <AdminPickerStd adminList={adminList} prefix="" />
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">
                   Keterangan {mentahNaik&&<span className="text-red-500">* (wajib — timbangan naik)</span>}
@@ -1071,8 +1072,8 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
 }
 
 // ─── Selesai Lebur Modal ──────────────────────────────────────────────────────
-function SelesaiLeburModal({ peleburan, toleransi = 0.05, onClose, showToast }: {
-  peleburan: any; toleransi?: number; onClose: () => void; showToast: (m: string, ok?: boolean) => void
+function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList = [], onClose, showToast }: {
+  peleburan: any; toleransi?: number; tims?: any[]; adminList?: any[]; onClose: () => void; showToast: (m: string, ok?: boolean) => void
 }) {
   const [pend, start]   = useTransition()
   const [err, setErr]   = useState('')
@@ -1183,10 +1184,8 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, onClose, showToast }: 
                   </div>
                 )}
               </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Operator</label>
-                <input name="operator_diterima" type="text" placeholder="Nama operator" className={inp}/>
-              </div>
+              <TimPickerStd tims={tims} prefix="terima_" />
+              <AdminPickerStd adminList={adminList} prefix="terima_" />
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Catatan Selesai Lebur</label>
                 <input name="keterangan_diterima" type="text" placeholder="Opsional" className={inp}/>
@@ -1236,8 +1235,8 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, onClose, showToast }: 
 }
 
 // ─── Edit Peleburan Modal ─────────────────────────────────────────────────────
-function EditPeleburanModal({ peleburan, onClose, showToast }: {
-  peleburan: any; onClose: () => void; showToast: (m: string, ok?: boolean) => void
+function EditPeleburanModal({ peleburan, tims = [], adminList = [], onClose, showToast }: {
+  peleburan: any; tims?: any[]; adminList?: any[]; onClose: () => void; showToast: (m: string, ok?: boolean) => void
 }) {
   const [pend, start] = useTransition()
   const [err, setErr] = useState('')
@@ -1350,11 +1349,8 @@ function EditPeleburanModal({ peleburan, onClose, showToast }: {
                     onChange={e => setNewFotos(p => [...p, ...Array.from(e.target.files??[])].slice(0,5))}/>
                 </label>
               </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Operator</label>
-                <input name="operator" type="text" defaultValue={peleburan.operator??''}
-                  placeholder="Nama operator" className={inp}/>
-              </div>
+              <TimPickerStd tims={tims} prefix="" initialTimId={peleburan.tim_id!=null?String(peleburan.tim_id):''} initialAnggota={peleburan.tim_anggota_aktif?String(peleburan.tim_anggota_aktif).split(',').map((x:string)=>x.trim()).filter(Boolean):undefined} />
+              <AdminPickerStd adminList={adminList} prefix="" initialValue={peleburan.admin_input??''} />
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Keterangan</label>
                 <input name="keterangan_serahkan" type="text" defaultValue={peleburan.keterangan_serahkan??''}
@@ -1412,9 +1408,7 @@ function EditPeleburanModal({ peleburan, onClose, showToast }: {
                   </label>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Operator Diterima</label>
-                  <input name="operator_diterima" type="text" defaultValue={peleburan.operator_diterima??''}
-                    placeholder="Nama operator" className={inp}/>
+                  <AdminPickerStd adminList={adminList} prefix="terima_" initialValue={peleburan.operator_diterima??peleburan.admin_input??''} />
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-gray-500 mb-1 block">Keterangan Diterima</label>
@@ -1440,6 +1434,7 @@ function EditPeleburanModal({ peleburan, onClose, showToast }: {
     </div>
   )
 }
+
 
 
 
