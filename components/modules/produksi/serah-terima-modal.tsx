@@ -33,7 +33,7 @@ interface SharedProps {
 }
 
 // ─── Tim Picker: pilih tim → anggota auto tampil sbg chip, bisa hapus/tambah ────
-function TimPickerStd({ tims, prefix, initialTimId, initialAnggota }: { tims: Tim[]; prefix: string; initialTimId?: string; initialAnggota?: string[] }) {
+export function TimPickerStd({ tims, prefix, initialTimId, initialAnggota }: { tims: Tim[]; prefix: string; initialTimId?: string; initialAnggota?: string[] }) {
   const [timId, setTimId] = useState(initialTimId ?? '')
   const [anggotaAktif, setAnggotaAktif] = useState<string[]>(initialAnggota ?? [])
   const [tambah, setTambah] = useState('')
@@ -87,7 +87,7 @@ function TimPickerStd({ tims, prefix, initialTimId, initialAnggota }: { tims: Ti
 }
 
 // ─── Admin Input Picker: dropdown + manual ──────────────────────────────────────
-function AdminPickerStd({ adminList, prefix, initialValue }: { adminList: { id: number; nama: string }[]; prefix: string; initialValue?: string }) {
+export function AdminPickerStd({ adminList, prefix, initialValue }: { adminList: { id: number; nama: string }[]; prefix: string; initialValue?: string }) {
   const knownNames = adminList.map(a => a.nama)
   const startManual = !!initialValue && !knownNames.includes(initialValue)
   const [manual, setManual] = useState(startManual)
@@ -409,5 +409,6 @@ function ModalShell({ judul, kode, onClose, children }: { judul: string; kode: s
     </div>
   )
 }
+
 
 
