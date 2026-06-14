@@ -640,7 +640,8 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
 
   const gramasi        = formData.get('gramasi') as string
-  const pcs            = parseInt(formData.get('pcs') as string)
+  const pcsRaw         = formData.get('pcs') as string
+  const pcs            = pcsRaw ? parseInt(pcsRaw) : null
   const beratAwal      = parseFloat(formData.get('berat_awal') as string)
   const operator       = formData.get('operator') as string
   const catatan        = formData.get('catatan') as string
@@ -649,11 +650,14 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   const targetSelesai  = (formData.get('target_selesai') as string) || null
 
   if (!gramasi) return { error: 'Gramasi wajib diisi' }
-  if (!pcs || pcs <= 0) return { error: 'PCS wajib diisi' }
   if (!beratAwal || beratAwal <= 0) return { error: 'Total berat wajib diisi' }
   if (!tanggal) return { error: 'Tanggal wajib diisi' }
 
   const { data: before } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
+
+  // PCS wajib HANYA jika sudah Diterima (cutting selesai). Jika masih Diserahkan, PCS opsional.
+  const sudahDiterima = before?.status_cutting === 'selesai' || (before?.terima_gram != null)
+  if (sudahDiterima && (!pcs || pcs <= 0)) return { error: 'PCS wajib diisi (barang sudah diterima)' }
 
   // Foto serahkan: gabung existing yang dipertahankan + upload baru
   const existingSerahRaw = formData.get('existing_fotos_serah') as string
@@ -664,15 +668,17 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   const fotoSerahFinal = [...existingSerah, ...newSerahUrls]
 
   const namaItemBaru = (formData.get('nama_item') as string) || `LM REI ${gramasi}GR`
-  const { error } = await supabase.from('produksi_item').update({
-    gramasi, pcs, pcs_awal: pcs, pcs_good: pcs, berat_awal: beratAwal,
+  const updateData: any = {
+    gramasi, berat_awal: beratAwal,
     serah_gram: beratAwal, total_gram: beratAwal,
     nama_item: namaItemBaru,
     operator: operator || null, catatan: catatan || null,
     tanggal_produksi: tanggal, tanggal, memo: memo || null,
     target_selesai: targetSelesai,
     foto_serahkan_cutting: fotoSerahFinal,
-  }).eq('id', produksiId)
+  }
+  if (pcs && pcs > 0) { updateData.pcs = pcs; updateData.pcs_awal = pcs; updateData.pcs_good = pcs }
+  const { error } = await supabase.from('produksi_item').update(updateData).eq('id', produksiId)
 
   if (error) return { error: error.message }
 
@@ -881,6 +887,7 @@ export async function voidStageHandover(
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
