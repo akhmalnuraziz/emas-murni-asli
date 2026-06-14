@@ -607,8 +607,8 @@ export async function selesaiCutting(produksiId: number, produksiKode: string, f
     total_gram: terimaGram,
     foto_diterima_cutting: fotoUrls,
   }
-  // Catatan terima cutting → simpan ke item agar tampil di kartu
-  if (catatan) updateData.catatan = catatan
+  // Catatan terima cutting → kolom terpisah agar tidak menimpa catatan serah
+  if (catatan) updateData.catatan_terima = catatan
   if (pcsGood && pcsGood > 0) {
     updateData.pcs_good = pcsGood
     updateData.pcs = pcsGood
@@ -794,7 +794,10 @@ export async function terimaStageProduksi(
 
   const fotosB64Raw = formData.get('fotos_b64') as string
   const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
-  const fotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, `${produksiKode}-terima-${tahap}`) : []
+  const newFotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, `${produksiKode}-terima-${tahap}`) : []
+  const existingFotosRaw = formData.get('existing_fotos') as string
+  const existingTerimaFotos: string[] = existingFotosRaw ? JSON.parse(existingFotosRaw) : []
+  const fotoUrls = [...existingTerimaFotos, ...newFotoUrls]
 
   // Handle items without serah (old items) — create combined record
   const createSerahFirst = formData.get('create_serah_first') === '1'
@@ -981,6 +984,7 @@ export async function voidStageHandover(
   revalidatePath('/produksi')
   return { success: true }
 }
+
 
 
 
