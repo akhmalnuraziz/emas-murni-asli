@@ -749,6 +749,8 @@ export async function serahStageProduksi(
     serah_operator: serahOp, serah_catatan: serahCatatan,
     serah_fotos: fotoUrls, status: 'proses',
     tim_id: serahTimId, tim_nama: serahTimNama,
+    serah_admin_input: (formData.get('serah_admin_input') as string) || null,
+    tim_anggota_aktif: (formData.get('serah_tim_anggota_aktif') as string) || null,
   })
 
   // Update current_status
@@ -842,6 +844,7 @@ export async function terimaStageProduksi(
     terima_fotos: fotoUrls,
     sisa_serbuk: sisaSerbuk, reject_gram: rejectGram, reject_pcs: rejectPcs,
     status: 'selesai',
+    terima_admin_input: (formData.get('terima_admin_input') as string) || null,
     ...(terimaTimId ? { tim_id: terimaTimId, tim_nama: terimaTimNama } : {}),
   }).eq('id', targetHandoverId)
 
