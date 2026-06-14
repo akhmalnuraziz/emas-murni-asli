@@ -14,6 +14,7 @@ export default async function ProduksiPage() {
     { data: peleburanRaw },
     { data: tims },
     { data: toleransiRows },
+    { data: adminRows },
   ] = await Promise.all([
     supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
     supabase.from('produksi_item')
@@ -34,6 +35,7 @@ export default async function ProduksiPage() {
       .select('id, nama, warna, aktif, anggota:tim_anggota(id, nama, aktif)')
       .eq('aktif', true).is('voided_at', null).order('id'),
     supabase.from('pengaturan').select('key, value').like('key', 'toleransi_loss%'),
+    supabase.from('admin_input').select('id, nama').is('voided_at', null).order('id'),
   ])
 
   const toleransi: Record<string, number> = {}
@@ -62,11 +64,13 @@ export default async function ProduksiPage() {
       peleburanByBatch={peleburanByBatch}
       tims={tims ?? []}
       toleransi={toleransi}
+      adminList={adminRows ?? []}
       userRole={profile?.role ?? 'operator_produksi'}
       userName={profile?.name ?? ''}
     />
   )
 }
+
 
 
 
