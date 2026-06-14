@@ -224,6 +224,10 @@ export function TerimaModalStd({
   const initTimId = d.tim_id != null ? String(d.tim_id) : ''
   const initAnggota = d.tim_anggota_aktif ? String(d.tim_anggota_aktif).split(',').map((x:string)=>x.trim()).filter(Boolean) : undefined
   const [adaReject, setAdaReject] = useState(Number(d.reject_gram) > 0 || Number(d.reject_pcs) > 0)
+  // Foto lama yang sudah keupload (mode edit) — bisa dihapus per item
+  const [existingFotos, setExistingFotos] = useState<string[]>(
+    Array.isArray(d.terima_fotos) ? d.terima_fotos : (Array.isArray(d.foto_diterima_cutting) ? d.foto_diterima_cutting : [])
+  )
 
   // Loss realtime
   const [terimaVal, setTerimaVal] = useState(d.terima_gram != null ? String(d.terima_gram) : '')
@@ -250,6 +254,7 @@ export function TerimaModalStd({
       const b64 = fotos.length > 0 ? await filesToBase64(fotos) : []
       const fd = new FormData(formEl)
       fd.set('fotos_b64', JSON.stringify(b64))
+      fd.set('existing_fotos', JSON.stringify(existingFotos))
       if (overTol) {
         fd.set('loss_alasan', lossAlasan)
         fd.set('loss_operator_nama', lossOpNama)
@@ -327,6 +332,20 @@ export function TerimaModalStd({
 
             <TimPickerStd tims={tims} prefix="terima_" initialTimId={initTimId} initialAnggota={initAnggota} />
             <AdminPickerStd adminList={adminList} prefix="terima_" initialValue={d.terima_admin_input ?? ''} />
+            {existingFotos.length > 0 && (
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Foto Sebelumnya</label>
+                <div className="flex flex-wrap gap-2">
+                  {existingFotos.map((u, i) => (
+                    <div key={i} className="relative">
+                      <img src={u} alt="" className="w-14 h-14 rounded-xl object-cover border-2 border-green-100" />
+                      <button type="button" onClick={() => setExistingFotos(existingFotos.filter((_, j) => j !== i))}
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">×</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <FotoPickerStd fotos={fotos} setFotos={setFotos} accent="green" />
             <div>
               <label className="text-xs font-semibold text-gray-500 mb-1 block">Catatan Penerimaan</label>
@@ -390,4 +409,5 @@ function ModalShell({ judul, kode, onClose, children }: { judul: string; kode: s
     </div>
   )
 }
+
 
