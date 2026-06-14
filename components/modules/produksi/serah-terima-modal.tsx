@@ -33,9 +33,9 @@ interface SharedProps {
 }
 
 // ─── Tim Picker: pilih tim → anggota auto tampil sbg chip, bisa hapus/tambah ────
-function TimPickerStd({ tims, prefix }: { tims: Tim[]; prefix: string }) {
-  const [timId, setTimId] = useState('')
-  const [anggotaAktif, setAnggotaAktif] = useState<string[]>([])
+function TimPickerStd({ tims, prefix, initialTimId, initialAnggota }: { tims: Tim[]; prefix: string; initialTimId?: string; initialAnggota?: string[] }) {
+  const [timId, setTimId] = useState(initialTimId ?? '')
+  const [anggotaAktif, setAnggotaAktif] = useState<string[]>(initialAnggota ?? [])
   const [tambah, setTambah] = useState('')
   const selected = tims.find(t => String(t.id) === timId)
 
@@ -58,7 +58,7 @@ function TimPickerStd({ tims, prefix }: { tims: Tim[]; prefix: string }) {
         <option value="">Pilih tim…</option>
         {tims.map(t => <option key={t.id} value={t.id}>{t.nama}</option>)}
       </select>
-      {selected && (
+      {(selected || anggotaAktif.length > 0) && (
         <div className="mt-1.5 p-2.5 rounded-2xl" style={{ background: 'rgba(139,92,246,0.05)', border: '1px solid rgba(139,92,246,0.12)' }}>
           <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wide mb-1.5">Anggota yang mengerjakan</p>
           <div className="flex flex-wrap gap-1.5 mb-2">
@@ -87,9 +87,11 @@ function TimPickerStd({ tims, prefix }: { tims: Tim[]; prefix: string }) {
 }
 
 // ─── Admin Input Picker: dropdown + manual ──────────────────────────────────────
-function AdminPickerStd({ adminList, prefix }: { adminList: { id: number; nama: string }[]; prefix: string }) {
-  const [manual, setManual] = useState(false)
-  const [value, setValue] = useState('')
+function AdminPickerStd({ adminList, prefix, initialValue }: { adminList: { id: number; nama: string }[]; prefix: string; initialValue?: string }) {
+  const knownNames = adminList.map(a => a.nama)
+  const startManual = !!initialValue && !knownNames.includes(initialValue)
+  const [manual, setManual] = useState(startManual)
+  const [value, setValue] = useState(initialValue ?? '')
   return (
     <div>
       <label className="text-xs font-semibold text-gray-500 mb-1 block">Admin Yang Input</label>
@@ -140,9 +142,12 @@ function FotoPickerStd({ fotos, setFotos, accent }: { fotos: File[]; setFotos: (
 // ════════════════════════════════════════════════════════════════════════════
 // MODE SERAH — Penyerahan ke proses berikutnya
 // ════════════════════════════════════════════════════════════════════════════
-export function SerahModalStd({ judul, kode, tims, adminList, isPending, error, onClose, onSubmit, serahGramDefault }: SharedProps & { serahGramDefault?: number }) {
+export function SerahModalStd({ judul, kode, tims, adminList, isPending, error, onClose, onSubmit, serahGramDefault, initialData, isEdit }: SharedProps & { serahGramDefault?: number; initialData?: any; isEdit?: boolean }) {
   const [fotos, setFotos] = useState<File[]>([])
   const [up, setUp] = useState(false)
+  const d = initialData ?? {}
+  const initTimId = d.tim_id != null ? String(d.tim_id) : ''
+  const initAnggota = d.tim_anggota_aktif ? String(d.tim_anggota_aktif).split(',').map((x:string)=>x.trim()).filter(Boolean) : undefined
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -167,24 +172,24 @@ export function SerahModalStd({ judul, kode, tims, adminList, isPending, error, 
           <div className="p-4 space-y-3">
             <div>
               <label className="text-xs font-semibold text-gray-500 mb-1 block">Berat Diserahkan (gr) *</label>
-              <input name="serah_gram" type="number" step="0.001" defaultValue={serahGramDefault ?? ''} placeholder="cth: 100,000" className={inp} required />
+              <input name="serah_gram" type="number" step="0.001" defaultValue={d.serah_gram ?? serahGramDefault ?? ''} placeholder="cth: 100,000" className={inp} required />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Tanggal Serah *</label>
-                <input name="serah_tanggal" type="date" defaultValue={new Date().toISOString().split('T')[0]} className={inp} required />
+                <input name="serah_tanggal" type="date" defaultValue={d.serah_tanggal ?? new Date().toISOString().split('T')[0]} className={inp} required />
               </div>
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Jam Serah *</label>
-                <input name="serah_jam" type="time" className={inp} required />
+                <input name="serah_jam" type="time" defaultValue={d.serah_jam ? String(d.serah_jam).slice(0,5) : undefined} className={inp} required />
               </div>
             </div>
-            <TimPickerStd tims={tims} prefix="serah_" />
-            <AdminPickerStd adminList={adminList} prefix="serah_" />
+            <TimPickerStd tims={tims} prefix="serah_" initialTimId={initTimId} initialAnggota={initAnggota} />
+            <AdminPickerStd adminList={adminList} prefix="serah_" initialValue={d.serah_admin_input ?? ''} />
             <FotoPickerStd fotos={fotos} setFotos={setFotos} accent="violet" />
             <div>
               <label className="text-xs font-semibold text-gray-500 mb-1 block">Catatan Penyerahan</label>
-              <input name="serah_catatan" type="text" placeholder="Opsional" className={inp} />
+              <input name="serah_catatan" type="text" defaultValue={d.serah_catatan ?? ''} placeholder="Opsional" className={inp} />
             </div>
           </div>
         </div>
@@ -198,7 +203,7 @@ export function SerahModalStd({ judul, kode, tims, adminList, isPending, error, 
           <button type="button" onClick={onClose} className="flex-1 h-11 rounded-2xl bg-gray-100 text-sm font-semibold text-gray-600">Batal</button>
           <button type="submit" disabled={isPending || up} className="flex-1 h-11 rounded-2xl text-sm font-bold text-white disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
-            {up ? 'Upload foto…' : isPending ? 'Menyimpan…' : 'Serahkan'}
+            {up ? 'Upload foto…' : isPending ? 'Menyimpan…' : isEdit ? 'Simpan Perubahan' : 'Serahkan'}
           </button>
         </div>
       </form>
@@ -211,16 +216,19 @@ export function SerahModalStd({ judul, kode, tims, adminList, isPending, error, 
 // ════════════════════════════════════════════════════════════════════════════
 export function TerimaModalStd({
   judul, kode, tims, adminList, isPending, error, onClose, onSubmit,
-  serahGram, toleransi = 0.05, showSerbuk = false, prosesLabel,
-}: SharedProps & { serahGram: number; toleransi?: number; showSerbuk?: boolean; prosesLabel: string }) {
+  serahGram, toleransi = 0.05, showSerbuk = false, prosesLabel, initialData, isEdit,
+}: SharedProps & { serahGram: number; toleransi?: number; showSerbuk?: boolean; prosesLabel: string; initialData?: any; isEdit?: boolean }) {
   const [fotos, setFotos] = useState<File[]>([])
   const [up, setUp] = useState(false)
-  const [adaReject, setAdaReject] = useState(false)
+  const d = initialData ?? {}
+  const initTimId = d.tim_id != null ? String(d.tim_id) : ''
+  const initAnggota = d.tim_anggota_aktif ? String(d.tim_anggota_aktif).split(',').map((x:string)=>x.trim()).filter(Boolean) : undefined
+  const [adaReject, setAdaReject] = useState(Number(d.reject_gram) > 0 || Number(d.reject_pcs) > 0)
 
   // Loss realtime
-  const [terimaVal, setTerimaVal] = useState('')
-  const [rejectVal, setRejectVal] = useState('0')
-  const [serbukVal, setSerbukVal] = useState('0')
+  const [terimaVal, setTerimaVal] = useState(d.terima_gram != null ? String(d.terima_gram) : '')
+  const [rejectVal, setRejectVal] = useState(d.reject_gram != null ? String(d.reject_gram) : '0')
+  const [serbukVal, setSerbukVal] = useState(d.sisa_serbuk != null ? String(d.sisa_serbuk) : '0')
   const lossNow = Math.max(0, Number(serahGram) - (parseFloat(terimaVal) || 0) - (parseFloat(rejectVal) || 0) - (parseFloat(serbukVal) || 0))
   const overTol = terimaVal !== '' && lossNow > toleransi + 0.0001
   const [lossAlasan, setLossAlasan] = useState('')
@@ -276,16 +284,16 @@ export function TerimaModalStd({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Tanggal Terima *</label>
-                <input name="terima_tanggal" type="date" defaultValue={new Date().toISOString().split('T')[0]} className={inp} required />
+                <input name="terima_tanggal" type="date" defaultValue={d.terima_tanggal ?? new Date().toISOString().split('T')[0]} className={inp} required />
               </div>
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Jam Terima *</label>
-                <input name="terima_jam" type="time" className={inp} required />
+                <input name="terima_jam" type="time" defaultValue={d.terima_jam ? String(d.terima_jam).slice(0,5) : undefined} className={inp} required />
               </div>
             </div>
             <div>
               <label className="text-xs font-semibold text-gray-500 mb-1 block">Jumlah PCS</label>
-              <input name="terima_pcs" type="number" min="1" placeholder="Isi jika sudah dihitung" className={inp} />
+              <input name="terima_pcs" type="number" min="1" defaultValue={d.terima_pcs ?? ''} placeholder="Isi jika sudah dihitung" className={inp} />
             </div>
 
             {/* Khusus Pas Berat: Sisa Serbuk */}
@@ -311,18 +319,18 @@ export function TerimaModalStd({
                   </div>
                   <div>
                     <label className="text-[11px] text-gray-400 mb-1 block">Reject (pcs)</label>
-                    <input name="reject_pcs" type="number" min="0" defaultValue="0" className={inp} />
+                    <input name="reject_pcs" type="number" min="0" defaultValue={d.reject_pcs ?? 0} className={inp} />
                   </div>
                 </div>
               )}
             </div>
 
-            <TimPickerStd tims={tims} prefix="terima_" />
-            <AdminPickerStd adminList={adminList} prefix="terima_" />
+            <TimPickerStd tims={tims} prefix="terima_" initialTimId={initTimId} initialAnggota={initAnggota} />
+            <AdminPickerStd adminList={adminList} prefix="terima_" initialValue={d.terima_admin_input ?? ''} />
             <FotoPickerStd fotos={fotos} setFotos={setFotos} accent="green" />
             <div>
               <label className="text-xs font-semibold text-gray-500 mb-1 block">Catatan Penerimaan</label>
-              <input name="terima_catatan" type="text" placeholder="Opsional" className={inp} />
+              <input name="terima_catatan" type="text" defaultValue={d.terima_catatan ?? ''} placeholder="Opsional" className={inp} />
             </div>
           </div>
         </div>
@@ -355,7 +363,7 @@ export function TerimaModalStd({
           <button type="button" onClick={onClose} className="flex-1 h-11 rounded-2xl bg-gray-100 text-sm font-semibold text-gray-600">Batal</button>
           <button type="submit" disabled={isPending || up} className="flex-1 h-11 rounded-2xl text-sm font-bold text-white disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg,#059669,#047857)' }}>
-            {up ? 'Upload foto…' : isPending ? 'Menyimpan…' : 'Terima'}
+            {up ? 'Upload foto…' : isPending ? 'Menyimpan…' : isEdit ? 'Simpan Perubahan' : 'Terima'}
           </button>
         </div>
       </form>
@@ -382,3 +390,4 @@ function ModalShell({ judul, kode, onClose, children }: { judul: string; kode: s
     </div>
   )
 }
+
