@@ -1851,9 +1851,10 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
           terima_gram: active.terima_gram, terima_pcs: active.pcs_good ?? active.terima_pcs,
           terima_tanggal: active.tanggal_selesai, terima_jam: active.jam_selesai,
           reject_gram: active.reject_cutting_gram, reject_pcs: active.pcs_reject,
-          terima_catatan: active.catatan,
+          terima_catatan: active.catatan_terima,
           tim_id: active.tim_id, tim_nama: active.tim_nama, tim_anggota_aktif: active.tim_anggota_aktif,
           terima_admin_input: active.admin_input,
+          foto_diterima_cutting: active.foto_diterima_cutting,
         }
         return <TerimaModalStd judul="Edit Terima — Cutting" kode={active.kode} tims={tims} adminList={adminList} serahGram={serahG} toleransi={toleransi.cutting??0.05} prosesLabel="Cutting" initialData={initData} isEdit isPending={isPending} error={err} onClose={()=>setModal(null)} onSubmit={handleEditCutting}/>
       })()}
@@ -1920,6 +1921,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
     </div>
   )
 }
+
 
 
 
