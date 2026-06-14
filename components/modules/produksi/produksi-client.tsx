@@ -11,7 +11,7 @@ import { cn, formatDate } from '@/lib/utils'
 import {
   createProduksi, updateStatusProduksi, editProduksi, selesaiCutting,
   inputReject, leburReject, deleteProduksi, updateSisaFisikBatch,
-  serahStageProduksi, terimaStageProduksi, voidStageHandover, editSerahStage
+  serahStageProduksi, terimaStageProduksi, voidStageHandover, editSerahStage, resetCutting
 } from '@/app/(dashboard)/produksi/actions'
 import type { UserRole } from '@/lib/types/database'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
@@ -1370,7 +1370,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
   const [search, setSearch]     = useState('')
   const [filterStatus, setFilter] = useState<string>('Semua')
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
-  const [modal, setModal]       = useState<'create'|'tambahProduksi'|'edit'|'update'|'delete'|'cuttingTerima'|'editCutting'|'serahStage'|'terimaStage'|'editHandover'|'editSerahStage'|'deleteHandover'|null>(null)
+  const [modal, setModal]       = useState<'create'|'tambahProduksi'|'edit'|'update'|'delete'|'cuttingTerima'|'editCutting'|'serahStage'|'terimaStage'|'editHandover'|'editSerahStage'|'deleteHandover'|'deleteCutting'|null>(null)
   const [active, setActive]     = useState<any>(null)
   const [activeTahap, setActiveTahap]   = useState<string>('')
   const [activeHandoverId, setActiveHandoverId] = useState<number|null>(null)
@@ -1414,6 +1414,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
   function handleEditHandover(fd: FormData) { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await terimaStageProduksi(activeHandoverId,active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Data diperbarui'); setModal(null) }) }
   function handleEditSerahStage(fd: FormData) { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await editSerahStage(activeHandoverId,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Data penyerahan diperbarui'); setModal(null) }) }
   function handleDeleteHandover() { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await voidStageHandover(activeHandoverId,active.id,activeTahap,'Dihapus manual'); if(r?.error){setErr(r.error);return}; showToast('🗑️ Proses dihapus'); setModal(null) }) }
+  function handleDeleteCutting() { if(!active)return; setErr(''); start(async()=>{ const r=await resetCutting(active.id,active.kode); if(r?.error){setErr(r.error);return}; showToast('🗑️ Data terima Cutting dihapus'); setModal(null) }) }
 
   // ── Filter ────────────────────────────────────────────────────────────────
   const STATUS_TABS = ['Semua','Cutting','Pas Berat','Annealing','Siap Packing','Sudah Packing','Reject']
@@ -1684,66 +1685,63 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                         {(item.serah_gram||item.terima_gram)&&(()=>{
                           const serahFotosC: string[] = Array.isArray(item.foto_serahkan_cutting) ? item.foto_serahkan_cutting : []
                           const terimaFotosC: string[] = Array.isArray(item.foto_diterima_cutting) ? item.foto_diterima_cutting : []
-                          const tglMulai = item.tanggal_mulai || item.tanggal_produksi
                           const durasiC = getDurasiJam(item.jam_mulai_cutting, item.jam_selesai)
                           return (
-                          <div className="px-4 py-3.5 border-t" style={{borderColor:'rgba(139,92,246,0.07)'}}>
-                            <div className="flex items-center gap-2 mb-2.5 flex-wrap">
-                              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full text-white" style={{background:'#3B82F6'}}>Cutting</span>
-                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${item.status_cutting==='selesai'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>
-                                {item.status_cutting==='selesai'?'✓ Selesai':'⏳ Proses'}
-                              </span>
-                              {canEdit&&!isVoided&&(
-                                <div className="ml-auto flex items-center gap-1.5">
-                                  <button onClick={()=>openModal('edit',item)}
-                                    className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-semibold text-blue-500 hover:bg-blue-50 transition-colors border border-blue-100">
-                                    <Edit2 size={9}/> Edit Diserahkan
-                                  </button>
-                                  {item.terima_gram&&(
-                                    <button onClick={()=>openModal('editCutting',item)}
-                                      className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-semibold text-green-600 hover:bg-green-50 transition-colors border border-green-100">
-                                      <Edit2 size={9}/> Edit Diterima
+                            <div className="px-4 py-3.5 border-t" style={{borderColor:'rgba(139,92,246,0.07)'}}>
+                              {/* Badge row */}
+                              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full text-white" style={{background:'#3B82F6'}}>Cutting</span>
+                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${item.status_cutting==='selesai'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>
+                                  {item.status_cutting==='selesai'?'✓ Selesai':'⏳ Proses'}
+                                </span>
+                                {durasiC&&<span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 text-violet-600">⏱ {durasiC}</span>}
+                                {canEdit&&!isVoided&&(
+                                  <div className="ml-auto flex items-center gap-1.5">
+                                    <button onClick={()=>openModal('edit',item)}
+                                      className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-semibold text-blue-500 hover:bg-blue-50 transition-colors border border-blue-100">
+                                      <Edit2 size={9}/> Serah
                                     </button>
-                                  )}
+                                    {item.terima_gram&&(
+                                      <button onClick={()=>openModal('editCutting',item)}
+                                        className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-semibold text-green-600 hover:bg-green-50 transition-colors border border-green-100">
+                                        <Edit2 size={9}/> Terima
+                                      </button>
+                                    )}
+                                    {canDelete&&(
+                                      <button onClick={()=>openModal('deleteCutting',item)}
+                                        className="flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] font-semibold text-red-400 hover:bg-red-50 transition-colors border border-red-100">
+                                        <Trash2 size={9}/>
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              {/* Serah / Terima cards */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div className="rounded-xl p-3 space-y-1"
+                                  style={{background:'rgba(59,130,246,0.04)',border:'1px solid rgba(59,130,246,0.1)'}}>
+                                  <p className="text-[9px] font-bold text-blue-500 uppercase tracking-wide">📤 Diserahkan</p>
+                                  <p className="font-bold text-gray-800">{item.serah_gram?`${parseFloat(item.serah_gram).toFixed(3)} gr`:'—'}</p>
+                                  {(item.tanggal_mulai||item.tanggal_produksi||item.jam_mulai_cutting)&&<p className="text-[11px] text-gray-400">{new Date(item.tanggal_mulai||item.tanggal_produksi).toLocaleDateString('id-ID')}{item.jam_mulai_cutting?` · ${String(item.jam_mulai_cutting).slice(0,5)}`:''}</p>}
+                                  {(item.tim_nama||item.operator)&&<p className="text-[11px] text-gray-400">👥 {item.tim_nama||item.operator}{item.tim_anggota_aktif?`: ${item.tim_anggota_aktif}`:''}</p>}
+                                  {item.catatan&&<p className="text-[11px] text-gray-400 italic">{item.catatan}</p>}
+                                  {serahFotosC.length>0&&<div className="flex gap-1.5 flex-wrap pt-1">{serahFotosC.map((u,fi)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-14 h-14 rounded-xl object-cover border-2 border-blue-100 hover:scale-110 transition-transform shadow-sm cursor-pointer"/></a>)}</div>}
                                 </div>
-                              )}
-                            </div>
-                            {/* Jam & tanggal detail */}
-                            <div className="flex flex-wrap gap-x-4 gap-y-1 mb-3 text-[11px]">
-                              {item.jam_mulai_cutting&&(
-                                <span className="text-gray-500">⏱ <span className="font-semibold text-gray-700">{String(item.jam_mulai_cutting).slice(0,5)}{item.jam_selesai?` – ${String(item.jam_selesai).slice(0,5)}`:''}</span>{durasiC&&<span className="text-violet-500 font-semibold ml-1">({durasiC})</span>}</span>
-                              )}
-                              {tglMulai&&(
-                                <span className="text-gray-500">📅 <span className="font-semibold text-gray-700">{new Date(tglMulai).toLocaleDateString('id-ID')}{item.tanggal_selesai&&item.tanggal_selesai!==tglMulai?` – ${new Date(item.tanggal_selesai).toLocaleDateString('id-ID')}`:''}</span></span>
-                              )}
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              {/* Diserahkan */}
-                              <div className="rounded-xl p-3 space-y-1.5" style={{background:'rgba(59,130,246,0.04)',border:'1px solid rgba(59,130,246,0.1)'}}>
-                                <p className="text-[9px] font-bold text-blue-500 uppercase tracking-wide">📤 Diserahkan</p>
-                                <p className="font-bold text-gray-800">{item.serah_gram?`${parseFloat(item.serah_gram).toFixed(3)} gr`:'—'}</p>
-                                {(item.tim_nama||item.operator)&&<p className="text-[11px] text-gray-400">👥 {item.tim_nama||item.operator}{item.tim_anggota_aktif?`: ${item.tim_anggota_aktif}`:''}</p>}
-                                {serahFotosC.length>0&&<div className="flex gap-1.5 flex-wrap pt-1">{serahFotosC.map((u,fi)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-12 h-12 rounded-lg object-cover border-2 border-blue-100 hover:opacity-80"/></a>)}</div>}
-                              </div>
-                              {/* Diterima */}
-                              <div className="rounded-xl p-3 space-y-1.5" style={{background:item.terima_gram?'rgba(34,197,94,0.04)':'rgba(0,0,0,0.02)',border:`1px solid ${item.terima_gram?'rgba(34,197,94,0.15)':'rgba(0,0,0,0.06)'}`}}>
-                                <p className="text-[9px] font-bold text-green-500 uppercase tracking-wide">📥 Diterima</p>
-                                {item.terima_gram?(<>
-                                  <p className="font-bold text-gray-800">{parseFloat(item.terima_gram).toFixed(3)} gr{item.terima_pcs?` · ${item.terima_pcs} PCS`:''}</p>
-                                  {item.admin_input&&<p className="text-[11px] text-gray-400">✍️ {item.admin_input}</p>}
-                                  {Number(item.reject_cutting_gram)>0&&<p className="text-[11px] font-semibold text-red-500">Reject Cutting: {parseFloat(item.reject_cutting_gram).toFixed(3)} gr</p>}
-                                  {Number(item.losses_cutting)>0&&<p className="text-[11px] font-semibold text-orange-500">Losses: {parseFloat(item.losses_cutting).toFixed(3)} gr</p>}
-                                  {terimaFotosC.length>0&&<div className="flex gap-1.5 flex-wrap pt-1">{terimaFotosC.map((u,fi)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-12 h-12 rounded-lg object-cover border-2 border-green-100 hover:opacity-80"/></a>)}</div>}
-                                </>):<p className="text-[11px] text-gray-400 italic">Belum diterima</p>}
+                                <div className="rounded-xl p-3 space-y-1"
+                                  style={{background:item.terima_gram?'rgba(34,197,94,0.04)':'rgba(0,0,0,0.02)',border:`1px solid ${item.terima_gram?'rgba(34,197,94,0.15)':'rgba(0,0,0,0.06)'}`}}>
+                                  <p className="text-[9px] font-bold text-green-500 uppercase tracking-wide">📥 Diterima</p>
+                                  {item.terima_gram?(<>
+                                    <p className="font-bold text-gray-800">{parseFloat(item.terima_gram).toFixed(3)} gr{item.terima_pcs?` · ${item.terima_pcs} PCS`:''}</p>
+                                    {(item.tanggal_selesai||item.jam_selesai)&&<p className="text-[11px] text-gray-400">{item.tanggal_selesai?new Date(item.tanggal_selesai).toLocaleDateString('id-ID'):''}{item.jam_selesai?` · ${String(item.jam_selesai).slice(0,5)}`:''}</p>}
+                                    {item.admin_input&&<p className="text-[11px] text-gray-400">✍️ {item.admin_input}</p>}
+                                    {Number(item.reject_cutting_gram)>0&&<p className="text-[11px] font-semibold text-red-500">Reject Cutting: {parseFloat(item.reject_cutting_gram).toFixed(3)} gr</p>}
+                                    {Number(item.losses_cutting)>0&&<p className="text-[11px] font-semibold text-orange-500">Losses: {parseFloat(item.losses_cutting).toFixed(3)} gr</p>}
+                                    {item.catatan_terima&&<p className="text-[11px] text-gray-400 italic">{item.catatan_terima}</p>}
+                                    {terimaFotosC.length>0&&<div className="flex gap-1.5 flex-wrap pt-1">{terimaFotosC.map((u,fi)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-14 h-14 rounded-xl object-cover border-2 border-green-100 hover:scale-110 transition-transform shadow-sm cursor-pointer"/></a>)}</div>}
+                                  </>):<p className="text-[11px] text-gray-400 italic">Belum diterima</p>}
+                                </div>
                               </div>
                             </div>
-                            {/* Catatan */}
-                            {item.catatan&&(
-                              <div className="mt-2 px-3 py-2 rounded-xl text-[11px] text-gray-500 italic" style={{background:'rgba(139,92,246,0.04)'}}>
-                                📝 {item.catatan}
-                              </div>
-                            )}
-                          </div>
                           )
                         })()}
                         {handovers.map((h:any)=>{
@@ -1902,9 +1900,27 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
           </div>
         )
       })()}
+      {modal==='deleteCutting' && active && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.4)',backdropFilter:'blur(8px)'}}>
+          <div className="w-full max-w-sm rounded-3xl p-6 text-center" style={{background:'rgba(255,255,255,0.96)',backdropFilter:'blur(24px)',boxShadow:'0 32px 64px rgba(239,68,68,0.15)'}}>
+            <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><Trash2 size={24} className="text-red-500"/></div>
+            <h2 className="text-lg font-bold text-gray-900">Hapus Proses Cutting?</h2>
+            <p className="text-sm text-gray-500 mt-2 mb-1">Data <b>terima Cutting</b> untuk {active.kode} akan dihapus.</p>
+            <p className="text-xs text-gray-400 mb-5">Status kembali ke Cutting (proses). Data penyerahan tetap.</p>
+            {err&&<div className="mb-3 px-3 py-2 bg-red-50 rounded-xl text-xs text-red-600">{err}</div>}
+            <div className="flex gap-3">
+              <button onClick={()=>setModal(null)} className="flex-1 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
+              <button onClick={handleDeleteCutting} disabled={isPending} className="flex-1 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-2xl disabled:opacity-60">
+                {isPending?'Menghapus…':'Ya, Hapus'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
 
 
 
