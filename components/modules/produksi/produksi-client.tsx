@@ -11,7 +11,7 @@ import { cn, formatDate } from '@/lib/utils'
 import {
   createProduksi, updateStatusProduksi, editProduksi, selesaiCutting,
   inputReject, leburReject, deleteProduksi, updateSisaFisikBatch,
-  serahStageProduksi, terimaStageProduksi, voidStageHandover
+  serahStageProduksi, terimaStageProduksi, voidStageHandover, editSerahStage
 } from '@/app/(dashboard)/produksi/actions'
 import type { UserRole } from '@/lib/types/database'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
@@ -1370,7 +1370,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
   const [search, setSearch]     = useState('')
   const [filterStatus, setFilter] = useState<string>('Semua')
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
-  const [modal, setModal]       = useState<'create'|'tambahProduksi'|'edit'|'update'|'delete'|'cuttingTerima'|'editCutting'|'serahStage'|'terimaStage'|'editHandover'|null>(null)
+  const [modal, setModal]       = useState<'create'|'tambahProduksi'|'edit'|'update'|'delete'|'cuttingTerima'|'editCutting'|'serahStage'|'terimaStage'|'editHandover'|'editSerahStage'|'deleteHandover'|null>(null)
   const [active, setActive]     = useState<any>(null)
   const [activeTahap, setActiveTahap]   = useState<string>('')
   const [activeHandoverId, setActiveHandoverId] = useState<number|null>(null)
@@ -1388,6 +1388,8 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
   function openSerahStage(item: any, tahap: string)  { setActive(item); setActiveTahap(tahap); setErr(''); setModal('serahStage') }
   function openTerimaStage(item: any, tahap: string, hid: number) { setActive(item); setActiveTahap(tahap); setActiveHandoverId(hid); setErr(''); setModal('terimaStage') }
   function openEditHandover(item: any, h: any) { setActive(item); setActiveTahap(h.tahap); setActiveHandoverId(h.id); setActiveHandoverData(h); setErr(''); setModal('editHandover') }
+  function openEditSerahStage(item: any, h: any) { setActive(item); setActiveTahap(h.tahap); setActiveHandoverId(h.id); setActiveHandoverData(h); setErr(''); setModal('editSerahStage') }
+  function openDeleteHandover(item: any, h: any) { setActive(item); setActiveTahap(h.tahap); setActiveHandoverId(h.id); setActiveHandoverData(h); setErr(''); setModal('deleteHandover') }
   function toggleExp(id: number) { setExpanded(prev => { const n=new Set(prev); n.has(id)?n.delete(id):n.add(id); return n }) }
 
   function handleCreate(fd: FormData) { setErr(''); start(async()=>{ const r=await createProduksi(fd); if(r?.error){setErr(r.error);return}; showToast(`✅ ${r.kode} dibuat`); setModal(null) }) }
@@ -1395,11 +1397,23 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
   function handleEdit(fd: FormData)   { if(!active)return; setErr(''); start(async()=>{ const r=await editProduksi(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Diperbarui'); setModal(null) }) }
   function handleUpdate(fd: FormData) { if(!active)return; setErr(''); start(async()=>{ const r=await updateStatusProduksi(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Status diperbarui'); setModal(null) }) }
   function handleDelete()             { if(!active)return; setErr(''); start(async()=>{ const r=await deleteProduksi(active.id,active.kode); if(r?.error){setErr(r.error); showToast(r.error,false); return}; showToast('🗑️ Dihapus'); setModal(null) }) }
-  function handleSelesaiCutting(fd: FormData) { if(!active)return; setErr(''); start(async()=>{ const r=await selesaiCutting(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Cutting diterima'); setModal(null) }) }
-  function handleEditCutting(fd: FormData) { if(!active)return; setErr(''); fd.set('is_edit','1'); start(async()=>{ const r=await selesaiCutting(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Cutting diperbarui'); setModal(null) }) }
+  function mapStdToCutting(fd: FormData): FormData {
+    // Terjemahkan nama field standar → nama field yang dibaca selesaiCutting
+    if (fd.get('reject_gram') != null && fd.get('reject_cutting_gram') == null) fd.set('reject_cutting_gram', String(fd.get('reject_gram')))
+    if (fd.get('terima_pcs') != null) fd.set('pcs_good', String(fd.get('terima_pcs')))
+    if (fd.get('reject_pcs') != null) fd.set('pcs_reject', String(fd.get('reject_pcs')))
+    if (fd.get('terima_jam') != null) fd.set('jam_selesai', String(fd.get('terima_jam')))
+    if (fd.get('terima_tanggal') != null) fd.set('tanggal_selesai', String(fd.get('terima_tanggal')))
+    if (fd.get('terima_catatan') != null) fd.set('catatan', String(fd.get('terima_catatan')))
+    return fd
+  }
+  function handleSelesaiCutting(fd: FormData) { if(!active)return; setErr(''); mapStdToCutting(fd); start(async()=>{ const r=await selesaiCutting(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Cutting diterima'); setModal(null) }) }
+  function handleEditCutting(fd: FormData) { if(!active)return; setErr(''); fd.set('is_edit','1'); mapStdToCutting(fd); start(async()=>{ const r=await selesaiCutting(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Cutting diperbarui'); setModal(null) }) }
   function handleSerahStage(fd: FormData)  { if(!active)return; setErr(''); start(async()=>{ const r=await serahStageProduksi(active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast(`✅ Diserahkan ke ${activeTahap.replace('_',' ')}`); setModal(null) }) }
   function handleTerimaStage(fd: FormData) { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await terimaStageProduksi(activeHandoverId,active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast(`✅ Terima berhasil`); setModal(null) }) }
   function handleEditHandover(fd: FormData) { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await terimaStageProduksi(activeHandoverId,active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Data diperbarui'); setModal(null) }) }
+  function handleEditSerahStage(fd: FormData) { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await editSerahStage(activeHandoverId,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Data penyerahan diperbarui'); setModal(null) }) }
+  function handleDeleteHandover() { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await voidStageHandover(activeHandoverId,active.id,activeTahap,'Dihapus manual'); if(r?.error){setErr(r.error);return}; showToast('🗑️ Proses dihapus'); setModal(null) }) }
 
   // ── Filter ────────────────────────────────────────────────────────────────
   const STATUS_TABS = ['Semua','Cutting','Pas Berat','Annealing','Siap Packing','Sudah Packing','Reject']
@@ -1708,7 +1722,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                               <div className="rounded-xl p-3 space-y-1.5" style={{background:'rgba(59,130,246,0.04)',border:'1px solid rgba(59,130,246,0.1)'}}>
                                 <p className="text-[9px] font-bold text-blue-500 uppercase tracking-wide">📤 Diserahkan</p>
                                 <p className="font-bold text-gray-800">{item.serah_gram?`${parseFloat(item.serah_gram).toFixed(3)} gr`:'—'}</p>
-                                {item.operator&&<p className="text-[11px] text-gray-400">👤 {item.operator}</p>}
+                                {(item.tim_nama||item.operator)&&<p className="text-[11px] text-gray-400">👥 {item.tim_nama||item.operator}{item.tim_anggota_aktif?`: ${item.tim_anggota_aktif}`:''}</p>}
                                 {serahFotosC.length>0&&<div className="flex gap-1.5 flex-wrap pt-1">{serahFotosC.map((u,fi)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-12 h-12 rounded-lg object-cover border-2 border-blue-100 hover:opacity-80"/></a>)}</div>}
                               </div>
                               {/* Diterima */}
@@ -1716,6 +1730,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                 <p className="text-[9px] font-bold text-green-500 uppercase tracking-wide">📥 Diterima</p>
                                 {item.terima_gram?(<>
                                   <p className="font-bold text-gray-800">{parseFloat(item.terima_gram).toFixed(3)} gr{item.terima_pcs?` · ${item.terima_pcs} PCS`:''}</p>
+                                  {item.admin_input&&<p className="text-[11px] text-gray-400">✍️ {item.admin_input}</p>}
                                   {Number(item.reject_cutting_gram)>0&&<p className="text-[11px] font-semibold text-red-500">Reject Cutting: {parseFloat(item.reject_cutting_gram).toFixed(3)} gr</p>}
                                   {Number(item.losses_cutting)>0&&<p className="text-[11px] font-semibold text-orange-500">Losses: {parseFloat(item.losses_cutting).toFixed(3)} gr</p>}
                                   {terimaFotosC.length>0&&<div className="flex gap-1.5 flex-wrap pt-1">{terimaFotosC.map((u,fi)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-12 h-12 rounded-lg object-cover border-2 border-green-100 hover:opacity-80"/></a>)}</div>}
@@ -1736,21 +1751,37 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                           const tc:Record<string,string>={pas_berat:'#F97316',annealing:'#EAB308',siap_packing:'#8B5CF6'}
                           const serahFotos:string[]=Array.isArray(h.serah_fotos)?h.serah_fotos:[]
                           const terimaFotos:string[]=Array.isArray(h.terima_fotos)?h.terima_fotos:[]
+                          const durasiH = getDurasiJam(h.serah_jam, h.terima_jam)
                           return (
                             <div key={h.id} className="px-4 py-3.5 border-t"
                               style={{borderColor:'rgba(139,92,246,0.07)'}}>
                               {/* Badge row */}
-                              <div className="flex items-center gap-2 mb-3">
+                              <div className="flex items-center gap-2 mb-3 flex-wrap">
                                 <span className="text-[10px] font-bold px-2.5 py-1 rounded-full text-white"
                                   style={{background:tc[h.tahap]}}>{tl[h.tahap]}</span>
                                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${h.status==='selesai'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>
                                   {h.status==='selesai'?'✓ Selesai':'⏳ Proses'}
                                 </span>
+                                {durasiH&&<span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 text-violet-600">⏱ {durasiH}</span>}
                                 {canEdit&&(
-                                  <button onClick={()=>openEditHandover(item,h)}
-                                    className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-semibold text-blue-500 hover:bg-blue-50 transition-colors border border-blue-100">
-                                    <Edit2 size={9}/> Edit
-                                  </button>
+                                  <div className="ml-auto flex items-center gap-1.5">
+                                    <button onClick={()=>openEditSerahStage(item,h)}
+                                      className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-semibold text-blue-500 hover:bg-blue-50 transition-colors border border-blue-100">
+                                      <Edit2 size={9}/> Serah
+                                    </button>
+                                    {h.terima_gram!=null&&(
+                                      <button onClick={()=>openEditHandover(item,h)}
+                                        className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-semibold text-green-600 hover:bg-green-50 transition-colors border border-green-100">
+                                        <Edit2 size={9}/> Terima
+                                      </button>
+                                    )}
+                                    {canDelete&&(
+                                      <button onClick={()=>openDeleteHandover(item,h)}
+                                        className="flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] font-semibold text-red-400 hover:bg-red-50 transition-colors border border-red-100">
+                                        <Trash2 size={9}/>
+                                      </button>
+                                    )}
+                                  </div>
                                 )}
                               </div>
                               {/* Serah / Terima cards */}
@@ -1760,7 +1791,8 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   <p className="text-[9px] font-bold text-blue-500 uppercase tracking-wide">📤 Diserahkan</p>
                                   <p className="font-bold text-gray-800">{h.serah_gram?`${parseFloat(h.serah_gram).toFixed(3)} gr`:'—'}{h.serah_pcs?` · ${h.serah_pcs} PCS`:''}</p>
                                   {h.serah_tanggal&&<p className="text-[11px] text-gray-400">{new Date(h.serah_tanggal).toLocaleDateString('id-ID')}{h.serah_jam?` · ${String(h.serah_jam).slice(0,5)}`:''}</p>}
-                                  {h.serah_operator&&<p className="text-[11px] text-gray-400">👤 {h.serah_operator}</p>}
+                                  {(h.tim_nama||h.serah_operator)&&<p className="text-[11px] text-gray-400">👥 {h.tim_nama||h.serah_operator}{h.tim_anggota_aktif?`: ${h.tim_anggota_aktif}`:''}</p>}
+                                  {h.serah_admin_input&&<p className="text-[11px] text-gray-400">✍️ {h.serah_admin_input}</p>}
                                   {h.serah_catatan&&<p className="text-[11px] text-gray-400 italic">{h.serah_catatan}</p>}
                                   {serahFotos.length>0&&<div className="flex gap-1.5 flex-wrap pt-1">{serahFotos.map((u:string,fi:number)=><img key={fi} src={u} className="w-14 h-14 rounded-xl object-cover border-2 border-blue-100 hover:scale-110 transition-transform shadow-sm cursor-pointer"/>)}</div>}
                                 </div>
@@ -1770,7 +1802,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   {h.terima_gram?(<>
                                     <p className="font-bold text-gray-800">{parseFloat(h.terima_gram).toFixed(3)} gr{h.terima_pcs?` · ${h.terima_pcs} PCS`:''}</p>
                                     {h.terima_tanggal&&<p className="text-[11px] text-gray-400">{new Date(h.terima_tanggal).toLocaleDateString('id-ID')}{h.terima_jam?` · ${String(h.terima_jam).slice(0,5)}`:''}</p>}
-                                    {h.terima_operator&&<p className="text-[11px] text-gray-400">👤 {h.terima_operator}</p>}
+                                    {h.terima_admin_input&&<p className="text-[11px] text-gray-400">✍️ {h.terima_admin_input}</p>}
                                     {Number(h.sisa_serbuk)>0&&<p className="text-[11px] font-semibold text-violet-600">Serbuk: {parseFloat(h.sisa_serbuk).toFixed(3)} gr</p>}
                                     {Number(h.reject_gram)>0&&<p className="text-[11px] font-semibold text-red-500">Reject: {parseFloat(h.reject_gram).toFixed(3)} gr{h.reject_pcs?` · ${h.reject_pcs} PCS`:''}</p>}
                                     {Number(h.losses_gram)>0&&<p className="text-[11px] font-semibold text-orange-500">Losses: {parseFloat(h.losses_gram).toFixed(3)} gr</p>}
@@ -1811,8 +1843,22 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
       {modal==='tambahProduksi'&& active            && <TambahProduksiModal item={active} peleburanByBatch={peleburanByBatch} tims={tims} onClose={()=>setModal(null)} onSubmit={handleTambahProduksi} isPending={isPending} error={err}/>}
       {modal==='edit'          && active            && <EditModal item={active} onClose={()=>setModal(null)} onSubmit={handleEdit} isPending={isPending} error={err}/>}
       {modal==='update'        && active            && <UpdateModal item={active} onClose={()=>setModal(null)} onSubmit={handleUpdate} isPending={isPending} error={err}/>}
-      {modal==='cuttingTerima' && active            && <SelesaiCuttingModal item={active} toleransi={toleransi.cutting??0.05} onClose={()=>setModal(null)} onSubmit={handleSelesaiCutting} isPending={isPending} error={err}/>}
-      {modal==='editCutting'   && active            && <SelesaiCuttingModal item={active} isEdit toleransi={toleransi.cutting??0.05} onClose={()=>setModal(null)} onSubmit={handleEditCutting} isPending={isPending} error={err}/>}
+      {modal==='cuttingTerima' && active            && (()=>{
+        const serahG = Number(active.serah_gram ?? active.berat_awal ?? 0)
+        return <TerimaModalStd judul="Terima Cutting" kode={active.kode} tims={tims} adminList={adminList} serahGram={serahG} toleransi={toleransi.cutting??0.05} prosesLabel="Cutting" isPending={isPending} error={err} onClose={()=>setModal(null)} onSubmit={handleSelesaiCutting}/>
+      })()}
+      {modal==='editCutting'   && active            && (()=>{
+        const serahG = Number(active.serah_gram ?? active.berat_awal ?? 0)
+        const initData = {
+          terima_gram: active.terima_gram, terima_pcs: active.pcs_good ?? active.terima_pcs,
+          terima_tanggal: active.tanggal_selesai, terima_jam: active.jam_selesai,
+          reject_gram: active.reject_cutting_gram, reject_pcs: active.pcs_reject,
+          terima_catatan: active.catatan,
+          tim_id: active.tim_id, tim_nama: active.tim_nama, tim_anggota_aktif: active.tim_anggota_aktif,
+          terima_admin_input: active.admin_input,
+        }
+        return <TerimaModalStd judul="Edit Terima — Cutting" kode={active.kode} tims={tims} adminList={adminList} serahGram={serahG} toleransi={toleransi.cutting??0.05} prosesLabel="Cutting" initialData={initData} isEdit isPending={isPending} error={err} onClose={()=>setModal(null)} onSubmit={handleEditCutting}/>
+      })()}
       {modal==='serahStage'    && active            && (()=>{
         const tahapJudul: Record<string,string> = { pas_berat:'Serahkan ke Pas Berat', annealing:'Serahkan ke Annealing', siap_packing:'Serahkan ke Siap Packing' }
         return <SerahModalStd judul={tahapJudul[activeTahap]??'Serahkan'} kode={active.kode} tims={tims} adminList={adminList} isPending={isPending} error={err} onClose={()=>setModal(null)} onSubmit={handleSerahStage}/>
@@ -1826,10 +1872,40 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
         return <TerimaModalStd judul={tahapJudul[activeTahap]??'Terima'} kode={active.kode} tims={tims} adminList={adminList} serahGram={serahG} toleransi={toleransi[activeTahap]??0.05} showSerbuk={activeTahap==='pas_berat'} prosesLabel={tahapLabel[activeTahap]??activeTahap} isPending={isPending} error={err} onClose={()=>setModal(null)} onSubmit={handleTerimaStage}/>
       })()}
       {modal==='delete'        && active            && <DelModal item={active} onClose={()=>setModal(null)} onConfirm={handleDelete} isPending={isPending} error={err}/>}
-      {modal==='editHandover'  && active&&activeHandoverData && <TerimaStageModal item={active} tahap={activeTahap} tims={tims} toleransi={toleransi[activeTahap]??0.05} handoverId={activeHandoverId??0} initialData={activeHandoverData} onClose={()=>setModal(null)} onSubmit={handleEditHandover} isPending={isPending} error={err}/>}
+      {modal==='editSerahStage'&& active&&activeHandoverData && (()=>{
+        const tahapJudul: Record<string,string> = { pas_berat:'Edit Serah — Pas Berat', annealing:'Edit Serah — Annealing', siap_packing:'Edit Serah — Siap Packing' }
+        return <SerahModalStd judul={tahapJudul[activeTahap]??'Edit Serah'} kode={active.kode} tims={tims} adminList={adminList} initialData={activeHandoverData} isEdit isPending={isPending} error={err} onClose={()=>setModal(null)} onSubmit={handleEditSerahStage}/>
+      })()}
+      {modal==='editHandover'  && active&&activeHandoverData && (()=>{
+        const serahG = Number(activeHandoverData?.serah_gram ?? 0)
+        const tahapJudul: Record<string,string> = { pas_berat:'Edit Terima — Pas Berat', annealing:'Edit Terima — Annealing', siap_packing:'Edit Terima — Siap Packing' }
+        const tahapLabel: Record<string,string> = { pas_berat:'Pas Berat', annealing:'Annealing', siap_packing:'Siap Packing' }
+        return <TerimaModalStd judul={tahapJudul[activeTahap]??'Edit Terima'} kode={active.kode} tims={tims} adminList={adminList} serahGram={serahG} toleransi={toleransi[activeTahap]??0.05} showSerbuk={activeTahap==='pas_berat'} prosesLabel={tahapLabel[activeTahap]??activeTahap} initialData={activeHandoverData} isEdit isPending={isPending} error={err} onClose={()=>setModal(null)} onSubmit={handleEditHandover}/>
+      })()}
+      {modal==='deleteHandover'&& active&&activeHandoverData && (()=>{
+        const tl:Record<string,string>={pas_berat:'Pas Berat',annealing:'Annealing',siap_packing:'Siap Packing'}
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{background:'rgba(0,0,0,0.4)',backdropFilter:'blur(8px)'}}>
+            <div className="w-full max-w-sm rounded-3xl p-6 text-center" style={{background:'rgba(255,255,255,0.96)',backdropFilter:'blur(24px)',boxShadow:'0 32px 64px rgba(239,68,68,0.15)'}}>
+              <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><Trash2 size={24} className="text-red-500"/></div>
+              <h2 className="text-lg font-bold text-gray-900">Hapus Proses {tl[activeTahap]}?</h2>
+              <p className="text-sm text-gray-500 mt-2 mb-1">Data serah-terima <b>{tl[activeTahap]}</b> untuk {active.kode} akan dihapus.</p>
+              <p className="text-xs text-gray-400 mb-5">Status produksi kembali ke tahap sebelumnya.</p>
+              {err&&<div className="mb-3 px-3 py-2 bg-red-50 rounded-xl text-xs text-red-600">{err}</div>}
+              <div className="flex gap-3">
+                <button onClick={()=>setModal(null)} className="flex-1 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
+                <button onClick={handleDeleteHandover} disabled={isPending} className="flex-1 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-2xl disabled:opacity-60">
+                  {isPending?'Menghapus…':'Ya, Hapus'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
+
 
 
 
