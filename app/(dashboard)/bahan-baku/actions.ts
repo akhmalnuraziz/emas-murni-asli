@@ -425,6 +425,9 @@ export async function createPeleburan(formData: FormData) {
     diterima_gram: null,
     operator, keterangan_serahkan: keterangan,
     foto_serahkan: fotoUrls,
+    tim_id: formData.get('tim_id') ? Number(formData.get('tim_id')) : null,
+    tim_nama: (formData.get('tim_nama') as string) || null,
+    admin_input: (formData.get('admin_input') as string) || null,
     status: 'proses',
     created_by: user.id,
   }).select().single()
@@ -480,8 +483,11 @@ export async function selesaiLebur(id: number, formData: FormData) {
   const diterima        = parseFloat(formData.get('diterima_gram') as string)
   const tanggalTerima   = formData.get('tanggal_diterima') as string
   const jamSelesai      = formData.get('jam_selesai') as string || null
-  const operatorTerima  = formData.get('operator_diterima') as string || null
+  const operatorTerima  = (formData.get('operator_diterima') as string) || (formData.get('terima_operator') as string) || null
   const keteranganTrm   = formData.get('keterangan_diterima') as string || null
+  const terimaTimId     = formData.get('terima_tim_id') ? Number(formData.get('terima_tim_id')) : null
+  const terimaTimNama   = (formData.get('terima_tim_nama') as string) || null
+  const terimaAdmin     = (formData.get('terima_admin_input') as string) || null
 
   if (!diterima || diterima <= 0) return { error: 'Berat diterima wajib diisi' }
   if (!tanggalTerima)             return { error: 'Tanggal diterima wajib diisi' }
@@ -527,6 +533,8 @@ export async function selesaiLebur(id: number, formData: FormData) {
     keterangan_diterima: keteranganTrm,
     foto_diterima: fotoUrls,
     status: 'selesai',
+    ...(terimaTimId ? { tim_id: terimaTimId, tim_nama: terimaTimNama } : {}),
+    ...(terimaAdmin ? { admin_input: terimaAdmin } : {}),
   }).eq('id', id)
 
   if (error) return { error: error.message }
@@ -564,8 +572,11 @@ export async function editPeleburan(id: number, formData: FormData) {
   const dikasih   = parseFloat(formData.get('dikasih_gram') as string)
   const tanggal   = formData.get('tanggal') as string
   const jamMulai  = formData.get('jam_mulai') as string || null
-  const operator  = formData.get('operator') as string || null
+  const operator  = (formData.get('operator') as string) || null
   const keterangan = formData.get('keterangan_serahkan') as string || null
+  const timId      = formData.get('tim_id') ? Number(formData.get('tim_id')) : null
+  const timNama    = (formData.get('tim_nama') as string) || null
+  const adminInput = (formData.get('admin_input') as string) || null
 
   if (!dikasih || dikasih <= 0) return { error: 'Berat diserahkan wajib diisi' }
   if (!tanggal)                  return { error: 'Tanggal mulai wajib diisi' }
@@ -598,6 +609,8 @@ export async function editPeleburan(id: number, formData: FormData) {
     dikasih_gram: dikasih, tanggal, jam_mulai: jamMulai,
     operator, keterangan_serahkan: keterangan,
     foto_serahkan: fotoUrls,
+    tim_id: timId, tim_nama: timNama,
+    ...(adminInput ? { admin_input: adminInput } : {}),
   }
 
   // ── Handle bagian DITERIMA (jika peleburan sudah selesai) ────────────────
@@ -618,8 +631,9 @@ export async function editPeleburan(id: number, formData: FormData) {
     updatePayload.diterima_gram      = diterimaBaru
     updatePayload.tanggal_diterima   = formData.get('tanggal_diterima') as string || null
     updatePayload.jam_selesai        = formData.get('jam_selesai') as string || null
-    updatePayload.operator_diterima  = formData.get('operator_diterima') as string || null
+    updatePayload.operator_diterima  = (formData.get('operator_diterima') as string) || (formData.get('terima_operator') as string) || null
     updatePayload.keterangan_diterima = formData.get('keterangan_diterima') as string || null
+    if (formData.get('terima_admin_input')) updatePayload.admin_input = formData.get('terima_admin_input') as string
     updatePayload.foto_diterima      = fotoDtUrls
 
     // Sesuaikan bahan_siap_cetak: ganti kontribusi lama dengan baru
@@ -680,6 +694,7 @@ export async function getPeleburanByBatch(batchKode: string) {
     .order('created_at', { ascending: false })
   return data ?? []
 }
+
 
 
 
