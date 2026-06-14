@@ -692,7 +692,7 @@ function EditModal({ item, onClose, onSubmit, isPending, error }: {
           <F label="Nama / Label Batch"><input value={f.nama_item} onChange={e => s('nama_item', e.target.value)} placeholder="cth: LM REI 10GR BATCH 26" className={inp} /></F>
           <div className="grid grid-cols-2 gap-3 items-end">
             <F label="Pilih Gramasi" req><select value={f.gramasi} onChange={e => { s('gramasi', e.target.value); s('nama_item', `LM REI ${e.target.value}GR`) }} className={inp}>{GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} Gram</option>)}</select></F>
-            <F label="Jumlah PCS"><input type="number" min="1" value={f.pcs} onChange={e => s('pcs', e.target.value)} className={inp} /></F>
+            <F label="Jumlah PCS (opsional saat diserahkan)"><input type="number" min="1" value={f.pcs} onChange={e => s('pcs', e.target.value)} placeholder="Isi saat sudah diterima" className={inp} /></F>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <F label="Total Berat (gr)" req><input type="number" step="0.01" value={f.berat_awal} onChange={e => s('berat_awal', e.target.value)} className={inp} /></F>
@@ -716,7 +716,7 @@ function EditModal({ item, onClose, onSubmit, isPending, error }: {
                 ))}
               </div>
             )}
-            <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 5))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label={existingFotos.length > 0 ? 'Tambah foto lagi' : 'Tambah foto (opsional)'} />
+            <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label={existingFotos.length > 0 ? 'Tambah foto lagi' : 'Tambah foto (opsional)'} />
           </div>
           {error && <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600"><AlertTriangle size={14} />{error}</div>}
           <div className="flex gap-3 justify-end pt-1">
@@ -885,7 +885,7 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
               <Camera size={14} className="text-gray-400 flex-shrink-0" />
               <span className="text-xs text-gray-400">{fotos.length > 0 ? `${fotos.length} foto baru` : (existingFotos.length > 0 ? 'Tambah foto lagi' : 'Tambah foto (opsional)')}</span>
               <input type="file" accept="image/*" multiple className="hidden"
-                onChange={e => setFotos(p => [...p, ...Array.from(e.target.files ?? [])].slice(0, 5))} />
+                onChange={e => setFotos(p => [...p, ...Array.from(e.target.files ?? [])].slice(0, 10))} />
             </label>
             {fotos.length > 0 && (
               <div className="flex gap-2 mt-2 flex-wrap">
@@ -989,8 +989,8 @@ function SerahStageModal({ item, tahap, tims, onClose, onSubmit, isPending, erro
               <input name="serah_tanggal" type="date" defaultValue={new Date().toISOString().split('T')[0]} className={inp} required/>
             </div>
             <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Jam Serah</label>
-              <input name="serah_jam" type="time" className={inp}/>
+              <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Jam Serah *</label>
+              <input name="serah_jam" type="time" className={inp} required/>
             </div>
           </div>
           <TimPicker tims={tims} timId={timId} setTimId={setTimId} anggota={timAnggota} setAnggota={setTimAnggota} label="Tim Pengerjaan" namePrefix="serah_" />
@@ -1004,7 +1004,7 @@ function SerahStageModal({ item, tahap, tims, onClose, onSubmit, isPending, erro
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Foto</label>
-            <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 5))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto (opsional)" />
+            <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto (opsional)" />
           </div>
           {error && <div className="flex items-center gap-2 px-3 py-2.5 bg-red-50 rounded-2xl text-xs text-red-600 border border-red-100"><AlertTriangle size={13}/><span>{error}</span></div>}
           <div className="flex gap-3">
@@ -1188,7 +1188,7 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
             <label className="flex items-center gap-2 h-11 px-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-violet-50 transition-colors border border-gray-200">
               <Camera size={14} className="text-gray-400 flex-shrink-0"/>
               <span className="text-xs text-gray-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto (opsional, max 5)'}</span>
-              <input type="file" accept="image/*" multiple className="hidden" onChange={e=>setFotos(p=>[...p,...Array.from(e.target.files??[])].slice(0,5))}/>
+              <input type="file" accept="image/*" multiple className="hidden" onChange={e=>setFotos(p=>[...p,...Array.from(e.target.files??[])].slice(0,10))}/>
             </label>
             {fotos.length > 0 && (
               <div className="flex gap-2 mt-2 flex-wrap">
@@ -1274,7 +1274,7 @@ function UpdateModal({ item, onClose, onSubmit, isPending, error }: {
           )}
           <div className="grid grid-cols-2 gap-3">
             <F label="Tanggal" req><input name="tanggal" type="date" defaultValue={today} className={inp} required /></F>
-            <F label="Jam Mulai (opsional)"><input name="jam_mulai" type="time" className={inp} /></F>
+            <F label="Jam Mulai" req><input name="jam_mulai" type="time" className={inp} required /></F>
           </div>
           {status !== 'Reject' && (
             <>
@@ -1819,6 +1819,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
     </div>
   )
 }
+
 
 
 
