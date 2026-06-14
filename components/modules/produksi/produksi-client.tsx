@@ -15,8 +15,9 @@ import {
 } from '@/app/(dashboard)/produksi/actions'
 import type { UserRole } from '@/lib/types/database'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
+import { SerahModalStd, TerimaModalStd } from '@/components/modules/produksi/serah-terima-modal'
 
-interface Props { produksiList: any[]; batches: any[]; peleburanByBatch: Record<string, any[]>; tims: any[]; toleransi: Record<string, number>; userRole: UserRole; userName: string }
+interface Props { produksiList: any[]; batches: any[]; peleburanByBatch: Record<string, any[]>; tims: any[]; toleransi: Record<string, number>; adminList: any[]; userRole: UserRole; userName: string }
 
 function fgr(n: number | null | undefined, dec = 3): string {
   if (n === null || n === undefined || isNaN(Number(n))) return '—'
@@ -1365,7 +1366,7 @@ function StatChip({ label, value, accent }: { label: string; value: React.ReactN
 }
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
-export default function ProduksiClient({ produksiList, batches, peleburanByBatch, tims, toleransi, userRole, userName }: Props) {
+export default function ProduksiClient({ produksiList, batches, peleburanByBatch, tims, toleransi, adminList, userRole, userName }: Props) {
   const [search, setSearch]     = useState('')
   const [filterStatus, setFilter] = useState<string>('Semua')
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
@@ -1812,8 +1813,18 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
       {modal==='update'        && active            && <UpdateModal item={active} onClose={()=>setModal(null)} onSubmit={handleUpdate} isPending={isPending} error={err}/>}
       {modal==='cuttingTerima' && active            && <SelesaiCuttingModal item={active} toleransi={toleransi.cutting??0.05} onClose={()=>setModal(null)} onSubmit={handleSelesaiCutting} isPending={isPending} error={err}/>}
       {modal==='editCutting'   && active            && <SelesaiCuttingModal item={active} isEdit toleransi={toleransi.cutting??0.05} onClose={()=>setModal(null)} onSubmit={handleEditCutting} isPending={isPending} error={err}/>}
-      {modal==='serahStage'    && active            && <SerahStageModal item={active} tahap={activeTahap} tims={tims} onClose={()=>setModal(null)} onSubmit={handleSerahStage} isPending={isPending} error={err}/>}
-      {modal==='terimaStage'   && active            && <TerimaStageModal item={active} tahap={activeTahap} tims={tims} toleransi={toleransi[activeTahap]??0.05} handoverId={activeHandoverId??0} onClose={()=>setModal(null)} onSubmit={handleTerimaStage} isPending={isPending} error={err}/>}
+      {modal==='serahStage'    && active            && (()=>{
+        const tahapJudul: Record<string,string> = { pas_berat:'Serahkan ke Pas Berat', annealing:'Serahkan ke Annealing', siap_packing:'Serahkan ke Siap Packing' }
+        return <SerahModalStd judul={tahapJudul[activeTahap]??'Serahkan'} kode={active.kode} tims={tims} adminList={adminList} isPending={isPending} error={err} onClose={()=>setModal(null)} onSubmit={handleSerahStage}/>
+      })()}
+      {modal==='terimaStage'   && active            && (()=>{
+        const hs:any[] = Array.isArray(active.stage_handover)?active.stage_handover.filter((h:any)=>!h.voided_at):[]
+        const curH = hs.find((h:any)=>h.tahap===activeTahap)
+        const serahG = Number(curH?.serah_gram ?? (activeTahap==='pas_berat'?active.terima_gram:active.total_gram) ?? 0)
+        const tahapJudul: Record<string,string> = { pas_berat:'Terima Pas Berat', annealing:'Terima Annealing', siap_packing:'Terima Siap Packing' }
+        const tahapLabel: Record<string,string> = { pas_berat:'Pas Berat', annealing:'Annealing', siap_packing:'Siap Packing' }
+        return <TerimaModalStd judul={tahapJudul[activeTahap]??'Terima'} kode={active.kode} tims={tims} adminList={adminList} serahGram={serahG} toleransi={toleransi[activeTahap]??0.05} showSerbuk={activeTahap==='pas_berat'} prosesLabel={tahapLabel[activeTahap]??activeTahap} isPending={isPending} error={err} onClose={()=>setModal(null)} onSubmit={handleTerimaStage}/>
+      })()}
       {modal==='delete'        && active            && <DelModal item={active} onClose={()=>setModal(null)} onConfirm={handleDelete} isPending={isPending} error={err}/>}
       {modal==='editHandover'  && active&&activeHandoverData && <TerimaStageModal item={active} tahap={activeTahap} tims={tims} toleransi={toleransi[activeTahap]??0.05} handoverId={activeHandoverId??0} initialData={activeHandoverData} onClose={()=>setModal(null)} onSubmit={handleEditHandover} isPending={isPending} error={err}/>}
     </div>
