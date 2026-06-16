@@ -2,8 +2,48 @@
 
 @theme {
   --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+
+  /* ─── Soft Purple (mengganti violet keras) ─── */
+  --color-violet-50:  #F5F3FB;
+  --color-violet-100: #EBE7F7;
+  --color-violet-200: #D5CEEE;
+  --color-violet-300: #B8ACE2;
+  --color-violet-400: #9A89D4;
+  --color-violet-500: #7F6DC6;
+  --color-violet-600: #6857B1;
+  --color-violet-700: #534397;
+  --color-violet-800: #3E3278;
+  --color-violet-900: #2D2359;
+  --color-violet-950: #1C163A;
+
+  /* ─── Gold ─── */
+  --color-gold-50:  #FDFAED;
+  --color-gold-100: #F9F0CF;
+  --color-gold-200: #F1DC96;
+  --color-gold-300: #E6C357;
+  --color-gold-400: #D9AA2E;
+  --color-gold-500: #C49320;
+  --color-gold-600: #A37818;
+  --color-gold-700: #825E15;
+  --color-gold-800: #654814;
+  --color-gold-900: #4A3412;
+
+  /* ─── Slate override untuk abu-abu yang lebih warm ─── */
+  --color-slate-50:  #FAFAF9;
+  --color-slate-100: #F4F4F2;
 }
 
 *, body {
   font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* scrollbar lembut */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 87, 177, 0.20);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 87, 177, 0.38);
 }
