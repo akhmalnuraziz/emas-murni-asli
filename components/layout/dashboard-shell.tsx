@@ -6,18 +6,20 @@ import Header from '@/components/layout/header'
 import { usePathname } from 'next/navigation'
 
 const PAGE_META: Record<string, { title: string; subtitle: string }> = {
-  '/dashboard':   { title: 'Dashboard',     subtitle: 'Ringkasan aktivitas produksi dan stok hari ini' },
-  '/bahan-baku':  { title: 'Bahan Baku',    subtitle: 'Manajemen batch dan HPP bahan baku emas' },
-  '/produksi':    { title: 'Produksi',      subtitle: 'Tracking status produksi per item' },
-  '/packing-log': { title: 'Packing Log',   subtitle: 'Kelola packing & registrasi Shieldtag' },
-  '/shieldtag':   { title: 'Shieldtag',     subtitle: 'Registrasi dan distribusi ID unik per PCS' },
-  '/inventory':   { title: 'Inventory',     subtitle: 'Stok gudang pusat dan cabang realtime' },
-  '/mutasi':      { title: 'Mutasi Cabang', subtitle: 'Transfer stok antar cabang' },
-  '/penjualan':   { title: 'Penjualan',     subtitle: 'Transaksi toko dan marketplace' },
-  '/po-cabang':   { title: 'PO Cabang',     subtitle: 'Purchase order dari cabang' },
-  '/laporan':     { title: 'Laporan',       subtitle: 'Laporan produksi, stok, dan keuangan' },
-  '/audit-log':   { title: 'Audit Log',     subtitle: 'Riwayat semua aktivitas sistem' },
-  '/pengaturan':  { title: 'Pengaturan',    subtitle: 'Konfigurasi sistem dan manajemen user' },
+  '/dashboard':           { title: 'Dashboard',             subtitle: 'Ringkasan aktivitas produksi dan stok hari ini' },
+  '/bahan-baku':          { title: 'Bahan Baku',            subtitle: 'Manajemen batch, peleburan, dan rekonsiliasi gram' },
+  '/produksi':            { title: 'Produksi',              subtitle: 'Tracking serah-terima per tahap — Cutting → Pas Berat → Annealing → Siap Packing' },
+  '/packing-log':         { title: 'Packing Log',           subtitle: 'Kelola packing & validasi vs Shieldtag' },
+  '/shieldtag':           { title: 'Shieldtag',             subtitle: 'Registrasi dan distribusi ID unik per PCS' },
+  '/inventory':           { title: 'Inventory',             subtitle: 'Stok per lokasi berbasis Shieldtag — realtime' },
+  '/mutasi':              { title: 'Pemindahan Barang',      subtitle: 'Keluar (cabang/toko) & masuk (buyback/retur)' },
+  '/penjualan':           { title: 'Penjualan',             subtitle: 'Rekap dari Accurate + cetak receipt' },
+  '/po-cabang':           { title: 'Toko & PO',             subtitle: 'Stok ready toko dan pre-order' },
+  '/prioritas-produksi':  { title: 'Prioritas Produksi',    subtitle: 'Auto-ranking P1/P2/P3 berdasar PO dan safety stock' },
+  '/kpi-tim':             { title: 'KPI Tim',               subtitle: 'Rating bintang ⭐ per tim per proses — efisiensi, loss, kecepatan' },
+  '/laporan':             { title: 'Laporan',               subtitle: 'Per batch, laba rugi, performa cabang' },
+  '/audit-log':           { title: 'Audit Log',             subtitle: 'Riwayat semua aksi penting di sistem' },
+  '/pengaturan':          { title: 'Pengaturan',            subtitle: 'Master tim, admin, toleransi, gramasi, dan konfigurasi sistem' },
 }
 
 export default function DashboardShell({
