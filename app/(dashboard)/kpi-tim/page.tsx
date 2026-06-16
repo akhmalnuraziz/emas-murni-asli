@@ -1,10 +1,10 @@
-import { createServerSupabase } from '@/lib/supabase/server'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
 export default async function KpiTimPage() {
-  const supabase = createServerSupabase()
+  const supabase = createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -17,7 +17,6 @@ export default async function KpiTimPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="bg-gradient-to-r from-violet-600 to-violet-500 rounded-2xl p-6 text-white shadow-sm">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
@@ -33,7 +32,6 @@ export default async function KpiTimPage() {
         </div>
       </div>
 
-      {/* Coming soon notice */}
       <div className="bg-gold-50 border border-gold-200 rounded-2xl p-6">
         <div className="flex items-start gap-4">
           <div className="w-10 h-10 rounded-xl bg-gold-100 flex items-center justify-center flex-shrink-0">
@@ -44,27 +42,21 @@ export default async function KpiTimPage() {
             <p className="text-slate-500 text-xs mt-1.5 leading-relaxed">
               Sistem rating bintang (⭐–⭐⭐⭐⭐⭐) per tim per proses akan dihitung berdasarkan:
               efisiensi bahan (40%), loss paling sedikit (35%), dan kecepatan (25%),
-              semua dinormalisasi per baseline gramasi agar adil.
-              Gain wajar tidak menurunkan bintang.
+              semua dinormalisasi per baseline gramasi agar adil. Gain wajar tidak menurunkan bintang.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Tim list preview */}
       {tims && tims.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-1">
-            Tim yang akan dinilai
-          </p>
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-1">Tim yang akan dinilai</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {tims.map((tim: any) => (
               <div key={tim.id} className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
                 <div className="flex items-center gap-3 mb-3">
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm"
-                    style={{ background: tim.warna ?? '#7F6DC6' }}
-                  >
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm"
+                    style={{ background: tim.warna ?? '#7F6DC6' }}>
                     {tim.nama?.charAt(0)?.toUpperCase()}
                   </div>
                   <div>
@@ -81,12 +73,9 @@ export default async function KpiTimPage() {
                     </span>
                   ))}
                 </div>
-                <div className="mt-3 pt-3 border-t border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400">Rating bintang</span>
-                    <span className="text-gold-400 text-sm tracking-wide">★★★★★</span>
-                  </div>
-                  <p className="text-[10px] text-slate-400 italic mt-0.5">Belum ada data periode ini</p>
+                <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[10px] text-slate-400 italic">Belum ada data periode ini</span>
+                  <span className="text-gold-400 text-sm tracking-wide">★★★★★</span>
                 </div>
               </div>
             ))}
