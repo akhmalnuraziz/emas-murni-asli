@@ -31,60 +31,43 @@ export default async function KpiTimPage() {
           </div>
         </div>
       </div>
-
       <div className="rounded-2xl p-5 bg-amber-50 border border-amber-200">
         <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
-            <span className="text-amber-600 text-lg">⭐</span>
-          </div>
+          <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0 text-amber-600 text-lg">⭐</div>
           <div>
             <h3 className="font-semibold text-slate-800 text-sm">Modul KPI Tim sedang dalam pengembangan</h3>
             <p className="text-slate-500 text-xs mt-1.5 leading-relaxed">
-              Sistem rating bintang per tim per proses akan dihitung dari:
-              efisiensi bahan (40%) + loss paling sedikit (35%) + kecepatan (25%),
-              semua dinormalisasi per baseline gramasi agar adil.
-              Gain wajar tidak menurunkan bintang.
+              Rating bintang per tim per proses · dinormalisasi per baseline gramasi ·
+              gain wajar tidak menurunkan bintang.
             </p>
           </div>
         </div>
       </div>
-
       {tims && tims.length > 0 && (
-        <div>
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-1">
-            Tim yang akan dinilai
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {tims.map((tim: { id: number; nama: string; warna: string | null; anggota: { id: number; nama: string; aktif: boolean }[] }) => (
-              <div key={tim.id} className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
-                <div className="flex items-center gap-3 mb-3">
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm"
-                    style={{ background: tim.warna ?? '#7F6DC6' }}
-                  >
-                    {tim.nama?.charAt(0)?.toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-slate-800 text-sm">{tim.nama}</p>
-                    <p className="text-[11px] text-slate-400">
-                      {tim.anggota?.filter(a => a.aktif).length ?? 0} anggota aktif
-                    </p>
-                  </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {(tims as Array<{ id: number; nama: string; warna: string | null; anggota: Array<{ id: number; nama: string; aktif: boolean }> }>).map(tim => (
+            <div key={tim.id} className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm"
+                  style={{ background: tim.warna ?? '#7F6DC6' }}>
+                  {tim.nama?.charAt(0)?.toUpperCase()}
                 </div>
-                <div className="flex flex-wrap gap-1">
-                  {tim.anggota?.filter(a => a.aktif).map(a => (
-                    <span key={a.id} className="text-[10px] px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 font-medium">
-                      {a.nama}
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400 italic">Belum ada data</span>
-                  <span className="text-amber-400 text-sm tracking-wide">★★★★★</span>
+                <div>
+                  <p className="font-semibold text-slate-800 text-sm">{tim.nama}</p>
+                  <p className="text-[11px] text-slate-400">{tim.anggota?.filter(a => a.aktif).length ?? 0} anggota</p>
                 </div>
               </div>
-            ))}
-          </div>
+              <div className="flex flex-wrap gap-1">
+                {tim.anggota?.filter(a => a.aktif).map(a => (
+                  <span key={a.id} className="text-[10px] px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 font-medium">{a.nama}</span>
+                ))}
+              </div>
+              <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-[10px] text-slate-400 italic">Belum ada data</span>
+                <span className="text-amber-400 text-sm">★★★★★</span>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
