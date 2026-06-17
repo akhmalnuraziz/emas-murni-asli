@@ -77,7 +77,7 @@ export default function DashboardClient({
   return (
     <div className="space-y-6">
       {/* Greeting */}
-      <div className="bg-gradient-to-r from-violet-600 to-violet-500 rounded-2xl px-6 py-5 text-white">
+      <div className="bg-gradient-to-r from-violet-600 to-violet-700 rounded-2xl px-6 py-5 text-white">
         <p className="text-sm font-medium text-violet-200">{greeting}! 👋</p>
         <h2 className="text-xl font-bold mt-1">PT Emas Murni Asli Production System</h2>
         <p className="text-violet-200 text-sm mt-1">
@@ -120,7 +120,7 @@ export default function DashboardClient({
                 />
                 <Bar dataKey="pcs" radius={[6, 6, 0, 0]}>
                   {gramasiChartData.map((_, i) => (
-                    <Cell key={i} fill={i % 2 === 0 ? '#7c3aed' : '#a78bfa'} />
+                    <Cell key={i} fill={i % 2 === 0 ? '#7F6DC6' : '#B3A5DF'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -208,3 +208,4 @@ export default function DashboardClient({
     </div>
   )
 }
+
