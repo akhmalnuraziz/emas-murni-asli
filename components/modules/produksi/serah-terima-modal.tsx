@@ -309,26 +309,51 @@ export function TerimaModalStd({
               </div>
             )}
 
-            {/* Reject toggle */}
-            <div>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={adaReject} onChange={e => { setAdaReject(e.target.checked); if (!e.target.checked) setRejectVal('0') }}
-                  className="w-4 h-4 rounded accent-red-500" />
-                <span className="text-xs font-semibold text-gray-500">Ada reject?</span>
-              </label>
-              {adaReject && (
-                <div className="grid grid-cols-2 gap-3 mt-2">
+            {/* Reject: Cutting WAJIB selalu tampil, proses lain pakai checkbox */}
+            {prosesLabel === 'Cutting' ? (
+              <div className="rounded-xl p-3 border border-red-100" style={{ background: 'rgba(239,68,68,0.04)' }}>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="text-[10px] font-bold text-red-500 uppercase tracking-wide">⚠ Reject Cutting</span>
+                </div>
+                <p className="text-[10px] text-gray-400 mb-2 leading-relaxed">
+                  Reject cutting dilebur ulang → kembali jadi bahan baku batch. Isi 0 jika tidak ada reject.
+                </p>
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[11px] text-gray-400 mb-1 block">Reject (gr)</label>
-                    <input name="reject_gram" type="number" step="0.001" value={rejectVal} onChange={e => setRejectVal(e.target.value)} className={inp} />
+                    <label className="text-[11px] text-gray-400 mb-1 block">Berat Reject Cutting (gr)</label>
+                    <input name="reject_gram" type="number" step="0.001" min="0"
+                      value={rejectVal} onChange={e => setRejectVal(e.target.value)}
+                      className={inp} placeholder="0.000" />
                   </div>
                   <div>
                     <label className="text-[11px] text-gray-400 mb-1 block">Reject (pcs)</label>
-                    <input name="reject_pcs" type="number" min="0" defaultValue={d.reject_pcs ?? 0} className={inp} />
+                    <input name="reject_pcs" type="number" min="0"
+                      defaultValue={d.reject_pcs ?? 0} className={inp} placeholder="0" />
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              /* Proses lain (Pas Berat, Annealing, Siap Packing): reject opsional */
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={adaReject} onChange={e => { setAdaReject(e.target.checked); if (!e.target.checked) setRejectVal('0') }}
+                    className="w-4 h-4 rounded accent-red-500" />
+                  <span className="text-xs font-semibold text-gray-500">Ada reject yang perlu dilebur ulang?</span>
+                </label>
+                {adaReject && (
+                  <div className="grid grid-cols-2 gap-3 mt-2">
+                    <div>
+                      <label className="text-[11px] text-gray-400 mb-1 block">Reject (gr)</label>
+                      <input name="reject_gram" type="number" step="0.001" value={rejectVal} onChange={e => setRejectVal(e.target.value)} className={inp} />
+                    </div>
+                    <div>
+                      <label className="text-[11px] text-gray-400 mb-1 block">Reject (pcs)</label>
+                      <input name="reject_pcs" type="number" min="0" defaultValue={d.reject_pcs ?? 0} className={inp} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <TimPickerStd tims={tims} prefix="terima_" initialTimId={initTimId} initialAnggota={initAnggota} />
             <AdminPickerStd adminList={adminList} prefix="terima_" initialValue={d.terima_admin_input ?? ''} />
@@ -409,6 +434,7 @@ function ModalShell({ judul, kode, onClose, children }: { judul: string; kode: s
     </div>
   )
 }
+
 
 
 
