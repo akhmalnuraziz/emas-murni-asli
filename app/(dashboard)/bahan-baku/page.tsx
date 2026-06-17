@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import BahanBakuClient from '@/components/modules/bahan-baku/bahan-baku-client'
 
+export const dynamic = 'force-dynamic'
+
 export default async function BahanBakuPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -41,7 +43,6 @@ export default async function BahanBakuPage() {
       .select('id, nama, warna, aktif, anggota:tim_anggota(id, nama, aktif)')
       .eq('aktif', true).is('voided_at', null).order('id'),
     supabase.from('admin_input').select('id, nama').is('voided_at', null).order('id'),
-    // Loss approval untuk peleburan — load alasan + TTD info
     supabase.from('loss_approval')
       .select('ref_id, alasan, operator_nama, admin_nama, ttd_operator_url, ttd_admin_url, created_at')
       .eq('proses', 'peleburan')
@@ -56,12 +57,9 @@ export default async function BahanBakuPage() {
     }
   }
 
-  // Map loss_approval by ref_id (peleburan.id) — ambil yang paling baru
   const lossMap: Record<number, any> = {}
   for (const la of lossApprovalRows ?? []) {
-    if (la.ref_id != null && !lossMap[la.ref_id]) {
-      lossMap[la.ref_id] = la
-    }
+    if (la.ref_id != null && !lossMap[la.ref_id]) lossMap[la.ref_id] = la
   }
 
   const peleburanList = (peleburanRaw ?? []).map(p => ({
