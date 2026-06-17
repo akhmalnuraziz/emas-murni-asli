@@ -807,9 +807,19 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
           hasilLeburBelumCetak={hasilLeburBelumCetak}
           rejectOptions={(rejectItems as any[]).filter((r:any)=>r.batch_kode===peleburanModalBatch)}
           tims={tims} adminList={adminList}
-          onClose={()=>setPeleburanModalBatch(null)} showToast={showToast}/>
+          onClose={()=>{
+            // Auto-expand batch card agar riwayat peleburan langsung terlihat
+            const targetBatch = batches.find((b:any)=>b.kode===peleburanModalBatch)
+            if (targetBatch) setExpanded(targetBatch.id)
+            setPeleburanModalBatch(null)
+          }}
+          showToast={showToast}/>
       })()}
-      {selesaiLeburItem&&<SelesaiLeburModal peleburan={selesaiLeburItem} toleransi={toleransiPeleburan} tims={tims} adminList={adminList} onClose={()=>setSelesaiLeburItem(null)} showToast={showToast}/>}
+      {selesaiLeburItem&&<SelesaiLeburModal peleburan={selesaiLeburItem} toleransi={toleransiPeleburan} tims={tims} adminList={adminList} onClose={()=>{
+            const targetBatch = batches.find((b:any)=>b.kode===selesaiLeburItem?.batch_kode)
+            if (targetBatch) setExpanded(targetBatch.id)
+            setSelesaiLeburItem(null)
+          }} showToast={showToast}/>}
       {editPlbItem&&editPlbMode==='serah'&&<EditPeleburanSerahModal peleburan={editPlbItem} tims={tims} adminList={adminList} onClose={()=>setEditPlbItem(null)} showToast={showToast}/>}
       {editPlbItem&&editPlbMode==='terima'&&<EditPeleburanTerimaModal peleburan={editPlbItem} tims={tims} adminList={adminList} toleransi={toleransiPeleburan} onClose={()=>setEditPlbItem(null)} showToast={showToast}/>}
       {editItem&&<BatchFormModal initial={editItem} onSubmit={handleUpdate} onClose={()=>setEditItem(null)} isPending={isPending} error={formError} isEdit/>}
@@ -1532,4 +1542,5 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
     </div>
   )
 }
+
 
