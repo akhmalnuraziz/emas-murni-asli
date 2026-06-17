@@ -712,10 +712,18 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                     </div>
                                   ) : (
                                     <div className="flex items-center gap-1">
-                                      <button type="button" onClick={()=>setEditPlbItem(plb)}
-                                        className="w-7 h-7 rounded-xl bg-blue-50 flex items-center justify-center">
-                                        <Edit2 size={12} className="text-blue-400"/>
+                                      <button type="button" onClick={()=>{setEditPlbItem(plb);setEditPlbMode('serah')}}
+                                        className="flex items-center gap-0.5 h-7 px-2 rounded-xl bg-blue-50 text-[10px] font-semibold text-blue-500"
+                                        title="Edit Diserahkan">
+                                        <Edit2 size={10}/> Serah
                                       </button>
+                                      {plb.status==='selesai'&&(
+                                        <button type="button" onClick={()=>{setEditPlbItem(plb);setEditPlbMode('terima')}}
+                                          className="flex items-center gap-0.5 h-7 px-2 rounded-xl bg-green-50 text-[10px] font-semibold text-green-600"
+                                          title="Edit Diterima">
+                                          <Edit2 size={10}/> Terima
+                                        </button>
+                                      )}
                                       <button type="button" onClick={()=>setHapusPlbId(plb.id)}
                                         className="w-7 h-7 rounded-xl bg-red-50 flex items-center justify-center"
                                         title="Hapus peleburan">
