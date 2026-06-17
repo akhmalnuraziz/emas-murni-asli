@@ -10,7 +10,7 @@ import { cn, formatRupiah, formatDate, formatGram } from '@/lib/utils'
 import {
   createBatch, updateBatch, deleteBatch,
   lockBatch, unlockBatch, updateSisaFisik, hapusSisaFisik,
-  createPeleburan, voidPeleburan, editPeleburan
+  createPeleburan, voidPeleburan, editPeleburan, editPeleburanSerah, editPeleburanTerima
 } from '@/app/(dashboard)/bahan-baku/actions'
 import type { UserRole } from '@/lib/types/database'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
@@ -255,6 +255,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
   const [selesaiLeburItem,setSelesaiLeburItem]=useState<any>(null)
   const [hapusPlbId,setHapusPlbId]=useState<number|null>(null)
   const [editPlbItem,setEditPlbItem]=useState<any>(null)
+  const [editPlbMode,setEditPlbMode]=useState<'serah'|'terima'>('serah')
   const [search,setSearch]=useState('')
   const [expanded,setExpanded]=useState<number|null>(null)
   const [showCreate,setShowCreate]=useState(false)
@@ -801,7 +802,8 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
           onClose={()=>setPeleburanModalBatch(null)} showToast={showToast}/>
       })()}
       {selesaiLeburItem&&<SelesaiLeburModal peleburan={selesaiLeburItem} toleransi={toleransiPeleburan} tims={tims} adminList={adminList} onClose={()=>setSelesaiLeburItem(null)} showToast={showToast}/>}
-      {editPlbItem&&<EditPeleburanModal peleburan={editPlbItem} tims={tims} adminList={adminList} onClose={()=>setEditPlbItem(null)} showToast={showToast}/>}
+      {editPlbItem&&editPlbMode==='serah'&&<EditPeleburanSerahModal peleburan={editPlbItem} tims={tims} adminList={adminList} onClose={()=>setEditPlbItem(null)} showToast={showToast}/>}
+      {editPlbItem&&editPlbMode==='terima'&&<EditPeleburanTerimaModal peleburan={editPlbItem} tims={tims} adminList={adminList} toleransi={toleransiPeleburan} onClose={()=>setEditPlbItem(null)} showToast={showToast}/>}
       {editItem&&<BatchFormModal initial={editItem} onSubmit={handleUpdate} onClose={()=>setEditItem(null)} isPending={isPending} error={formError} isEdit/>}
 
       {lockModal&&(
@@ -1234,8 +1236,8 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
   )
 }
 
-// ─── Edit Peleburan Modal ─────────────────────────────────────────────────────
-function EditPeleburanModal({ peleburan, tims = [], adminList = [], onClose, showToast }: {
+// ─── Edit Peleburan Diserahkan Modal ─────────────────────────────────────────
+function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose, showToast }: {
   peleburan: any; tims?: any[]; adminList?: any[]; onClose: () => void; showToast: (m: string, ok?: boolean) => void
 }) {
   const [pend, start] = useTransition()
@@ -1244,10 +1246,6 @@ function EditPeleburanModal({ peleburan, tims = [], adminList = [], onClose, sho
   const [newFotos, setNewFotos] = useState<File[]>([])
   const [existingFotos, setExistingFotos] = useState<string[]>(
     Array.isArray(peleburan.foto_serahkan) ? peleburan.foto_serahkan : []
-  )
-  const [newFotosDiterima, setNewFotosDiterima] = useState<File[]>([])
-  const [existingFotosDiterima, setExistingFotosDiterima] = useState<string[]>(
-    Array.isArray(peleburan.foto_diterima) ? peleburan.foto_diterima : []
   )
   const router = useRouter()
 
@@ -1260,16 +1258,11 @@ function EditPeleburanModal({ peleburan, tims = [], adminList = [], onClose, sho
       const b64s = await filesToBase64(newFotos)
       fd.set('foto_serahkan_b64', JSON.stringify(b64s))
     }
-    fd.set('existing_fotos_diterima', JSON.stringify(existingFotosDiterima))
-    if (newFotosDiterima.length > 0) {
-      const b64s = await filesToBase64(newFotosDiterima)
-      fd.set('foto_diterima_b64', JSON.stringify(b64s))
-    }
     setErr('')
     start(async () => {
-      const r = await editPeleburan(peleburan.id, fd)
+      const r = await editPeleburanSerah(peleburan.id, fd)
       if (r?.error) { setErr(r.error); return }
-      showToast('Peleburan berhasil diupdate')
+      showToast('✅ Data penyerahan diperbarui')
       onClose(); router.refresh()
     })
   }
@@ -1277,23 +1270,18 @@ function EditPeleburanModal({ peleburan, tims = [], adminList = [], onClose, sho
   const toTime = (t: any) => t ? String(t).slice(0,5) : ''
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      style={{background:'rgba(0,0,0,0.4)'}}>
-      <div className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[92vh] flex flex-col"
-        style={{boxShadow:'0 8px 40px rgba(0,0,0,0.18)'}}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{background:'rgba(0,0,0,0.4)'}}>
+      <div className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[92vh] flex flex-col" style={{boxShadow:'0 8px 40px rgba(0,0,0,0.18)'}}>
         <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
           <div>
-            <h2 className="text-base font-bold text-gray-900">Edit Peleburan</h2>
+            <h2 className="text-base font-bold text-gray-900">Edit Diserahkan</h2>
             <p className="text-xs text-violet-500 font-semibold mt-0.5">{peleburan.kode}</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-            <X size={15} className="text-gray-500"/>
-          </button>
+          <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><X size={15} className="text-gray-500"/></button>
         </div>
         <form onSubmit={handleSubmit} className="px-5 pb-6 space-y-3 overflow-y-auto flex-1">
           <div className="rounded-2xl overflow-hidden border border-violet-100">
-            <div className="px-4 py-2.5 text-xs font-bold text-violet-700 uppercase tracking-wide"
-              style={{background:'rgba(139,92,246,0.06)'}}>
+            <div className="px-4 py-2.5 text-xs font-bold text-violet-700 uppercase tracking-wide" style={{background:'rgba(139,92,246,0.06)'}}>
               📤 Diserahkan
             </div>
             <div className="p-4 space-y-3">
@@ -1317,13 +1305,11 @@ function EditPeleburanModal({ peleburan, tims = [], adminList = [], onClose, sho
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-gray-500 mb-1 block">Tanggal Mulai *</label>
-                  <input name="tanggal" type="date"
-                    defaultValue={peleburan.tanggal} className={inp} required/>
+                  <input name="tanggal" type="date" defaultValue={peleburan.tanggal} className={inp} required/>
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-gray-500 mb-1 block">Jam Mulai *</label>
-                  <input name="jam_mulai" type="time"
-                    defaultValue={toTime(peleburan.jam_mulai)} className={inp} required/>
+                  <input name="jam_mulai" type="time" defaultValue={toTime(peleburan.jam_mulai)} className={inp} required/>
                 </div>
               </div>
               {existingFotos.length > 0 && (
@@ -1353,79 +1339,14 @@ function EditPeleburanModal({ peleburan, tims = [], adminList = [], onClose, sho
               <AdminPickerStd adminList={adminList} prefix="" initialValue={peleburan.admin_input??''} />
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Keterangan</label>
-                <input name="keterangan_serahkan" type="text" defaultValue={peleburan.keterangan_serahkan??''}
-                  placeholder="Opsional" className={inp}/>
+                <input name="keterangan_serahkan" type="text" defaultValue={peleburan.keterangan_serahkan??''} placeholder="Opsional" className={inp}/>
               </div>
             </div>
           </div>
-
-          {/* DITERIMA — hanya jika sudah selesai */}
-          {peleburan.status === 'selesai' && (
-            <div className="rounded-2xl overflow-hidden border border-green-100">
-              <div className="px-4 py-2.5 text-xs font-bold text-green-700 uppercase tracking-wide"
-                style={{background:'rgba(34,197,94,0.06)'}}>
-                📥 Diterima
-              </div>
-              <div className="p-4 space-y-3">
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Berat Diterima (gr) *</label>
-                  <input name="diterima_gram" type="number" step="0.001"
-                    defaultValue={peleburan.diterima_gram ?? ''} className={inp} required/>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Tanggal Selesai</label>
-                    <input name="tanggal_diterima" type="date"
-                      defaultValue={peleburan.tanggal_diterima ?? ''} className={inp}/>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Jam Selesai</label>
-                    <input name="jam_selesai" type="time"
-                      defaultValue={toTime(peleburan.jam_selesai)} className={inp}/>
-                  </div>
-                </div>
-                {existingFotosDiterima.length > 0 && (
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 mb-1 block">Foto diterima saat ini</label>
-                    <div className="flex flex-wrap gap-2">
-                      {existingFotosDiterima.map((url,i) => (
-                        <div key={i} className="relative">
-                          <img src={url} alt="" className="w-14 h-14 rounded-xl object-cover border border-green-200"/>
-                          <button type="button" onClick={() => setExistingFotosDiterima(p => p.filter((_,j) => j!==i))}
-                            className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">×</button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Tambah Foto Diterima</label>
-                  <label className="flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-green-50">
-                    <Camera size={14} className="text-gray-400 flex-shrink-0"/>
-                    <span className="text-xs text-gray-400">{newFotosDiterima.length > 0 ? `${newFotosDiterima.length} foto baru` : 'Tambah foto'}</span>
-                    <input type="file" accept="image/*" multiple className="hidden"
-                      onChange={e => setNewFotosDiterima(p => [...p, ...Array.from(e.target.files??[])].slice(0,5))}/>
-                  </label>
-                </div>
-                <div>
-                  <AdminPickerStd adminList={adminList} prefix="terima_" initialValue={peleburan.operator_diterima??peleburan.admin_input??''} />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Keterangan Diterima</label>
-                  <input name="keterangan_diterima" type="text" defaultValue={peleburan.keterangan_diterima??''}
-                    placeholder="Opsional" className={inp}/>
-                </div>
-              </div>
-            </div>
-          )}
+          {err && <div className="flex items-center gap-2 px-3 py-2 bg-red-50 rounded-xl text-xs text-red-600"><AlertTriangle size={13} className="flex-shrink-0"/><span>{err}</span></div>}
           <div className="flex gap-2">
-            <button type="button" onClick={onClose}
-              className="flex-1 h-11 rounded-2xl bg-gray-100 text-sm font-semibold text-gray-600">
-              Batal
-            </button>
-            <button type="submit" disabled={pend}
-              className="flex-1 h-11 rounded-2xl text-sm font-bold text-white disabled:opacity-50"
-              style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
+            <button type="button" onClick={onClose} className="flex-1 h-11 rounded-2xl bg-gray-100 text-sm font-semibold text-gray-600">Batal</button>
+            <button type="submit" disabled={pend} className="flex-1 h-11 rounded-2xl text-sm font-bold text-white disabled:opacity-50" style={{background:'linear-gradient(135deg,#7F6DC6,#6857B1)'}}>
               {pend ? 'Menyimpan…' : 'Simpan Perubahan'}
             </button>
           </div>
@@ -1435,8 +1356,172 @@ function EditPeleburanModal({ peleburan, tims = [], adminList = [], onClose, sho
   )
 }
 
+// ─── Edit Peleburan Diterima Modal ──────────────────────────────────────────
+function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], toleransi = 0.05, onClose, showToast }: {
+  peleburan: any; tims?: any[]; adminList?: any[]; toleransi?: number; onClose: () => void; showToast: (m: string, ok?: boolean) => void
+}) {
+  const [pend, start] = useTransition()
+  const [err, setErr] = useState('')
+  const [diterimaVal, setDiterimaVal] = useState(peleburan.diterima_gram != null ? String(peleburan.diterima_gram) : '')
+  const [newFotosDiterima, setNewFotosDiterima] = useState<File[]>([])
+  const [existingFotosDiterima, setExistingFotosDiterima] = useState<string[]>(
+    Array.isArray(peleburan.foto_diterima) ? peleburan.foto_diterima : []
+  )
+  const router = useRouter()
 
+  // Loss realtime
+  const lossNow = Math.max(0, Number(peleburan.dikasih_gram ?? 0) - (parseFloat(diterimaVal) || 0))
+  const overTol = diterimaVal !== '' && lossNow > toleransi + 0.0001
 
+  // Loss approval panel state
+  const [lossAlasan, setLossAlasan] = useState(peleburan.loss_approval?.alasan ?? '')
+  const [lossOpNama, setLossOpNama] = useState(peleburan.loss_approval?.operator_nama ?? '')
+  const [lossAdminNama, setLossAdminNama] = useState(peleburan.loss_approval?.admin_nama ?? '')
+  const [ttdOp, setTtdOp] = useState<string | null>(null)
+  const [ttdAdmin, setTtdAdmin] = useState<string | null>(null)
 
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const form = e.currentTarget
+    if (overTol) {
+      if (!lossAlasan.trim()) { setErr('Alasan loss wajib diisi (loss melebihi toleransi)'); return }
+      if (!ttdOp)    { setErr('Tanda tangan operator wajib (loss melebihi toleransi)'); return }
+      if (!ttdAdmin) { setErr('Tanda tangan admin/manager wajib'); return }
+    }
+    const fd = new FormData(form)
+    fd.set('existing_fotos_diterima', JSON.stringify(existingFotosDiterima))
+    if (newFotosDiterima.length > 0) {
+      const b64s = await filesToBase64(newFotosDiterima)
+      fd.set('foto_diterima_b64', JSON.stringify(b64s))
+    }
+    if (overTol) {
+      fd.set('loss_alasan', lossAlasan)
+      fd.set('loss_operator_nama', lossOpNama)
+      fd.set('loss_admin_nama', lossAdminNama)
+      if (ttdOp) fd.set('loss_ttd_operator', ttdOp)
+      if (ttdAdmin) fd.set('loss_ttd_admin', ttdAdmin)
+    }
+    setErr('')
+    start(async () => {
+      const r = await editPeleburanTerima(peleburan.id, fd)
+      if (r?.error) { setErr(r.error); return }
+      showToast('✅ Data penerimaan diperbarui')
+      onClose(); router.refresh()
+    })
+  }
 
+  const toTime = (t: any) => t ? String(t).slice(0,5) : ''
+  const existingLoss = peleburan.loss_approval
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{background:'rgba(0,0,0,0.4)'}}>
+      <div className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[92vh] flex flex-col" style={{boxShadow:'0 8px 40px rgba(0,0,0,0.18)'}}>
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
+          <div>
+            <h2 className="text-base font-bold text-gray-900">Edit Diterima</h2>
+            <p className="text-xs text-green-500 font-semibold mt-0.5">{peleburan.kode}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><X size={15} className="text-gray-500"/></button>
+        </div>
+        <form onSubmit={handleSubmit} className="px-5 pb-6 space-y-3 overflow-y-auto flex-1">
+          {/* Info serah */}
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs" style={{background:'rgba(139,92,246,0.06)'}}>
+            <span className="text-gray-500">Diserahkan:</span>
+            <span className="font-bold text-violet-700">{formatGram(peleburan.dikasih_gram)}</span>
+          </div>
+
+          {/* Existing TTD notice */}
+          {existingLoss && (
+            <div className="px-3 py-2.5 rounded-xl text-xs bg-amber-50 border border-amber-200">
+              <p className="font-semibold text-amber-700 mb-1">⚠ TTD Loss Tersimpan (akan di-update jika berat berubah)</p>
+              <p className="text-amber-600">Alasan: {existingLoss.alasan || '—'}</p>
+              <p className="text-amber-600">Operator: {existingLoss.operator_nama || '—'} · Admin: {existingLoss.admin_nama || '—'}</p>
+            </div>
+          )}
+
+          <div className="rounded-2xl overflow-hidden border border-green-100">
+            <div className="px-4 py-2.5 text-xs font-bold text-green-700 uppercase tracking-wide" style={{background:'rgba(34,197,94,0.06)'}}>
+              📥 Diterima
+            </div>
+            <div className="p-4 space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Berat Diterima (gr) *</label>
+                <input name="diterima_gram" type="number" step="0.001"
+                  value={diterimaVal} onChange={e => setDiterimaVal(e.target.value)}
+                  max={peleburan.dikasih_gram} className={inp} required/>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Tanggal Selesai</label>
+                  <input name="tanggal_diterima" type="date" defaultValue={peleburan.tanggal_diterima ?? ''} className={inp}/>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Jam Selesai</label>
+                  <input name="jam_selesai" type="time" defaultValue={toTime(peleburan.jam_selesai)} className={inp}/>
+                </div>
+              </div>
+              {existingFotosDiterima.length > 0 && (
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Foto diterima saat ini</label>
+                  <div className="flex flex-wrap gap-2">
+                    {existingFotosDiterima.map((url,i) => (
+                      <div key={i} className="relative">
+                        <img src={url} alt="" className="w-14 h-14 rounded-xl object-cover border border-green-200"/>
+                        <button type="button" onClick={() => setExistingFotosDiterima(p => p.filter((_,j) => j!==i))}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">×</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Tambah Foto Diterima</label>
+                <label className="flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-green-50">
+                  <Camera size={14} className="text-gray-400 flex-shrink-0"/>
+                  <span className="text-xs text-gray-400">{newFotosDiterima.length > 0 ? `${newFotosDiterima.length} foto baru` : 'Tambah foto'}</span>
+                  <input type="file" accept="image/*" multiple className="hidden"
+                    onChange={e => setNewFotosDiterima(p => [...p, ...Array.from(e.target.files??[])].slice(0,5))}/>
+                </label>
+              </div>
+              <TimPickerStd tims={tims} prefix="terima_" initialTimId={peleburan.tim_id!=null?String(peleburan.tim_id):''} initialAnggota={peleburan.tim_anggota_aktif?String(peleburan.tim_anggota_aktif).split(',').map((x:string)=>x.trim()).filter(Boolean):undefined} />
+              <AdminPickerStd adminList={adminList} prefix="terima_" initialValue={peleburan.operator_diterima??peleburan.admin_input??''} />
+              <div>
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Catatan Selesai Lebur</label>
+                <input name="keterangan_diterima" type="text" defaultValue={peleburan.keterangan_diterima??''} placeholder="Opsional" className={inp}/>
+              </div>
+            </div>
+          </div>
+
+          {/* Loss realtime indicator */}
+          {diterimaVal !== '' && (
+            <div className="px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between"
+              style={{ background: overTol ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)', color: overTol ? '#DC2626' : '#16A34A' }}>
+              <span>Loss: {lossNow.toFixed(3)} gr</span>
+              <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
+            </div>
+          )}
+
+          {/* Loss approval panel */}
+          {overTol && (
+            <LossApprovalPanel
+              lossGram={lossNow} toleransiGram={toleransi} proses="Peleburan"
+              alasan={lossAlasan} setAlasan={setLossAlasan}
+              operatorNama={lossOpNama} setOperatorNama={setLossOpNama}
+              adminNama={lossAdminNama} setAdminNama={setLossAdminNama}
+              setTtdOperator={setTtdOp} setTtdAdmin={setTtdAdmin}
+            />
+          )}
+
+          {err && <div className="flex items-center gap-2 px-3 py-2 bg-red-50 rounded-xl text-xs text-red-600"><AlertTriangle size={13} className="flex-shrink-0"/><span>{err}</span></div>}
+          <div className="flex gap-2">
+            <button type="button" onClick={onClose} className="flex-1 h-11 rounded-2xl bg-gray-100 text-sm font-semibold text-gray-600">Batal</button>
+            <button type="submit" disabled={pend} className="flex-1 h-11 rounded-2xl text-sm font-bold text-white disabled:opacity-50" style={{background:'linear-gradient(135deg,#059669,#047857)'}}>
+              {pend ? 'Menyimpan…' : 'Simpan Perubahan'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
 
