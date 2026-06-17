@@ -15,7 +15,7 @@ import {
 } from '@/app/(dashboard)/produksi/actions'
 import type { UserRole } from '@/lib/types/database'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
-import { SerahModalStd, TerimaModalStd } from '@/components/modules/produksi/serah-terima-modal'
+import { SerahModalStd, TerimaModalStd, TimPickerStd, AdminPickerStd } from '@/components/modules/produksi/serah-terima-modal'
 
 interface Props { produksiList: any[]; batches: any[]; peleburanByBatch: Record<string, any[]>; tims: any[]; toleransi: Record<string, number>; adminList: any[]; userRole: UserRole; userName: string }
 
@@ -462,17 +462,15 @@ const F = ({ label, req, children }: { label: string; req?: boolean; children: R
 )
 
 // ─── Create Modal ──────────────────────────────────────────────────────────────
-function CreateModal({ batches, peleburanByBatch, tims, onClose, onSubmit, isPending, error }: {
-  batches: any[]; peleburanByBatch: Record<string, any[]>; tims: any[]; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
+function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSubmit, isPending, error }: {
+  batches: any[]; peleburanByBatch: Record<string, any[]>; tims: any[]; adminList: any[]; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
 }) {
   const nowTime = new Date().toTimeString().slice(0,5)
   const firstBatch = batches[0]?.kode ?? ''
   const firstPlb = (peleburanByBatch[firstBatch] ?? [])[0]
-  const [f, setF] = useState({ batch_kode: firstBatch, peleburan_id: firstPlb ? String(firstPlb.id) : '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime, operator: '', target_selesai: '' })
+  const [f, setF] = useState({ batch_kode: firstBatch, peleburan_id: firstPlb ? String(firstPlb.id) : '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime, target_selesai: '' })
   const [fotos, setFotos] = useState<File[]>([])
   const [up, setUp] = useState(false)
-  const [timId, setTimId] = useState('')
-  const [timAnggota, setTimAnggota] = useState('')
   const s = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
   const plbList = peleburanByBatch[f.batch_kode] ?? []
   const selectedPlb = plbList.find(p => String(p.id) === f.peleburan_id)
@@ -537,8 +535,8 @@ function CreateModal({ batches, peleburanByBatch, tims, onClose, onSubmit, isPen
             <F label="Jam Mulai" req><input name="jam_mulai" type="time" value={f.jam_mulai ?? ''} onChange={e => s('jam_mulai', e.target.value)} className={inp} required /></F>
             <F label="Target Selesai"><input name="target_selesai" type="date" value={f.target_selesai} onChange={e => s('target_selesai', e.target.value)} className={inp} /></F>
           </div>
-          <TimPicker tims={tims} timId={timId} setTimId={setTimId} anggota={timAnggota} setAnggota={v => { setTimAnggota(v); if (v) s('operator', v) }} label="Tim Pengerjaan" />
-          <F label="Operator / PIC (manual)"><input name="operator" value={f.operator} onChange={e => s('operator', e.target.value)} placeholder="Atau ketik manual" className={inp} /></F>
+          <TimPickerStd tims={tims} prefix="" />
+          <AdminPickerStd adminList={adminList} prefix="" />
           <F label="Catatan"><input name="catatan" placeholder="Keterangan tambahan..." className={inp} /></F>
           <F label="Foto Proses (opsional, max 10)">
             <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto proses awal" />
@@ -558,17 +556,15 @@ function CreateModal({ batches, peleburanByBatch, tims, onClose, onSubmit, isPen
 }
 
 // ─── Tambah Produksi Modal (lanjut cetak dari batch yang sama) ──────────────────
-function TambahProduksiModal({ item, peleburanByBatch, tims, onClose, onSubmit, isPending, error }: {
-  item: any; peleburanByBatch: Record<string, any[]>; tims: any[]; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
+function TambahProduksiModal({ item, peleburanByBatch, tims, adminList, onClose, onSubmit, isPending, error }: {
+  item: any; peleburanByBatch: Record<string, any[]>; tims: any[]; adminList: any[]; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
 }) {
   const nowTime = new Date().toTimeString().slice(0,5)
   const batchKode = item.batch_kode
   const plbList = peleburanByBatch[batchKode] ?? []
-  const [f, setF] = useState({ peleburan_id: plbList[0] ? String(plbList[0].id) : '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime, operator: '', target_selesai: '' })
+  const [f, setF] = useState({ peleburan_id: plbList[0] ? String(plbList[0].id) : '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime, target_selesai: '' })
   const [fotos, setFotos] = useState<File[]>([])
   const [up, setUp] = useState(false)
-  const [timId, setTimId] = useState('')
-  const [timAnggota, setTimAnggota] = useState('')
   const s = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
 
   const selectedPlb = plbList.find(p => String(p.id) === f.peleburan_id)
@@ -634,8 +630,8 @@ function TambahProduksiModal({ item, peleburanByBatch, tims, onClose, onSubmit, 
             <F label="Target Selesai"><input name="target_selesai" type="date" value={f.target_selesai} onChange={e => s('target_selesai', e.target.value)} className={inp} /></F>
           </div>
 
-          <TimPicker tims={tims} timId={timId} setTimId={setTimId} anggota={timAnggota} setAnggota={v => { setTimAnggota(v); if (v) s('operator', v) }} label="Tim Pengerjaan" />
-          <F label="Operator / PIC (manual)"><input name="operator" value={f.operator} onChange={e => s('operator', e.target.value)} placeholder="Atau ketik manual" className={inp} /></F>
+          <TimPickerStd tims={tims} prefix="" />
+          <AdminPickerStd adminList={adminList} prefix="" />
           <F label="Foto Proses (opsional, max 10)">
             <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto" />
           </F>
@@ -654,13 +650,13 @@ function TambahProduksiModal({ item, peleburanByBatch, tims, onClose, onSubmit, 
 }
 
 // ─── Edit Modal ────────────────────────────────────────────────────────────────
-function EditModal({ item, onClose, onSubmit, isPending, error }: {
-  item: any; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
+function EditModal({ item, tims, adminList, onClose, onSubmit, isPending, error }: {
+  item: any; tims: any[]; adminList: any[]; onClose: () => void; onSubmit: (fd: FormData) => void; isPending: boolean; error: string
 }) {
   const [f, setF] = useState({
     nama_item: item.nama_item ?? `LM REI ${item.gramasi ?? ''}GR`, gramasi: item.gramasi ?? '',
     pcs: String(item.pcs ?? ''), berat_awal: String(item.berat_awal ?? item.total_gram ?? ''),
-    operator: item.operator ?? '', catatan: item.catatan ?? '',
+    catatan: item.catatan ?? '',
     tanggal_produksi: item.tanggal_produksi ?? item.tanggal ?? today,
     target_selesai: item.target_selesai ?? '',
   })
@@ -670,13 +666,13 @@ function EditModal({ item, onClose, onSubmit, isPending, error }: {
     Array.isArray(item.foto_serahkan_cutting) ? item.foto_serahkan_cutting : []
   )
   const [uploading, setUploading] = useState(false)
-  async function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const fd = new FormData()
-    Object.entries(f).forEach(([k, v]) => fd.set(k, v))
+    const formEl = e.currentTarget as HTMLFormElement
     setUploading(true)
     try {
       const b64s = fotos.length > 0 ? await filesToBase64(fotos) : []
+      const fd = new FormData(formEl)
       fd.set('foto_serahkan_b64', JSON.stringify(b64s))
       fd.set('existing_fotos_serah', JSON.stringify(existingFotos))
       onSubmit(fd)
@@ -690,20 +686,19 @@ function EditModal({ item, onClose, onSubmit, isPending, error }: {
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><X size={15} /></button>
         </div>
         <form onSubmit={submit} className="px-6 py-5 space-y-4 overflow-y-auto max-h-[calc(100dvh-140px)]">
-          <F label="Nama / Label Batch"><input value={f.nama_item} onChange={e => s('nama_item', e.target.value)} placeholder="cth: LM REI 10GR BATCH 26" className={inp} /></F>
+          <F label="Nama / Label Batch"><input name="nama_item" value={f.nama_item} onChange={e => s('nama_item', e.target.value)} placeholder="cth: LM REI 10GR BATCH 26" className={inp} /></F>
           <div className="grid grid-cols-2 gap-3 items-end">
-            <F label="Pilih Gramasi" req><select value={f.gramasi} onChange={e => { s('gramasi', e.target.value); s('nama_item', `LM REI ${e.target.value}GR`) }} className={inp}>{GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} Gram</option>)}</select></F>
-            <F label="Jumlah PCS (opsional saat diserahkan)"><input type="number" min="1" value={f.pcs} onChange={e => s('pcs', e.target.value)} placeholder="Isi saat sudah diterima" className={inp} /></F>
+            <F label="Pilih Gramasi" req><select name="gramasi" value={f.gramasi} onChange={e => { s('gramasi', e.target.value); s('nama_item', `LM REI ${e.target.value}GR`) }} className={inp}>{GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} Gram</option>)}</select></F>
+            <F label="Jumlah PCS (opsional saat diserahkan)"><input name="pcs" type="number" min="1" value={f.pcs} onChange={e => s('pcs', e.target.value)} placeholder="Isi saat sudah diterima" className={inp} /></F>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <F label="Total Berat (gr)" req><input type="number" step="0.01" value={f.berat_awal} onChange={e => s('berat_awal', e.target.value)} className={inp} /></F>
-            <F label="Tanggal"><input type="date" value={f.tanggal_produksi} onChange={e => s('tanggal_produksi', e.target.value)} className={inp} /></F>
+            <F label="Total Berat (gr)" req><input name="berat_awal" type="number" step="0.01" value={f.berat_awal} onChange={e => s('berat_awal', e.target.value)} className={inp} /></F>
+            <F label="Tanggal"><input name="tanggal_produksi" type="date" value={f.tanggal_produksi} onChange={e => s('tanggal_produksi', e.target.value)} className={inp} /></F>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <F label="Operator / PIC"><input value={f.operator} onChange={e => s('operator', e.target.value)} placeholder="Nama operator" className={inp} /></F>
-            <F label="Target Selesai"><input type="date" value={f.target_selesai} onChange={e => s('target_selesai', e.target.value)} className={inp} /></F>
-          </div>
-          <F label="Catatan"><input value={f.catatan} onChange={e => s('catatan', e.target.value)} placeholder="Catatan tambahan…" className={inp} /></F>
+          <F label="Target Selesai"><input name="target_selesai" type="date" value={f.target_selesai} onChange={e => s('target_selesai', e.target.value)} className={inp} /></F>
+          <TimPickerStd tims={tims} prefix="" initialTimId={String(item.tim_id ?? '')} initialAnggota={item.tim_anggota_aktif ? item.tim_anggota_aktif.split(', ').filter(Boolean) : []} />
+          <AdminPickerStd adminList={adminList} prefix="" initialValue={item.admin_input ?? item.operator ?? ''} />
+          <F label="Catatan"><input name="catatan" value={f.catatan} onChange={e => s('catatan', e.target.value)} placeholder="Catatan tambahan…" className={inp} /></F>
           <div>
             <label className="text-xs font-semibold text-gray-500 mb-1.5 block">Foto Diserahkan</label>
             {existingFotos.length > 0 && (
@@ -1837,9 +1832,9 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
       </div>
 
       {/* ── Modals ──────────────────────────────────────────────────────────── */}
-      {modal==='create'        && batches.length>0 && <CreateModal batches={batches} peleburanByBatch={peleburanByBatch} tims={tims} onClose={()=>setModal(null)} onSubmit={handleCreate} isPending={isPending} error={err}/>}
-      {modal==='tambahProduksi'&& active            && <TambahProduksiModal item={active} peleburanByBatch={peleburanByBatch} tims={tims} onClose={()=>setModal(null)} onSubmit={handleTambahProduksi} isPending={isPending} error={err}/>}
-      {modal==='edit'          && active            && <EditModal item={active} onClose={()=>setModal(null)} onSubmit={handleEdit} isPending={isPending} error={err}/>}
+      {modal==='create'        && batches.length>0 && <CreateModal batches={batches} peleburanByBatch={peleburanByBatch} tims={tims} adminList={adminList} onClose={()=>setModal(null)} onSubmit={handleCreate} isPending={isPending} error={err}/>}
+      {modal==='tambahProduksi'&& active            && <TambahProduksiModal item={active} peleburanByBatch={peleburanByBatch} tims={tims} adminList={adminList} onClose={()=>setModal(null)} onSubmit={handleTambahProduksi} isPending={isPending} error={err}/>}
+      {modal==='edit'          && active            && <EditModal item={active} tims={tims} adminList={adminList} onClose={()=>setModal(null)} onSubmit={handleEdit} isPending={isPending} error={err}/>}
       {modal==='update'        && active            && <UpdateModal item={active} onClose={()=>setModal(null)} onSubmit={handleUpdate} isPending={isPending} error={err}/>}
       {modal==='cuttingTerima' && active            && (()=>{
         const serahG = Number(active.serah_gram ?? active.berat_awal ?? 0)
