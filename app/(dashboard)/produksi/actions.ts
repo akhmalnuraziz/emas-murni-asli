@@ -175,6 +175,8 @@ export async function createProduksi(formData: FormData) {
     peleburan_kode: plb.kode,
     tim_id: formData.get('tim_id') ? Number(formData.get('tim_id')) : null,
     tim_nama: (formData.get('tim_nama') as string) || null,
+    tim_anggota_aktif: (formData.get('tim_anggota_aktif') as string) || null,
+    admin_input: (formData.get('admin_input') as string) || null,
     memo: formData.get('memo') as string || null,
     operator: formData.get('operator') as string || profile?.name || null,
     catatan: formData.get('catatan') as string || null,
@@ -672,14 +674,23 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   const fotoSerahFinal = [...existingSerah, ...newSerahUrls]
 
   const namaItemBaru = (formData.get('nama_item') as string) || `LM REI ${gramasi}GR`
+  const timIdEdit = formData.get('tim_id') ? Number(formData.get('tim_id')) : undefined
+  const timNamaEdit = (formData.get('tim_nama') as string) || undefined
+  const timAnggotaEdit = (formData.get('tim_anggota_aktif') as string) || undefined
+  const adminInputEdit = (formData.get('admin_input') as string) || undefined
   const updateData: any = {
     gramasi, berat_awal: beratAwal,
     serah_gram: beratAwal, total_gram: beratAwal,
     nama_item: namaItemBaru,
-    operator: operator || null, catatan: catatan || null,
+    operator: formData.get('operator') as string || operator || null,
+    catatan: catatan || null,
     tanggal_produksi: tanggal, tanggal, memo: memo || null,
     target_selesai: targetSelesai,
     foto_serahkan_cutting: fotoSerahFinal,
+    ...(timIdEdit !== undefined && { tim_id: timIdEdit }),
+    ...(timNamaEdit !== undefined && { tim_nama: timNamaEdit }),
+    ...(timAnggotaEdit !== undefined && { tim_anggota_aktif: timAnggotaEdit }),
+    ...(adminInputEdit !== undefined && { admin_input: adminInputEdit }),
   }
   if (pcs && pcs > 0) { updateData.pcs = pcs; updateData.pcs_awal = pcs; updateData.pcs_good = pcs }
   const { error } = await supabase.from('produksi_item').update(updateData).eq('id', produksiId)
