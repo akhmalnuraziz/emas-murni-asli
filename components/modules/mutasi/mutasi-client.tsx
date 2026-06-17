@@ -26,14 +26,14 @@ export default function MutasiClient({ cabangList }: { cabangList: Cabang[] }) {
           <ArrowLeftRight size={20} className="text-white" />
         </div>
         <div>
-          <h1 className="text-lg font-bold text-slate-900">Mutasi Cabang</h1>
-          <p className="text-xs text-slate-400">Kirim barang tershieldtag ke cabang & kelola stok</p>
+          <h1 className="text-lg font-bold text-slate-900">Pemindahan Barang</h1>
+          <p className="text-xs text-slate-400">Kirim barang tershieldtag ke cabang, kelola stok & riwayat</p>
         </div>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {([['kirim', 'Kirim Mutasi', Send], ['stok', 'Stok Cabang', Store], ['riwayat', 'Riwayat', Truck]] as const).map(([key, label, Icon]) => (
+        {([['kirim', 'Kirim Barang', Send], ['stok', 'Stok Cabang', Store], ['riwayat', 'Riwayat', Truck]] as const).map(([key, label, Icon]) => (
           <button key={key} onClick={() => setTab(key)}
             className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-all"
             style={tab === key
@@ -206,7 +206,7 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
         <button onClick={submit} disabled={submitting || selected.size === 0}
           className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-40"
           style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
-          <Send size={15} /> {submitting ? 'Mengirim…' : 'Kirim Mutasi'}
+          <Send size={15} /> {submitting ? 'Mengirim…' : 'Kirim Barang'}
         </button>
       </div>
     </div>
@@ -381,3 +381,4 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </div>
   )
 }
+
