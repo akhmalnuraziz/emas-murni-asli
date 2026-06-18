@@ -378,8 +378,26 @@ function SisaFisikInput({ batchKode, initialValue }: { batchKode: string; initia
 }
 
 // ─── Event History ─────────────────────────────────────────────────────────────
-function EventHistory({ events, item }: { events: any[]; item?: any }) {
+function EventHistory({ events, item, stageHandovers = [], lossApprovals = [] }: {
+  events: any[]; item?: any; stageHandovers?: any[]; lossApprovals?: any[]
+}) {
   const [lightbox, setLightbox] = useState<string | null>(null)
+
+  // Build lookup: proses → loss_approval (untuk item ini saja)
+  // Cutting: ref_table='produksi_item', ref_id=item.id
+  // Stages: ref_table='stage_handover', ref_id dalam stageHandovers[tahap]
+  const cuttingLoss = item ? (lossApprovals as any[]).find(
+    la => la.ref_table === 'produksi_item' && la.ref_id === item.id
+  ) : null
+
+  const TAHAP_MAP: Record<string,string> = {
+    'Pas Berat': 'pas_berat', 'Annealing': 'annealing', 'Siap Packing': 'siap_packing'
+  }
+  const stageLossMap: Record<string, any> = {}
+  for (const sh of stageHandovers as any[]) {
+    const la = (lossApprovals as any[]).find(l => l.ref_table === 'stage_handover' && l.ref_id === sh.id)
+    if (la) stageLossMap[sh.tahap] = la
+  }
 
   // Filter: sembunyikan event Cutting awal (tanpa jam_mulai = event create, bukan proses)
   const filtered = sortEvents(events).filter((ev: any) => {
@@ -445,6 +463,51 @@ function EventHistory({ events, item }: { events: any[]; item?: any }) {
                 ))}
               </div>
             )}
+            {/* TTD Loss — tampil per event kalau ada loss melebihi toleransi */}
+            {(()=>{
+              const tahapKey = TAHAP_MAP[ev.status]
+              const la = ev.status === 'Cutting' ? cuttingLoss
+                       : tahapKey ? stageLossMap[tahapKey]
+                       : null
+              if (!la) return null
+              return (
+                <div className="mx-3 mb-2 rounded-xl overflow-hidden border border-red-100">
+                  <div className="px-3 py-1.5 flex items-center gap-2" style={{background:'rgba(239,68,68,0.06)'}}>
+                    <span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss {ev.status}</span>
+                    <span className="text-[10px] text-red-400 ml-auto">{la.loss_gram ? `${Number(la.loss_gram).toFixed(3)} gr` : ''}</span>
+                  </div>
+                  <div className="px-3 py-2 space-y-1.5">
+                    {la.alasan && <p className="text-[11px] text-gray-600"><span className="font-semibold">Alasan:</span> {la.alasan}</p>}
+                    <div className="flex gap-3 text-[10px] text-gray-500">
+                      {la.operator_nama && <span>👷 <b>{la.operator_nama}</b></span>}
+                      {la.admin_nama && <span>✍️ <b>{la.admin_nama}</b></span>}
+                    </div>
+                    {(la.ttd_operator_url || la.ttd_admin_url) && (
+                      <div className="flex gap-2 pt-1">
+                        {la.ttd_operator_url && (
+                          <div>
+                            <p className="text-[9px] text-gray-400 mb-1">TTD Operator</p>
+                            <a href={la.ttd_operator_url} target="_blank" rel="noopener noreferrer">
+                              <img src={la.ttd_operator_url} alt="TTD Operator"
+                                className="h-12 w-24 object-contain rounded-xl border border-red-100 bg-white"/>
+                            </a>
+                          </div>
+                        )}
+                        {la.ttd_admin_url && (
+                          <div>
+                            <p className="text-[9px] text-gray-400 mb-1">TTD Admin</p>
+                            <a href={la.ttd_admin_url} target="_blank" rel="noopener noreferrer">
+                              <img src={la.ttd_admin_url} alt="TTD Admin"
+                                className="h-12 w-24 object-contain rounded-xl border border-red-100 bg-white"/>
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         )
       })}
