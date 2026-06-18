@@ -780,6 +780,46 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                 📥 Diterima: {plb.keterangan_diterima}
                               </div>
                             )}
+                            {/* TTD Loss — tampil kalau ada loss_approval */}
+                            {plb.loss_approval&&(
+                              <div className="mt-2 rounded-2xl overflow-hidden border border-red-100">
+                                <div className="px-3 py-2 flex items-center gap-2" style={{background:"rgba(239,68,68,0.06)"}}>
+                                  <span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss Peleburan</span>
+                                  <span className="text-[10px] text-red-400 ml-auto">Loss disetujui</span>
+                                </div>
+                                <div className="px-3 py-2.5 space-y-1.5">
+                                  {plb.loss_approval.alasan&&(
+                                    <p className="text-xs text-gray-600"><span className="font-semibold text-gray-700">Alasan:</span> {plb.loss_approval.alasan}</p>
+                                  )}
+                                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                                    {plb.loss_approval.operator_nama&&<span>👷 Operator: <b>{plb.loss_approval.operator_nama}</b></span>}
+                                    {plb.loss_approval.admin_nama&&<span>✍️ Admin: <b>{plb.loss_approval.admin_nama}</b></span>}
+                                  </div>
+                                  {(plb.loss_approval.ttd_operator_url||plb.loss_approval.ttd_admin_url)&&(
+                                    <div className="flex gap-3 pt-1">
+                                      {plb.loss_approval.ttd_operator_url&&(
+                                        <div>
+                                          <p className="text-[10px] text-gray-400 mb-1">TTD Operator</p>
+                                          <a href={plb.loss_approval.ttd_operator_url} target="_blank" rel="noopener noreferrer">
+                                            <img src={plb.loss_approval.ttd_operator_url} alt="TTD Operator"
+                                              className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/>
+                                          </a>
+                                        </div>
+                                      )}
+                                      {plb.loss_approval.ttd_admin_url&&(
+                                        <div>
+                                          <p className="text-[10px] text-gray-400 mb-1">TTD Admin</p>
+                                          <a href={plb.loss_approval.ttd_admin_url} target="_blank" rel="noopener noreferrer">
+                                            <img src={plb.loss_approval.ttd_admin_url} alt="TTD Admin"
+                                              className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/>
+                                          </a>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )})
                       })()}
@@ -1501,8 +1541,19 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
                     onChange={e => setNewFotosDiterima(p => [...p, ...Array.from(e.target.files??[])].slice(0,5))}/>
                 </label>
               </div>
-              <TimPickerStd tims={tims} prefix="terima_" initialTimId={peleburan.tim_id!=null?String(peleburan.tim_id):''} initialAnggota={peleburan.tim_anggota_aktif?String(peleburan.tim_anggota_aktif).split(',').map((x:string)=>x.trim()).filter(Boolean):undefined} />
-              <AdminPickerStd adminList={adminList} prefix="terima_" initialValue={peleburan.operator_diterima??peleburan.admin_input??''} />
+              {/* Tim picker: pre-fill anggota dari tim saat ini jika tim_anggota_aktif belum terisi */}
+          {(()=>{
+            const savedAnggota = peleburan.tim_anggota_aktif
+              ? String(peleburan.tim_anggota_aktif).split(',').map((x:string)=>x.trim()).filter(Boolean)
+              : undefined
+            const timAnggotaFallback = !savedAnggota && peleburan.tim_id
+              ? (tims.find((t:any)=>t.id===peleburan.tim_id)?.anggota??[]).filter((a:any)=>a.aktif).map((a:any)=>a.nama)
+              : undefined
+            return <TimPickerStd tims={tims} prefix="terima_"
+              initialTimId={peleburan.tim_id!=null?String(peleburan.tim_id):''}
+              initialAnggota={savedAnggota??timAnggotaFallback} />
+          })()}
+              <AdminPickerStd adminList={adminList} prefix="terima_" initialValue={peleburan.admin_input??''} />
               <div>
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Catatan Selesai Lebur</label>
                 <input name="keterangan_diterima" type="text" defaultValue={peleburan.keterangan_diterima??''} placeholder="Opsional" className={inp}/>
