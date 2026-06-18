@@ -468,7 +468,7 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
   const nowTime = new Date().toTimeString().slice(0,5)
   const firstBatch = batches[0]?.kode ?? ''
   const firstPlb = (peleburanByBatch[firstBatch] ?? [])[0]
-  const [f, setF] = useState({ batch_kode: firstBatch, peleburan_id: firstPlb ? String(firstPlb.id) : '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime, target_selesai: '' })
+  const [f, setF] = useState({ batch_kode: firstBatch, peleburan_id: firstPlb ? String(firstPlb.id) : '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime })
   const [fotos, setFotos] = useState<File[]>([])
   const [up, setUp] = useState(false)
   const s = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
@@ -533,7 +533,7 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <F label="Tanggal Mulai" req><input name="tanggal_produksi" type="date" value={f.tanggal_produksi} onChange={e => s('tanggal_produksi', e.target.value)} className={inp} required /></F>
             <F label="Jam Mulai" req><input name="jam_mulai" type="time" value={f.jam_mulai ?? ''} onChange={e => s('jam_mulai', e.target.value)} className={inp} required /></F>
-            <F label="Target Selesai"><input name="target_selesai" type="date" value={f.target_selesai} onChange={e => s('target_selesai', e.target.value)} className={inp} /></F>
+  
           </div>
           <TimPickerStd tims={tims} prefix="" />
           <AdminPickerStd adminList={adminList} prefix="" />
@@ -562,7 +562,7 @@ function TambahProduksiModal({ item, peleburanByBatch, tims, adminList, onClose,
   const nowTime = new Date().toTimeString().slice(0,5)
   const batchKode = item.batch_kode
   const plbList = peleburanByBatch[batchKode] ?? []
-  const [f, setF] = useState({ peleburan_id: plbList[0] ? String(plbList[0].id) : '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime, target_selesai: '' })
+  const [f, setF] = useState({ peleburan_id: plbList[0] ? String(plbList[0].id) : '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime })
   const [fotos, setFotos] = useState<File[]>([])
   const [up, setUp] = useState(false)
   const s = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
@@ -627,7 +627,7 @@ function TambahProduksiModal({ item, peleburanByBatch, tims, adminList, onClose,
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <F label="Tanggal Mulai" req><input name="tanggal_produksi" type="date" value={f.tanggal_produksi} onChange={e => s('tanggal_produksi', e.target.value)} className={inp} required /></F>
             <F label="Jam Mulai" req><input name="jam_mulai" type="time" value={f.jam_mulai} onChange={e => s('jam_mulai', e.target.value)} className={inp} required /></F>
-            <F label="Target Selesai"><input name="target_selesai" type="date" value={f.target_selesai} onChange={e => s('target_selesai', e.target.value)} className={inp} /></F>
+  
           </div>
 
           <TimPickerStd tims={tims} prefix="" />
@@ -658,7 +658,6 @@ function EditModal({ item, tims, adminList, onClose, onSubmit, isPending, error 
     pcs: String(item.pcs ?? ''), berat_awal: String(item.berat_awal ?? item.total_gram ?? ''),
     catatan: item.catatan ?? '',
     tanggal_produksi: item.tanggal_produksi ?? item.tanggal ?? today,
-    target_selesai: item.target_selesai ?? '',
   })
   const s = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
   const [fotos, setFotos] = useState<File[]>([])
@@ -695,7 +694,7 @@ function EditModal({ item, tims, adminList, onClose, onSubmit, isPending, error 
             <F label="Total Berat (gr)" req><input name="berat_awal" type="number" step="0.01" value={f.berat_awal} onChange={e => s('berat_awal', e.target.value)} className={inp} /></F>
             <F label="Tanggal"><input name="tanggal_produksi" type="date" value={f.tanggal_produksi} onChange={e => s('tanggal_produksi', e.target.value)} className={inp} /></F>
           </div>
-          <F label="Target Selesai"><input name="target_selesai" type="date" value={f.target_selesai} onChange={e => s('target_selesai', e.target.value)} className={inp} /></F>
+
           <TimPickerStd tims={tims} prefix="" initialTimId={String(item.tim_id ?? '')} initialAnggota={item.tim_anggota_aktif ? item.tim_anggota_aktif.split(', ').filter(Boolean) : []} />
           <AdminPickerStd adminList={adminList} prefix="" initialValue={item.admin_input ?? item.operator ?? ''} />
           <F label="Catatan"><input name="catatan" value={f.catatan} onChange={e => s('catatan', e.target.value)} placeholder="Catatan tambahan…" className={inp} /></F>
