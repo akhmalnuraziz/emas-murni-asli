@@ -15,6 +15,7 @@ export default async function ProduksiPage() {
     { data: tims },
     { data: toleransiRows },
     { data: adminRows },
+    { data: lossApprovalRows },
   ] = await Promise.all([
     supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
     supabase.from('produksi_item')
@@ -36,6 +37,11 @@ export default async function ProduksiPage() {
       .eq('aktif', true).is('voided_at', null).order('id'),
     supabase.from('pengaturan').select('key, value').like('key', 'toleransi_loss%'),
     supabase.from('admin_input').select('id, nama').is('voided_at', null).order('id'),
+    // TTD loss untuk SEMUA proses (cutting, pas_berat, annealing, siap_packing)
+    supabase.from('loss_approval')
+      .select('id, proses, ref_table, ref_id, alasan, operator_nama, admin_nama, ttd_operator_url, ttd_admin_url, loss_gram, created_at')
+      .neq('proses', 'peleburan')
+      .order('created_at', { ascending: false }),
   ])
 
   const toleransi: Record<string, number> = {}
@@ -43,7 +49,6 @@ export default async function ProduksiPage() {
     toleransi[r.key.replace('toleransi_loss_', '')] = parseFloat(r.value) || 0.05
   }
 
-  // Map peleburan tersedia per batch (sisa jatah > 0) — di-pass ke client biar tidak loading saat modal dibuka
   const peleburanByBatch: Record<string, { id: number; kode: string; diterima: number; terpakai: number; sisa: number }[]> = {}
   for (const p of peleburanRaw ?? []) {
     const sisa = Number(p.diterima_gram ?? 0) - Number(p.terpakai_cetak ?? 0)
@@ -67,10 +72,7 @@ export default async function ProduksiPage() {
       adminList={adminRows ?? []}
       userRole={profile?.role ?? 'operator_produksi'}
       userName={profile?.name ?? ''}
+      lossApprovals={lossApprovalRows ?? []}
     />
   )
 }
-
-
-
-
