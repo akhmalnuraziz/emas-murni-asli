@@ -741,34 +741,61 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                               <div><p className="text-[10px] text-gray-400">Losses</p><p className={`font-semibold ${plb.losses_gram>0?'text-red-500':'text-gray-500'}`}>{plb.losses_gram!=null?formatGram(plb.losses_gram):'—'}</p></div>
                             </div>
                             {/* Foto diserahkan + diterima */}
-                            {((Array.isArray(plb.foto_serahkan)&&plb.foto_serahkan.length>0)||(Array.isArray(plb.foto_diterima)&&plb.foto_diterima.length>0))&&(
-                              <div className="grid grid-cols-2 gap-3 mt-2">
-                                {Array.isArray(plb.foto_serahkan)&&plb.foto_serahkan.length>0&&(
-                                  <div>
-                                    <p className="text-[10px] text-gray-400 mb-1">📷 Diserahkan</p>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {(plb.foto_serahkan as string[]).map((url:string,i:number)=>(
-                                        <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                                          <img src={url} alt="" className="w-12 h-12 rounded-xl object-cover border border-violet-200 hover:opacity-80"/>
-                                        </a>
-                                      ))}
+                            {(()=>{
+                              const fotoSerah = Array.isArray(plb.foto_serahkan) ? (plb.foto_serahkan as string[]).filter(Boolean) : []
+                              const fotoDtrm  = Array.isArray(plb.foto_diterima)  ? (plb.foto_diterima  as string[]).filter(Boolean) : []
+                              if (fotoSerah.length===0 && fotoDtrm.length===0) return null
+                              return (
+                                <div className="mt-2 space-y-2">
+                                  {fotoSerah.length>0&&(
+                                    <div>
+                                      <p className="text-[10px] font-semibold text-violet-500 mb-1.5">
+                                        📷 Foto Diserahkan ({fotoSerah.length})
+                                      </p>
+                                      <div className="flex flex-wrap gap-2">
+                                        {fotoSerah.map((url:string,i:number)=>(
+                                          <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                                            className="block">
+                                            <img src={url} alt={`Foto serah ${i+1}`}
+                                              className="w-20 h-20 rounded-xl object-cover border-2 border-violet-200 hover:border-violet-400 hover:opacity-90 transition-all"
+                                              onError={(e)=>{
+                                                const t=e.currentTarget
+                                                t.style.display='none'
+                                                const p=t.parentElement
+                                                if(p){p.innerHTML='<span style="display:flex;align-items:center;justify-content:center;width:80px;height:80px;background:#F3F0FA;border-radius:12px;font-size:11px;color:#9CA3AF;border:1px solid #E5E7EB;text-decoration:underline;">Lihat foto</span>'}
+                                              }}
+                                            />
+                                          </a>
+                                        ))}
+                                      </div>
                                     </div>
-                                  </div>
-                                )}
-                                {Array.isArray(plb.foto_diterima)&&plb.foto_diterima.length>0&&(
-                                  <div>
-                                    <p className="text-[10px] text-gray-400 mb-1">📷 Diterima</p>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {(plb.foto_diterima as string[]).map((url:string,i:number)=>(
-                                        <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                                          <img src={url} alt="" className="w-12 h-12 rounded-xl object-cover border border-violet-200 hover:opacity-80"/>
-                                        </a>
-                                      ))}
+                                  )}
+                                  {fotoDtrm.length>0&&(
+                                    <div>
+                                      <p className="text-[10px] font-semibold text-green-600 mb-1.5">
+                                        📷 Foto Diterima ({fotoDtrm.length})
+                                      </p>
+                                      <div className="flex flex-wrap gap-2">
+                                        {fotoDtrm.map((url:string,i:number)=>(
+                                          <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                                            className="block">
+                                            <img src={url} alt={`Foto terima ${i+1}`}
+                                              className="w-20 h-20 rounded-xl object-cover border-2 border-green-200 hover:border-green-400 hover:opacity-90 transition-all"
+                                              onError={(e)=>{
+                                                const t=e.currentTarget
+                                                t.style.display='none'
+                                                const p=t.parentElement
+                                                if(p){p.innerHTML='<span style="display:flex;align-items:center;justify-content:center;width:80px;height:80px;background:#ECFDF5;border-radius:12px;font-size:11px;color:#9CA3AF;border:1px solid #D1FAE5;text-decoration:underline;">Lihat foto</span>'}
+                                              }}
+                                            />
+                                          </a>
+                                        ))}
+                                      </div>
                                     </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
+                                  )}
+                                </div>
+                              )
+                            })()}
                             {/* FIX poin 6: tampilkan keterangan_serahkan DAN keterangan_diterima */}
                             {plb.keterangan_serahkan&&(
                               <div className="mt-2 px-3 py-1.5 rounded-lg text-xs text-gray-500 italic" style={{background:"rgba(139,92,246,0.05)"}}>
