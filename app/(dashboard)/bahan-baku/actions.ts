@@ -661,151 +661,6 @@ export async function editPeleburan(id: number, formData: FormData) {
   return { success: true }
 }
 
-export async function editPeleburanSerah(id: number, formData: FormData) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Unauthorized' }
-
-  const dikasih   = parseFloat(formData.get('dikasih_gram') as string)
-  const tanggal   = formData.get('tanggal') as string
-  const jamMulai  = formData.get('jam_mulai') as string || null
-  const timId     = formData.get('tim_id') ? Number(formData.get('tim_id')) : null
-  const timNama   = (formData.get('tim_nama') as string) || null
-  const timAnggota = (formData.get('tim_anggota_aktif') as string) || null
-  const adminInput = (formData.get('admin_input') as string) || null
-  const keterangan = formData.get('keterangan_serahkan') as string || null
-
-  if (!dikasih || dikasih <= 0) return { error: 'Berat diserahkan wajib diisi' }
-  if (!tanggal) return { error: 'Tanggal mulai wajib diisi' }
-  if (!jamMulai) return { error: 'Jam mulai wajib diisi' }
-
-  const { data: plb } = await supabase.from('peleburan').select('kode, dikasih_gram, batch_kode, diterima_gram').eq('id', id).single()
-  if (!plb) return { error: 'Peleburan tidak ditemukan' }
-  if (plb.diterima_gram && dikasih < Number(plb.diterima_gram))
-    return { error: `Dikasih tidak boleh kurang dari diterima (${plb.diterima_gram} gr)` }
-
-  // Sesuaikan sisa_bahan_seharusnya jika dikasih berubah
-  const selisih = dikasih - Number(plb.dikasih_gram)
-  if (selisih !== 0) {
-    const { data: batch } = await supabase.from('batch').select('sisa_bahan_seharusnya').eq('kode', plb.batch_kode).single()
-    const sisaBaru = Number(batch?.sisa_bahan_seharusnya ?? 0) - selisih
-    await supabase.from('batch').update({ sisa_bahan_seharusnya: sisaBaru }).eq('kode', plb.batch_kode)
-  }
-
-  // Foto serahkan
-  const existingRaw = formData.get('existing_fotos') as string
-  const existing = existingRaw ? JSON.parse(existingRaw) : []
-  const newFotosRaw = formData.get('foto_serahkan_b64') as string
-  const newFotosB64 = newFotosRaw ? JSON.parse(newFotosRaw) : []
-  const { urls: fotoUrls } = newFotosB64.length > 0
-    ? await uploadBase64Fotos(supabase, newFotosB64, plb.kode + '_edit', existing)
-    : { urls: existing }
-
-  const { error } = await supabase.from('peleburan').update({
-    dikasih_gram: dikasih, tanggal, jam_mulai: jamMulai,
-    keterangan_serahkan: keterangan, foto_serahkan: fotoUrls,
-    tim_id: timId, tim_nama: timNama,
-    ...(timAnggota !== null ? { tim_anggota_aktif: timAnggota } : {}),
-    ...(adminInput ? { admin_input: adminInput } : {}),
-  }).eq('id', id)
-
-  if (error) return { error: error.message }
-  revalidatePath('/bahan-baku')
-  return { success: true }
-}
-
-export async function editPeleburanTerima(id: number, formData: FormData) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Unauthorized' }
-  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-
-  const diterima        = parseFloat(formData.get('diterima_gram') as string)
-  const tanggalTerima   = formData.get('tanggal_diterima') as string || null
-  const jamSelesai      = formData.get('jam_selesai') as string || null
-  const keteranganTrm   = formData.get('keterangan_diterima') as string || null
-  const terimaTimId     = formData.get('terima_tim_id') ? Number(formData.get('terima_tim_id')) : null
-  const terimaTimNama   = (formData.get('terima_tim_nama') as string) || null
-  const terimaAdmin     = (formData.get('terima_admin_input') as string) || null
-
-  if (!diterima || diterima <= 0) return { error: 'Berat diterima wajib diisi' }
-
-  const { data: plb } = await supabase.from('peleburan').select('dikasih_gram, kode, batch_kode, diterima_gram, status').eq('id', id).single()
-  if (!plb) return { error: 'Peleburan tidak ditemukan' }
-  if (diterima > Number(plb.dikasih_gram)) return { error: `Diterima tidak boleh melebihi dikasih (${plb.dikasih_gram} gr)` }
-
-  // Loss check → update atau insert loss_approval
-  const lossLebur = Math.max(0, Number(plb.dikasih_gram) - diterima)
-  const toleransiLebur = await getToleransiPeleburan(supabase)
-  const lossAlasan = (formData.get('loss_alasan') as string) || ''
-  if (lossLebur > toleransiLebur + 0.0001) {
-    const ttdOp    = formData.get('loss_ttd_operator') as string
-    const ttdAdmin = formData.get('loss_ttd_admin') as string
-    if (!lossAlasan.trim()) return { error: `Loss ${lossLebur.toFixed(3)}gr melebihi toleransi. Alasan wajib diisi.` }
-    if (!ttdOp)    return { error: 'Tanda tangan operator wajib.' }
-    if (!ttdAdmin) return { error: 'Tanda tangan admin/manager wajib.' }
-    const ttdOpUrl    = await uploadSignaturePlb(supabase, ttdOp,    `${plb.kode}_op_edit`)
-    const ttdAdminUrl = await uploadSignaturePlb(supabase, ttdAdmin, `${plb.kode}_admin_edit`)
-    // Upsert loss_approval (update jika ada, insert jika belum)
-    const { data: existing_la } = await supabase.from('loss_approval')
-      .select('id').eq('proses', 'peleburan').eq('ref_table', 'peleburan').eq('ref_id', id).maybeSingle()
-    if (existing_la) {
-      await supabase.from('loss_approval').update({
-        keluar_gram: diterima, loss_gram: lossLebur,
-        alasan: lossAlasan,
-        ttd_operator_url: ttdOpUrl, operator_nama: (formData.get('loss_operator_nama') as string) || null,
-        ttd_admin_url: ttdAdminUrl, admin_nama: (formData.get('loss_admin_nama') as string) || profile?.name || null,
-        updated_at: new Date().toISOString(),
-      }).eq('id', existing_la.id)
-    } else {
-      await supabase.from('loss_approval').insert({
-        batch_kode: plb.batch_kode, proses: 'peleburan', ref_table: 'peleburan', ref_id: id,
-        masuk_gram: plb.dikasih_gram, keluar_gram: diterima, loss_gram: lossLebur, toleransi_gram: toleransiLebur,
-        alasan: lossAlasan,
-        ttd_operator_url: ttdOpUrl, operator_nama: (formData.get('loss_operator_nama') as string) || null,
-        ttd_admin_url: ttdAdminUrl, admin_user_id: user.id, admin_nama: (formData.get('loss_admin_nama') as string) || profile?.name || null,
-      })
-    }
-  }
-
-  // Foto diterima
-  const existingDtRaw = formData.get('existing_fotos_diterima') as string
-  const existingDt = existingDtRaw ? JSON.parse(existingDtRaw) : []
-  const newDtRaw = formData.get('foto_diterima_b64') as string
-  const newDtB64 = newDtRaw ? JSON.parse(newDtRaw) : []
-  const { urls: fotoDtUrls } = newDtB64.length > 0
-    ? await uploadBase64Fotos(supabase, newDtB64, plb.kode + '_done_edit', existingDt)
-    : { urls: existingDt }
-
-  // Sesuaikan bahan_siap_cetak jika diterima berubah
-  const diterimaLama = Number(plb.diterima_gram ?? 0)
-  const selisihDiterima = diterima - diterimaLama
-  if (selisihDiterima !== 0 && plb.batch_kode) {
-    const { data: b } = await supabase.from('batch').select('bahan_siap_cetak').eq('kode', plb.batch_kode).single()
-    await supabase.from('batch').update({
-      bahan_siap_cetak: Math.max(0, Number(b?.bahan_siap_cetak ?? 0) + selisihDiterima)
-    }).eq('kode', plb.batch_kode)
-  }
-
-  const { error } = await supabase.from('peleburan').update({
-    diterima_gram: diterima,
-    tanggal_diterima: tanggalTerima,
-    jam_selesai: jamSelesai,
-    operator_diterima: terimaAdmin,
-    keterangan_diterima: keteranganTrm,
-    foto_diterima: fotoDtUrls,
-    status: 'selesai',
-    ...(terimaTimId ? { tim_id: terimaTimId, tim_nama: terimaTimNama } : {}),
-    ...(terimaAdmin ? { admin_input: terimaAdmin } : {}),
-  }).eq('id', id)
-
-  if (error) return { error: error.message }
-
-  revalidatePath('/bahan-baku')
-  revalidatePath('/produksi')
-  return { success: true }
-}
-
 export async function voidPeleburan(id: number, reason: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -816,13 +671,44 @@ export async function voidPeleburan(id: number, reason: string) {
   const { count } = await supabase.from('produksi_item')
     .select('*', { count: 'exact', head: true })
     .eq('peleburan_id', id).is('voided_at', null)
-  if ((count ?? 0) > 0) return { error: 'Tidak bisa void: ada item produksi yang menggunakan peleburan ini' }
+  if ((count ?? 0) > 0) return { error: 'Tidak bisa hapus: ada item produksi yang menggunakan peleburan ini' }
 
-  const { data: plb } = await supabase.from('peleburan').select('kode').eq('id', id).single()
+  const { data: plb } = await supabase.from('peleburan')
+    .select('kode, batch_kode, status, dikasih_gram, diterima_gram, sumber_batch_gram')
+    .eq('id', id).single()
+  if (!plb) return { error: 'Peleburan tidak ditemukan' }
+
   await supabase.from('peleburan').update({ voided_at: new Date().toISOString(), void_reason: reason }).eq('id', id)
+
+  // ── Kembalikan bahan batch ────────────────────────────────────────────────
+  if (plb.batch_kode) {
+    const { data: batchRow } = await supabase.from('batch')
+      .select('sisa_bahan_seharusnya, bahan_siap_cetak').eq('kode', plb.batch_kode).single()
+    if (batchRow) {
+      const dikasih   = Number(plb.dikasih_gram ?? 0)
+      const diterima  = Number(plb.diterima_gram ?? 0)
+      const batchPatch: Record<string, number> = {}
+
+      // Dikasih dikembalikan ke sisa bahan (hanya bagian dari batch mentah)
+      const sumberBatch = Number(plb.sumber_batch_gram ?? dikasih)
+      if (sumberBatch > 0) {
+        batchPatch.sisa_bahan_seharusnya = Number(batchRow.sisa_bahan_seharusnya) + sumberBatch
+      }
+
+      // Kalau sudah selesai (diterima), batalkan kontribusi ke bahan_siap_cetak
+      if (plb.status === 'selesai' && diterima > 0) {
+        batchPatch.bahan_siap_cetak = Math.max(0, Number(batchRow.bahan_siap_cetak) - diterima)
+      }
+
+      if (Object.keys(batchPatch).length > 0) {
+        await supabase.from('batch').update(batchPatch).eq('kode', plb.batch_kode)
+      }
+    }
+  }
+
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
-    action: 'VOID', module: 'peleburan', record_key: plb?.kode ?? '', record_id: String(id), reason,
+    action: 'VOID', module: 'peleburan', record_key: plb.kode, record_id: String(id), reason,
   })
 
   revalidatePath('/bahan-baku')
