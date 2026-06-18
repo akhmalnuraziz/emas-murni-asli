@@ -17,7 +17,7 @@ import type { UserRole } from '@/lib/types/database'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
 import { SerahModalStd, TerimaModalStd, TimPickerStd, AdminPickerStd } from '@/components/modules/produksi/serah-terima-modal'
 
-interface Props { produksiList: any[]; batches: any[]; peleburanByBatch: Record<string, any[]>; tims: any[]; toleransi: Record<string, number>; adminList: any[]; userRole: UserRole; userName: string }
+interface Props { produksiList: any[]; batches: any[]; peleburanByBatch: Record<string, any[]>; tims: any[]; toleransi: Record<string, number>; adminList: any[]; userRole: UserRole; userName: string; lossApprovals?: any[] }
 
 function fgr(n: number | null | undefined, dec = 3): string {
   if (n === null || n === undefined || isNaN(Number(n))) return '—'
@@ -1423,7 +1423,7 @@ function StatChip({ label, value, accent }: { label: string; value: React.ReactN
 }
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
-export default function ProduksiClient({ produksiList, batches, peleburanByBatch, tims, toleransi, adminList, userRole, userName }: Props) {
+export default function ProduksiClient({ produksiList, batches, peleburanByBatch, tims, toleransi, adminList, userRole, userName, lossApprovals = [] }: Props) {
   const [search, setSearch]     = useState('')
   const [filterStatus, setFilter] = useState<string>('Semua')
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
