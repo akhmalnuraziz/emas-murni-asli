@@ -1,7 +1,27 @@
-export default function Page() {
+import { createClient } from '@/lib/supabase/server'
+import AuditLogClient from '@/components/modules/audit-log/audit-log-client'
+
+export const dynamic = 'force-dynamic'
+
+export default async function AuditLogPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const [
+    { data: profile },
+    { data: logs },
+  ] = await Promise.all([
+    supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
+    supabase.from('audit_log')
+      .select('*')
+      .order('timestamp', { ascending: false })
+      .limit(500),
+  ])
+
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-6 text-center py-20">
-      <p className="text-slate-400 text-sm">Modul audit-log — sedang dibangun</p>
-    </div>
+    <AuditLogClient
+      logs={logs ?? []}
+      userRole={profile?.role ?? 'operator_produksi'}
+    />
   )
 }

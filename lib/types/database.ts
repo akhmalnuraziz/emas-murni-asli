@@ -8,7 +8,7 @@ export type UserRole =
   | 'kepala_cabang'
 
 export type StatusProduksi = 'Annealing' | 'Pas Berat' | 'Siap Packing' | 'Sudah Packing' | 'Reject'
-export type StatusShieldtag = 'Aktif' | 'Terdistribusi' | 'Terjual' | 'VOID'
+export type StatusShieldtag = 'Aktif' | 'Terdistribusi' | 'Transit' | 'Terjual' | 'VOID' | 'RETURNED'
 export type StatusKirimMut = 'Belum Dikirim' | 'Sudah Dikirim' | 'Cancel'
 export type StatusTerimaMut = 'Belum Diterima' | 'Sudah Diterima' | 'Cancel'
 export type StatusKirimPO = 'Belum Dikirim' | 'Sedang Diproses' | 'Sudah Dikirim' | 'Cancel'
@@ -129,6 +129,15 @@ export interface Shieldtag {
   tgl_dist: string | null
   tgl_jual: string | null
   harga_jual: number
+  mutasi_id: number | null
+  replaced_by_kode: string | null
+  replaces_kode: string | null
+  void_ttd_operator_url: string | null
+  void_ttd_admin_url: string | null
+  void_operator_nama: string | null
+  void_admin_nama: string | null
+  void_approved_by: string | null
+  void_approved_at: string | null
   created_at: string
   voided_at: string | null
   void_reason: string | null
@@ -137,19 +146,41 @@ export interface Shieldtag {
 export interface Mutasi {
   id: number
   kode: string
+  nomor: string | null
   tanggal: string
   cabang_tujuan: string | null
+  cabang_asal: string | null
+  dari_lokasi: string | null
+  dari_kode: string | null
+  ke_lokasi: string | null
+  ke_kode: string | null
   shieldtag_kodes: string[] | null
+  shieldtag_kodes_diterima: string[] | null
+  shieldtag_kodes_hilang: string[] | null
+  alasan_hilang: string | null
   pcs: number | null
+  pcs_dikirim: number | null
+  pcs_diterima: number | null
   total_gram: number | null
   pic: string | null
   foto: string | null
+  foto_kirim: string[] | null
+  foto_terima: string[] | null
   catatan: string | null
+  status: string | null
   status_kirim: StatusKirimMut
   tanggal_kirim: string | null
   status_terima: StatusTerimaMut
   tanggal_terima: string | null
   keterangan_tambahan: string | null
+  pengirim_name: string | null
+  pengirim_by: string | null
+  confirmed_by: string | null
+  confirmed_at: string | null
+  acc_by: string | null
+  acc_name: string | null
+  acc_at: string | null
+  acc_catatan: string | null
   created_at: string
   created_by: string | null
   voided_at: string | null

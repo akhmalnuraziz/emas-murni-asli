@@ -63,16 +63,11 @@ export async function kirimMutasiCabang(formData: FormData) {
   if (!tags || tags.length !== shieldtagKodes.length) {
     return { error: 'Sebagian shieldtag tidak ditemukan' }
   }
-  const invalid = tags.filter(t => t.voided_at || t.status !== 'Aktif' || t.lokasi !== GUDANG_LOKASI)
+  const invalid = tags.filter((t: any) => t.voided_at || t.status !== 'Aktif' || t.lokasi !== GUDANG_LOKASI)
   if (invalid.length > 0) {
     return { error: `${invalid.length} shieldtag tidak bisa dimutasi (harus berstatus Aktif & berada di Gudang Pusat). Pastikan barang sudah tershieldtag.` }
   }
 
-  // Hitung total per gramasi
-  const perGramasi = new Map<string, number>()
-  for (const t of tags) {
-    perGramasi.set(t.gramasi, (perGramasi.get(t.gramasi) ?? 0) + 1)
-  }
   const totalPcs = tags.length
 
   // Ambil cabang nama
@@ -118,45 +113,17 @@ export async function kirimMutasiCabang(formData: FormData) {
   if (mErr) return { error: 'Gagal membuat mutasi: ' + mErr.message }
 
   // Update shieldtag: status Transit, lokasi cabang, link mutasi
+  // NOTE: stok_cabang TIDAK ditulis manual di sini. stok_cabang adalah computed VIEW
+  // (Stock Balance Engine) — stok_ready dihitung live dari lokasi+status shieldtag,
+  // po_pcs dihitung live dari po_cabang/po_cabang_item. Saat status shieldtag berubah
+  // jadi 'Transit', barang tidak terhitung 'Aktif' di gudang ATAU di cabang sampai
+  // pihak cabang konfirmasi terima via terimaMutasiCabang().
   await supabase.from('shieldtag').update({
     status: 'Transit',
     lokasi: cabang?.nama ?? cabangKode,
     mutasi_id: mutasi.id,
     tgl_dist: tanggalKirim,
   }).in('kode', shieldtagKodes)
-
-  // Update stok_cabang & po per gramasi
-  for (const [gramasi, kirimPcs] of perGramasi.entries()) {
-    const { data: existing } = await supabase.from('stok_cabang')
-      .select('id, stok_ready, po_pcs')
-      .eq('cabang_kode', cabangKode).eq('gramasi', gramasi).maybeSingle()
-
-    const poLama   = existing?.po_pcs ?? 0
-    const stokLama = existing?.stok_ready ?? 0
-    // PO ke-cover dulu sampai 0, sisanya nambah stok ready
-    const poBaru   = Math.max(0, poLama - kirimPcs)
-    const stokBaru = stokLama + kirimPcs
-
-    if (existing) {
-      await supabase.from('stok_cabang').update({
-        stok_ready: stokBaru, po_pcs: poBaru,
-        updated_at: new Date().toISOString(), updated_by: user.id,
-      }).eq('id', existing.id)
-    } else {
-      await supabase.from('stok_cabang').insert({
-        cabang_kode: cabangKode, gramasi, stok_ready: stokBaru, po_pcs: poBaru,
-        updated_by: user.id,
-      })
-    }
-
-    // Log
-    await supabase.from('stok_cabang_log').insert({
-      cabang_kode: cabangKode, gramasi, perubahan: kirimPcs,
-      stok_sebelum: stokLama, stok_sesudah: stokBaru,
-      tipe: 'mutasi_masuk', catatan: `Mutasi ${kode}`,
-      tanggal: tanggalKirim, created_by: user.id, created_name: profile?.name ?? null,
-    })
-  }
 
   // Audit
   await supabase.from('audit_log').insert({
@@ -172,46 +139,118 @@ export async function kirimMutasiCabang(formData: FormData) {
   return { success: true, kode }
 }
 
-// ─── Edit stok cabang manual (stok hari ini) ──────────────────────────────────
-export async function updateStokCabangManual(formData: FormData) {
+// ─── TERIMA mutasi di cabang (2-party sign-off: pengirim + penerima) ──────────
+// Penerima mencocokkan fisik barang vs shieldtag_kodes yang dikirim. Yang tidak
+// dicocokkan/ditemukan otomatis terdeteksi sebagai short-shipment (shieldtag_kodes_hilang).
+// Shieldtag yang dikonfirmasi diterima: status Transit → Aktif (kini stok di cabang).
+// Shieldtag yang hilang/short-ship: status TETAP 'Transit' (tidak diotak-atik otomatis)
+// supaya admin_pusat bisa investigasi dulu sebelum diputuskan (void / ditemukan kembali) —
+// sesuai prinsip "deteksi, bukan auto-resolve".
+export async function terimaMutasiCabang(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).maybeSingle()
 
-  const cabangKode = formData.get('cabang_kode') as string
-  const gramasi    = formData.get('gramasi') as string
-  const stokBaru   = parseInt(formData.get('stok_ready') as string)
-  const poBaru     = parseInt(formData.get('po_pcs') as string || '0') || 0
-  const catatan    = (formData.get('catatan') as string) || null
+  const mutasiId      = parseInt(formData.get('mutasi_id') as string, 10)
+  const tanggalTerima = (formData.get('tanggal_terima') as string) || new Date().toISOString().split('T')[0]
+  const catatan       = (formData.get('catatan') as string) || null
+  const alasanHilang  = (formData.get('alasan_hilang') as string) || null
+  const diterimaRaw   = formData.get('diterima_kodes') as string
 
-  if (!cabangKode || !gramasi) return { error: 'Cabang & gramasi wajib' }
-  if (isNaN(stokBaru) || stokBaru < 0) return { error: 'Stok tidak valid' }
+  if (!mutasiId) return { error: 'Mutasi tidak valid' }
+  let diterimaKodes: string[] = []
+  try { diterimaKodes = JSON.parse(diterimaRaw || '[]') } catch { diterimaKodes = [] }
 
-  const { data: existing } = await supabase.from('stok_cabang')
-    .select('id, stok_ready').eq('cabang_kode', cabangKode).eq('gramasi', gramasi).maybeSingle()
-  const stokLama = existing?.stok_ready ?? 0
+  const { data: mutasi } = await supabase.from('mutasi')
+    .select('id, kode, shieldtag_kodes, status_terima, voided_at')
+    .eq('id', mutasiId).maybeSingle()
 
-  if (existing) {
-    await supabase.from('stok_cabang').update({
-      stok_ready: stokBaru, po_pcs: poBaru,
-      updated_at: new Date().toISOString(), updated_by: user.id,
-    }).eq('id', existing.id)
-  } else {
-    await supabase.from('stok_cabang').insert({
-      cabang_kode: cabangKode, gramasi, stok_ready: stokBaru, po_pcs: poBaru, updated_by: user.id,
+  if (!mutasi || mutasi.voided_at) return { error: 'Mutasi tidak ditemukan' }
+  if (mutasi.status_terima === 'Sudah Diterima') return { error: 'Mutasi ini sudah dikonfirmasi diterima sebelumnya' }
+
+  const sentKodes: string[] = mutasi.shieldtag_kodes ?? []
+  if (sentKodes.length === 0) return { error: 'Mutasi ini tidak memiliki data shieldtag' }
+
+  // diterimaKodes harus subset dari sentKodes
+  diterimaKodes = diterimaKodes.filter(k => sentKodes.includes(k))
+  const hilangKodes = sentKodes.filter(k => !diterimaKodes.includes(k))
+  const isShort = hilangKodes.length > 0
+
+  if (isShort && !alasanHilang) {
+    return { error: `${hilangKodes.length} shieldtag tidak dicocokkan. Isi alasan/keterangan kehilangan sebelum konfirmasi.` }
+  }
+
+  // Upload foto terima
+  const fotosB64Raw = formData.get('fotos_b64') as string
+  let fotoUrls: string[] = []
+  if (fotosB64Raw) {
+    try {
+      const fotosB64 = JSON.parse(fotosB64Raw)
+      if (Array.isArray(fotosB64) && fotosB64.length > 0) {
+        fotoUrls = await uploadBase64Fotos(supabase, fotosB64, `terima-${mutasi.kode.replace(/\//g, '-')}`)
+      }
+    } catch { /* ignore */ }
+  }
+
+  // Shieldtag yang dikonfirmasi fisik diterima: Transit → Aktif (jadi stok riil di cabang)
+  if (diterimaKodes.length > 0) {
+    await supabase.from('shieldtag').update({
+      status: 'Aktif',
+    }).in('kode', diterimaKodes).eq('status', 'Transit')
+  }
+  // Shieldtag di hilangKodes TIDAK disentuh — tetap 'Transit' menunggu investigasi admin.
+
+  const { error: uErr } = await supabase.from('mutasi').update({
+    status_terima: 'Sudah Diterima',
+    tanggal_terima: tanggalTerima,
+    pcs_diterima: diterimaKodes.length,
+    shieldtag_kodes_diterima: diterimaKodes,
+    shieldtag_kodes_hilang: hilangKodes,
+    alasan_hilang: isShort ? alasanHilang : null,
+    foto_terima: fotoUrls,
+    keterangan_tambahan: catatan,
+    confirmed_by: profile?.name ?? null,
+    confirmed_at: new Date().toISOString(),
+    status: isShort ? 'SHORT_SHIP' : 'SELESAI',
+  }).eq('id', mutasiId)
+
+  if (uErr) return { error: 'Gagal menyimpan konfirmasi terima: ' + uErr.message }
+
+  await supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'TERIMA_MUTASI', module: 'MUTASI',
+    record_key: mutasi.kode, record_id: String(mutasiId),
+    after_data: { diterima: diterimaKodes, hilang: hilangKodes, pcs_diterima: diterimaKodes.length },
+  })
+  if (isShort) {
+    await supabase.from('audit_log').insert({
+      user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+      action: 'SHORT_SHIP_DETECTED', module: 'MUTASI',
+      record_key: mutasi.kode, record_id: String(mutasiId),
+      after_data: { shieldtag_kodes_hilang: hilangKodes },
+      reason: alasanHilang,
     })
   }
 
-  await supabase.from('stok_cabang_log').insert({
-    cabang_kode: cabangKode, gramasi, perubahan: stokBaru - stokLama,
-    stok_sebelum: stokLama, stok_sesudah: stokBaru,
-    tipe: 'edit_manual', catatan,
-    created_by: user.id, created_name: profile?.name ?? null,
-  })
-
   revalidatePath('/mutasi')
-  return { success: true }
+  revalidatePath('/inventory')
+  revalidatePath('/shieldtag')
+  return { success: true, isShort, hilangCount: hilangKodes.length }
+}
+
+// ─── Fetch mutasi yang masih menunggu konfirmasi terima ───────────────────────
+export async function fetchMutasiPendingTerima() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { rows: [], error: 'Unauthorized' }
+  const { data } = await supabase.from('mutasi')
+    .select('*')
+    .is('voided_at', null)
+    .eq('status_terima', 'Belum Diterima')
+    .order('tanggal_kirim', { ascending: false })
+    .limit(100)
+  return { rows: data ?? [] }
 }
 
 // ─── Fetch stok cabang (current state per cabang) ─────────────────────────────

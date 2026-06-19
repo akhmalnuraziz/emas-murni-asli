@@ -34,7 +34,7 @@ export default async function DashboardPage() {
 
   // Aggregate shieldtag by gramasi
   const gramasiCount: Record<string, number> = {}
-  shieldtagByGramasi?.forEach((s) => {
+  shieldtagByGramasi?.forEach((s: any) => {
     if (s.gramasi) {
       gramasiCount[s.gramasi] = (gramasiCount[s.gramasi] || 0) + 1
     }

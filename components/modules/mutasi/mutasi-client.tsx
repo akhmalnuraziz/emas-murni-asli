@@ -1,20 +1,25 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ArrowLeftRight, Send, Store, ShieldCheck, X, Plus, Minus, RefreshCw, Check, Truck } from 'lucide-react'
+import { ArrowLeftRight, Send, Store, ShieldCheck, X, RefreshCw, Check, Truck, PackageCheck, AlertTriangle } from 'lucide-react'
 import {
   fetchShieldtagSiapMutasi, kirimMutasiCabang, fetchStokCabang,
-  updateStokCabangManual, fetchMutasiList,
+  fetchMutasiList, fetchMutasiPendingTerima, terimaMutasiCabang,
 } from '@/app/(dashboard)/mutasi/actions'
 
 interface Cabang { kode: string; nama: string }
 interface Shieldtag { id: number; kode: string; gramasi: string; batch_kode: string }
 interface StokRow { id?: number; gramasi: string; stok_ready: number; po_pcs: number }
+interface MutasiRow {
+  id: number; kode: string; cabang_tujuan: string | null; tanggal_kirim: string | null
+  shieldtag_kodes: string[] | null; pcs: number | null; pcs_diterima: number | null
+  catatan: string | null; status: string | null; status_terima: string | null
+}
 
 const GRAMASI_ORDER = ['0.1','0.5','1','2','5','10','20','25','50','100','250','500','1000']
 
 export default function MutasiClient({ cabangList }: { cabangList: Cabang[] }) {
-  const [tab, setTab] = useState<'kirim' | 'stok' | 'riwayat'>('kirim')
+  const [tab, setTab] = useState<'kirim' | 'terima' | 'stok' | 'riwayat'>('kirim')
   const [selectedCabang, setSelectedCabang] = useState(cabangList[0]?.kode ?? '')
 
   return (
@@ -33,7 +38,7 @@ export default function MutasiClient({ cabangList }: { cabangList: Cabang[] }) {
 
       {/* Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-1">
-        {([['kirim', 'Kirim Barang', Send], ['stok', 'Stok Cabang', Store], ['riwayat', 'Riwayat', Truck]] as const).map(([key, label, Icon]) => (
+        {([['kirim', 'Kirim Barang', Send], ['terima', 'Konfirmasi Terima', PackageCheck], ['stok', 'Stok Cabang', Store], ['riwayat', 'Riwayat', Truck]] as const).map(([key, label, Icon]) => (
           <button key={key} onClick={() => setTab(key)}
             className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-all"
             style={tab === key
@@ -45,6 +50,7 @@ export default function MutasiClient({ cabangList }: { cabangList: Cabang[] }) {
       </div>
 
       {tab === 'kirim' && <KirimMutasi cabangList={cabangList} />}
+      {tab === 'terima' && <TerimaMutasi cabangList={cabangList} />}
       {tab === 'stok' && (
         <StokCabang cabangList={cabangList} selectedCabang={selectedCabang} setSelectedCabang={setSelectedCabang} />
       )}
@@ -213,14 +219,151 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
   )
 }
 
+// ─── TERIMA MUTASI (konfirmasi penerima di cabang) ─────────────────────────────
+function TerimaMutasi({ cabangList }: { cabangList: Cabang[] }) {
+  const [rows, setRows] = useState<MutasiRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [openId, setOpenId] = useState<number | null>(null)
+  const cabangNama = (kode: string | null) => cabangList.find(c => c.kode === kode)?.nama ?? kode ?? '-'
+
+  async function load() {
+    setLoading(true)
+    const res = await fetchMutasiPendingTerima()
+    setRows(res.rows as MutasiRow[])
+    setLoading(false)
+  }
+  useEffect(() => { load() }, [])
+
+  if (loading) return <div className="py-12 text-center text-sm text-slate-400">Memuat mutasi yang menunggu konfirmasi…</div>
+  if (rows.length === 0) return (
+    <div className="py-12 text-center rounded-3xl" style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.5)' }}>
+      <PackageCheck size={28} className="text-slate-300 mx-auto mb-2" />
+      <p className="text-sm text-slate-400">Tidak ada mutasi yang menunggu konfirmasi terima.</p>
+    </div>
+  )
+
+  return (
+    <div className="space-y-2.5">
+      {rows.map(m => (
+        <TerimaCard key={m.id} mutasi={m} cabangNama={cabangNama(m.cabang_tujuan)}
+          open={openId === m.id} onToggle={() => setOpenId(openId === m.id ? null : m.id)}
+          onDone={() => { setOpenId(null); load() }} />
+      ))}
+    </div>
+  )
+}
+
+function TerimaCard({ mutasi, cabangNama, open, onToggle, onDone }: {
+  mutasi: MutasiRow; cabangNama: string; open: boolean; onToggle: () => void; onDone: () => void
+}) {
+  const sentKodes = mutasi.shieldtag_kodes ?? []
+  const [checked, setChecked] = useState<Set<string>>(new Set(sentKodes))
+  const [alasanHilang, setAlasanHilang] = useState('')
+  const [catatan, setCatatan] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+
+  const hilangCount = sentKodes.length - checked.size
+
+  function toggle(kode: string) {
+    setChecked(prev => {
+      const next = new Set(prev)
+      if (next.has(kode)) next.delete(kode); else next.add(kode)
+      return next
+    })
+  }
+
+  async function submit() {
+    if (hilangCount > 0 && !alasanHilang.trim()) {
+      setMsg({ type: 'err', text: 'Isi alasan/keterangan untuk shieldtag yang tidak ditemukan.' })
+      return
+    }
+    setSubmitting(true); setMsg(null)
+    const fd = new FormData()
+    fd.set('mutasi_id', String(mutasi.id))
+    fd.set('diterima_kodes', JSON.stringify([...checked]))
+    fd.set('catatan', catatan)
+    fd.set('alasan_hilang', alasanHilang)
+    const res = await terimaMutasiCabang(fd)
+    setSubmitting(false)
+    if (res.error) { setMsg({ type: 'err', text: res.error }); return }
+    onDone()
+  }
+
+  return (
+    <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.6)' }}>
+      <button onClick={onToggle} className="w-full flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(139,92,246,0.1)' }}>
+            <Truck size={15} className="text-violet-600" />
+          </div>
+          <div className="text-left">
+            <p className="font-mono text-xs font-bold text-slate-800">{mutasi.kode}</p>
+            <p className="text-[11px] text-slate-400">dari Gudang Pusat → {cabangNama} · {mutasi.tanggal_kirim}</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-sm font-bold text-slate-800">{mutasi.pcs} pcs dikirim</p>
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">Belum Diterima</span>
+        </div>
+      </button>
+
+      {open && (
+        <div className="mt-4 pt-4 space-y-3" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Centang shieldtag yang fisiknya benar-benar diterima</p>
+          <div className="flex flex-wrap gap-1.5 max-h-[220px] overflow-y-auto pr-1">
+            {sentKodes.map(kode => {
+              const ok = checked.has(kode)
+              return (
+                <button key={kode} onClick={() => toggle(kode)}
+                  className="px-2.5 py-1.5 rounded-xl text-[11px] font-mono font-semibold transition-all"
+                  style={ok
+                    ? { background: 'linear-gradient(135deg,#10B981,#059669)', color: '#fff' }
+                    : { background: 'rgba(239,68,68,0.08)', color: '#DC2626', border: '1px solid rgba(239,68,68,0.2)' }}>
+                  {ok ? <Check size={10} className="inline mr-1" /> : <X size={10} className="inline mr-1" />}{kode}
+                </button>
+              )
+            })}
+          </div>
+
+          {hilangCount > 0 && (
+            <div className="rounded-2xl px-3 py-2.5 space-y-2" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)' }}>
+              <div className="flex items-center gap-1.5 text-red-600">
+                <AlertTriangle size={13} />
+                <p className="text-xs font-bold">{hilangCount} shieldtag tidak dicocokkan — terdeteksi short-shipment</p>
+              </div>
+              <input value={alasanHilang} onChange={e => setAlasanHilang(e.target.value)}
+                placeholder="Alasan/keterangan kehilangan (wajib diisi)" className={inp} />
+            </div>
+          )}
+
+          <Field label="Catatan Penerimaan">
+            <input value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Opsional" className={inp} />
+          </Field>
+
+          {msg && (
+            <div className={`rounded-xl px-3 py-2 text-xs ${msg.type === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+              {msg.text}
+            </div>
+          )}
+
+          <button onClick={submit} disabled={submitting}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-40"
+            style={{ background: hilangCount > 0 ? 'linear-gradient(135deg,#F59E0B,#D97706)' : 'linear-gradient(135deg,#10B981,#059669)' }}>
+            <PackageCheck size={15} /> {submitting ? 'Menyimpan…' : hilangCount > 0 ? 'Konfirmasi (dengan Short-Shipment)' : 'Konfirmasi Penerimaan'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── STOK CABANG ────────────────────────────────────────────────────────────────
 function StokCabang({ cabangList, selectedCabang, setSelectedCabang }: {
   cabangList: Cabang[]; selectedCabang: string; setSelectedCabang: (k: string) => void
 }) {
   const [rows, setRows] = useState<StokRow[]>([])
   const [loading, setLoading] = useState(true)
-  const [editing, setEditing] = useState<string | null>(null)
-  const [editVal, setEditVal] = useState({ stok: 0, po: 0 })
 
   async function load() {
     setLoading(true)
@@ -234,18 +377,7 @@ function StokCabang({ cabangList, selectedCabang, setSelectedCabang }: {
   }
   useEffect(() => { load() }, [selectedCabang])
 
-  async function saveEdit(gramasi: string) {
-    const fd = new FormData()
-    fd.set('cabang_kode', selectedCabang)
-    fd.set('gramasi', gramasi)
-    fd.set('stok_ready', String(editVal.stok))
-    fd.set('po_pcs', String(editVal.po))
-    await updateStokCabangManual(fd)
-    setEditing(null)
-    load()
-  }
-
-  const visibleRows = rows.filter(r => r.stok_ready > 0 || r.po_pcs > 0 || editing === r.gramasi)
+  const visibleRows = rows.filter(r => r.stok_ready > 0 || r.po_pcs > 0)
   const totalStok = rows.reduce((a, r) => a + r.stok_ready, 0)
   const totalPo   = rows.reduce((a, r) => a + r.po_pcs, 0)
 
@@ -275,40 +407,16 @@ function StokCabang({ cabangList, selectedCabang, setSelectedCabang }: {
                   <th className="text-left px-4 py-3">Gramasi</th>
                   <th className="text-right px-4 py-3">Stok Ready</th>
                   <th className="text-right px-4 py-3">PO</th>
-                  <th className="text-center px-4 py-3">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {visibleRows.length === 0 ? (
-                  <tr><td colSpan={4} className="py-10 text-center text-sm text-slate-400">Belum ada stok di cabang ini.</td></tr>
+                  <tr><td colSpan={3} className="py-10 text-center text-sm text-slate-400">Belum ada stok di cabang ini.</td></tr>
                 ) : visibleRows.map((r, i) => (
                   <tr key={r.gramasi} className={i % 2 ? 'bg-white/40' : ''} style={{ borderTop: '1px solid rgba(0,0,0,0.04)' }}>
                     <td className="px-4 py-3 font-bold text-slate-800">{r.gramasi}gr</td>
-                    {editing === r.gramasi ? (
-                      <>
-                        <td className="px-4 py-2 text-right">
-                          <input type="number" value={editVal.stok} onChange={e => setEditVal(v => ({ ...v, stok: parseInt(e.target.value) || 0 }))}
-                            className="w-20 px-2 py-1 rounded-lg border border-violet-200 text-right text-sm" />
-                        </td>
-                        <td className="px-4 py-2 text-right">
-                          <input type="number" value={editVal.po} onChange={e => setEditVal(v => ({ ...v, po: parseInt(e.target.value) || 0 }))}
-                            className="w-20 px-2 py-1 rounded-lg border border-violet-200 text-right text-sm" />
-                        </td>
-                        <td className="px-4 py-2 text-center">
-                          <button onClick={() => saveEdit(r.gramasi)} className="text-green-600 p-1.5 hover:bg-green-50 rounded-lg"><Check size={14} /></button>
-                          <button onClick={() => setEditing(null)} className="text-slate-400 p-1.5 hover:bg-slate-50 rounded-lg"><X size={14} /></button>
-                        </td>
-                      </>
-                    ) : (
-                      <>
-                        <td className="px-4 py-3 text-right font-semibold text-green-600">{r.stok_ready} pcs</td>
-                        <td className="px-4 py-3 text-right font-semibold text-amber-600">{r.po_pcs > 0 ? `PO ${r.po_pcs}` : '—'}</td>
-                        <td className="px-4 py-3 text-center">
-                          <button onClick={() => { setEditing(r.gramasi); setEditVal({ stok: r.stok_ready, po: r.po_pcs }) }}
-                            className="text-[11px] font-semibold text-violet-500 hover:underline">Edit</button>
-                        </td>
-                      </>
-                    )}
+                    <td className="px-4 py-3 text-right font-semibold text-green-600">{r.stok_ready} pcs</td>
+                    <td className="px-4 py-3 text-right font-semibold text-amber-600">{r.po_pcs > 0 ? `PO ${r.po_pcs}` : '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -317,7 +425,7 @@ function StokCabang({ cabangList, selectedCabang, setSelectedCabang }: {
         )}
       </div>
       <p className="text-[11px] text-slate-400 px-1">
-        Stok ready bertambah otomatis saat mutasi diterima. PO berkurang sesuai jumlah yang dikirim. Edit manual untuk koreksi stok harian.
+        Stok ready &amp; PO dihitung otomatis (computed) dari lokasi/status shieldtag dan PO cabang yang masih terbuka — bukan angka yang diinput manual. Stok ready bertambah saat mutasi dikonfirmasi diterima di cabang.
       </p>
     </div>
   )
@@ -361,7 +469,7 @@ function RiwayatMutasi({ cabangList }: { cabangList: Cabang[] }) {
             </div>
             <div className="text-right">
               <p className="text-sm font-bold text-slate-800">{m.pcs} pcs</p>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">{m.status ?? 'dikirim'}</span>
+              <RiwayatBadge status={m.status} statusTerima={m.status_terima} />
             </div>
           </div>
           {m.catatan && <p className="text-[11px] text-slate-400 mt-2 italic">{m.catatan}</p>}
@@ -369,6 +477,13 @@ function RiwayatMutasi({ cabangList }: { cabangList: Cabang[] }) {
       ))}
     </div>
   )
+}
+
+function RiwayatBadge({ status, statusTerima }: { status: string | null; statusTerima: string | null }) {
+  if (status === 'SHORT_SHIP') return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">Short-Shipment</span>
+  if (status === 'SELESAI') return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Selesai</span>
+  if (statusTerima === 'Sudah Diterima') return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">Diterima</span>
+  return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">Belum Diterima</span>
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────

@@ -19,7 +19,7 @@ export default async function PengaturanPage() {
     supabase.from('admin_input').select('id, nama, aktif').is('voided_at', null).order('id'),
   ])
 
-  const tims = (timList ?? []).map(t => ({
+  const tims = (timList ?? []).map((t: any) => ({
     ...t,
     anggota: (anggotaList ?? []).filter((a: any) => a.tim_id === t.id),
   }))

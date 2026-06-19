@@ -102,12 +102,12 @@ export async function fetchPeleburanTersedia(batchKode: string) {
     .select('id, kode, diterima_gram, terpakai_cetak, tanggal_diterima')
     .eq('batch_kode', batchKode).eq('status', 'selesai').is('voided_at', null)
     .order('id')
-  const rows = (data ?? []).map(p => ({
+  const rows = (data ?? []).map((p: any) => ({
     id: p.id, kode: p.kode,
     diterima: Number(p.diterima_gram ?? 0),
     terpakai: Number(p.terpakai_cetak ?? 0),
     sisa: Number(p.diterima_gram ?? 0) - Number(p.terpakai_cetak ?? 0),
-  })).filter(p => p.sisa > 0.001)
+  })).filter((p: any) => p.sisa > 0.001)
   return { rows }
 }
 
@@ -398,7 +398,7 @@ export async function deleteProduksi(produksiId: number, produksiKode: string) {
   const { data: packingRows } = await supabase.from('packing')
     .select('id')
     .eq('produksi_item_id', produksiId).is('voided_at', null)
-  const packingIds = (packingRows ?? []).map(p => p.id)
+  const packingIds = (packingRows ?? []).map((p: any) => p.id)
   const packingCount = packingIds.length
 
   let shieldtagCount = 0
