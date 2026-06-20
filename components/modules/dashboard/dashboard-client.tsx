@@ -1,6 +1,6 @@
 'use client'
 
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts'
 import {
   Tag, Hammer, Package2, AlertTriangle, ArrowLeftRight,
   TrendingUp, ShoppingCart, RotateCcw, Layers, Flame,
@@ -36,6 +36,15 @@ interface Props {
   }
   stokAkrilik: { produk_nama: string; produk_kode: string; gramasi: number; stok_qty: number }[]
   totalPengeluaran: number
+  produksiTrend: {
+    gramasi: string[]
+    trendMap: Record<string, Record<number, number>>
+    dailyTotal: Record<number, number>
+    allDays: number[]
+    daysInMonth: number
+    bulan: string
+    totalPcs: number
+  }
 }
 
 const PIPELINE_STAGES = [
@@ -118,7 +127,7 @@ function PeriodSelector({ period, dateFrom, dateTo }: { period: string; dateFrom
 export default function DashboardClient({
   userName, canSeeRp, period, dateFrom, dateTo,
   stok, transit, penjualan, reject, pipeline, gramasiChartData, batchTerbaru, mutasiTransit,
-  poPackaging, stokAkrilik, totalPengeluaran,
+  poPackaging, stokAkrilik, totalPengeluaran, produksiTrend,
 }: Props) {
   const now  = new Date()
   const jam  = now.getHours()
@@ -315,6 +324,11 @@ export default function DashboardClient({
         </div>
       )}
 
+      {/* ── Trend Produksi Harian ─────────────────────────────────────────── */}
+      {produksiTrend.gramasi.length > 0 && (
+        <TrendProduksi trend={produksiTrend} />
+      )}
+
       {/* ── Row: Mutasi Transit + Batch Terbaru ───────────────────────────── */}
       <div className="grid lg:grid-cols-2 gap-4">
         <div className="rounded-3xl p-5"
@@ -402,6 +416,176 @@ function EmptyChart({ text, icon = '📊' }: { text: string; icon?: string }) {
     <div className="h-32 flex flex-col items-center justify-center gap-2">
       <span className="text-2xl opacity-20">{icon}</span>
       <p className="text-xs text-slate-300">{text}</p>
+    </div>
+  )
+}
+
+function TrendProduksi({ trend }: {
+  trend: {
+    gramasi: string[]
+    trendMap: Record<string, Record<number, number>>
+    dailyTotal: Record<number, number>
+    allDays: number[]
+    daysInMonth: number
+    bulan: string
+    totalPcs: number
+  }
+}) {
+  const [view, setView] = useState<'grid' | 'chart'>('chart')
+  const { gramasi, trendMap, dailyTotal, allDays, bulan, totalPcs } = trend
+
+  // Hitung rata-rata harian (hanya hari yang ada produksi)
+  const activeDays = allDays.filter(d => (dailyTotal[d] ?? 0) > 0)
+  const avgPerDay = activeDays.length > 0 ? Math.round(totalPcs / activeDays.length) : 0
+
+  // Data chart
+  const chartData = allDays.map(d => ({
+    day: d,
+    pcs: dailyTotal[d] ?? 0,
+  }))
+
+  // Format bulan
+  const [yr, mo] = bulan.split('-')
+  const bulanLabel = new Date(Number(yr), Number(mo) - 1, 1)
+    .toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+
+  // Total per gramasi
+  const totalPerGramasi: Record<string, number> = {}
+  for (const g of gramasi) {
+    totalPerGramasi[g] = Object.values(trendMap[g] ?? {}).reduce((a, b) => a + b, 0)
+  }
+
+  return (
+    <div className="rounded-3xl overflow-hidden"
+      style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <Hammer size={15} className="text-violet-500" />
+          <h3 className="font-bold text-slate-800 text-sm">Trend Produksi Harian</h3>
+          <span className="text-[11px] text-slate-400 font-medium">— {bulanLabel}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="text-right mr-2">
+            <p className="text-xs font-black text-slate-800">{totalPcs.toLocaleString('id-ID')} pcs</p>
+            <p className="text-[10px] text-slate-400">Ø {avgPerDay}/hari aktif</p>
+          </div>
+          <div className="flex rounded-xl overflow-hidden border border-slate-200">
+            {(['chart', 'grid'] as const).map(v => (
+              <button key={v} onClick={() => setView(v)}
+                className={cn(
+                  'px-3 py-1.5 text-[11px] font-bold transition-colors',
+                  view === v ? 'bg-violet-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'
+                )}>
+                {v === 'chart' ? 'Grafik' : 'Tabel'}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Chart view */}
+      {view === 'chart' && (
+        <div className="px-4 pb-5">
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={chartData} barSize={16} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
+              <XAxis dataKey="day" tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} interval={1} />
+              <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={32} />
+              <Tooltip
+                contentStyle={{ borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 11, padding: '6px 10px' }}
+                cursor={{ fill: '#f5f3ff' }}
+                formatter={(v: any) => [`${Number(v).toLocaleString('id-ID')} pcs`, 'Produksi']}
+                labelFormatter={(l: any) => `Tgl ${l}`}
+              />
+              {avgPerDay > 0 && (
+                <ReferenceLine y={avgPerDay} stroke="#A78BFA" strokeDasharray="4 3"
+                  label={{ value: `Ø ${avgPerDay}`, fontSize: 9, fill: '#7C3AED', position: 'insideTopRight' }} />
+              )}
+              <Bar dataKey="pcs" radius={[4, 4, 0, 0]}>
+                {chartData.map((entry, i) => (
+                  <Cell key={i} fill={entry.pcs >= avgPerDay && avgPerDay > 0 ? '#7C3AED' : '#C4B5FD'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          <p className="text-[10px] text-slate-300 text-center mt-1">Ungu tua = di atas rata-rata</p>
+        </div>
+      )}
+
+      {/* Grid view */}
+      {view === 'grid' && (
+        <div className="overflow-x-auto pb-4">
+          <table className="text-[10px] min-w-max">
+            <thead>
+              <tr style={{ background: 'rgba(139,92,246,0.06)' }}>
+                <th className="sticky left-0 bg-white/90 px-3 py-2 text-left font-bold text-slate-500 border-r border-slate-100 min-w-[56px]">
+                  Gramasi
+                </th>
+                {allDays.map(d => (
+                  <th key={d} className={cn(
+                    'px-1.5 py-2 text-center font-bold min-w-[28px]',
+                    (dailyTotal[d] ?? 0) > 0 ? 'text-violet-600' : 'text-slate-300'
+                  )}>
+                    {d}
+                  </th>
+                ))}
+                <th className="px-3 py-2 text-right font-bold text-slate-600 border-l border-slate-100 min-w-[52px]">
+                  Total
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {gramasi.map((g, ri) => (
+                <tr key={g} className={ri % 2 === 0 ? 'bg-slate-50/40' : ''}>
+                  <td className="sticky left-0 bg-white/90 px-3 py-1.5 font-bold text-slate-700 border-r border-slate-100 backdrop-blur">
+                    {g}gr
+                  </td>
+                  {allDays.map(d => {
+                    const v = trendMap[g]?.[d] ?? 0
+                    return (
+                      <td key={d} className="px-1.5 py-1.5 text-center">
+                        {v > 0 ? (
+                          <span className={cn(
+                            'font-bold',
+                            v >= 100 ? 'text-violet-700' : v >= 50 ? 'text-violet-500' : 'text-violet-400'
+                          )}>{v}</span>
+                        ) : (
+                          <span className="text-slate-200">·</span>
+                        )}
+                      </td>
+                    )
+                  })}
+                  <td className="px-3 py-1.5 text-right font-black text-slate-700 border-l border-slate-100">
+                    {totalPerGramasi[g].toLocaleString('id-ID')}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr style={{ background: 'rgba(139,92,246,0.08)', borderTop: '2px solid rgba(139,92,246,0.2)' }}>
+                <td className="sticky left-0 bg-violet-50/80 px-3 py-2 font-black text-violet-700 border-r border-violet-100 backdrop-blur text-[11px]">
+                  Total
+                </td>
+                {allDays.map(d => {
+                  const v = dailyTotal[d] ?? 0
+                  return (
+                    <td key={d} className="px-1.5 py-2 text-center font-black">
+                      {v > 0 ? (
+                        <span className="text-violet-700">{v}</span>
+                      ) : (
+                        <span className="text-slate-200">0</span>
+                      )}
+                    </td>
+                  )
+                })}
+                <td className="px-3 py-2 text-right font-black text-violet-800 border-l border-violet-100 text-[11px]">
+                  {totalPcs.toLocaleString('id-ID')}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
     </div>
   )
 }

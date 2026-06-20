@@ -48,6 +48,8 @@ export default async function DashboardPage({
     { data: stokPackaging },
     // Pengeluaran
     { data: pengeluaranPeriode },
+    // Trend produksi
+    { data: packingHarian },
   ] = await Promise.all([
     supabase.from('users_profile').select('name, role').eq('id', user?.id ?? '').single(),
     supabase.from('shieldtag').select('gramasi, hpp').eq('status', 'Aktif').is('voided_at', null),
@@ -89,6 +91,12 @@ export default async function DashboardPage({
     // Pengeluaran
     supabase.from('pengeluaran').select('nominal, kategori')
       .gte('tanggal', dateFrom).lte('tanggal', dateTo).is('voided_at', null),
+    // Trend produksi harian (dari packing)
+    supabase.from('packing')
+      .select('tanggal, gramasi, pcs_dipack')
+      .gte('tanggal', dateFrom).lte('tanggal', dateTo)
+      .is('voided_at', null)
+      .order('tanggal'),
   ])
 
   // ── Build stats ──────────────────────────────────────────────────────────
@@ -138,6 +146,37 @@ export default async function DashboardPage({
   // Pengeluaran stats
   const totalPengeluaran = (pengeluaranPeriode ?? []).reduce((s: number, p: any) => s + Number(p.nominal ?? 0), 0)
 
+  // Trend produksi harian
+  const GRAMASI_ORDER = ['0.1','0.5','1','2','5','10','20','25','50','100','250','500','1000']
+  // { [gramasi]: { [day]: totalPcs } }
+  const trendMap: Record<string, Record<number, number>> = {}
+  const dailyTotal: Record<number, number> = {}
+  for (const p of packingHarian ?? []) {
+    const g = String(parseFloat(p.gramasi ?? '0'))
+    const day = new Date(p.tanggal).getDate()
+    const pcs = Number(p.pcs_dipack ?? 0)
+    if (!trendMap[g]) trendMap[g] = {}
+    trendMap[g][day] = (trendMap[g][day] ?? 0) + pcs
+    dailyTotal[day] = (dailyTotal[day] ?? 0) + pcs
+  }
+  const trendGramasi = GRAMASI_ORDER.filter(g => trendMap[g])
+  // Hitung hari-hari yang ada datanya untuk menentukan range kolom
+  const trendDays = Object.keys(dailyTotal).map(Number).sort((a, b) => a - b)
+  // Jumlah hari di bulan (pakai dateFrom untuk detect bulan)
+  const trendMonth = dateFrom.slice(0, 7)
+  const daysInMonth = new Date(Number(trendMonth.slice(0, 4)), Number(trendMonth.slice(5, 7)), 0).getDate()
+  const allDays = Array.from({ length: daysInMonth }, (_, i) => i + 1)
+
+  const produksiTrend = {
+    gramasi: trendGramasi,
+    trendMap,
+    dailyTotal,
+    allDays,
+    daysInMonth,
+    bulan: dateFrom.slice(0, 7),
+    totalPcs: Object.values(dailyTotal).reduce((a, b) => a + b, 0),
+  }
+
   const canSeeRp = ['owner', 'admin_pusat', 'accounting'].includes(profile?.role ?? '')
 
   return (
@@ -166,6 +205,7 @@ export default async function DashboardPage({
       }}
       stokAkrilik={stokAkrilik}
       totalPengeluaran={totalPengeluaran}
+      produksiTrend={produksiTrend}
     />
   )
 }
