@@ -1,211 +1,276 @@
 'use client'
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
-import { Tag, Hammer, Package2, AlertTriangle, Layers, TrendingUp } from 'lucide-react'
-import { cn, formatDate } from '@/lib/utils'
-import { STATUS_BADGE_STYLES } from '@/lib/utils'
-import type { StatusProduksi } from '@/lib/types/database'
+import {
+  Tag, Hammer, Package2, AlertTriangle, ArrowLeftRight,
+  TrendingUp, ShoppingCart, RotateCcw, Layers, Flame,
+  Scale, Thermometer, CheckCircle2, Clock,
+} from 'lucide-react'
+import { cn, formatRupiah, formatDate } from '@/lib/utils'
 
-interface DashboardProps {
-  stats: {
-    shieldtagAktif: number
-    produksiHariIni: number
-    siapPacking: number
-    reject: number
-    batchAktif: number
-  }
-  produksiTerbaru: any[]
-  batchTerbaru: any[]
+interface Props {
+  userName: string
+  userRole: string
+  canSeeRp: boolean
+  stok: { pcs: number; gram: number; nilaiRp: number }
+  transit: { pcs: number; gram: number }
+  penjualan: { pcs: number; omzetRp: number; buybackCount: number }
+  reject: { count: number; gram: number }
+  pipeline: Record<string, number>
   gramasiChartData: { gramasi: string; pcs: number }[]
+  batchTerbaru: any[]
+  mutasiTransit: any[]
 }
 
-const STAT_CARDS = (stats: DashboardProps['stats']) => [
-  {
-    label: 'Shieldtag Aktif',
-    value: stats.shieldtagAktif.toLocaleString('id-ID'),
-    icon: Tag,
-    color: 'purple',
-    bg: 'bg-violet-50',
-    iconColor: 'text-violet-600',
-    border: 'border-violet-100',
-  },
-  {
-    label: 'Produksi Hari Ini',
-    value: stats.produksiHariIni.toString(),
-    icon: Hammer,
-    color: 'blue',
-    bg: 'bg-blue-50',
-    iconColor: 'text-blue-600',
-    border: 'border-blue-100',
-  },
-  {
-    label: 'Siap Packing',
-    value: stats.siapPacking.toString(),
-    icon: Package2,
-    color: 'green',
-    bg: 'bg-emerald-50',
-    iconColor: 'text-emerald-600',
-    border: 'border-emerald-100',
-  },
-  {
-    label: 'Reject',
-    value: stats.reject.toString(),
-    icon: AlertTriangle,
-    color: 'red',
-    bg: 'bg-red-50',
-    iconColor: 'text-red-500',
-    border: 'border-red-100',
-  },
-  {
-    label: 'Total Batch',
-    value: stats.batchAktif.toString(),
-    icon: Layers,
-    color: 'amber',
-    bg: 'bg-amber-50',
-    iconColor: 'text-amber-600',
-    border: 'border-amber-100',
-  },
+const PIPELINE_STAGES = [
+  { key: 'Cutting',      label: 'Cutting',      icon: Hammer,       color: '#3B82F6', bg: 'rgba(59,130,246,0.08)' },
+  { key: 'Pas Berat',    label: 'Pas Berat',    icon: Scale,        color: '#F97316', bg: 'rgba(249,115,22,0.08)' },
+  { key: 'Annealing',    label: 'Annealing',    icon: Thermometer,  color: '#EAB308', bg: 'rgba(234,179,8,0.08)'  },
+  { key: 'Siap Packing', label: 'Siap Packing', icon: Package2,     color: '#22C55E', bg: 'rgba(34,197,94,0.08)'  },
 ]
 
 export default function DashboardClient({
-  stats, produksiTerbaru, batchTerbaru, gramasiChartData
-}: DashboardProps) {
+  userName, canSeeRp,
+  stok, transit, penjualan, reject, pipeline, gramasiChartData, batchTerbaru, mutasiTransit,
+}: Props) {
   const now = new Date()
   const jam = now.getHours()
   const greeting = jam < 12 ? 'Selamat Pagi' : jam < 15 ? 'Selamat Siang' : jam < 19 ? 'Selamat Sore' : 'Selamat Malam'
+  const bulan = now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+
+  const hasBalanceAlert = reject.count > 0 || transit.pcs > 20
 
   return (
-    <div className="space-y-6">
-      {/* Greeting */}
-      <div className="bg-gradient-to-r from-violet-600 to-violet-700 rounded-2xl px-6 py-5 text-white">
-        <p className="text-sm font-medium text-violet-200">{greeting}! 👋</p>
-        <h2 className="text-xl font-bold mt-1">PT Emas Murni Asli Production System</h2>
-        <p className="text-violet-200 text-sm mt-1">
+    <div className="space-y-5">
+
+      {/* Header */}
+      <div className="rounded-3xl px-6 py-5 text-white relative overflow-hidden"
+        style={{ background: 'linear-gradient(135deg,#7C3AED,#6D28D9)' }}>
+        <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full opacity-10"
+          style={{ background: 'white' }} />
+        <div className="absolute -right-2 bottom-0 w-24 h-24 rounded-full opacity-5"
+          style={{ background: 'white' }} />
+        <p className="text-sm font-medium text-violet-200 relative">{greeting}, {userName || 'Tim'}! 👋</p>
+        <h2 className="text-xl font-black mt-1 relative">PT Emas Murni Asli</h2>
+        <p className="text-violet-200 text-xs mt-1 relative">
           {now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        {STAT_CARDS(stats).map((card) => (
-          <div
-            key={card.label}
-            className={cn('bg-white rounded-2xl p-4 border', card.border)}
-          >
-            <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center mb-3', card.bg)}>
-              <card.icon size={17} className={card.iconColor} />
-            </div>
-            <p className="text-2xl font-bold text-slate-900">{card.value}</p>
-            <p className="text-xs text-slate-400 mt-0.5 font-medium">{card.label}</p>
+      {/* Balance Alert */}
+      {hasBalanceAlert && (
+        <div className="rounded-3xl px-5 py-4 flex items-start gap-3"
+          style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)' }}>
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(239,68,68,0.12)' }}>
+            <AlertTriangle size={15} className="text-red-500" />
           </div>
-        ))}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-red-700">Perlu Perhatian</p>
+            <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
+              {reject.count > 0 && (
+                <p className="text-xs text-red-600">
+                  {reject.count} item reject ({reject.gram.toFixed(2)} gr) belum dilebur
+                </p>
+              )}
+              {transit.pcs > 20 && (
+                <p className="text-xs text-red-600">
+                  {transit.pcs} pcs sedang transit ke cabang, belum konfirmasi terima
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Row 1 — Main KPI cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <KpiCard
+          label="Stok Aktif"
+          value={stok.pcs.toLocaleString('id-ID') + ' pcs'}
+          sub={stok.gram.toFixed(2) + ' gr'}
+          sub2={canSeeRp ? formatRupiah(stok.nilaiRp) : undefined}
+          icon={Tag} color="#7C3AED" bg="rgba(124,58,237,0.08)"
+        />
+        <KpiCard
+          label="Transit Cabang"
+          value={transit.pcs.toLocaleString('id-ID') + ' pcs'}
+          sub={transit.gram.toFixed(2) + ' gr'}
+          icon={ArrowLeftRight} color="#0EA5E9" bg="rgba(14,165,233,0.08)"
+          alert={transit.pcs > 0}
+        />
+        <KpiCard
+          label={`Terjual (${bulan})`}
+          value={penjualan.pcs.toLocaleString('id-ID') + ' pcs'}
+          sub={canSeeRp ? formatRupiah(penjualan.omzetRp) : undefined}
+          sub2={penjualan.buybackCount > 0 ? `${penjualan.buybackCount} buyback` : undefined}
+          icon={ShoppingCart} color="#16A34A" bg="rgba(22,163,74,0.08)"
+        />
+        <KpiCard
+          label="Reject Belum Dilebur"
+          value={reject.count + ' item'}
+          sub={reject.gram.toFixed(2) + ' gr'}
+          icon={AlertTriangle} color={reject.count > 0 ? '#EF4444' : '#94A3B8'}
+          bg={reject.count > 0 ? 'rgba(239,68,68,0.08)' : 'rgba(148,163,184,0.08)'}
+          alert={reject.count > 0}
+        />
       </div>
 
-      {/* Charts + Tables row */}
-      <div className="grid lg:grid-cols-2 gap-5">
-        {/* Chart: Shieldtag by Gramasi */}
-        <div className="bg-white rounded-2xl border border-slate-100 p-5">
+      {/* Row 2 — Production Pipeline */}
+      <div>
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Pipeline Produksi</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {PIPELINE_STAGES.map(({ key, label, icon: Icon, color, bg }) => {
+            const count = pipeline[key] ?? 0
+            return (
+              <div key={key} className="rounded-3xl p-4 flex items-center gap-3"
+                style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+                <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: bg }}>
+                  <Icon size={16} style={{ color }} />
+                </div>
+                <div>
+                  <p className="text-xl font-black text-slate-800">{count}</p>
+                  <p className="text-[11px] text-slate-400 font-semibold">{label}</p>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Row 3 — Chart + Mutasi Transit */}
+      <div className="grid lg:grid-cols-2 gap-4">
+
+        {/* Chart stok per gramasi */}
+        <div className="rounded-3xl p-5"
+          style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
           <div className="flex items-center gap-2 mb-4">
-            <TrendingUp size={16} className="text-violet-500" />
-            <h3 className="font-semibold text-slate-800 text-sm">Stok Shieldtag per Gramasi</h3>
+            <TrendingUp size={15} className="text-violet-500" />
+            <h3 className="font-bold text-slate-800 text-sm">Stok Aktif per Gramasi</h3>
           </div>
           {gramasiChartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={gramasiChartData} barSize={28}>
-                <XAxis dataKey="gramasi" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={30} />
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={gramasiChartData} barSize={24}>
+                <XAxis dataKey="gramasi" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={28} />
                 <Tooltip
-                  contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                  contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 11 }}
                   cursor={{ fill: '#f5f3ff' }}
                 />
                 <Bar dataKey="pcs" radius={[6, 6, 0, 0]}>
                   {gramasiChartData.map((_, i) => (
-                    <Cell key={i} fill={i % 2 === 0 ? '#7F6DC6' : '#B3A5DF'} />
+                    <Cell key={i} fill={i % 2 === 0 ? '#7C3AED' : '#A78BFA'} />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-48 flex items-center justify-center text-slate-300 text-sm">
-              Belum ada data shieldtag
-            </div>
+            <EmptyChart text="Belum ada stok shieldtag aktif" />
           )}
         </div>
 
-        {/* Batch terbaru */}
-        <div className="bg-white rounded-2xl border border-slate-100 p-5">
-          <h3 className="font-semibold text-slate-800 text-sm mb-4">Batch Terbaru</h3>
-          {batchTerbaru.length > 0 ? (
+        {/* Mutasi transit */}
+        <div className="rounded-3xl p-5"
+          style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+          <div className="flex items-center gap-2 mb-4">
+            <Clock size={15} className="text-sky-500" />
+            <h3 className="font-bold text-slate-800 text-sm">Mutasi Menunggu Konfirmasi</h3>
+          </div>
+          {mutasiTransit.length > 0 ? (
             <div className="space-y-2">
-              {batchTerbaru.map((b: any) => (
-                <div key={b.kode} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+              {mutasiTransit.map((m: any) => (
+                <div key={m.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">{b.kode}</p>
-                    <p className="text-xs text-slate-400">{formatDate(b.tanggal)}</p>
+                    <p className="text-sm font-semibold text-slate-700">{m.tujuan_cabang ?? 'Cabang'}</p>
+                    <p className="text-xs text-slate-400">{formatDate(m.tanggal_kirim)}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-slate-700">
-                      {Number(b.sisa_fisik ?? 0).toFixed(2)} gr
-                    </p>
-                    <p className="text-[10px] text-slate-400">
-                      dari {Number(b.timbangan_akhir ?? 0).toFixed(2)} gr
-                    </p>
-                  </div>
+                  <span className="text-sm font-bold text-sky-600">{m.pcs} pcs</span>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="h-48 flex items-center justify-center text-slate-300 text-sm">
-              Belum ada batch
-            </div>
+            <EmptyChart text="Tidak ada mutasi yang menunggu" icon="✅" />
           )}
         </div>
       </div>
 
-      {/* Produksi terbaru */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-5">
-        <h3 className="font-semibold text-slate-800 text-sm mb-4">Produksi Terbaru</h3>
-        {produksiTerbaru.length > 0 ? (
+      {/* Row 4 — Batch terbaru */}
+      <div className="rounded-3xl p-5"
+        style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+        <div className="flex items-center gap-2 mb-4">
+          <Layers size={15} className="text-amber-500" />
+          <h3 className="font-bold text-slate-800 text-sm">Batch Aktif</h3>
+        </div>
+        {batchTerbaru.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[500px]">
               <thead>
-                <tr className="border-b border-slate-100">
-                  <th className="text-left pb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Kode</th>
-                  <th className="text-left pb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Batch</th>
-                  <th className="text-left pb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Gramasi</th>
-                  <th className="text-left pb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">PCS</th>
-                  <th className="text-left pb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
-                  <th className="text-left pb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Tanggal</th>
+                <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                  {['Kode', 'Tanggal', 'Supplier', 'Berat Akhir', 'Siap Cetak', 'Status'].map(h => (
+                    <th key={h} className="text-left pb-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider pr-4">{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {produksiTerbaru.map((p: any) => (
-                  <tr key={p.kode} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
-                    <td className="py-2.5 font-mono text-xs text-slate-600">{p.kode}</td>
-                    <td className="py-2.5 text-xs text-slate-500">{p.batch_kode ?? '-'}</td>
-                    <td className="py-2.5 font-semibold text-slate-700">{p.gramasi} gr</td>
-                    <td className="py-2.5 text-slate-600">{p.pcs} pcs</td>
-                    <td className="py-2.5">
-                      {p.current_status ? (
-                        <span className={cn(
-                          'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border',
-                          STATUS_BADGE_STYLES[p.current_status as StatusProduksi] ?? 'bg-gray-50 text-gray-500 border-gray-200'
-                        )}>
-                          {p.current_status}
-                        </span>
-                      ) : '-'}
+                {batchTerbaru.map((b: any, i: number) => (
+                  <tr key={b.kode} style={{ borderTop: i === 0 ? 'none' : '1px solid rgba(0,0,0,0.04)' }}>
+                    <td className="py-2.5 pr-4 font-mono text-xs font-bold text-violet-700">{b.kode}</td>
+                    <td className="py-2.5 pr-4 text-xs text-slate-500">{formatDate(b.tanggal)}</td>
+                    <td className="py-2.5 pr-4 text-xs text-slate-600">{b.supplier ?? '—'}</td>
+                    <td className="py-2.5 pr-4 text-sm font-semibold text-slate-800">
+                      {b.timbangan_akhir ? `${Number(b.timbangan_akhir).toFixed(2)} gr` : '—'}
                     </td>
-                    <td className="py-2.5 text-xs text-slate-400">{formatDate(p.created_at)}</td>
+                    <td className="py-2.5 pr-4 text-sm font-semibold text-emerald-700">
+                      {b.bahan_siap_cetak ? `${Number(b.bahan_siap_cetak).toFixed(2)} gr` : '—'}
+                    </td>
+                    <td className="py-2.5">
+                      <span className={cn(
+                        'text-[10px] font-bold px-2.5 py-1 rounded-full',
+                        b.status === 'Selesai' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+                      )}>
+                        {b.status ?? 'Proses'}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : (
-          <div className="py-8 text-center text-slate-300 text-sm">Belum ada data produksi</div>
+          <EmptyChart text="Belum ada batch" />
         )}
       </div>
+
     </div>
   )
 }
 
+function KpiCard({ label, value, sub, sub2, icon: Icon, color, bg, alert }: {
+  label: string; value: string; sub?: string; sub2?: string
+  icon: any; color: string; bg: string; alert?: boolean
+}) {
+  return (
+    <div className={cn(
+      'rounded-3xl p-4',
+      alert ? 'ring-1 ring-red-200' : ''
+    )} style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+      <div className="w-10 h-10 rounded-2xl flex items-center justify-center mb-3" style={{ background: bg }}>
+        <Icon size={17} style={{ color }} />
+      </div>
+      <p className="text-xl font-black text-slate-800 leading-tight">{value}</p>
+      {sub  && <p className="text-[11px] text-slate-400 font-semibold mt-0.5">{sub}</p>}
+      {sub2 && <p className="text-[11px] text-violet-500 font-semibold">{sub2}</p>}
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-2">{label}</p>
+    </div>
+  )
+}
+
+function EmptyChart({ text, icon = '📊' }: { text: string; icon?: string }) {
+  return (
+    <div className="h-40 flex flex-col items-center justify-center gap-2">
+      <span className="text-2xl opacity-20">{icon}</span>
+      <p className="text-xs text-slate-300">{text}</p>
+    </div>
+  )
+}

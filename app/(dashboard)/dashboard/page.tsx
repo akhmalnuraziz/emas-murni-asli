@@ -1,63 +1,110 @@
 import { createClient } from '@/lib/supabase/server'
 import DashboardClient from '@/components/modules/dashboard/dashboard-client'
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardPage() {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
   const today = new Date().toISOString().split('T')[0]
   const monthStart = today.slice(0, 7) + '-01'
 
   const [
-    { count: totalShieldtagAktif },
-    { count: totalProduksiHariIni },
-    { count: totalSiapPacking },
-    { count: totalReject },
-    { count: totalBatchAktif },
-    { data: produksiTerbaru },
+    { data: profile },
+    { data: shieldtagAktif },
+    { data: shieldtagTransit },
+    { data: penjualanBulanIni },
+    { data: buybackBulanIni },
+    { data: produksiPipeline },
+    { data: rejectBelumDilebur },
     { data: batchTerbaru },
-    { data: shieldtagByGramasi },
+    { data: mutasiTransit },
+    { data: pengaturanRows },
   ] = await Promise.all([
-    supabase.from('shieldtag').select('*', { count: 'exact', head: true }).eq('status', 'Aktif'),
-    supabase.from('produksi_item').select('*', { count: 'exact', head: true })
-      .gte('created_at', today),
-    supabase.from('produksi_item').select('*', { count: 'exact', head: true })
-      .eq('current_status', 'Siap Packing').is('voided_at', null),
-    supabase.from('produksi_item').select('*', { count: 'exact', head: true })
-      .eq('current_status', 'Reject').is('voided_at', null),
-    supabase.from('batch').select('*', { count: 'exact', head: true }).is('voided_at', null),
-    supabase.from('produksi_item').select('kode, gramasi, pcs, current_status, created_at, batch_kode')
-      .is('voided_at', null).order('created_at', { ascending: false }).limit(6),
-    supabase.from('batch').select('kode, tanggal, timbangan_akhir, sisa_fisik, hpp_gr')
-      .is('voided_at', null).order('created_at', { ascending: false }).limit(5),
-    supabase.from('shieldtag').select('gramasi').eq('status', 'Aktif'),
+    supabase.from('users_profile').select('name, role').eq('id', user?.id ?? '').single(),
+    supabase.from('shieldtag').select('gramasi, hpp').eq('status', 'Aktif').is('voided_at', null),
+    supabase.from('shieldtag').select('gramasi').eq('status', 'Terdistribusi').is('voided_at', null),
+    supabase.from('penjualan').select('gramasi, pcs, harga_jual, tanggal').gte('tanggal', monthStart).is('voided_at' as any, null),
+    supabase.from('buyback').select('id, tanggal').gte('tanggal', monthStart).is('voided_at', null),
+    supabase.from('produksi_item')
+      .select('current_status, total_gram')
+      .is('voided_at', null)
+      .not('current_status', 'in', '("Sudah Packing","Reject")'),
+    supabase.from('produksi_item')
+      .select('id, kode, gramasi, berat_reject, batch_kode')
+      .eq('status_reject', 'belum_dilebur')
+      .gt('berat_reject', 0)
+      .is('voided_at', null),
+    supabase.from('batch')
+      .select('kode, tanggal, timbangan_akhir, bahan_siap_cetak, hpp_gr, status, supplier')
+      .is('voided_at', null)
+      .order('created_at', { ascending: false })
+      .limit(5),
+    supabase.from('mutasi')
+      .select('id, tujuan_cabang, pcs, tanggal_kirim, status_terima')
+      .eq('status_kirim', 'Sudah Dikirim')
+      .eq('status_terima', 'Belum Diterima')
+      .is('voided_at', null)
+      .order('tanggal_kirim', { ascending: false })
+      .limit(10),
+    supabase.from('pengaturan').select('key, value').like('key', 'biaya_packaging_%'),
   ])
 
-  // Aggregate shieldtag by gramasi
-  const gramasiCount: Record<string, number> = {}
-  shieldtagByGramasi?.forEach((s: any) => {
-    if (s.gramasi) {
-      gramasiCount[s.gramasi] = (gramasiCount[s.gramasi] || 0) + 1
-    }
-  })
-  const gramasiChartData = Object.entries(gramasiCount)
+  // Build biaya packaging map
+  const pkgMap: Record<string, number> = {}
+  for (const r of pengaturanRows ?? []) {
+    pkgMap[r.key.replace('biaya_packaging_', '')] = Number(r.value ?? 0)
+  }
+
+  // Stok aktif stats
+  const stokAktifPcs = (shieldtagAktif ?? []).length
+  const stokAktifGram = (shieldtagAktif ?? []).reduce((s, t) => s + parseFloat(t.gramasi ?? '0'), 0)
+  const nilaiStok = (shieldtagAktif ?? []).reduce((s, t) => s + Number(t.hpp ?? 0), 0)
+
+  // Transit stats
+  const transitPcs = (shieldtagTransit ?? []).length
+  const transitGram = (shieldtagTransit ?? []).reduce((s, t) => s + parseFloat(t.gramasi ?? '0'), 0)
+
+  // Penjualan bulan ini
+  const terjualPcs = (penjualanBulanIni ?? []).reduce((s, p) => s + (Number(p.pcs) || 0), 0)
+  const omzetBulanIni = (penjualanBulanIni ?? []).reduce((s, p) => s + (Number(p.harga_jual) || 0), 0)
+
+  // Reject
+  const rejectPcs = (rejectBelumDilebur ?? []).length
+  const rejectGram = (rejectBelumDilebur ?? []).reduce((s, r) => s + Number(r.berat_reject ?? 0), 0)
+
+  // Produksi pipeline
+  const pipeline: Record<string, number> = {}
+  for (const p of produksiPipeline ?? []) {
+    const s = p.current_status ?? 'Unknown'
+    pipeline[s] = (pipeline[s] ?? 0) + 1
+  }
+
+  // Stok per gramasi (bar chart)
+  const gramasiMap: Record<string, number> = {}
+  for (const t of shieldtagAktif ?? []) {
+    if (t.gramasi) gramasiMap[t.gramasi] = (gramasiMap[t.gramasi] ?? 0) + 1
+  }
+  const gramasiChartData = Object.entries(gramasiMap)
     .map(([gramasi, pcs]) => ({ gramasi: `${gramasi}gr`, pcs }))
     .sort((a, b) => parseFloat(a.gramasi) - parseFloat(b.gramasi))
-    .slice(0, 8)
 
-  const stats = {
-    shieldtagAktif: totalShieldtagAktif ?? 0,
-    produksiHariIni: totalProduksiHariIni ?? 0,
-    siapPacking: totalSiapPacking ?? 0,
-    reject: totalReject ?? 0,
-    batchAktif: totalBatchAktif ?? 0,
-  }
+  const canSeeRp = ['owner', 'admin_pusat', 'accounting'].includes(profile?.role ?? '')
 
   return (
     <DashboardClient
-      stats={stats}
-      produksiTerbaru={produksiTerbaru ?? []}
-      batchTerbaru={batchTerbaru ?? []}
+      userName={profile?.name ?? ''}
+      userRole={profile?.role ?? 'operator_produksi'}
+      canSeeRp={canSeeRp}
+      stok={{ pcs: stokAktifPcs, gram: stokAktifGram, nilaiRp: nilaiStok }}
+      transit={{ pcs: transitPcs, gram: transitGram }}
+      penjualan={{ pcs: terjualPcs, omzetRp: omzetBulanIni, buybackCount: (buybackBulanIni ?? []).length }}
+      reject={{ count: rejectPcs, gram: rejectGram }}
+      pipeline={pipeline}
       gramasiChartData={gramasiChartData}
+      batchTerbaru={batchTerbaru ?? []}
+      mutasiTransit={mutasiTransit ?? []}
     />
   )
 }
