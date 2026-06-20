@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import {
   createVendor, updateVendor,
+  createProdukPackaging, updateProdukPackaging, toggleProdukAktif,
   createPO, updatePO, voidPO,
   createBatchPenerimaan, submitQC,
   updatePenangananReject, createSJRetur,
@@ -22,7 +23,7 @@ const fmtDate = (d: string | null | undefined) => {
   return new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-type Tab = 'monitoring' | 'po' | 'batch' | 'reject' | 'stok' | 'vendor'
+type Tab = 'monitoring' | 'po' | 'batch' | 'reject' | 'stok' | 'vendor' | 'master'
 
 interface Props {
   vendors: any[]
@@ -184,6 +185,7 @@ export default function POVendorClient({
 
   // ── Modal states ──────────────────────────────────────────────────────────
   const [vendorModal, setVendorModal] = useState<'create' | number | null>(null)
+  const [produkModal, setProdukModal] = useState<'create' | number | null>(null)
   const [poModal, setPoModal]         = useState<'create' | number | null>(null)
   const [editPoId, setEditPoId]       = useState<number | null>(null)
   const [batchModal, setBatchModal]   = useState<number | null>(null)  // po_id
@@ -199,6 +201,7 @@ export default function POVendorClient({
     { key: 'batch',      label: 'Penerimaan',  icon: Truck },
     { key: 'reject',     label: 'Reject',      icon: AlertTriangle },
     { key: 'stok',       label: 'Stok',        icon: Package2 },
+    { key: 'master',     label: 'Master Produk', icon: BoxSelect },
     { key: 'vendor',     label: 'Vendor',      icon: Building2 },
   ]
 
@@ -233,6 +236,13 @@ export default function POVendorClient({
               className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white rounded-2xl"
               style={{ background: 'linear-gradient(135deg,#7C3AED,#6D28D9)' }}>
               <Plus size={13}/> Tambah Vendor
+            </button>
+          )}
+          {canManage && tab === 'master' && (
+            <button onClick={() => setProdukModal('create')}
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white rounded-2xl"
+              style={{ background: 'linear-gradient(135deg,#059669,#047857)' }}>
+              <Plus size={13}/> Tambah Produk
             </button>
           )}
           {canManage && tab === 'reject' && (
@@ -480,6 +490,44 @@ export default function POVendorClient({
         </div>
       )}
 
+      {/* ── Tab: MASTER PRODUK ─────────────────────────────────────────────── */}
+      {tab === 'master' && (
+        <div className="space-y-2">
+          <p className="text-xs text-slate-400 px-1">Daftar produk packaging yang bisa dipilih saat buat PO</p>
+          {produkList.map((p: any) => (
+            <div key={p.id} className="rounded-2xl px-4 py-3 flex items-center justify-between gap-3"
+              style={{ background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(0,0,0,0.07)' }}>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-bold text-slate-800">{p.nama}</p>
+                  <span className="text-[10px] font-mono text-slate-400">{p.kode}</span>
+                  <span className="text-[10px] text-slate-400">· {p.satuan ?? 'pcs'}</span>
+                  {!p.aktif && <span className="text-[10px] font-bold text-red-400 bg-red-50 px-1.5 py-0.5 rounded-full">Nonaktif</span>}
+                </div>
+                {p.keterangan && <p className="text-[11px] text-slate-400 mt-0.5">{p.keterangan}</p>}
+              </div>
+              {canManage && (
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button onClick={() => setProdukModal(p.id)}
+                    className="p-1.5 rounded-lg text-violet-500 hover:bg-violet-50">
+                    <Edit2 size={13}/>
+                  </button>
+                  <button onClick={async () => {
+                    const r = await toggleProdukAktif(p.id, !p.aktif)
+                    if (r?.error) showToast(r.error, false)
+                    else showToast(p.aktif ? 'Produk dinonaktifkan' : '✅ Produk diaktifkan')
+                  }}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-colors ${p.aktif ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
+                    {p.aktif ? 'Nonaktifkan' : 'Aktifkan'}
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+          {produkList.length === 0 && <Empty text="Belum ada produk — klik Tambah Produk" />}
+        </div>
+      )}
+
       {/* ── Tab: VENDOR ────────────────────────────────────────────────────── */}
       {tab === 'vendor' && (
         <div className="space-y-2">
@@ -510,6 +558,23 @@ export default function POVendorClient({
       {/* ════════════════════════════════════════════════════════════════════ */}
       {/* MODALS                                                               */}
       {/* ════════════════════════════════════════════════════════════════════ */}
+
+      {/* ── Produk Modal ─────────────────────────────────────────────────── */}
+      {produkModal !== null && (
+        <ProdukModal
+          mode={produkModal === 'create' ? 'create' : 'edit'}
+          produk={produkModal !== 'create' ? produkList.find((p: any) => p.id === produkModal) : undefined}
+          onClose={() => setProdukModal(null)}
+          onSave={async (fd) => {
+            const r = produkModal === 'create'
+              ? await createProdukPackaging(fd)
+              : await updateProdukPackaging(produkModal as number, fd)
+            if (r?.error) { showToast(r.error, false); return }
+            showToast(produkModal === 'create' ? '✅ Produk ditambahkan' : '✅ Produk diperbarui')
+            setProdukModal(null)
+          }}
+        />
+      )}
 
       {/* ── Vendor Modal ─────────────────────────────────────────────────── */}
       {vendorModal !== null && (
@@ -636,6 +701,35 @@ function ModalShell({ title, onClose, children }: { title: string; onClose: () =
         <div className="overflow-y-auto flex-1 px-5 pb-5">{children}</div>
       </div>
     </div>
+  )
+}
+
+function ProdukModal({ mode, produk, onClose, onSave }: { mode: string; produk?: any; onClose: () => void; onSave: (fd: FormData) => Promise<void> }) {
+  const [loading, setLoading] = useState(false)
+  return (
+    <ModalShell title={mode === 'create' ? 'Tambah Produk Baru' : 'Edit Produk'} onClose={onClose}>
+      <form onSubmit={async e => { e.preventDefault(); setLoading(true); await onSave(new FormData(e.currentTarget)); setLoading(false) }}
+        className="space-y-3">
+        <div><label className="text-xs font-semibold text-slate-500">Nama Produk *</label>
+          <input name="nama" defaultValue={produk?.nama} required placeholder="mis. Akrilik 2x3cm" className={inp}/></div>
+        <div><label className="text-xs font-semibold text-slate-500">Satuan</label>
+          <select name="satuan" defaultValue={produk?.satuan ?? 'pcs'} className={inp}>
+            <option value="pcs">pcs</option>
+            <option value="set">set</option>
+            <option value="lusin">lusin</option>
+            <option value="box">box</option>
+            <option value="meter">meter</option>
+          </select>
+        </div>
+        <div><label className="text-xs font-semibold text-slate-500">Keterangan</label>
+          <textarea name="keterangan" defaultValue={produk?.keterangan} rows={2} placeholder="Deskripsi singkat produk..." className={inp}/></div>
+        <button type="submit" disabled={loading}
+          className="w-full py-3 font-bold text-white rounded-2xl disabled:opacity-60"
+          style={{ background: 'linear-gradient(135deg,#059669,#047857)' }}>
+          {loading ? 'Menyimpan...' : mode === 'create' ? 'Tambah Produk' : 'Simpan Perubahan'}
+        </button>
+      </form>
+    </ModalShell>
   )
 }
 

@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect, useRef } from 'react'
 import {
   Plus, Search, X, Check, AlertTriangle, Tag,
-  Edit2, Trash2, ChevronDown, ChevronUp, Eye, EyeOff, ExternalLink
+  Edit2, Trash2, ChevronDown, ChevronUp, ExternalLink
 } from 'lucide-react'
 import { cn, formatDate, formatRupiah } from '@/lib/utils'
 import { registerShieldtags, editShieldtagKode, voidShieldtag, bulkVoidShieldtag } from '@/app/(dashboard)/shieldtag/actions'
@@ -50,7 +50,6 @@ const STATUS_CFG: Record<string,{bg:string;text:string;dot:string}> = {
   'Terjual':        {bg:'rgba(139,92,246,0.1)',  text:'#7C3AED', dot:'#8B5CF6'},
   'VOID':           {bg:'rgba(239,68,68,0.1)',   text:'#DC2626', dot:'#EF4444'},
 }
-const CAN_SEE_HPP: UserRole[] = ['owner', 'admin_pusat']
 
 const today = new Date().toISOString().split('T')[0]
 const inp = "w-full px-4 py-3 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all placeholder:text-gray-400 bg-white/80 border border-gray-200/70"
@@ -308,7 +307,6 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('Semua')
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
-  const [showHPP, setShowHPP] = useState(false)
   const [voidReason, setVoidReason] = useState('')
 
   function showToast(msg: string, ok = true) { setToast({ msg, ok }); setTimeout(() => setToast(null), 3500) }
@@ -324,7 +322,6 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
   const canRegister = ['owner', 'admin_pusat', 'spv', 'operator_produksi'].includes(userRole)
   const canVoid = ['owner', 'admin_pusat', 'spv'].includes(userRole)
   const canEdit = ['owner', 'admin_pusat', 'spv'].includes(userRole)
-  const canSeeHPP = CAN_SEE_HPP.includes(userRole)
 
   const filtered = shieldtags.filter(st => {
     if (filterStatus !== 'Semua' && st.status !== filterStatus) return false
@@ -397,16 +394,6 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
             <p className="text-sm text-gray-400 mt-0.5 font-medium">{shieldtags.length} shieldtag terdaftar</p>
           </div>
           <div className="flex items-center gap-2">
-            {canSeeHPP && (
-              <button onClick={() => setShowHPP(!showHPP)}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-2xl transition-all border"
-                style={showHPP
-                  ? { background: 'rgba(139,92,246,0.1)', color: '#7C3AED', borderColor: 'rgba(139,92,246,0.25)' }
-                  : { background: 'rgba(255,255,255,0.8)', color: '#6B7280', borderColor: 'rgba(209,213,219,0.5)' }}>
-                {showHPP ? <Eye size={14}/> : <EyeOff size={14}/>}
-                HPP
-              </button>
-            )}
             {selected.size > 0 && canVoid && (
               <button onClick={() => { setModal('bulk_void'); setBulkVoidReason('') }}
                 className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white rounded-2xl transition-all"

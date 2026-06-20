@@ -3,13 +3,12 @@
 import { useState } from 'react'
 import { X, Camera, AlertTriangle } from 'lucide-react'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
+import { compressImage } from '@/lib/compress-image'
 
 const inp = "w-full px-4 py-3 text-sm bg-white/80 border border-gray-200/70 rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all placeholder:text-gray-400"
 
 async function filesToBase64(files: File[]): Promise<string[]> {
-  return Promise.all(files.map(f => new Promise<string>((res, rej) => {
-    const r = new FileReader(); r.onload = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(f)
-  })))
+  return Promise.all(files.map(f => compressImage(f)))
 }
 
 // ════════════════════════════════════════════════════════════════════════════

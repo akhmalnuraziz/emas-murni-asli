@@ -181,12 +181,12 @@ export default function LaporanClient({
 
       {/* Tabs */}
       <div className="flex gap-1 flex-wrap bg-slate-100 rounded-2xl p-1 w-fit">
-        {TABS.map(([key, label, Icon]) => (
-          <button key={key} onClick={() => setTab(key as any)}
+        {TABS.map(([key, label, Icon], i) => (
+          <button key={i} onClick={() => setTab(key as any)}
             className={cn('flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold transition-all',
               tab === key ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'
             )}>
-            <Icon size={12} /> {label}
+            {(Icon as any) && <Icon size={12} />} {label}
           </button>
         ))}
       </div>

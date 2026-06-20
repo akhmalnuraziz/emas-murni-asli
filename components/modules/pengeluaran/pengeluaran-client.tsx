@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { compressImage } from '@/lib/compress-image'
 import { useRouter } from 'next/navigation'
 import { cn, formatRupiah, formatDate } from '@/lib/utils'
 import {
@@ -117,16 +118,12 @@ function PengeluaranModal({
   const [fotoPreview, setFotoPreview] = useState<string>(item?.foto ?? '')
   const [fotoBase64,  setFotoBase64]  = useState('')
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
     if (!f) return
-    const reader = new FileReader()
-    reader.onload = ev => {
-      const result = ev.target?.result as string
-      setFotoPreview(result)
-      setFotoBase64(result)
-    }
-    reader.readAsDataURL(f)
+    const compressed = await compressImage(f)
+    setFotoPreview(compressed)
+    setFotoBase64(compressed)
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -481,7 +478,7 @@ export default function PengeluaranClient({
                       <Pencil size={13}/>
                     </button>
                     <button disabled={togglePending}
-                      onClick={() => startToggle(() => toggleKategoriAktif(k.id, !k.aktif))}
+                      onClick={() => startToggle(async () => { await toggleKategoriAktif(k.id, !k.aktif) })}
                       className={cn('p-1.5 rounded-xl transition-colors',
                         k.aktif ? 'text-slate-400 hover:text-red-500 hover:bg-red-50' : 'text-green-500 hover:bg-green-50'
                       )}>

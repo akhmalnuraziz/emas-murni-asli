@@ -35,6 +35,57 @@ async function uploadFotos(supabase: any, b64Array: string[], prefix: string): P
   return urls
 }
 
+// ── MASTER PRODUK ─────────────────────────────────────────────────────────────
+
+export async function createProdukPackaging(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const nama = (formData.get('nama') as string)?.trim()
+  if (!nama) return { error: 'Nama produk wajib diisi' }
+
+  const { count } = await supabase.from('produk_packaging').select('*', { count: 'exact', head: true })
+  const kode = `PKG${String((count ?? 0) + 1).padStart(3, '0')}`
+
+  const { error } = await supabase.from('produk_packaging').insert({
+    kode,
+    nama,
+    satuan: (formData.get('satuan') as string) || 'pcs',
+    keterangan: (formData.get('keterangan') as string) || null,
+    aktif: true,
+  })
+  if (error) return { error: error.message }
+  revalidatePath('/po-vendor-packaging')
+  return { success: true, kode }
+}
+
+export async function updateProdukPackaging(id: number, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { error } = await supabase.from('produk_packaging').update({
+    nama: (formData.get('nama') as string)?.trim(),
+    satuan: (formData.get('satuan') as string) || 'pcs',
+    keterangan: (formData.get('keterangan') as string) || null,
+  }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/po-vendor-packaging')
+  return { success: true }
+}
+
+export async function toggleProdukAktif(id: number, aktif: boolean) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { error } = await supabase.from('produk_packaging').update({ aktif }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/po-vendor-packaging')
+  return { success: true }
+}
+
 // ── VENDOR ────────────────────────────────────────────────────────────────────
 
 export async function createVendor(formData: FormData) {
