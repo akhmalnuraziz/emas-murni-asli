@@ -1,7 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ArrowLeftRight, Send, Store, ShieldCheck, X, RefreshCw, Check, Truck, PackageCheck, AlertTriangle } from 'lucide-react'
+import {
+  ArrowLeftRight, Send, Store, ShieldCheck, X, RefreshCw, Check,
+  Truck, PackageCheck, AlertTriangle, Search, ListChecks, ChevronRight
+} from 'lucide-react'
 import {
   fetchShieldtagSiapMutasi, kirimMutasiCabang, fetchStokCabang,
   fetchMutasiList, fetchMutasiPendingTerima, terimaMutasiCabang,
@@ -32,7 +35,7 @@ export default function MutasiClient({ cabangList }: { cabangList: Cabang[] }) {
         </div>
         <div>
           <h1 className="text-lg font-bold text-slate-900">Pemindahan Barang</h1>
-          <p className="text-xs text-slate-400">Kirim barang tershieldtag ke cabang, kelola stok & riwayat</p>
+          <p className="text-xs text-slate-400">Kirim barang tershieldtag ke cabang, kelola stok &amp; riwayat</p>
         </div>
       </div>
 
@@ -59,10 +62,106 @@ export default function MutasiClient({ cabangList }: { cabangList: Cabang[] }) {
   )
 }
 
+// ─── SERIAL PICKER MODAL ───────────────────────────────────────────────────────
+function SerialPickerModal({ gramasi, available, selected, onConfirm, onClose }: {
+  gramasi: string
+  available: Shieldtag[]
+  selected: Set<string>
+  onConfirm: (kodes: Set<string>) => void
+  onClose: () => void
+}) {
+  const [local, setLocal] = useState(new Set(selected))
+  const [search, setSearch] = useState('')
+
+  const filtered = available.filter(t =>
+    !search || t.kode.toLowerCase().includes(search.toLowerCase())
+  )
+  const allChecked = filtered.length > 0 && filtered.every(t => local.has(t.kode))
+
+  function toggle(kode: string) {
+    setLocal(prev => { const n = new Set(prev); n.has(kode) ? n.delete(kode) : n.add(kode); return n })
+  }
+  function toggleAll() {
+    setLocal(prev => {
+      const n = new Set(prev)
+      if (allChecked) filtered.forEach(t => n.delete(t.kode))
+      else filtered.forEach(t => n.add(t.kode))
+      return n
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)' }}>
+      <div className="w-full max-w-sm rounded-3xl overflow-hidden flex flex-col max-h-[80vh]"
+        style={{ background: '#fff', boxShadow: '0 32px 80px rgba(0,0,0,0.18)' }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <div>
+            <p className="font-bold text-slate-800 text-sm">Pilih Serial Emas {gramasi}gr</p>
+            <p className="text-[11px] text-slate-400">{available.length} tersedia di gudang</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200">
+            <X size={14} />
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="px-4 py-3 border-b border-slate-50">
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Cari kode serial…"
+              className="w-full pl-8 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-400/30 font-mono" />
+          </div>
+        </div>
+
+        {/* Select all */}
+        <div className="px-4 py-2 border-b border-slate-50">
+          <button onClick={toggleAll} className="flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-violet-600">
+            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${allChecked ? 'bg-violet-500 border-violet-500' : 'border-slate-300'}`}>
+              {allChecked && <Check size={10} className="text-white" />}
+            </div>
+            {allChecked ? 'Batal Semua' : 'Pilih Semua'} ({filtered.length})
+          </button>
+        </div>
+
+        {/* List */}
+        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-0.5">
+          {filtered.map(t => {
+            const checked = local.has(t.kode)
+            return (
+              <button key={t.kode} onClick={() => toggle(t.kode)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors text-left">
+                <div className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-all ${checked ? 'bg-violet-500 border-violet-500' : 'border-slate-300'}`}>
+                  {checked && <Check size={10} className="text-white" />}
+                </div>
+                <span className="font-mono text-sm font-semibold text-slate-800">{t.kode}</span>
+                {t.batch_kode && <span className="text-[10px] text-slate-400 ml-auto">{t.batch_kode}</span>}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="px-4 py-4 border-t border-slate-100 flex items-center justify-between gap-3">
+          <p className="text-xs text-slate-500 font-semibold">{local.size} Serial dipilih</p>
+          <button onClick={() => onConfirm(local)}
+            className="flex-1 py-2.5 rounded-2xl text-sm font-bold text-white transition-all"
+            style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', boxShadow: '0 4px 12px rgba(139,92,246,0.35)' }}>
+            Konfirmasi
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── KIRIM MUTASI ──────────────────────────────────────────────────────────────
 function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
   const [tags, setTags] = useState<Shieldtag[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [pickerGramasi, setPickerGramasi] = useState<string | null>(null)
   const [cabang, setCabang] = useState(cabangList[0]?.kode ?? '')
   const [tanggal, setTanggal] = useState(new Date().toISOString().split('T')[0])
   const [noSurat, setNoSurat] = useState('')
@@ -79,14 +178,6 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
   }
   useEffect(() => { load() }, [])
 
-  function toggle(kode: string) {
-    setSelected(prev => {
-      const next = new Set(prev)
-      if (next.has(kode)) next.delete(kode); else next.add(kode)
-      return next
-    })
-  }
-
   // Group by gramasi
   const grouped = new Map<string, Shieldtag[]>()
   for (const t of tags) {
@@ -97,6 +188,19 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
     const ia = GRAMASI_ORDER.indexOf(a), ib = GRAMASI_ORDER.indexOf(b)
     return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib)
   })
+
+  function confirmPicker(kodes: Set<string>) {
+    if (!pickerGramasi) return
+    const grItems = grouped.get(pickerGramasi) ?? []
+    // Remove all serials for this gramasi from selected, then add the new ones
+    setSelected(prev => {
+      const next = new Set(prev)
+      grItems.forEach(t => next.delete(t.kode))
+      kodes.forEach(k => next.add(k))
+      return next
+    })
+    setPickerGramasi(null)
+  }
 
   async function submit() {
     if (selected.size === 0) { setMsg({ type: 'err', text: 'Pilih minimal 1 shieldtag' }); return }
@@ -116,78 +220,13 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
     load()
   }
 
+  const totalSelected = selected.size
+
   return (
-    <div className="grid lg:grid-cols-3 gap-4">
-      {/* Shieldtag picker */}
-      <div className="lg:col-span-2 rounded-3xl p-4"
-        style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.6)' }}>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <ShieldCheck size={16} className="text-green-500" />
-            <h2 className="text-sm font-bold text-slate-800">Shieldtag Siap Mutasi</h2>
-          </div>
-          <button onClick={load} className="text-violet-500 p-1.5 hover:bg-violet-50 rounded-lg">
-            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-          </button>
-        </div>
-
-        {loading ? (
-          <div className="py-12 text-center text-sm text-slate-400">Memuat shieldtag…</div>
-        ) : tags.length === 0 ? (
-          <div className="py-12 text-center">
-            <p className="text-sm text-slate-400">Belum ada barang tershieldtag di gudang.</p>
-            <p className="text-xs text-slate-300 mt-1">Registrasi shieldtag dulu agar barang bisa dimutasi.</p>
-          </div>
-        ) : (
-          <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
-            {sortedGramasi.map(gramasi => {
-              const items = grouped.get(gramasi)!
-              const allSel = items.every(t => selected.has(t.kode))
-              return (
-                <div key={gramasi}>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-slate-600">{gramasi}gr <span className="text-slate-400">({items.length} pcs)</span></span>
-                    <button onClick={() => setSelected(prev => {
-                      const next = new Set(prev)
-                      if (allSel) items.forEach(t => next.delete(t.kode))
-                      else items.forEach(t => next.add(t.kode))
-                      return next
-                    })} className="text-[11px] font-semibold text-violet-500 hover:underline">
-                      {allSel ? 'Batal semua' : 'Pilih semua'}
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {items.map(t => {
-                      const sel = selected.has(t.kode)
-                      return (
-                        <button key={t.kode} onClick={() => toggle(t.kode)}
-                          className="px-2.5 py-1.5 rounded-xl text-[11px] font-mono font-semibold transition-all"
-                          style={sel
-                            ? { background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', color: '#fff' }
-                            : { background: 'rgba(0,0,0,0.03)', color: '#475569', border: '1px solid rgba(0,0,0,0.06)' }}>
-                          {sel && <Check size={10} className="inline mr-1" />}{t.kode}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Kirim form */}
-      <div className="rounded-3xl p-4 space-y-3 h-fit"
-        style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.6)' }}>
-        <h2 className="text-sm font-bold text-slate-800">Detail Pengiriman</h2>
-
-        <div className="rounded-2xl px-3 py-2.5 text-center"
-          style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.15)' }}>
-          <p className="text-2xl font-extrabold text-violet-700">{selected.size}</p>
-          <p className="text-[11px] text-slate-500">pcs dipilih</p>
-        </div>
-
+    <div className="space-y-4">
+      {/* Form header */}
+      <div className="rounded-3xl p-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-3"
+        style={{ background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.6)' }}>
         <Field label="Cabang Tujuan">
           <select value={cabang} onChange={e => setCabang(e.target.value)} className={inp}>
             {cabangList.map(c => <option key={c.kode} value={c.kode}>{c.nama}</option>)}
@@ -202,19 +241,133 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
         <Field label="Catatan">
           <input value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Opsional" className={inp} />
         </Field>
+      </div>
 
-        {msg && (
-          <div className={`rounded-xl px-3 py-2 text-xs ${msg.type === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
-            {msg.text}
+      {/* Item table */}
+      <div className="rounded-3xl overflow-hidden"
+        style={{ background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.6)' }}>
+        {/* Table header */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <ShieldCheck size={15} className="text-green-500" />
+            <span className="text-sm font-bold text-slate-800">Daftar Barang</span>
+          </div>
+          <div className="flex items-center gap-3">
+            {totalSelected > 0 && (
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                style={{ background: 'rgba(139,92,246,0.1)', color: '#7C3AED' }}>
+                {totalSelected} pcs dipilih
+              </span>
+            )}
+            <button onClick={load} className="text-violet-500 p-1.5 hover:bg-violet-50 rounded-lg" title="Refresh">
+              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+            </button>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="py-14 text-center text-sm text-slate-400">Memuat shieldtag…</div>
+        ) : tags.length === 0 ? (
+          <div className="py-14 text-center">
+            <ShieldCheck size={28} className="text-slate-200 mx-auto mb-2" />
+            <p className="text-sm text-slate-400">Belum ada barang tershieldtag di gudang.</p>
+            <p className="text-xs text-slate-300 mt-1">Registrasi shieldtag dulu agar barang bisa dimutasi.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] text-sm">
+              <thead>
+                <tr style={{ background: 'rgba(139,92,246,0.04)', borderBottom: '1px solid rgba(139,92,246,0.08)' }}>
+                  {['Nama Barang', 'Gramasi', 'Tersedia', 'Dipilih', 'Satuan', 'Aksi'].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {sortedGramasi.map((gramasi, i) => {
+                  const items = grouped.get(gramasi)!
+                  const selCount = items.filter(t => selected.has(t.kode)).length
+                  const currentSelected = new Set(items.filter(t => selected.has(t.kode)).map(t => t.kode))
+                  return (
+                    <tr key={gramasi}
+                      style={{ borderTop: i === 0 ? 'none' : '1px solid rgba(0,0,0,0.04)' }}
+                      className="hover:bg-violet-50/20 transition-colors">
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                            style={{ background: 'rgba(245,158,11,0.1)' }}>
+                            <span className="text-[9px] font-black text-amber-600">AU</span>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-slate-800 text-sm">Emas {gramasi} gr</p>
+                            <p className="text-[10px] text-slate-400">LOGAM MULIA</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span className="text-xs font-bold px-2 py-1 rounded-lg text-amber-700"
+                          style={{ background: 'rgba(245,158,11,0.1)' }}>{gramasi}gr</span>
+                      </td>
+                      <td className="px-4 py-3.5 font-semibold text-slate-600 text-sm">{items.length}</td>
+                      <td className="px-4 py-3.5">
+                        {selCount > 0
+                          ? <span className="font-bold text-violet-600">{selCount}</span>
+                          : <span className="text-slate-300">—</span>}
+                      </td>
+                      <td className="px-4 py-3.5 text-xs font-semibold text-slate-500">PCS</td>
+                      <td className="px-4 py-3.5">
+                        <button onClick={() => setPickerGramasi(gramasi)}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:-translate-y-0.5"
+                          style={selCount > 0
+                            ? { background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', color: '#fff', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }
+                            : { background: 'rgba(139,92,246,0.08)', color: '#7C3AED' }}>
+                          <ListChecks size={12} />
+                          {selCount > 0 ? `${selCount} dipilih` : 'Pilih Serial'}
+                          <ChevronRight size={11} />
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
         )}
 
-        <button onClick={submit} disabled={submitting || selected.size === 0}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-40"
-          style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
-          <Send size={15} /> {submitting ? 'Mengirim…' : 'Kirim Barang'}
-        </button>
+        {/* Footer with send button */}
+        {tags.length > 0 && (
+          <div className="px-5 py-4 border-t border-slate-100 flex items-center justify-between gap-4">
+            {msg && (
+              <p className={`text-xs flex-1 px-3 py-2 rounded-xl ${msg.type === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+                {msg.text}
+              </p>
+            )}
+            <div className="ml-auto flex items-center gap-3">
+              {totalSelected > 0 && (
+                <p className="text-xs text-slate-500">
+                  Total <span className="font-bold text-slate-800">{totalSelected} pcs</span>
+                </p>
+              )}
+              <button onClick={submit} disabled={submitting || totalSelected === 0}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-40 hover:-translate-y-0.5"
+                style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', boxShadow: '0 4px 12px rgba(139,92,246,0.35)' }}>
+                <Send size={14} /> {submitting ? 'Mengirim…' : 'Kirim Barang'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Serial picker modal */}
+      {pickerGramasi && (
+        <SerialPickerModal
+          gramasi={pickerGramasi}
+          available={grouped.get(pickerGramasi) ?? []}
+          selected={new Set((grouped.get(pickerGramasi) ?? []).filter(t => selected.has(t.kode)).map(t => t.kode))}
+          onConfirm={confirmPicker}
+          onClose={() => setPickerGramasi(null)}
+        />
+      )}
     </div>
   )
 }

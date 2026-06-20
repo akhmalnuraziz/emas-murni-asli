@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect, useRef } from 'react'
 import {
   Plus, Search, X, Check, AlertTriangle, Tag,
-  Edit2, Trash2, ChevronDown, ChevronUp, Eye, EyeOff, Shield
+  Edit2, Trash2, ChevronDown, ChevronUp, Eye, EyeOff, ExternalLink
 } from 'lucide-react'
 import { cn, formatDate, formatRupiah } from '@/lib/utils'
 import { registerShieldtags, editShieldtagKode, voidShieldtag, bulkVoidShieldtag } from '@/app/(dashboard)/shieldtag/actions'
@@ -297,94 +297,6 @@ function EditKodeModal({ st, onClose, onSubmit, isPending, error }: {
   )
 }
 
-// ─── Detail Drawer ─────────────────────────────────────────────────────────────
-function DetailDrawer({ st, onClose, showHPP, userRole }: {
-  st: any; onClose: () => void; showHPP: boolean; userRole: UserRole
-}) {
-  const cfg = STATUS_CFG[st.status] ?? STATUS_CFG['Aktif']
-  const history: any[] = Array.isArray(st.shieldtag_history) ? st.shieldtag_history : []
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
-      <div className="w-full max-w-md rounded-3xl overflow-hidden max-h-[85vh] flex flex-col"
-        style={{ background: 'rgba(255,255,255,0.93)', backdropFilter: 'blur(24px)',
-          border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 32px 64px rgba(139,92,246,0.18)' }}>
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100/80 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
-              style={{ background: `${cfg.dot}15` }}>
-              <Shield size={18} style={{ color: cfg.dot }}/>
-            </div>
-            <div>
-              <p className="text-lg font-black font-mono tracking-wider text-gray-900">{st.kode}</p>
-              <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full"
-                style={{ background: cfg.bg, color: cfg.text }}>{st.status}</span>
-            </div>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><X size={15}/></button>
-        </div>
-        <div className="px-6 py-5 overflow-y-auto space-y-5">
-          {/* Info grid */}
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: 'Batch', val: st.batch_kode },
-              { label: 'Gramasi', val: `${st.gramasi} gr` },
-              { label: 'Lokasi', val: st.lokasi || '—' },
-              { label: 'Tgl Registrasi', val: formatDate(st.tgl_regis) },
-              { label: 'Tgl Distribusi', val: st.tgl_dist ? formatDate(st.tgl_dist) : '—' },
-              { label: 'Tgl Terjual', val: st.tgl_jual ? formatDate(st.tgl_jual) : '—' },
-              { label: 'Harga Jual', val: st.harga_jual > 0 ? formatRupiah(st.harga_jual) : '—' },
-              { label: 'Oleh', val: st.registered_by || '—' },
-            ].map(item => (
-              <div key={item.label} className="rounded-2xl p-3"
-                style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(209,213,219,0.4)' }}>
-                <p className="text-[10px] text-gray-400 font-medium">{item.label}</p>
-                <p className="text-sm font-semibold text-gray-700 mt-0.5">{item.val}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* HPP */}
-          {CAN_SEE_HPP.includes(userRole) && (
-            <div className="rounded-2xl p-3"
-              style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.15)' }}>
-              <p className="text-[10px] text-gray-400 font-medium">HPP</p>
-              <p className="text-sm font-bold text-violet-700 mt-0.5">
-                {showHPP ? formatRupiah(st.hpp ?? 0) + '/gr' : '•••/gr'}
-              </p>
-            </div>
-          )}
-
-          {/* History */}
-          <div>
-            <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-3">Riwayat</p>
-            {history.length === 0 ? (
-              <p className="text-xs text-gray-400 italic">Tidak ada riwayat</p>
-            ) : (
-              <div className="space-y-1">
-                {history.map((h: any, i: number) => (
-                  <div key={i} className="flex gap-3">
-                    <div className="flex flex-col items-center">
-                      <div className="w-2 h-2 rounded-full bg-violet-400 mt-1 flex-shrink-0"/>
-                      {i < history.length-1 && <div className="w-0.5 flex-1 mt-0.5 bg-violet-200"/>}
-                    </div>
-                    <div className="pb-2">
-                      <p className="text-xs font-semibold text-gray-700">{h.action}</p>
-                      <p className="text-[11px] text-gray-400">{formatDate(h.tanggal)} · {h.oleh || '—'}</p>
-                      {h.lokasi && <p className="text-[11px] text-gray-400">→ {h.lokasi}</p>}
-                      {h.alasan && <p className="text-[11px] text-red-400">Alasan: {h.alasan}</p>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRole, userName }: Props) {
   const [isPending, startTransition] = useTransition()
@@ -392,7 +304,6 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [bulkVoidReason, setBulkVoidReason] = useState('')
   const [activeItem, setActiveItem] = useState<any | null>(null)
-  const [detailItem, setDetailItem] = useState<any | null>(null)
   const [err, setErr] = useState('')
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('Semua')
@@ -597,9 +508,8 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
                 const cfg = STATUS_CFG[st.status] ?? STATUS_CFG['Aktif']
                 return (
                   <tr key={st.id}
-                    className={cn('border-t transition-colors hover:bg-violet-50/20 cursor-pointer', idx === 0 ? 'border-transparent' : '', selected.has(st.id) ? 'bg-violet-50/40' : '')}
-                    style={{ borderColor: 'rgba(243,244,246,0.7)' }}
-                    onClick={() => setDetailItem(st)}>
+                    className={cn('border-t transition-colors hover:bg-violet-50/10', idx === 0 ? 'border-transparent' : '', selected.has(st.id) ? 'bg-violet-50/40' : '')}
+                    style={{ borderColor: 'rgba(243,244,246,0.7)' }}>
                     <td className="px-4 py-3" onClick={e => { e.stopPropagation(); toggleSelect(st.id) }}>
                       <input type="checkbox" className="w-4 h-4 rounded cursor-pointer accent-violet-500"
                         checked={selected.has(st.id)} onChange={() => {}}/>
@@ -622,7 +532,12 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
                     <td className="px-4 py-3 text-sm text-gray-600">{st.lokasi || '—'}</td>
                     <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">{formatDate(st.tgl_regis)}</td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center gap-1.5">
+                        <a href={`/shieldtag-explorer?q=${st.kode}`}
+                          className="w-8 h-8 rounded-xl bg-violet-50 text-violet-500 flex items-center justify-center hover:bg-violet-100 hover:scale-110 transition-all"
+                          title="Lihat riwayat di Explorer">
+                          <ExternalLink size={12}/>
+                        </a>
                         {canEdit && st.status === 'Aktif' && (
                           <button onClick={() => { setActiveItem(st); setErr(''); setModal('edit') }}
                             className="w-8 h-8 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-100 hover:scale-110 transition-all"
@@ -709,10 +624,6 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
             </div>
           </div>
         </div>
-      )}
-      {detailItem && (
-        <DetailDrawer st={detailItem} onClose={() => setDetailItem(null)}
-          showHPP={showHPP} userRole={userRole}/>
       )}
     </div>
   )

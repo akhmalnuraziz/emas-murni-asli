@@ -57,6 +57,7 @@ export function generateBatchCode(): string {
 }
 
 export const STATUS_BADGE_STYLES = {
+  'Cutting': 'bg-sky-50 text-sky-700 border-sky-200',
   'Pas Berat': 'bg-blue-50 text-blue-700 border-blue-200',
   'Annealing': 'bg-amber-50 text-amber-700 border-amber-200',
   'Siap Packing': 'bg-green-50 text-green-700 border-green-200',

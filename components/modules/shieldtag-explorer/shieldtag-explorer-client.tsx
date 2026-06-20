@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   Search, Tag, Package, Hammer, Layers, ArrowLeftRight,
   ShoppingCart, RotateCcw, ScrollText, CheckCircle2, XCircle,
@@ -18,10 +19,25 @@ const STATUS_TAG_CFG: Record<string, { bg: string; text: string }> = {
 }
 
 export default function ShieldtagExplorerClient() {
-  const [query, setQuery] = useState('')
+  const searchParams = useSearchParams()
+  const [query, setQuery] = useState(searchParams.get('q') ?? '')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<ShieldtagDetail | null>(null)
   const [err, setErr] = useState('')
+
+  useEffect(() => {
+    const q = searchParams.get('q')
+    if (q) { setQuery(q.toUpperCase()); handleSearchWithKode(q) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function handleSearchWithKode(kode: string) {
+    setLoading(true); setErr(''); setResult(null)
+    const res = await searchShieldtag(kode.trim())
+    setLoading(false)
+    if (res.error) { setErr(res.error); return }
+    setResult(res.data ?? null)
+  }
 
   async function handleSearch() {
     if (!query.trim()) return
