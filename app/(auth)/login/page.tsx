@@ -2,15 +2,17 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function LoginPage() {
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
   const [loading,  setLoading]  = useState(false)
   const [error,    setError]    = useState<string | null>(null)
-  const router  = useRouter()
-  const supabase = createClient()
+  const router       = useRouter()
+  const searchParams = useSearchParams()
+  const wasIdle      = searchParams.get('reason') === 'idle'
+  const supabase     = createClient()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,6 +38,12 @@ export default function LoginPage() {
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">PT Emas Murni Asli</h1>
           <p className="text-sm text-slate-500 mt-1">Production & Inventory System</p>
         </div>
+
+        {wasIdle && (
+          <div className="mb-4 rounded-2xl px-4 py-3 text-sm text-amber-700 bg-amber-50 border border-amber-100 text-center">
+            ⏱️ Sesi kamu habis karena tidak aktif. Silakan login lagi.
+          </div>
+        )}
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
           <h2 className="text-base font-semibold text-slate-800 mb-5">Masuk ke Sistem</h2>

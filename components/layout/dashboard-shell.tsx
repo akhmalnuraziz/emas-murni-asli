@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Sidebar from '@/components/layout/sidebar'
 import Header from '@/components/layout/header'
+import IdleLogoutProvider from '@/components/layout/idle-logout-provider'
 import { usePathname } from 'next/navigation'
 
 const PAGE_META: Record<string, { title: string; subtitle: string }> = {
@@ -14,7 +15,8 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
   '/inventory':           { title: 'Inventory',             subtitle: 'Stok per lokasi berbasis Shieldtag — realtime' },
   '/mutasi':              { title: 'Pemindahan Barang',      subtitle: 'Keluar (cabang/toko) & masuk (buyback/retur)' },
   '/penjualan':           { title: 'Penjualan',             subtitle: 'Rekap dari Accurate + cetak receipt' },
-  '/po-cabang':              { title: 'Toko & PO',            subtitle: 'Stok ready toko dan pre-order' },
+  '/stok-cabang':           { title: 'Stok Cabang',           subtitle: 'Ready stock, outstanding PO, dan adjustment per cabang' },
+  '/po-cabang':              { title: 'PO Cabang',            subtitle: 'Purchase order dari cabang ke pusat' },
   '/po-vendor-packaging':    { title: 'PO Vendor Packaging', subtitle: 'Manajemen PO, QC, dan retur akrilik dari vendor' },
   '/prioritas-produksi':  { title: 'Prioritas Produksi',    subtitle: 'Auto-ranking P1/P2/P3 berdasar PO dan safety stock' },
   '/kpi-tim':             { title: 'KPI Tim',               subtitle: 'Rating bintang ⭐ per tim per proses — efisiensi, loss, kecepatan' },
@@ -38,23 +40,25 @@ export default function DashboardShell({
   const meta = PAGE_META[pathname] ?? { title: 'ERP System', subtitle: '' }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Sidebar
-        mobileOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        serverProfile={serverProfile}
-      />
-      <div className="lg:ml-64 flex flex-col min-h-screen">
-        <Header
-          title={meta.title}
-          subtitle={meta.subtitle}
-          onMenuClick={() => setSidebarOpen(true)}
+    <IdleLogoutProvider>
+      <div className="min-h-screen bg-slate-50">
+        <Sidebar
+          mobileOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
           serverProfile={serverProfile}
         />
-        <main className="flex-1 p-4 lg:p-6">
-          {children}
-        </main>
+        <div className="lg:ml-64 flex flex-col min-h-screen">
+          <Header
+            title={meta.title}
+            subtitle={meta.subtitle}
+            onMenuClick={() => setSidebarOpen(true)}
+            serverProfile={serverProfile}
+          />
+          <main className="flex-1 p-4 lg:p-6">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </IdleLogoutProvider>
   )
 }
