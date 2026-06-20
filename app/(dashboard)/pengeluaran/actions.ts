@@ -9,6 +9,9 @@ export async function createKategori(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Tidak terautentikasi' }
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat', 'spv', 'accounting'].includes(profile?.role ?? ''))
+    return { error: 'Tidak memiliki akses' }
 
   const nama  = (formData.get('nama') as string)?.trim()
   const warna = (formData.get('warna') as string) ?? '#6366F1'
@@ -27,6 +30,9 @@ export async function updateKategori(id: number, formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Tidak terautentikasi' }
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat', 'spv', 'accounting'].includes(profile?.role ?? ''))
+    return { error: 'Tidak memiliki akses' }
 
   const nama  = (formData.get('nama') as string)?.trim()
   const warna = (formData.get('warna') as string)
@@ -42,6 +48,8 @@ export async function updateKategori(id: number, formData: FormData) {
 
 export async function toggleKategoriAktif(id: number, aktif: boolean) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Tidak terautentikasi' }
   const { error } = await supabase.from('kategori_pengeluaran')
     .update({ aktif }).eq('id', id)
   if (error) return { error: error.message }

@@ -17,8 +17,8 @@ export async function createScrap(formData: FormData) {
   const tanggal = formData.get('tanggal') as string
   if (!tanggal) return { error: 'Tanggal wajib diisi' }
 
-  const { count } = await supabase.from('scrap_inventory').select('*', { count: 'exact', head: true })
-  const kode = `SCR${String((count ?? 0) + 1).padStart(4, '0')}`
+  const { data: counterData } = await supabase.rpc('increment_counter', { counter_name: 'scrap' })
+  const kode = `SCR${String(counterData ?? 1).padStart(4, '0')}`
 
   const { error } = await supabase.from('scrap_inventory').insert({
     kode,

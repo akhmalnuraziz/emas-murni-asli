@@ -164,6 +164,8 @@ export async function editShieldtagKode(shieldtagId: number, newKode: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? ''))
+    return { error: 'Hanya Owner/Admin Pusat/SPV yang bisa edit kode' }
 
   const newKodeUp = newKode.toUpperCase().trim()
   if (!newKodeUp) return { error: 'Kode tidak boleh kosong' }

@@ -135,14 +135,15 @@ export async function saveStockOpname(params: {
       data_fisik: dataFisik,
       selisih,
       catatan: params.catatan || null,
-      created_by: params.userName,
+      created_by: user.id,
     })
 
     if (error) return { success: false, error: error.message }
 
     // Audit log
     await supabase.from('audit_log').insert({
-      user_name: params.userName,
+      user_id: user.id,
+      user_name: userName,
       action: 'CREATE',
       module: 'stock_opname',
       record_key: kode,
