@@ -37,8 +37,8 @@ export default function InventoryClient() {
             <Warehouse size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-900">Inventory Gudang Pusat</h1>
-            <p className="text-xs text-slate-400">Stok hasil packing — otomatis masuk gudang</p>
+            <h1 className="text-lg font-bold text-slate-900">Gudang Pusat</h1>
+            <p className="text-xs text-slate-400">Semua barang dari packing masuk sini otomatis</p>
           </div>
         </div>
         <button onClick={load}
@@ -49,10 +49,10 @@ export default function InventoryClient() {
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <KPI label="Total di Gudang" value={`${totalPacked} pcs`} sub={`${fgr(totalGram)} gr`} icon={<Package size={16} />} tone="violet" />
-        <KPI label="Tershieldtag" value={`${totalTagged} pcs`} sub="Siap dimutasi" icon={<ShieldCheck size={16} />} tone="green" />
-        <KPI label="Belum Tershieldtag" value={`${totalBelum} pcs`} sub="Belum bisa keluar" icon={<ShieldAlert size={16} />} tone="amber" />
-        <KPI label="Jenis Gramasi" value={`${rows.length}`} sub="varian aktif" icon={<Warehouse size={16} />} tone="slate" />
+        <KPI label="Stok Gudang" value={`${totalPacked} pcs`} sub={`${fgr(totalGram)} gr`} icon={<Package size={16} />} tone="violet" />
+        <KPI label="Sudah Shieldtag" value={`${totalTagged} pcs`} sub="Siap dikirim ke cabang" icon={<ShieldCheck size={16} />} tone="green" />
+        <KPI label="Belum Shieldtag" value={`${totalBelum} pcs`} sub="Perlu didaftarkan dulu" icon={<ShieldAlert size={16} />} tone="amber" />
+        <KPI label="Varian" value={`${rows.length}`} sub="jenis gramasi" icon={<Warehouse size={16} />} tone="slate" />
       </div>
 
       {/* Gate notice */}
@@ -61,8 +61,8 @@ export default function InventoryClient() {
           style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
           <ShieldAlert size={16} className="text-amber-500 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-amber-700 leading-relaxed">
-            <span className="font-bold">{totalBelum} pcs</span> belum tershieldtag. Barang ini sudah ada di gudang,
-            tapi <span className="font-semibold">belum bisa dimutasi ke cabang</span> sampai diregistrasi shieldtag-nya.
+            <span className="font-bold">{totalBelum} pcs</span> belum punya shieldtag. Barang udah ada di gudang,
+            tapi <span className="font-semibold">belum bisa dikirim ke cabang</span> — daftarkan shieldtag-nya dulu ya!
           </p>
         </div>
       )}
@@ -83,8 +83,8 @@ export default function InventoryClient() {
               style={{ background: 'rgba(139,92,246,0.08)' }}>
               <Package size={28} className="text-violet-300" />
             </div>
-            <p className="text-sm text-slate-400">Belum ada barang di gudang.</p>
-            <p className="text-xs text-slate-300 mt-1">Barang masuk otomatis setelah Packing Log.</p>
+            <p className="text-sm text-slate-400">Gudang masih kosong nih 📦</p>
+            <p className="text-xs text-slate-300 mt-1">Barang bakal masuk otomatis setelah ada Packing Log.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">

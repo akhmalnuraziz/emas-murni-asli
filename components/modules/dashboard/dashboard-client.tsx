@@ -122,7 +122,7 @@ export default function DashboardClient({
 }: Props) {
   const now  = new Date()
   const jam  = now.getHours()
-  const greeting = jam < 12 ? 'Selamat Pagi' : jam < 15 ? 'Selamat Siang' : jam < 19 ? 'Selamat Sore' : 'Selamat Malam'
+  const greeting = jam < 12 ? 'Pagi' : jam < 15 ? 'Siang' : jam < 19 ? 'Sore' : 'Malam'
 
   const periodLabel = period === 'today' ? 'Hari Ini'
     : period === 'week'  ? '7 Hari Terakhir'
@@ -130,9 +130,9 @@ export default function DashboardClient({
     : new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
 
   const alerts: string[] = []
-  if (reject.count > 0)               alerts.push(`${reject.count} item reject emas (${reject.gram.toFixed(2)} gr) belum dilebur`)
-  if (transit.pcs > 20)               alerts.push(`${transit.pcs} pcs transit ke cabang belum dikonfirmasi`)
-  if (poPackaging.pendingQc > 0)      alerts.push(`${poPackaging.pendingQc} batch penerimaan akrilik menunggu QC`)
+  if (reject.count > 0)               alerts.push(`${reject.count} item reject emas (${reject.gram.toFixed(2)} gr) nunggu dilebur`)
+  if (transit.pcs > 20)               alerts.push(`${transit.pcs} pcs lagi dalam perjalanan ke cabang, belum dikonfirmasi`)
+  if (poPackaging.pendingQc > 0)      alerts.push(`${poPackaging.pendingQc} batch akrilik nunggu QC`)
   if (poPackaging.rejectPendingQty > 0) alerts.push(`${poPackaging.rejectPendingQty} pcs akrilik reject belum ditangani`)
 
   return (
@@ -143,7 +143,7 @@ export default function DashboardClient({
         style={{ background: 'linear-gradient(135deg,#7C3AED,#6D28D9)' }}>
         <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full opacity-10" style={{ background: 'white' }} />
         <div className="absolute -right-2 bottom-0 w-24 h-24 rounded-full opacity-5" style={{ background: 'white' }} />
-        <p className="text-sm font-medium text-violet-200 relative">{greeting}, {userName || 'Tim'}! 👋</p>
+        <p className="text-sm font-medium text-violet-200 relative">Hei {userName || 'Tim'}, {greeting}! 👋</p>
         <h2 className="text-xl font-black mt-1 relative">PT Emas Murni Asli</h2>
         <p className="text-violet-200 text-xs mt-1 relative">
           {now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
@@ -172,7 +172,7 @@ export default function DashboardClient({
             <AlertTriangle size={15} className="text-red-500" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-red-700">Perlu Perhatian ({alerts.length})</p>
+            <p className="text-sm font-bold text-red-700">Ada yang perlu dicek nih! ({alerts.length})</p>
             <div className="mt-1 space-y-0.5">
               {alerts.map((a, i) => (
                 <p key={i} className="text-xs text-red-600 flex items-start gap-1">

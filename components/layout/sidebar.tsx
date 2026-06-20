@@ -21,18 +21,18 @@ const NAV_GROUPS = [
       { href: '/produksi',     label: 'Produksi',             icon: Hammer,          module: 'produksi'    },
       { href: '/packing-log',  label: 'Packing Log',          icon: Package,         module: 'packing-log' },
       { href: '/shieldtag',          label: 'Shieldtag',            icon: Tag,          module: 'shieldtag'          },
-      { href: '/shieldtag-explorer', label: 'Shieldtag Explorer',   icon: SearchCode,   module: 'shieldtag-explorer' },
+      { href: '/shieldtag-explorer', label: 'Cari Shieldtag',        icon: SearchCode,   module: 'shieldtag-explorer' },
     ],
   },
   {
     label: 'Gudang & Distribusi',
     items: [
       { href: '/inventory',      label: 'Inventory',            icon: Warehouse,       module: 'inventory'           },
-      { href: '/mutasi',         label: 'Pemindahan Barang',    icon: ArrowLeftRight,  module: 'mutasi'              },
+      { href: '/mutasi',         label: 'Kirim ke Cabang',      icon: ArrowLeftRight,  module: 'mutasi'              },
       { href: '/stock-opname',   label: 'Stock Opname',         icon: ClipboardList,   module: 'stock-opname'        },
       { href: '/po-cabang',           label: 'Toko & PO',       icon: Store,   module: 'po-cabang'           },
-      { href: '/po-vendor-packaging', label: 'PO Vendor Packaging', icon: Truck, module: 'po-vendor-packaging' },
-      { href: '/prioritas-produksi', label: 'Prioritas Produksi', icon: TrendingUp,    module: 'prioritas-produksi'  },
+      { href: '/po-vendor-packaging', label: 'PO Packaging', icon: Truck, module: 'po-vendor-packaging' },
+      { href: '/prioritas-produksi', label: 'Prioritas Produksi', icon: TrendingUp, module: 'prioritas-produksi'  },
     ],
   },
   {
