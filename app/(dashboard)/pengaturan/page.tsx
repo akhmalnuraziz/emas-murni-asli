@@ -13,6 +13,8 @@ export default async function PengaturanPage() {
     { data: adminInputList },
     { data: cabangList },
     { data: userList },
+    { data: produkList },
+    { data: gramasiList },
   ] = await Promise.all([
     supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
     supabase.from('tim_produksi').select('*').is('voided_at', null).order('id'),
@@ -21,6 +23,8 @@ export default async function PengaturanPage() {
     supabase.from('admin_input').select('id, nama, aktif').is('voided_at', null).order('id'),
     supabase.from('cabang').select('*').is('voided_at', null).order('id'),
     supabase.from('users_profile').select('id, email, name, role, aktif, toko, cabang_kode, created_at').order('created_at'),
+    supabase.from('produk_packaging').select('id, kode, nama, satuan, keterangan, aktif').order('id'),
+    supabase.from('gramasi_option').select('id, nilai, urutan, aktif').order('urutan'),
   ])
 
   const tims = (timList ?? []).map((t: any) => ({
@@ -40,6 +44,8 @@ export default async function PengaturanPage() {
       cabangList={cabangList ?? []}
       userList={userList ?? []}
       currentUserId={user?.id ?? ''}
+      produkList={produkList ?? []}
+      gramasiList={gramasiList ?? []}
     />
   )
 }

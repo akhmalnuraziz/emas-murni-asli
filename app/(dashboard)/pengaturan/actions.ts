@@ -248,3 +248,96 @@ export async function inviteUser(formData: FormData) {
   revalidatePath('/pengaturan')
   return { success: true }
 }
+
+// ═══ MASTER GRAMASI ═════════════════════════════════════════════════════════
+
+export async function createGramasi(nilai: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak ada akses' }
+
+  const v = nilai.trim()
+  if (!v || isNaN(Number(v))) return { error: 'Nilai gramasi tidak valid' }
+
+  const { count } = await supabase.from('gramasi_option').select('*', { count: 'exact', head: true })
+  const { error } = await supabase.from('gramasi_option').insert({ nilai: v, urutan: (count ?? 0) + 1 })
+  if (error) return { error: error.message }
+  revalidatePath('/pengaturan')
+  return { success: true }
+}
+
+export async function updateGramasi(id: number, nilai: string) {
+  const supabase = await createClient()
+  const v = nilai.trim()
+  if (!v || isNaN(Number(v))) return { error: 'Nilai tidak valid' }
+  const { error } = await supabase.from('gramasi_option').update({ nilai: v }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/pengaturan')
+  return { success: true }
+}
+
+export async function toggleGramasiAktif(id: number, aktif: boolean) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('gramasi_option').update({ aktif }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/pengaturan')
+  return { success: true }
+}
+
+export async function deleteGramasi(id: number) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('gramasi_option').delete().eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/pengaturan')
+  return { success: true }
+}
+
+// ═══ MASTER PRODUK PACKAGING (dari /pengaturan) ═══════════════════════════════
+
+export async function createProdukPengaturan(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak ada akses' }
+
+  const nama = (formData.get('nama') as string)?.trim()
+  if (!nama) return { error: 'Nama produk wajib diisi' }
+
+  const { count } = await supabase.from('produk_packaging').select('*', { count: 'exact', head: true })
+  const kode = `PKG${String((count ?? 0) + 1).padStart(3, '0')}`
+  const { error } = await supabase.from('produk_packaging').insert({
+    kode, nama,
+    satuan: (formData.get('satuan') as string) || 'pcs',
+    keterangan: (formData.get('keterangan') as string) || null,
+    aktif: true,
+  })
+  if (error) return { error: error.message }
+  revalidatePath('/pengaturan')
+  revalidatePath('/po-vendor-packaging')
+  return { success: true }
+}
+
+export async function updateProdukPengaturan(id: number, formData: FormData) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('produk_packaging').update({
+    nama: (formData.get('nama') as string)?.trim(),
+    satuan: (formData.get('satuan') as string) || 'pcs',
+    keterangan: (formData.get('keterangan') as string) || null,
+  }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/pengaturan')
+  revalidatePath('/po-vendor-packaging')
+  return { success: true }
+}
+
+export async function toggleProdukPengaturanAktif(id: number, aktif: boolean) {
+  const supabase = await createClient()
+  const { error } = await supabase.from('produk_packaging').update({ aktif }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/pengaturan')
+  revalidatePath('/po-vendor-packaging')
+  return { success: true }
+}

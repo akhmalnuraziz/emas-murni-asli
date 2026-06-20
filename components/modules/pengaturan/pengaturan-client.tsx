@@ -3,13 +3,15 @@
 import { useState, useTransition } from 'react'
 import {
   Users, Plus, Trash2, Edit2, X, Check, AlertTriangle,
-  Sliders, UserCheck, Settings2, UserPlus, Building2,
+  Sliders, UserCheck, Settings2, UserPlus, Building2, Package, Scale,
 } from 'lucide-react'
 import {
   createTim, updateTim, toggleTimAktif, deleteTim,
   addAnggota, deleteAnggota,
   createAdminInput, updateAdminInput, toggleAdminInputAktif, deleteAdminInput,
   updateToleransi, updateBiayaPackaging,
+  createGramasi, updateGramasi, toggleGramasiAktif, deleteGramasi,
+  createProdukPengaturan, updateProdukPengaturan, toggleProdukPengaturanAktif,
 } from '@/app/(dashboard)/pengaturan/actions'
 import { CabangSection, UsersSection } from './cabang-users-sections'
 
@@ -18,6 +20,7 @@ const WARNA = ['#8B5CF6','#3B82F6','#22C55E','#F59E0B','#EF4444','#EC4899','#14B
 
 export default function PengaturanClient({
   tims, pengaturan, userRole, adminInputList, cabangList, userList, currentUserId,
+  produkList, gramasiList,
 }: {
   tims: any[]
   pengaturan: Record<string, string>
@@ -26,10 +29,12 @@ export default function PengaturanClient({
   cabangList: any[]
   userList: any[]
   currentUserId: string
+  produkList: any[]
+  gramasiList: any[]
 }) {
   const [isPending, start] = useTransition()
   const [toast, setToast] = useState('')
-  const [tab, setTab] = useState<'tim' | 'admin' | 'umum' | 'packaging' | 'cabang' | 'users'>('tim')
+  const [tab, setTab] = useState<'tim' | 'admin' | 'umum' | 'packaging' | 'cabang' | 'users' | 'produk' | 'gramasi'>('tim')
   const showToast = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500) }
   const canManage = ['owner','admin_pusat','spv'].includes(userRole)
   const isOwnerAdmin = ['owner','admin_pusat'].includes(userRole)
@@ -37,6 +42,8 @@ export default function PengaturanClient({
   const TABS = [
     { id: 'tim'       as const, label: 'Master Tim',        icon: Users     },
     { id: 'admin'     as const, label: 'Master Admin Input', icon: UserCheck },
+    { id: 'produk'    as const, label: 'Master Produk',      icon: Package   },
+    { id: 'gramasi'   as const, label: 'Master Gramasi',     icon: Scale     },
     { id: 'cabang'    as const, label: 'Cabang',             icon: Building2 },
     { id: 'users'     as const, label: 'Manajemen User',     icon: UserPlus  },
     { id: 'umum'      as const, label: 'Pengaturan Umum',    icon: Settings2 },
@@ -66,6 +73,8 @@ export default function PengaturanClient({
       {tab === 'admin'     && <AdminInputSection list={adminInputList} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
       {tab === 'cabang'    && <CabangSection list={cabangList} showToast={showToast} canManage={isOwnerAdmin} />}
       {tab === 'users'     && <UsersSection list={userList} currentUserId={currentUserId} showToast={showToast} canManage={isOwnerAdmin} />}
+      {tab === 'produk'    && <MasterProdukSection list={produkList} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
+      {tab === 'gramasi'   && <MasterGramasiSection list={gramasiList} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
       {tab === 'umum'      && <PengaturanUmumSection pengaturan={pengaturan} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
       {tab === 'packaging' && <BiayaPackagingSection pengaturan={pengaturan} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
     </div>
@@ -543,6 +552,260 @@ function BiayaPackagingSection({ pengaturan, isPending, start, showToast, canMan
           </button>
         </div>
       )}
+    </div>
+  )
+}
+
+// === MASTER PRODUK PACKAGING ================================================
+function MasterProdukSection({ list, isPending, start, showToast, canManage }: any) {
+  const [adding, setAdding] = useState(false)
+  const [editId, setEditId] = useState<number | null>(null)
+  const [form, setForm] = useState({ nama: '', satuan: 'pcs', keterangan: '' })
+  const [editForm, setEditForm] = useState({ nama: '', satuan: 'pcs', keterangan: '' })
+
+  function handleCreate() {
+    if (!form.nama.trim()) return
+    const fd = new FormData()
+    fd.set('nama', form.nama); fd.set('satuan', form.satuan); fd.set('keterangan', form.keterangan)
+    start(async () => {
+      const r = await createProdukPengaturan(fd)
+      if (r?.error) { showToast('❌ ' + r.error); return }
+      showToast('✅ Produk ditambahkan')
+      setForm({ nama: '', satuan: 'pcs', keterangan: '' }); setAdding(false)
+    })
+  }
+
+  function handleUpdate(id: number) {
+    const fd = new FormData()
+    fd.set('nama', editForm.nama); fd.set('satuan', editForm.satuan); fd.set('keterangan', editForm.keterangan)
+    start(async () => {
+      const r = await updateProdukPengaturan(id, fd)
+      if (r?.error) { showToast('❌ ' + r.error); return }
+      showToast('✅ Diperbarui'); setEditId(null)
+    })
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-bold text-gray-900">Master Produk Packaging</h2>
+          <p className="text-xs text-gray-400 mt-0.5">Produk yang bisa dipilih saat buat PO Vendor Packaging.</p>
+        </div>
+        {canManage && !adding && (
+          <button onClick={() => setAdding(true)}
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-bold text-white"
+            style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)', boxShadow: '0 4px 14px rgba(103,87,177,0.3)' }}>
+            <Plus size={15} /> Tambah Produk
+          </button>
+        )}
+      </div>
+
+      {adding && (
+        <div className="rounded-3xl p-4 space-y-3 bg-white border border-violet-100 shadow-sm">
+          <input autoFocus value={form.nama} onChange={e => setForm(f => ({ ...f, nama: e.target.value }))}
+            placeholder="Nama produk (cth: Akrilik Kaca Bening)" className={inp} />
+          <div className="flex gap-2">
+            <select value={form.satuan} onChange={e => setForm(f => ({ ...f, satuan: e.target.value }))}
+              className={inp + ' flex-1'}>
+              {['pcs','lusin','kodi','box','set'].map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <input value={form.keterangan} onChange={e => setForm(f => ({ ...f, keterangan: e.target.value }))}
+              placeholder="Keterangan (opsional)" className={inp + ' flex-1'} />
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button onClick={() => { setAdding(false); setForm({ nama: '', satuan: 'pcs', keterangan: '' }) }}
+              className="px-4 py-2 rounded-xl text-sm font-semibold bg-gray-100 text-gray-600">Batal</button>
+            <button onClick={handleCreate} disabled={isPending || !form.nama.trim()}
+              className="px-5 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+              style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>Simpan</button>
+          </div>
+        </div>
+      )}
+
+      {list.length === 0 && !adding && (
+        <div className="rounded-3xl py-14 text-center bg-white border border-slate-100">
+          <Package size={28} className="mx-auto text-slate-200 mb-3" />
+          <p className="text-sm text-gray-400">Belum ada produk. Tambahkan produk packaging pertama.</p>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        {list.map((p: any) => (
+          <div key={p.id} className="rounded-2xl bg-white border border-slate-100 shadow-sm overflow-hidden" style={{ opacity: p.aktif ? 1 : 0.55 }}>
+            {editId === p.id ? (
+              <div className="p-4 space-y-3">
+                <input value={editForm.nama} onChange={e => setEditForm(f => ({ ...f, nama: e.target.value }))}
+                  autoFocus className={inp} />
+                <div className="flex gap-2">
+                  <select value={editForm.satuan} onChange={e => setEditForm(f => ({ ...f, satuan: e.target.value }))}
+                    className={inp + ' flex-1'}>
+                    {['pcs','lusin','kodi','box','set'].map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                  <input value={editForm.keterangan} onChange={e => setEditForm(f => ({ ...f, keterangan: e.target.value }))}
+                    placeholder="Keterangan" className={inp + ' flex-1'} />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => setEditId(null)} className="px-4 py-2 rounded-xl text-sm font-semibold bg-gray-100 text-gray-600">Batal</button>
+                  <button onClick={() => handleUpdate(p.id)} disabled={isPending}
+                    className="px-5 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>Simpan</button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 px-4 py-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'rgba(139,92,246,0.08)' }}>
+                  <Package size={15} className="text-violet-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-gray-800">{p.nama}</p>
+                  <p className="text-[11px] text-gray-400">{p.kode} · {p.satuan}{p.keterangan ? ` · ${p.keterangan}` : ''}</p>
+                </div>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                  style={{ color: p.aktif ? '#16a34a' : '#9ca3af', background: p.aktif ? 'rgba(22,163,74,0.08)' : 'rgba(156,163,175,0.1)' }}>
+                  {p.aktif ? 'Aktif' : 'Nonaktif'}
+                </span>
+                {canManage && (
+                  <>
+                    <button onClick={() => start(async () => {
+                      await toggleProdukPengaturanAktif(p.id, !p.aktif)
+                      showToast(p.aktif ? 'Produk dinonaktifkan' : 'Produk diaktifkan')
+                    })} className="px-2 py-1 rounded-lg text-[10px] border text-gray-400 hover:text-gray-600 border-gray-200">
+                      {p.aktif ? 'Nonaktifkan' : 'Aktifkan'}
+                    </button>
+                    <button onClick={() => { setEditId(p.id); setEditForm({ nama: p.nama, satuan: p.satuan || 'pcs', keterangan: p.keterangan || '' }) }}
+                      className="w-8 h-8 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center"><Edit2 size={13} /></button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// === MASTER GRAMASI =========================================================
+function MasterGramasiSection({ list, isPending, start, showToast, canManage }: any) {
+  const [newVal, setNewVal] = useState('')
+  const [editId, setEditId] = useState<number | null>(null)
+  const [editVal, setEditVal] = useState('')
+  const [confirmDelId, setConfirmDelId] = useState<number | null>(null)
+
+  function handleCreate() {
+    if (!newVal.trim()) return
+    start(async () => {
+      const r = await createGramasi(newVal.trim())
+      if (r?.error) { showToast('❌ ' + r.error); return }
+      showToast('✅ Gramasi ditambahkan'); setNewVal('')
+    })
+  }
+
+  function handleUpdate(id: number) {
+    start(async () => {
+      const r = await updateGramasi(id, editVal)
+      if (r?.error) { showToast('❌ ' + r.error); return }
+      showToast('✅ Diperbarui'); setEditId(null)
+    })
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-base font-bold text-gray-900">Master Gramasi</h2>
+        <p className="text-xs text-gray-400 mt-0.5">
+          Daftar pilihan gramasi emas — dipakai di form produksi, packing, shieldtag, dan PO.
+        </p>
+      </div>
+
+      {canManage && (
+        <div className="flex gap-2">
+          <input value={newVal} onChange={e => setNewVal(e.target.value)}
+            placeholder="Nilai gramasi baru (cth: 3, 7.5, 15)"
+            type="number" step="any" min="0"
+            className={inp + ' flex-1'}
+            onKeyDown={e => e.key === 'Enter' && handleCreate()} />
+          <div className="flex-shrink-0 flex items-center px-3 bg-gray-50 rounded-2xl border border-gray-200 text-sm text-gray-500 font-medium">gr</div>
+          <button onClick={handleCreate} disabled={isPending || !newVal.trim()}
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-bold text-white flex-shrink-0 disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>
+            <Plus size={15} /> Tambah
+          </button>
+        </div>
+      )}
+
+      <div className="rounded-3xl overflow-hidden bg-white border border-slate-100 shadow-sm">
+        <div className="px-5 py-3 border-b border-slate-100 flex text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+          <span className="flex-1">Gramasi</span>
+          <span className="w-24 text-center">Status</span>
+          {canManage && <span className="w-36 text-right">Aksi</span>}
+        </div>
+        {list.length === 0 && (
+          <div className="py-12 text-center text-sm text-gray-400">Belum ada data gramasi.</div>
+        )}
+        <div className="divide-y divide-slate-50">
+          {list.map((g: any) => (
+            <div key={g.id} className="px-5 py-3 flex items-center gap-3" style={{ opacity: g.aktif ? 1 : 0.5 }}>
+              {editId === g.id ? (
+                <>
+                  <input value={editVal} onChange={e => setEditVal(e.target.value)}
+                    autoFocus type="number" step="any"
+                    className="flex-1 h-9 px-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200"
+                    onKeyDown={e => { if (e.key === 'Enter') handleUpdate(g.id) }} />
+                  <span className="text-xs text-gray-400">gr</span>
+                  <button onClick={() => handleUpdate(g.id)}
+                    className="w-8 h-8 rounded-xl bg-green-50 text-green-600 flex items-center justify-center"><Check size={13} /></button>
+                  <button onClick={() => setEditId(null)} className="w-8 h-8 rounded-xl bg-gray-100 text-gray-500 flex items-center justify-center"><X size={13} /></button>
+                </>
+              ) : (
+                <>
+                  <span className="flex-1 text-sm font-bold text-gray-800">{g.nilai} gr</span>
+                  <span className="w-24 text-center text-[10px] font-semibold"
+                    style={{ color: g.aktif ? '#16a34a' : '#9ca3af' }}>
+                    {g.aktif ? 'Aktif' : 'Nonaktif'}
+                  </span>
+                  {canManage && (
+                    <div className="w-36 flex items-center justify-end gap-1.5">
+                      <button onClick={() => start(async () => {
+                        await toggleGramasiAktif(g.id, !g.aktif)
+                        showToast(g.aktif ? 'Dinonaktifkan' : 'Diaktifkan')
+                      })} className="px-2 py-1 rounded-lg text-[10px] border text-gray-400 hover:text-gray-600 border-gray-200">
+                        {g.aktif ? 'Nonaktifkan' : 'Aktifkan'}
+                      </button>
+                      <button onClick={() => { setEditId(g.id); setEditVal(g.nilai) }}
+                        className="w-7 h-7 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center"><Edit2 size={12} /></button>
+                      {confirmDelId === g.id ? (
+                        <>
+                          <button onClick={() => start(async () => {
+                            const r = await deleteGramasi(g.id)
+                            if (r?.error) { showToast('❌ ' + r.error); return }
+                            showToast('✅ Dihapus'); setConfirmDelId(null)
+                          })} disabled={isPending}
+                            className="px-2 py-1 rounded-lg text-[10px] font-bold text-white bg-red-500 disabled:opacity-50">Hapus</button>
+                          <button onClick={() => setConfirmDelId(null)} className="px-2 py-1 rounded-lg text-[10px] text-gray-500 bg-gray-100">Batal</button>
+                        </>
+                      ) : (
+                        <button onClick={() => setConfirmDelId(g.id)}
+                          className="w-7 h-7 rounded-xl bg-red-50 text-red-400 flex items-center justify-center"><Trash2 size={12} /></button>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-2xl p-4 bg-amber-50 border border-amber-100">
+        <p className="text-xs font-semibold text-amber-700">Perhatian</p>
+        <p className="text-xs text-amber-600 mt-0.5">
+          Menghapus gramasi yang sudah dipakai di transaksi akan menyebabkan inkonsistensi data.
+          Lebih aman gunakan <b>Nonaktifkan</b> agar tidak muncul di dropdown, tapi data lama tetap valid.
+        </p>
+      </div>
     </div>
   )
 }
