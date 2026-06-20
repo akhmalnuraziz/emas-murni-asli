@@ -105,8 +105,13 @@ export async function createBatch(formData: FormData) {
   const selisihPersen = beratGudang > 0 ? Math.abs(selisih) / beratGudang * 100 : 0
   if (selisihPersen > 5)
     return { error: `Selisih (${selisih.toFixed(3)}gr = ${selisihPersen.toFixed(2)}%) melebihi batas 5%. Periksa data timbangan.` }
-  if (Math.abs(selisih) > 0.05 && !catatan?.trim())
-    return { error: 'Selisih melebihi toleransi — catatan wajib diisi' }
+  const toleransiBatch = await getToleransiPeleburan(supabase)
+  const batchOverTol = Math.abs(selisih) > toleransiBatch + 0.0001
+  if (batchOverTol) {
+    const ttdOp    = formData.get('selisih_ttd_operator') as string
+    const ttdAdmin = formData.get('selisih_ttd_admin') as string
+    if (!ttdOp || !ttdAdmin) return { error: 'TTD Operator dan Admin wajib karena selisih melebihi toleransi.' }
+  }
 
   const hargaBeli     = parseFloat(formData.get('harga_beli') as string) || 0
   const biayaTbhRaw   = formData.get('biaya_tbh') as string
@@ -144,6 +149,21 @@ export async function createBatch(formData: FormData) {
 
   if (error) return { error: error.message }
 
+  // Poin 3: save TTD selisih timbangan jika melebihi toleransi
+  if (batchOverTol) {
+    const ttdOp    = formData.get('selisih_ttd_operator') as string
+    const ttdAdmin = formData.get('selisih_ttd_admin') as string
+    const ttdOpUrl    = await uploadSignaturePlb(supabase, ttdOp,    `${kode}_selisih_op`)
+    const ttdAdminUrl = await uploadSignaturePlb(supabase, ttdAdmin, `${kode}_selisih_admin`)
+    await supabase.from('loss_approval').insert({
+      batch_kode: kode, proses: 'batch_selisih', ref_table: 'batch', ref_id: data.id,
+      masuk_gram: beratPusat, keluar_gram: beratGudang, loss_gram: Math.abs(selisih), toleransi_gram: toleransiBatch,
+      alasan: catatan || null,
+      ttd_operator_url: ttdOpUrl, operator_nama: (formData.get('selisih_op_nama') as string) || null,
+      ttd_admin_url: ttdAdminUrl, admin_user_id: user.id, admin_nama: (formData.get('selisih_admin_nama') as string) || profile?.name || null,
+    })
+  }
+
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'CREATE_BATCH', module: 'BAHAN_BAKU',
@@ -169,8 +189,13 @@ export async function updateBatch(batchId: number, batchKode: string, formData: 
   const selisihPct  = beratGudang > 0 ? Math.abs(selisih) / beratGudang * 100 : 0
   if (selisihPct > 5)
     return { error: `Selisih (${selisih.toFixed(3)}gr = ${selisihPct.toFixed(2)}%) melebihi batas 5%. Periksa data timbangan.` }
-  if (Math.abs(selisih) > 0.05 && !catatan?.trim())
-    return { error: 'Selisih melebihi toleransi — catatan wajib diisi' }
+  const toleransiBatch = await getToleransiPeleburan(supabase)
+  const batchOverTol = Math.abs(selisih) > toleransiBatch + 0.0001
+  if (batchOverTol) {
+    const ttdOp    = formData.get('selisih_ttd_operator') as string
+    const ttdAdmin = formData.get('selisih_ttd_admin') as string
+    if (!ttdOp || !ttdAdmin) return { error: 'TTD Operator dan Admin wajib karena selisih melebihi toleransi.' }
+  }
 
   const hargaBeli     = parseFloat(formData.get('harga_beli') as string) || 0
   const biayaTbhRaw   = formData.get('biaya_tbh') as string
@@ -206,6 +231,32 @@ export async function updateBatch(batchId: number, batchKode: string, formData: 
   }).eq('id', batchId)
 
   if (error) return { error: error.message }
+
+  // Poin 3: save TTD selisih timbangan jika melebihi toleransi
+  if (batchOverTol) {
+    const ttdOp    = formData.get('selisih_ttd_operator') as string
+    const ttdAdmin = formData.get('selisih_ttd_admin') as string
+    const ttdOpUrl    = await uploadSignaturePlb(supabase, ttdOp,    `${batchKode}_selisih_op_edit`)
+    const ttdAdminUrl = await uploadSignaturePlb(supabase, ttdAdmin, `${batchKode}_selisih_admin_edit`)
+    const { data: existing_la } = await supabase.from('loss_approval')
+      .select('id').eq('proses', 'batch_selisih').eq('ref_table', 'batch').eq('ref_id', batchId).maybeSingle()
+    if (existing_la) {
+      await supabase.from('loss_approval').update({
+        masuk_gram: beratPusat, keluar_gram: beratGudang, loss_gram: Math.abs(selisih),
+        alasan: catatan || null,
+        ttd_operator_url: ttdOpUrl, operator_nama: (formData.get('selisih_op_nama') as string) || null,
+        ttd_admin_url: ttdAdminUrl, admin_nama: (formData.get('selisih_admin_nama') as string) || profile?.name || null,
+      }).eq('id', existing_la.id)
+    } else {
+      await supabase.from('loss_approval').insert({
+        batch_kode: batchKode, proses: 'batch_selisih', ref_table: 'batch', ref_id: batchId,
+        masuk_gram: beratPusat, keluar_gram: beratGudang, loss_gram: Math.abs(selisih), toleransi_gram: toleransiBatch,
+        alasan: catatan || null,
+        ttd_operator_url: ttdOpUrl, operator_nama: (formData.get('selisih_op_nama') as string) || null,
+        ttd_admin_url: ttdAdminUrl, admin_user_id: user.id, admin_nama: (formData.get('selisih_admin_nama') as string) || profile?.name || null,
+      })
+    }
+  }
 
   await updateSisaSeharusnya(supabase, batchKode)
 
@@ -285,13 +336,14 @@ export async function updateSisaFisik(formData: FormData) {
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
 
-  const batchId   = parseInt(formData.get('batch_id') as string)
-  const batchKode = formData.get('batch_kode') as string
-  const sisaFisik = parseFloat(formData.get('sisa_fisik') as string)
-  const existingRaw = formData.get('existing_fotos') as string
-  const existing  = existingRaw ? JSON.parse(existingRaw) : []
-  const newB64Raw = formData.get('new_fotos_b64') as string
-  const newB64s   = newB64Raw ? JSON.parse(newB64Raw) : []
+  const batchId        = parseInt(formData.get('batch_id') as string)
+  const batchKode      = formData.get('batch_kode') as string
+  const sisaFisik      = parseFloat(formData.get('sisa_fisik') as string)
+  const sisaSeharusnya = parseFloat(formData.get('sisa_seharusnya') as string)
+  const existingRaw    = formData.get('existing_fotos') as string
+  const existing       = existingRaw ? JSON.parse(existingRaw) : []
+  const newB64Raw      = formData.get('new_fotos_b64') as string
+  const newB64s        = newB64Raw ? JSON.parse(newB64Raw) : []
 
   let fotoUrls = existing
   if (newB64s.length > 0) {
@@ -300,8 +352,28 @@ export async function updateSisaFisik(formData: FormData) {
     fotoUrls = urls
   }
 
-  // Pakai RPC untuk bypass PostgREST schema cache issue
   const catatanSisaFisik = formData.get('catatan_sisa_fisik') as string || null
+
+  // Poin 11: compute selisih sisa fisik
+  const selisihSF  = !isNaN(sisaSeharusnya) ? sisaFisik - sisaSeharusnya : 0
+  const lossesSF   = Math.abs(selisihSF)
+  const toleransiSF = await getToleransiPeleburan(supabase)
+  const sfOverTol  = lossesSF > toleransiSF + 0.0001
+
+  if (sfOverTol) {
+    const ttdOp    = formData.get('selisih_ttd_operator') as string
+    const ttdAdmin = formData.get('selisih_ttd_admin') as string
+    if (!ttdOp || !ttdAdmin) return { error: 'TTD Operator dan Admin wajib karena selisih melebihi toleransi.' }
+    const ttdOpUrl    = await uploadSignaturePlb(supabase, ttdOp, `${batchKode}_sf_op_${Date.now()}`)
+    const ttdAdminUrl = await uploadSignaturePlb(supabase, ttdAdmin, `${batchKode}_sf_admin_${Date.now()}`)
+    await supabase.from('loss_approval').insert({
+      batch_kode: batchKode, proses: 'sisa_fisik', ref_table: 'batch', ref_id: batchId,
+      masuk_gram: sisaSeharusnya, keluar_gram: sisaFisik, loss_gram: lossesSF, toleransi_gram: toleransiSF,
+      alasan: catatanSisaFisik || null,
+      ttd_operator_url: ttdOpUrl, operator_nama: (formData.get('selisih_op_nama') as string) || null,
+      ttd_admin_url: ttdAdminUrl, admin_user_id: user.id, admin_nama: (formData.get('selisih_admin_nama') as string) || profile?.name || null,
+    })
+  }
 
   const { error } = await supabase.rpc('update_sisa_fisik', {
     p_id: batchId,
@@ -311,15 +383,17 @@ export async function updateSisaFisik(formData: FormData) {
 
   if (error) return { error: `DB error: ${error.message}` }
 
-  if (catatanSisaFisik !== null) {
-    await supabase.from('batch').update({ catatan_sisa_fisik: catatanSisaFisik || null }).eq('id', batchId)
-  }
+  // Save selisih & losses to batch row
+  await supabase.from('batch').update({
+    catatan_sisa_fisik: catatanSisaFisik || null,
+    ...(!isNaN(sisaSeharusnya) ? { losses_sisa_fisik: lossesSF, selisih_sisa_fisik: selisihSF } : {}),
+  }).eq('id', batchId)
 
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'UPDATE_SISA_FISIK', module: 'BAHAN_BAKU',
     record_key: batchKode, record_id: String(batchId),
-    after_data: { sisa_fisik: sisaFisik, fotos_uploaded: fotoUrls.length },
+    after_data: { sisa_fisik: sisaFisik, selisih: selisihSF, fotos_uploaded: fotoUrls.length },
   })
 
   revalidatePath('/bahan-baku')
@@ -495,10 +569,9 @@ export async function selesaiLebur(id: number, formData: FormData) {
 
   const { data: plb } = await supabase.from('peleburan').select('dikasih_gram, kode, batch_kode, diterima_gram, status, tim_id, tim_nama').eq('id', id).single()
   if (!plb) return { error: 'Peleburan tidak ditemukan' }
-  if (diterima > plb.dikasih_gram) return { error: 'Diterima tidak boleh melebihi dikasih' }
 
   // ── Validasi loss vs toleransi peleburan ────────────────────────────────────
-  const lossLebur = Math.max(0, Number(plb.dikasih_gram) - diterima)
+  const lossLebur = Math.abs(Number(plb.dikasih_gram) - diterima)
   const toleransiLebur = await getToleransiPeleburan(supabase)
   const lossAlasan = (formData.get('loss_alasan') as string) || ''
   if (lossLebur > toleransiLebur + 0.0001) {
@@ -732,36 +805,45 @@ export async function editPeleburanTerima(id: number, formData: FormData) {
   const { data: plb } = await supabase.from('peleburan')
     .select('dikasih_gram, kode, batch_kode, diterima_gram, status').eq('id', id).single()
   if (!plb) return { error: 'Peleburan tidak ditemukan' }
-  if (diterima > Number(plb.dikasih_gram)) return { error: `Diterima tidak boleh melebihi dikasih (${plb.dikasih_gram} gr)` }
 
-  const lossLebur = Math.max(0, Number(plb.dikasih_gram) - diterima)
+  const lossLebur = Math.abs(Number(plb.dikasih_gram) - diterima)
   const toleransiLebur = await getToleransiPeleburan(supabase)
   const lossAlasan = (formData.get('loss_alasan') as string) || ''
+  const keepExistingTtd = formData.get('keep_existing_ttd') === '1'
+
   if (lossLebur > toleransiLebur + 0.0001) {
-    const ttdOp    = formData.get('loss_ttd_operator') as string
-    const ttdAdmin = formData.get('loss_ttd_admin') as string
-    if (!lossAlasan.trim()) return { error: `Loss ${lossLebur.toFixed(3)}gr melebihi toleransi. Alasan wajib diisi.` }
-    if (!ttdOp)    return { error: 'Tanda tangan operator wajib.' }
-    if (!ttdAdmin) return { error: 'Tanda tangan admin/manager wajib.' }
-    const ttdOpUrl    = await uploadSignaturePlb(supabase, ttdOp,    `${plb.kode}_op_edit`)
-    const ttdAdminUrl = await uploadSignaturePlb(supabase, ttdAdmin, `${plb.kode}_admin_edit`)
     const { data: existing_la } = await supabase.from('loss_approval')
-      .select('id').eq('proses', 'peleburan').eq('ref_table', 'peleburan').eq('ref_id', id).maybeSingle()
-    if (existing_la) {
+      .select('id, ttd_operator_url, ttd_admin_url').eq('proses', 'peleburan').eq('ref_table', 'peleburan').eq('ref_id', id).maybeSingle()
+
+    // Poin 7: reuse TTD if keepExistingTtd and existing TTD URLs exist
+    if (keepExistingTtd && existing_la?.ttd_operator_url && existing_la?.ttd_admin_url) {
       await supabase.from('loss_approval').update({
-        keluar_gram: diterima, loss_gram: lossLebur, alasan: lossAlasan,
-        ttd_operator_url: ttdOpUrl, operator_nama: (formData.get('loss_operator_nama') as string) || null,
-        ttd_admin_url: ttdAdminUrl, admin_nama: (formData.get('loss_admin_nama') as string) || profile?.name || null,
+        keluar_gram: diterima, loss_gram: lossLebur, alasan: lossAlasan || null,
       }).eq('id', existing_la.id)
     } else {
-      await supabase.from('loss_approval').insert({
-        batch_kode: plb.batch_kode, proses: 'peleburan', ref_table: 'peleburan', ref_id: id,
-        masuk_gram: plb.dikasih_gram, keluar_gram: diterima, loss_gram: lossLebur, toleransi_gram: toleransiLebur,
-        alasan: lossAlasan,
-        ttd_operator_url: ttdOpUrl, operator_nama: (formData.get('loss_operator_nama') as string) || null,
-        ttd_admin_url: ttdAdminUrl, admin_user_id: user.id,
-        admin_nama: (formData.get('loss_admin_nama') as string) || profile?.name || null,
-      })
+      const ttdOp    = formData.get('loss_ttd_operator') as string
+      const ttdAdmin = formData.get('loss_ttd_admin') as string
+      if (!lossAlasan.trim()) return { error: `Loss ${lossLebur.toFixed(3)}gr melebihi toleransi. Alasan wajib diisi.` }
+      if (!ttdOp)    return { error: 'Tanda tangan operator wajib.' }
+      if (!ttdAdmin) return { error: 'Tanda tangan admin/manager wajib.' }
+      const ttdOpUrl    = await uploadSignaturePlb(supabase, ttdOp,    `${plb.kode}_op_edit`)
+      const ttdAdminUrl = await uploadSignaturePlb(supabase, ttdAdmin, `${plb.kode}_admin_edit`)
+      if (existing_la) {
+        await supabase.from('loss_approval').update({
+          keluar_gram: diterima, loss_gram: lossLebur, alasan: lossAlasan,
+          ttd_operator_url: ttdOpUrl, operator_nama: (formData.get('loss_operator_nama') as string) || null,
+          ttd_admin_url: ttdAdminUrl, admin_nama: (formData.get('loss_admin_nama') as string) || profile?.name || null,
+        }).eq('id', existing_la.id)
+      } else {
+        await supabase.from('loss_approval').insert({
+          batch_kode: plb.batch_kode, proses: 'peleburan', ref_table: 'peleburan', ref_id: id,
+          masuk_gram: plb.dikasih_gram, keluar_gram: diterima, loss_gram: lossLebur, toleransi_gram: toleransiLebur,
+          alasan: lossAlasan,
+          ttd_operator_url: ttdOpUrl, operator_nama: (formData.get('loss_operator_nama') as string) || null,
+          ttd_admin_url: ttdAdminUrl, admin_user_id: user.id,
+          admin_nama: (formData.get('loss_admin_nama') as string) || profile?.name || null,
+        })
+      }
     }
   }
 

@@ -35,7 +35,15 @@ interface SharedProps {
 // ─── Tim Picker: pilih tim → anggota auto tampil sbg chip, bisa hapus/tambah ────
 export function TimPickerStd({ tims, prefix, initialTimId, initialAnggota }: { tims: Tim[]; prefix: string; initialTimId?: string; initialAnggota?: string[] }) {
   const [timId, setTimId] = useState(initialTimId ?? '')
-  const [anggotaAktif, setAnggotaAktif] = useState<string[]>(initialAnggota ?? [])
+  const [anggotaAktif, setAnggotaAktif] = useState<string[]>(() => {
+    if (initialAnggota !== undefined) return initialAnggota
+    // Auto-fill dari tim jika initialAnggota tidak ada (poin 8: anggota tidak hilang saat edit)
+    if (initialTimId) {
+      const t = tims.find(x => String(x.id) === initialTimId)
+      return (t?.anggota ?? []).filter((a: any) => a.aktif).map((a: any) => a.nama)
+    }
+    return []
+  })
   const [tambah, setTambah] = useState('')
   const selected = tims.find(t => String(t.id) === timId)
 

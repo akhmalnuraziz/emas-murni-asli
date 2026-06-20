@@ -128,10 +128,15 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
   const [gudang,setGudang]=useState(String(initial?.timbangan_akhir??''))
   const [harga,setHarga]=useState(String(initial?.harga_beli??''))
   const [biaya,setBiaya]=useState<{label:string;jumlah:number}[]>(initial?.biaya_tambahan??[])
-  const [catatan,setCatatan]=useState(initial?.catatan??'') // FIX poin 1 - controlled state
+  const [catatan,setCatatan]=useState(initial?.catatan??'')
   const [newFotos,setNewFotos]=useState<File[]>([])
   const [existingFotos,setExistingFotos]=useState<string[]>(initial?.fotos??[])
   const [uploading,setUploading]=useState(false)
+  // Poin 3: TTD untuk selisih timbangan
+  const [ttdOpSelisih,setTtdOpSelisih]=useState<string|null>(null)
+  const [ttdAdminSelisih,setTtdAdminSelisih]=useState<string|null>(null)
+  const [opNamaSelisih,setOpNamaSelisih]=useState('')
+  const [adminNamaSelisih,setAdminNamaSelisih]=useState('')
 
   const si = pusat&&gudang ? hitungSelisih(parseFloat(pusat),parseFloat(gudang)) : null
   const hargaNum = parseFloat(harga)||0
@@ -142,6 +147,14 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
   async function submit(e:React.FormEvent<HTMLFormElement>){
     e.preventDefault()
     const formEl=e.currentTarget
+    // Validasi TTD jika selisih warn
+    if(si?.warn){
+      if(!ttdOpSelisih||!ttdAdminSelisih){
+        // error ditangani di parent lewat error prop, set via alert sederhana
+        alert('Selisih timbangan melebihi toleransi — TTD Operator dan Admin wajib diisi')
+        return
+      }
+    }
     setUploading(true)
     try{
       const b64s=newFotos.length>0?await filesToBase64(newFotos):[]
@@ -149,7 +162,11 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
       fd.set('biaya_tbh',JSON.stringify(biaya))
       fd.set('existing_fotos',JSON.stringify(existingFotos))
       fd.set('new_fotos_b64',JSON.stringify(b64s))
-      fd.set('catatan', catatan) // ensure catatan is in FormData
+      fd.set('catatan', catatan)
+      if(si?.warn&&ttdOpSelisih)    fd.set('selisih_ttd_operator',ttdOpSelisih)
+      if(si?.warn&&ttdAdminSelisih) fd.set('selisih_ttd_admin',ttdAdminSelisih)
+      if(si?.warn&&opNamaSelisih)   fd.set('selisih_op_nama',opNamaSelisih)
+      if(si?.warn&&adminNamaSelisih)fd.set('selisih_admin_nama',adminNamaSelisih)
       onSubmit(fd)
     }finally{setUploading(false)}
   }
@@ -212,12 +229,23 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
               </div>}
             </div>
           )}
-          {/* FIX poin 1 - catatan sebagai controlled input */}
           <F label={`Catatan${si?.warn?' *':''}`}>
             <input name="catatan" value={catatan} onChange={e=>setCatatan(e.target.value)}
               placeholder={si?.warn?'Wajib — jelaskan alasan selisih berat':'Keterangan tambahan...'}
               className={cn(inp,si?.warn&&'border-red-300')} required={!!si?.warn}/>
           </F>
+          {/* Poin 3: TTD wajib jika selisih melebihi toleransi */}
+          {si?.warn&&(
+            <LossApprovalPanel
+              lossGram={Math.abs(parseFloat(pusat)-parseFloat(gudang))}
+              toleransiGram={0.05}
+              proses="Selisih Timbangan Batch"
+              alasan={catatan} setAlasan={setCatatan}
+              operatorNama={opNamaSelisih} setOperatorNama={setOpNamaSelisih}
+              adminNama={adminNamaSelisih} setAdminNama={setAdminNamaSelisih}
+              setTtdOperator={setTtdOpSelisih} setTtdAdmin={setTtdAdminSelisih}
+            />
+          )}
           <F label="Foto Bukti / Sertifikat">
             {existingFotos.length>0&&(
               <div className="flex gap-2 flex-wrap mb-2">
@@ -268,10 +296,15 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
   const [showHPP,setShowHPP]=useState(false)
   const [editingSF,setEditingSF]=useState<number|null>(null)
   const [sfInput,setSfInput]=useState<Record<number,string>>({})
-  const [sfCatatan,setSfCatatan]=useState<Record<number,string>>({}) // FIX poin 5
+  const [sfCatatan,setSfCatatan]=useState<Record<number,string>>({})
   const [sfFotos,setSfFotos]=useState<Record<number,File[]>>({})
   const [sfExisting,setSfExisting]=useState<Record<number,string[]>>({})
   const [sfUploading,setSfUploading]=useState<Record<number,boolean>>({})
+  // Poin 11: TTD untuk selisih sisa fisik
+  const [sfTtdOp,setSfTtdOp]=useState<Record<number,string|null>>({})
+  const [sfTtdAdmin,setSfTtdAdmin]=useState<Record<number,string|null>>({})
+  const [sfOpNama,setSfOpNama]=useState<Record<number,string>>({})
+  const [sfAdminNama,setSfAdminNama]=useState<Record<number,string>>({})
 
   const canSeeHPP = CAN_SEE_HPP.includes(userRole)
 
@@ -289,23 +322,35 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
   function handleCreate(fd:FormData){setFormError('');startTransition(async()=>{const r=await createBatch(fd);if(r?.error){setFormError(r.error);return}showToast('✅ Batch berhasil disimpan');setShowCreate(false)})}
   function handleUpdate(fd:FormData){if(!editItem)return;setFormError('');startTransition(async()=>{const r=await updateBatch(editItem.id,editItem.kode,fd);if(r?.error){setFormError(r.error);return}showToast('✅ Batch diperbarui');setEditItem(null)})}
 
-  async function handleSisaFisik(batch:any){
+  async function handleSisaFisik(batch:any, sisaSeharusnya:number, toleransi:number){
     const val=parseFloat(sfInput[batch.id]??'')
     if(isNaN(val)||val<0){showToast('Nilai tidak valid',false);return}
+    const selisih=Math.abs(val-sisaSeharusnya)
+    const overTol=selisih>toleransi+0.0001
+    if(overTol){
+      if(!sfTtdOp[batch.id]||!sfTtdAdmin[batch.id]){showToast('TTD Operator dan Admin wajib (selisih > toleransi)',false);return}
+    }
     setSfUploading(p=>({...p,[batch.id]:true}))
     try{
       const b64s=(sfFotos[batch.id]??[]).length>0?await filesToBase64(sfFotos[batch.id]??[]):[]
       const fd=new FormData()
       fd.set('batch_id',String(batch.id));fd.set('batch_kode',batch.kode)
       fd.set('sisa_fisik',String(val))
+      fd.set('sisa_seharusnya',String(sisaSeharusnya))
       fd.set('existing_fotos',JSON.stringify(sfExisting[batch.id]??[]))
       fd.set('new_fotos_b64',JSON.stringify(b64s))
-      fd.set('catatan_sisa_fisik', sfCatatan[batch.id]??'') // FIX poin 5
+      fd.set('catatan_sisa_fisik', sfCatatan[batch.id]??'')
+      if(overTol&&sfTtdOp[batch.id])    fd.set('selisih_ttd_operator',sfTtdOp[batch.id]!)
+      if(overTol&&sfTtdAdmin[batch.id]) fd.set('selisih_ttd_admin',sfTtdAdmin[batch.id]!)
+      if(sfOpNama[batch.id])            fd.set('selisih_op_nama',sfOpNama[batch.id])
+      if(sfAdminNama[batch.id])         fd.set('selisih_admin_nama',sfAdminNama[batch.id])
       const r=await updateSisaFisik(fd)
       if(r?.error){showToast(r.error,false);return}
       showToast('✅ Sisa fisik disimpan')
       setSfFotos(p=>({...p,[batch.id]:[]}));setSfExisting(p=>({...p,[batch.id]:[]}))
-      setSfCatatan(p=>({...p,[batch.id]:''}));setEditingSF(null)
+      setSfCatatan(p=>({...p,[batch.id]:''}))
+      setSfTtdOp(p=>({...p,[batch.id]:null}));setSfTtdAdmin(p=>({...p,[batch.id]:null}))
+      setEditingSF(null)
     }finally{setSfUploading(p=>({...p,[batch.id]:false}))}
   }
 
@@ -443,7 +488,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                     <div className="w-px h-8 bg-gray-200"/>
                     <div className="text-center">
                       <p className="text-[9px] font-bold text-gray-400 uppercase">Sisa</p>
-                      <p className="text-sm font-bold text-gray-800">{formatGram(sisaSeharusnya)}</p>
+                      <p className="text-xs font-bold text-gray-600">{formatGram(sisaSeharusnya)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
@@ -504,9 +549,9 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                     {/* Grid info: berat pusat, gudang, losses, catatan */}
                     <div className={fotos.length>0 ? 'grid grid-cols-2 sm:grid-cols-4 gap-3' : 'pt-4 grid grid-cols-2 sm:grid-cols-4 gap-3'}>
                       {[
-                        {label:'Berat Pusat',val:`${formatGram(batchPusat)}`},
-                        {label:'Timbangan Gudang',val:`${formatGram(timbAkhir)}`},
-                        {label:'Losses Lebur',val:lossesLebur>0?`${formatGram(lossesLebur)}`:'—'},
+                        {label:'Berat Pusat',val:formatGram(batchPusat)},
+                        {label:'Timbangan Gudang',val:formatGram(timbAkhir)},
+                        {label:'Selisih Timbangan',val:batchPusat!==timbAkhir?formatGram(Math.abs(batchPusat-timbAkhir)):'✓ Sesuai'},
                         {label:'Catatan',val:batch.catatan||'—'},
                       ].map(item=>(
                         <div key={item.label}className="rounded-2xl p-3"style={{background:'rgba(255,255,255,0.8)',border:'1px solid rgba(209,213,219,0.4)'}}>
@@ -524,20 +569,6 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                       </div>
                     )}
 
-                    {/* Foto sisa fisik */}
-                    {fotoSF.length>0&&!isEditSF&&(
-                      <div>
-                        <p className="text-[10px] font-semibold text-gray-400 mb-2">Foto Sisa Fisik ({fotoSF.length})</p>
-                        <div className="flex gap-2 flex-wrap">
-                          {fotoSF.map((url:string,i:number)=>(
-                            <a key={i} href={url} target="_blank" rel="noopener noreferrer"className="w-14 h-14 rounded-xl overflow-hidden border border-gray-200 block hover:opacity-80">
-                              <img src={url} alt="" className="w-full h-full object-cover"/>
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
                     {/* Reject alert */}
                     {(()=>{
                       const rCount = rejectCountMap[batch.kode] ?? 0
@@ -550,59 +581,6 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                       ) : null
                     })()}
 
-                    {/* Input sisa fisik */}
-                    {status==='aktif'&&(
-                      !isEditSF?(
-                        <div className="flex items-center gap-2">
-                          <button onClick={()=>{setEditingSF(batch.id);setSfInput(p=>({...p,[batch.id]:String(sisaFisik??'')}));setSfExisting(p=>({...p,[batch.id]:[...fotoSF]}))}}
-                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-violet-600 rounded-xl transition-all hover:scale-105"
-                            style={{background:'rgba(255,255,255,0.9)',border:'1px solid rgba(139,92,246,0.2)'}}>
-                            <Edit2 size={11}/>{sisaFisik!=null?'Edit Sisa Fisik':'Input Sisa Fisik'}
-                          </button>
-                          {sisaFisik!=null&&(
-                            <button onClick={()=>handleHapusSisaFisik(batch)}
-                              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-red-500 rounded-xl transition-all hover:scale-105"
-                              style={{background:'rgba(255,255,255,0.9)',border:'1px solid rgba(239,68,68,0.2)'}}>
-                              <Trash2 size={11}/>Hapus
-                            </button>
-                          )}
-                        </div>
-                      ):(
-                        <div className="rounded-2xl p-4 space-y-3"style={{background:'rgba(255,255,255,0.9)',border:'1px solid rgba(139,92,246,0.2)'}}>
-                          <div className="flex items-center justify-between">
-                            <p className="text-xs font-bold text-violet-700">Input Sisa Fisik</p>
-                            <button onClick={()=>{setEditingSF(null);setSfFotos(p=>({...p,[batch.id]:[]}))}}className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><X size={12}/></button>
-                          </div>
-                          <div className="flex gap-2">
-                            <input type="number" step="0.001" value={sfInput[batch.id]??''} onChange={e=>setSfInput(p=>({...p,[batch.id]:e.target.value}))} placeholder="Berat sisa fisik (gram)" className={cn(inp,'flex-1')}/>
-                            <button onClick={()=>handleSisaFisik(batch)} disabled={sfUploading[batch.id]}
-                              className="px-4 py-2 text-sm font-bold text-white rounded-2xl disabled:opacity-60 flex items-center gap-1.5 flex-shrink-0"
-                              style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
-                              {sfUploading[batch.id]?<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<Check size={13}/>}
-                              {sfUploading[batch.id]?'Simpan...':'Simpan'}
-                            </button>
-                          </div>
-                          {/* FIX poin 5: catatan sisa fisik */}
-                          <input type="text" value={sfCatatan[batch.id]??''} onChange={e=>setSfCatatan(p=>({...p,[batch.id]:e.target.value}))}
-                            placeholder="Catatan sisa fisik (opsional)" className={inp}/>
-                          {(sfExisting[batch.id]??[]).length>0&&(
-                            <div className="flex gap-2 flex-wrap">
-                              {(sfExisting[batch.id]??[]).map((url:string,i:number)=>(
-                                <div key={i}className="relative w-12 h-12">
-                                  <img src={url} alt="" className="w-full h-full object-cover rounded-xl border border-gray-200"/>
-                                  <button type="button"onClick={()=>setSfExisting(p=>({...p,[batch.id]:(p[batch.id]??[]).filter((_,j)=>j!==i)}))}className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center"><X size={9}/></button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          <FotoPicker files={sfFotos[batch.id]??[]}
-                            onAdd={f=>setSfFotos(p=>({...p,[batch.id]:[...(p[batch.id]??[]),...f].slice(0,10)}))}
-                            onRemove={i=>i===-1?setSfFotos(p=>({...p,[batch.id]:[]})):setSfFotos(p=>({...p,[batch.id]:(p[batch.id]??[]).filter((_,j)=>j!==i)}))}
-                            label="Foto sisa fisik (opsional)" small/>
-                        </div>
-                      )
-                    )}
-
                     {/* ─── Rekonsiliasi (iOS card style) ─────────────── */}
                     {(()=>{
                       const plbList = (peleburanList as any[]).filter((p:any)=>p.batch_kode===batch.kode)
@@ -611,19 +589,22 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                       const terpakai    = batchProdItems.reduce((s:number,i:any)=>s+Number(i.total_gram??0),0)
                       const bahanMasuk  = timbAkhir
                       const siapCetak   = Number((batch as any).bahan_siap_cetak ?? 0)
+                      const selisihSisaFisik = sisaFisik!=null ? sisaFisik-sisaSeharusnya : null
+                      const sfVal = sfInput[batch.id]!=null ? parseFloat(sfInput[batch.id]??'') : null
+                      const sfSelisihLive = sfVal!=null&&!isNaN(sfVal) ? sfVal-sisaSeharusnya : null
+                      const sfOverTol = sfSelisihLive!=null&&Math.abs(sfSelisihLive)>toleransiPeleburan+0.0001
                       const cols = [
                         {label:'Bahan Masuk',     val:formatGram(bahanMasuk),  accent:'#64748B', sub:'total raw'},
                         {label:'Sudah Dilebur',   val:formatGram(sudahDilebur),accent:'#3B82F6', sub:'diproses'},
                         {label:'Siap Cetak',      val:formatGram(siapCetak),   accent:'#8B5CF6', sub:'bisa dipakai', highlight:true},
                         {label:'Terpakai Cetak',  val:formatGram(terpakai),    accent:'#A855F7', sub:'sudah dicetak'},
                         {label:'Sisa Seharusnya', val:formatGram(sisaSeharusnya), accent:sisaSeharusnya<0?'#EF4444':'#64748B', sub:'belum dilebur'},
-                        {label:'Sisa Fisik',      val:sisaFisik!=null?formatGram(sisaFisik):'—', accent:'#22C55E', sub:'input manual'},
                         {label:'Losses Lebur',    val:formatGram(losses),      accent:losses>0?'#F87171':'#94A3B8', sub:'menyusut'},
                       ]
                       return (
                         <div>
                           <p className="text-[11px] font-bold text-violet-600 uppercase tracking-wide mb-2.5 px-1">Rekonsiliasi Detail</p>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                             {cols.map(col=>(
                               <div key={col.label} className="rounded-2xl px-3.5 py-3"
                                 style={col.highlight
@@ -633,10 +614,85 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                   <span className="w-1.5 h-1.5 rounded-full" style={{background:col.accent}}/>
                                   <p className="text-[10px] font-semibold text-slate-500 leading-tight">{col.label}</p>
                                 </div>
-                                <p className="text-base font-extrabold" style={{color:col.accent}}>{col.val}<span className="text-[10px] font-medium text-slate-400 ml-0.5">gr</span></p>
+                                <p className="text-base font-extrabold" style={{color:col.accent}}>{col.val}</p>
                                 <p className="text-[9px] text-slate-400 mt-0.5">{col.sub}</p>
                               </div>
                             ))}
+                            {/* Poin 5+11: Kolom Sisa Fisik inline-edit */}
+                            <div className="rounded-2xl px-3.5 py-3 col-span-2 sm:col-span-3"
+                              style={{background:'rgba(34,197,94,0.06)',border:'1px solid rgba(34,197,94,0.2)'}}>
+                              <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-green-500"/>
+                                  <p className="text-[10px] font-semibold text-slate-500">Sisa Fisik</p>
+                                  {selisihSisaFisik!=null&&(
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${selisihSisaFisik>0?'bg-blue-50 text-blue-600':selisihSisaFisik<0?'bg-red-50 text-red-500':'bg-green-50 text-green-600'}`}>
+                                      {selisihSisaFisik>0?`+${formatGram(selisihSisaFisik)}`:selisihSisaFisik<0?`-${formatGram(Math.abs(selisihSisaFisik))}`:'✓ Sesuai'}
+                                    </span>
+                                  )}
+                                </div>
+                                {status==='aktif'&&!isEditSF&&(
+                                  <div className="flex items-center gap-1.5">
+                                    <button onClick={()=>{setEditingSF(batch.id);setSfInput(p=>({...p,[batch.id]:String(sisaFisik??'')}));setSfExisting(p=>({...p,[batch.id]:[...fotoSF]}))}}
+                                      className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-violet-600 rounded-xl bg-white border border-violet-200">
+                                      <Edit2 size={10}/>{sisaFisik!=null?'Edit':'Input'}
+                                    </button>
+                                    {sisaFisik!=null&&(
+                                      <button onClick={()=>handleHapusSisaFisik(batch)}
+                                        className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-red-500 rounded-xl bg-white border border-red-200">
+                                        <Trash2 size={10}/>Hapus
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              {!isEditSF&&(
+                                <p className="text-base font-extrabold text-green-600">{sisaFisik!=null?formatGram(sisaFisik):'—'}</p>
+                              )}
+                              {isEditSF&&(
+                                <div className="space-y-2 mt-1">
+                                  <div className="flex gap-2">
+                                    <input type="number" step="0.001" value={sfInput[batch.id]??''} onChange={e=>setSfInput(p=>({...p,[batch.id]:e.target.value}))}
+                                      placeholder="Berat sisa fisik (gram)"
+                                      className="flex-1 px-3 py-2 text-sm rounded-xl border border-green-200 bg-white focus:outline-none focus:ring-2 focus:ring-green-400/30"/>
+                                    <button onClick={()=>handleSisaFisik(batch,sisaSeharusnya,toleransiPeleburan)} disabled={sfUploading[batch.id]}
+                                      className="px-3 py-2 text-sm font-bold text-white rounded-xl disabled:opacity-60 flex items-center gap-1 flex-shrink-0"
+                                      style={{background:'linear-gradient(135deg,#22C55E,#16A34A)'}}>
+                                      {sfUploading[batch.id]?<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<Check size={13}/>}
+                                      {sfUploading[batch.id]?'Simpan...':'Simpan'}
+                                    </button>
+                                    <button onClick={()=>{setEditingSF(null);setSfFotos(p=>({...p,[batch.id]:[]}))} }
+                                      className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0"><X size={12}/></button>
+                                  </div>
+                                  {/* Live selisih indicator */}
+                                  {sfSelisihLive!=null&&sfInput[batch.id]!==''&&(
+                                    <div className={`px-3 py-1.5 rounded-xl text-[11px] font-semibold flex items-center justify-between ${sfOverTol?'bg-red-50 text-red-600':'bg-green-50 text-green-600'}`}>
+                                      <span>{sfSelisihLive>0?`Gain: +${formatGram(sfSelisihLive)}`:`Loss: ${formatGram(Math.abs(sfSelisihLive))}`}</span>
+                                      <span>{sfOverTol?`⚠️ melebihi toleransi ${toleransiPeleburan}gr`:`✓ dalam toleransi`}</span>
+                                    </div>
+                                  )}
+                                  {/* TTD panel jika selisih > toleransi */}
+                                  {sfOverTol&&(
+                                    <LossApprovalPanel
+                                      lossGram={Math.abs(sfSelisihLive??0)} toleransiGram={toleransiPeleburan}
+                                      proses="Selisih Sisa Fisik"
+                                      alasan={sfCatatan[batch.id]??''} setAlasan={v=>setSfCatatan(p=>({...p,[batch.id]:v}))}
+                                      operatorNama={sfOpNama[batch.id]??''} setOperatorNama={v=>setSfOpNama(p=>({...p,[batch.id]:v}))}
+                                      adminNama={sfAdminNama[batch.id]??''} setAdminNama={v=>setSfAdminNama(p=>({...p,[batch.id]:v}))}
+                                      setTtdOperator={v=>setSfTtdOp(p=>({...p,[batch.id]:v}))}
+                                      setTtdAdmin={v=>setSfTtdAdmin(p=>({...p,[batch.id]:v}))}
+                                    />
+                                  )}
+                                  <input type="text" value={sfCatatan[batch.id]??''} onChange={e=>setSfCatatan(p=>({...p,[batch.id]:e.target.value}))}
+                                    placeholder="Catatan sisa fisik (opsional)"
+                                    className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none"/>
+                                  <FotoPicker files={sfFotos[batch.id]??[]}
+                                    onAdd={f=>setSfFotos(p=>({...p,[batch.id]:[...(p[batch.id]??[]),...f].slice(0,10)}))}
+                                    onRemove={i=>i===-1?setSfFotos(p=>({...p,[batch.id]:[]})):setSfFotos(p=>({...p,[batch.id]:(p[batch.id]??[]).filter((_,j)=>j!==i)}))}
+                                    label="Foto sisa fisik" small/>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       )
@@ -746,11 +802,11 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                               const fotoDtrm  = Array.isArray(plb.foto_diterima)  ? (plb.foto_diterima  as string[]).filter(Boolean) : []
                               if (fotoSerah.length===0 && fotoDtrm.length===0) return null
                               return (
-                                <div className="mt-2 space-y-2">
+                                <div className="mt-2 flex gap-4 flex-wrap items-start">
                                   {fotoSerah.length>0&&(
-                                    <div>
+                                    <div className="flex-1 min-w-[120px]">
                                       <p className="text-[10px] font-semibold text-violet-500 mb-1.5">
-                                        📷 Foto Diserahkan ({fotoSerah.length})
+                                        📷 Diserahkan ({fotoSerah.length})
                                       </p>
                                       <div className="flex flex-wrap gap-2">
                                         {fotoSerah.map((url:string,i:number)=>(
@@ -771,9 +827,9 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                     </div>
                                   )}
                                   {fotoDtrm.length>0&&(
-                                    <div>
+                                    <div className="flex-1 min-w-[120px]">
                                       <p className="text-[10px] font-semibold text-green-600 mb-1.5">
-                                        📷 Foto Diterima ({fotoDtrm.length})
+                                        📷 Diterima ({fotoDtrm.length})
                                       </p>
                                       <div className="flex flex-wrap gap-2">
                                         {fotoDtrm.map((url:string,i:number)=>(
@@ -1237,7 +1293,7 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Berat Diterima (gr) *</label>
                 <input name="diterima_gram" type="number" step="0.001"
                   value={diterimaVal} onChange={e=>setDiterimaVal(e.target.value)}
-                  max={peleburan.dikasih_gram} placeholder="cth: 499.980" className={inp} required/>
+                  placeholder="cth: 499.980" className={inp} required/>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -1465,13 +1521,19 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
   const [ttdOp, setTtdOp] = useState<string | null>(null)
   const [ttdAdmin, setTtdAdmin] = useState<string | null>(null)
 
+  // TTD lama masih valid — tidak perlu re-sign kalau sudah ada (poin 7)
+  const existingLossEarly = peleburan.loss_approval
+  const hasExistingTtd = !!(existingLossEarly?.ttd_operator_url && existingLossEarly?.ttd_admin_url)
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const form = e.currentTarget
     if (overTol) {
       if (!lossAlasan.trim()) { setErr('Alasan loss wajib diisi (loss melebihi toleransi)'); return }
-      if (!ttdOp)    { setErr('Tanda tangan operator wajib (loss melebihi toleransi)'); return }
-      if (!ttdAdmin) { setErr('Tanda tangan admin/manager wajib'); return }
+      if (!hasExistingTtd) {
+        if (!ttdOp)    { setErr('Tanda tangan operator wajib (loss melebihi toleransi)'); return }
+        if (!ttdAdmin) { setErr('Tanda tangan admin/manager wajib'); return }
+      }
     }
     const fd = new FormData(form)
     fd.set('existing_fotos_diterima', JSON.stringify(existingFotosDiterima))
@@ -1483,8 +1545,10 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
       fd.set('loss_alasan', lossAlasan)
       fd.set('loss_operator_nama', lossOpNama)
       fd.set('loss_admin_nama', lossAdminNama)
-      if (ttdOp) fd.set('loss_ttd_operator', ttdOp)
+      if (ttdOp)    fd.set('loss_ttd_operator', ttdOp)
       if (ttdAdmin) fd.set('loss_ttd_admin', ttdAdmin)
+      // Kirim flag bahwa TTD lama masih bisa dipakai
+      if (hasExistingTtd) fd.set('keep_existing_ttd', '1')
     }
     setErr('')
     start(async () => {
@@ -1518,7 +1582,9 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
           {/* Existing TTD notice */}
           {existingLoss && (
             <div className="px-3 py-2.5 rounded-xl text-xs bg-amber-50 border border-amber-200">
-              <p className="font-semibold text-amber-700 mb-1">⚠ TTD Loss Tersimpan (akan di-update jika berat berubah)</p>
+              <p className="font-semibold text-amber-700 mb-1">
+                {hasExistingTtd ? '✅ TTD Loss Tersimpan — tidak perlu tanda tangan ulang' : '⚠ TTD Loss Belum Lengkap'}
+              </p>
               <p className="text-amber-600">Alasan: {existingLoss.alasan || '—'}</p>
               <p className="text-amber-600">Operator: {existingLoss.operator_nama || '—'} · Admin: {existingLoss.admin_nama || '—'}</p>
             </div>
@@ -1533,7 +1599,7 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
                 <label className="text-xs font-semibold text-gray-500 mb-1 block">Berat Diterima (gr) *</label>
                 <input name="diterima_gram" type="number" step="0.001"
                   value={diterimaVal} onChange={e => setDiterimaVal(e.target.value)}
-                  max={peleburan.dikasih_gram} className={inp} required/>
+                  className={inp} required/>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
