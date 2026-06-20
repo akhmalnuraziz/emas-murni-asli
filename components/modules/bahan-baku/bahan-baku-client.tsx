@@ -4,13 +4,14 @@ import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Plus, Search, Lock, Unlock, X, Check, AlertTriangle,
-  Edit2, Trash2, Scale, Camera, Eye, EyeOff, ChevronDown, ChevronUp, Clock
+  Edit2, Trash2, Scale, Camera, Eye, EyeOff, ChevronDown, ChevronUp, Clock, Archive
 } from 'lucide-react'
 import { cn, formatRupiah, formatDate, formatGram } from '@/lib/utils'
 import {
   createBatch, updateBatch, deleteBatch,
   lockBatch, unlockBatch, updateSisaFisik, hapusSisaFisik,
-  createPeleburan, voidPeleburan, editPeleburan, editPeleburanSerah, editPeleburanTerima
+  createPeleburan, voidPeleburan, editPeleburan, editPeleburanSerah, editPeleburanTerima,
+  createBatchRingkas,
 } from '@/app/(dashboard)/bahan-baku/actions'
 import type { UserRole } from '@/lib/types/database'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
@@ -116,6 +117,52 @@ function FotoPicker({files,onAdd,onRemove,label='Tambah foto',small=false}:{
         <input type="file" accept="image/*" multiple className="hidden"onChange={e=>{onAdd(Array.from(e.target.files??[]));e.currentTarget.value=''}}/>
       </label>
       {files.length>0&&<button type="button"onClick={()=>onRemove(-1)}className="text-[11px] text-red-400 hover:underline">Hapus semua</button>}
+    </div>
+  )
+}
+
+// ─── Batch Ringkas Modal ──────────────────────────────────────────────────────
+function BatchRingkasModal({onSubmit,onClose,isPending,error}:{onSubmit:(fd:FormData)=>void;onClose:()=>void;isPending:boolean;error:string}){
+  const inp='w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30'
+  return(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{background:'rgba(0,0,0,0.4)',backdropFilter:'blur(8px)'}}>
+      <div className="w-full max-w-md rounded-3xl p-6 space-y-4"
+        style={{background:'rgba(255,255,255,0.95)',border:'1px solid rgba(255,255,255,0.6)',boxShadow:'0 32px 64px rgba(0,0,0,0.2)'}}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-slate-800">Impor Batch Lama</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Untuk batch 1-29 yang belum diinput — minimal data</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl text-slate-400 hover:bg-slate-100"><X size={16}/></button>
+        </div>
+        <div className="rounded-2xl px-3 py-2.5 text-xs text-amber-700"
+          style={{background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.2)'}}>
+          <b>Catatan:</b> Batch ini akan langsung dikunci (tidak bisa ditambahkan proses produksi baru).
+          Hanya bisa dipakai sebagai referensi buyback / peleburan.
+        </div>
+        <form onSubmit={e=>{e.preventDefault();onSubmit(new FormData(e.currentTarget))}} className="space-y-3">
+          <div><label className="text-xs font-semibold text-slate-500">Kode Batch *</label>
+            <input name="kode" required placeholder="mis. B-001 atau BATCH-001" className={inp}
+              style={{fontFamily:'monospace',fontWeight:'bold'}} autoFocus/></div>
+          <div><label className="text-xs font-semibold text-slate-500">Tanggal Masuk *</label>
+            <input name="tanggal" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/></div>
+          <div><label className="text-xs font-semibold text-slate-500">Berat (gr) *</label>
+            <input name="berat" type="number" step="0.001" min="0.001" required placeholder="0.000" className={inp}/></div>
+          <div><label className="text-xs font-semibold text-slate-500">Keterangan</label>
+            <input name="catatan" placeholder="opsional — mis. Emas 24K batch awal" className={inp}/></div>
+          {error&&<p className="text-xs text-red-500 font-semibold">{error}</p>}
+          <div className="flex gap-2 pt-1">
+            <button type="button" onClick={onClose}
+              className="flex-1 py-2.5 text-sm font-semibold rounded-2xl border border-gray-200 text-gray-500">Batal</button>
+            <button type="submit" disabled={isPending}
+              className="flex-1 py-2.5 text-sm font-bold text-white rounded-2xl disabled:opacity-60"
+              style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
+              {isPending?'Menyimpan...':'Impor Batch'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
@@ -287,6 +334,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
   const [search,setSearch]=useState('')
   const [expanded,setExpanded]=useState<number|null>(null)
   const [showCreate,setShowCreate]=useState(false)
+  const [showRingkas,setShowRingkas]=useState(false)
   const [editItem,setEditItem]=useState<any|null>(null)
   const [lockModal,setLockModal]=useState<any|null>(null)
   const [delModal,setDelModal]=useState<any|null>(null)
@@ -320,6 +368,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
   })
 
   function handleCreate(fd:FormData){setFormError('');startTransition(async()=>{const r=await createBatch(fd);if(r?.error){setFormError(r.error);return}showToast('✅ Batch berhasil disimpan');setShowCreate(false)})}
+  function handleRingkas(fd:FormData){setFormError('');startTransition(async()=>{const r=await createBatchRingkas(fd);if(r?.error){setFormError(r.error);return}showToast(`✅ Batch ringkas ${(r as any).kode} diimpor`);setShowRingkas(false)})}
   function handleUpdate(fd:FormData){if(!editItem)return;setFormError('');startTransition(async()=>{const r=await updateBatch(editItem.id,editItem.kode,fd);if(r?.error){setFormError(r.error);return}showToast('✅ Batch diperbarui');setEditItem(null)})}
 
   async function handleSisaFisik(batch:any, sisaSeharusnya:number, toleransi:number){
@@ -390,6 +439,13 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                 style={showHPP?{background:'rgba(139,92,246,0.1)',color:'#7C3AED',borderColor:'rgba(139,92,246,0.25)'}:{background:'rgba(255,255,255,0.8)',color:'#6B7280',borderColor:'rgba(209,213,219,0.5)'}}>
                 {showHPP?<Eye size={14}/>:<EyeOff size={14}/>}
                 {showHPP?'Sembunyikan HPP':'Tampilkan HPP'}
+              </button>
+            )}
+            {canSeeHPP&&(
+              <button onClick={()=>{setShowRingkas(true);setFormError('')}}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-2xl transition-all border"
+                style={{background:'rgba(255,255,255,0.8)',color:'#6B7280',borderColor:'rgba(209,213,219,0.5)'}}>
+                <Archive size={14}/> Impor Batch Lama
               </button>
             )}
             <button onClick={()=>{setShowCreate(true);setFormError('')}}
@@ -917,6 +973,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
 
       {/* Modals */}
       {showCreate&&<BatchFormModal onSubmit={handleCreate} onClose={()=>setShowCreate(false)} isPending={isPending} error={formError}/>}
+      {showRingkas&&<BatchRingkasModal onSubmit={handleRingkas} onClose={()=>setShowRingkas(false)} isPending={isPending} error={formError}/>}
       {peleburanModalBatch&&(()=>{
         const pb = batches.find((b:any)=>b.kode===peleburanModalBatch)
         const plbBatch = (peleburanList as any[]).filter((p:any)=>p.batch_kode===peleburanModalBatch)

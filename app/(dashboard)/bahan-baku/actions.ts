@@ -174,6 +174,61 @@ export async function createBatch(formData: FormData) {
   return { success: true, kode }
 }
 
+// ── BATCH RINGKAS (historis, tanpa detail produksi) ───────────────────────────
+export async function createBatchRingkas(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat'].includes(profile?.role ?? ''))
+    return { error: 'Hanya Owner/Admin Pusat yang bisa membuat batch' }
+
+  const kode = (formData.get('kode') as string)?.trim().toUpperCase()
+  if (!kode) return { error: 'Kode batch wajib diisi' }
+
+  const { data: existing } = await supabase.from('batch').select('id').eq('kode', kode).single()
+  if (existing) return { error: `Kode batch "${kode}" sudah digunakan` }
+
+  const tanggal = formData.get('tanggal') as string
+  if (!tanggal) return { error: 'Tanggal wajib diisi' }
+
+  const berat = parseFloat(formData.get('berat') as string)
+  if (!berat || berat <= 0) return { error: 'Berat wajib diisi' }
+
+  const catatan = (formData.get('catatan') as string) || null
+
+  const { data, error } = await supabase.from('batch').insert({
+    kode,
+    nama_batch:            kode,
+    supplier:              'GUDANG PUSAT',
+    tanggal,
+    tanggal_beli:          tanggal,
+    bahan_dari_pusat:      berat,
+    timbangan_akhir:       berat,
+    selisih_berat:         0,
+    harga_beli:            0,
+    biaya_tambahan:        [],
+    total_hpp:             0,
+    hpp_gr:                0,
+    catatan:               catatan ? `[BATCH RINGKAS] ${catatan}` : '[BATCH RINGKAS - impor historis]',
+    fotos:                 [],
+    sisa_bahan_seharusnya: berat,
+    is_locked:             true,
+    created_by:            user.id,
+  }).select().single()
+
+  if (error) return { error: error.message }
+
+  await supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'CREATE_BATCH_RINGKAS', module: 'BAHAN_BAKU',
+    record_key: kode, after_data: { kode, berat },
+  })
+
+  revalidatePath('/bahan-baku')
+  return { success: true, kode }
+}
+
 export async function updateBatch(batchId: number, batchKode: string, formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
