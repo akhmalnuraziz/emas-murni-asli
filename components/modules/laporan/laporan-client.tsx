@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   FileText, TrendingUp, Package, ArrowLeftRight, RotateCcw,
-  ShoppingCart, Layers, Wallet, TrendingDown, Calendar, ExternalLink,
+  ShoppingCart, Layers, Wallet, TrendingDown, Calendar, ExternalLink, Download,
 } from 'lucide-react'
 import { formatRupiah, formatDate, cn } from '@/lib/utils'
 
@@ -41,6 +41,61 @@ interface Props {
 }
 
 const canSeeHpp = (role: string) => ['owner', 'admin_pusat', 'accounting'].includes(role)
+
+function exportLaporan(
+  penjualanList: any[],
+  pengeluaranList: any[],
+  labaRugi: Props['labaRugi'],
+  periodLabel: string,
+) {
+  const rows: string[][] = []
+
+  rows.push([`LAPORAN LABA RUGI — ${periodLabel}`])
+  rows.push([])
+  rows.push(['RINGKASAN'])
+  rows.push(['Omzet', String(labaRugi.omzet)])
+  rows.push(['HPP', String(labaRugi.hpp)])
+  rows.push(['Laba Kotor', String(labaRugi.labaKotor)])
+  rows.push(['Total Pengeluaran', String(labaRugi.pengeluaran)])
+  rows.push(['Laba Bersih', String(labaRugi.labaBersih)])
+  rows.push([])
+
+  rows.push(['DETAIL PENJUALAN'])
+  rows.push(['Tanggal', 'Faktur', 'Customer', 'Channel', 'Pcs', 'Total Harga', 'HPP', 'Profit'])
+  for (const p of penjualanList) {
+    rows.push([
+      p.tanggal ?? '',
+      p.no_faktur ?? p.nomor_invoice ?? '',
+      p.nama_customer ?? '',
+      p.channel ?? p.source ?? '',
+      String(p.pcs ?? 0),
+      String(p.total_harga_jual ?? p.harga_jual ?? 0),
+      String(p.hpp_total ?? 0),
+      String(p.profit ?? 0),
+    ])
+  }
+  rows.push([])
+
+  rows.push(['DETAIL PENGELUARAN'])
+  rows.push(['Tanggal', 'Nama', 'Kategori', 'Nominal'])
+  for (const p of pengeluaranList) {
+    rows.push([
+      p.tanggal ?? '',
+      p.nama ?? '',
+      p.kategori?.nama ?? '',
+      String(p.nominal ?? 0),
+    ])
+  }
+
+  const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href     = url
+  a.download = `laporan-laba-rugi-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 const PERIOD_OPTIONS = [
   { value: 'today', label: 'Hari Ini' },
@@ -172,6 +227,16 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
         <p className="text-xs font-semibold opacity-80 mb-1">Laba Bersih — {periodLabel}</p>
         <p className="text-4xl font-black">{formatRupiah(labaRugi.labaBersih)}</p>
         <p className="text-sm opacity-70 mt-1">{profitPositif ? '▲ Profit' : '▼ Rugi'}</p>
+      </div>
+
+      {/* Export CSV */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => exportLaporan(penjualanList, pengeluaranList, labaRugi, periodLabel)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:border-violet-300 hover:text-violet-700 transition-colors"
+        >
+          <Download size={13} /> Export CSV
+        </button>
       </div>
 
       {/* 3-kolom: Omzet, HPP, Pengeluaran */}

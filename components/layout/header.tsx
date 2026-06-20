@@ -1,15 +1,17 @@
 'use client'
 
-import { Bell, Menu, Search } from 'lucide-react'
+import { Menu, Search } from 'lucide-react'
 import { useState } from 'react'
+import NotificationBell from './notification-bell'
 
 interface HeaderProps {
   title: string
   subtitle?: string
   onMenuClick?: () => void
+  serverProfile?: { id: string; name: string | null; role: string } | null
 }
 
-export default function Header({ title, subtitle, onMenuClick }: HeaderProps) {
+export default function Header({ title, subtitle, onMenuClick, serverProfile }: HeaderProps) {
   const [searchValue, setSearchValue] = useState('')
 
   return (
@@ -39,13 +41,11 @@ export default function Header({ title, subtitle, onMenuClick }: HeaderProps) {
             className="pl-8 pr-4 h-9 w-60 bg-slate-50 border border-slate-200 rounded-xl text-[12px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all"
           />
         </div>
-        <button
-          type="button"
-          className="relative flex-shrink-0 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-50 rounded-xl transition-all"
-        >
-          <Bell size={17} />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-gold-500 rounded-full border-2 border-white" />
-        </button>
+        {serverProfile ? (
+          <NotificationBell userId={serverProfile.id} userRole={serverProfile.role} />
+        ) : (
+          <div className="w-9 h-9" />
+        )}
       </div>
     </header>
   )

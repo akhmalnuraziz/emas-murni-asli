@@ -47,6 +47,7 @@ export default function DashboardShell({
           title={meta.title}
           subtitle={meta.subtitle}
           onMenuClick={() => setSidebarOpen(true)}
+          serverProfile={serverProfile}
         />
         <main className="flex-1 p-4 lg:p-6">
           {children}
