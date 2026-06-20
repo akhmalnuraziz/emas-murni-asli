@@ -41,9 +41,14 @@ export async function createBuyback(params: {
   hargaBeli: number
   fotosB64: string[]
   catatan: string
-  userName: string
+  userName?: string
 }): Promise<{ success: boolean; error?: string; kode?: string }> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  const userName = profile?.name ?? 'Unknown'
+
   try {
     const kode = await generateBuybackCode(supabase)
     const fotoUrls = params.fotosB64.length
@@ -64,20 +69,18 @@ export async function createBuyback(params: {
       foto: fotoUrls.length ? fotoUrls : null,
       catatan: params.catatan || null,
       status: 'pending',
-      created_by: params.userName,
+      created_by: user.id,
     })
 
     if (error) return { success: false, error: error.message }
 
-    // Update shieldtag status jika ada
     if (params.shieldtagKode) {
-      await supabase.from('shieldtag').update({
-        status: 'RETURNED',
-      }).eq('kode', params.shieldtagKode)
+      await supabase.from('shieldtag').update({ status: 'RETURNED' }).eq('kode', params.shieldtagKode)
     }
 
     await supabase.from('audit_log').insert({
-      user_name: params.userName,
+      user_id: user.id,
+      user_name: userName,
       action: 'CREATE',
       module: 'buyback',
       record_key: kode,
@@ -96,9 +99,15 @@ export async function prossesBuyback(params: {
   kode: string
   aksi: 'ready_resell' | 'repair' | 'reject' | 'lebur'
   catatan: string
-  userName: string
+  userName?: string
 }): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? ''))
+    return { success: false, error: 'Tidak ada akses' }
+  const userName = profile?.name ?? 'Unknown'
 
   const STATUS_MAP = {
     ready_resell: 'ready_resell',
@@ -111,14 +120,15 @@ export async function prossesBuyback(params: {
     status: STATUS_MAP[params.aksi],
     hasil_inspeksi: params.aksi,
     catatan: params.catatan || null,
-    approved_by: params.userName,
+    approved_by: userName,
     approved_at: new Date().toISOString(),
   }).eq('id', params.id)
 
   if (error) return { success: false, error: error.message }
 
   await supabase.from('audit_log').insert({
-    user_name: params.userName,
+    user_id: user.id,
+    user_name: userName,
     action: 'UPDATE',
     module: 'buyback',
     record_key: params.kode,

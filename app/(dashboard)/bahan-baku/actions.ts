@@ -353,6 +353,7 @@ export async function lockBatch(batchId: number, batchKode: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')) return { error: 'Hanya SPV/Admin yang bisa lock batch' }
 
   await supabase.from('batch').update({
     status:      'terkunci',

@@ -85,9 +85,13 @@ export async function saveStockOpname(params: {
   lokasiLabel: string
   dataFisik: { gramasi: string; pcs_fisik: number }[]
   catatan: string
-  userName: string
+  userName?: string
 }): Promise<{ success: boolean; error?: string; kode?: string }> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  const userName = profile?.name ?? params.userName ?? 'Unknown'
 
   try {
     const sistemRows = await getStokSistem(params.lokasi)
@@ -157,13 +161,19 @@ export async function approveStockOpname(params: {
   kode: string
   approved: boolean
   catatan: string
-  userName: string
+  userName?: string
 }): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? ''))
+    return { success: false, error: 'Hanya SPV/Admin yang bisa approve' }
+  const userName = profile?.name ?? 'Unknown'
 
   const { error } = await supabase.from('stock_opname').update({
     status: params.approved ? 'disetujui' : 'ditolak',
-    approved_by: params.userName,
+    approved_by: userName,
     approved_at: new Date().toISOString(),
     catatan: params.catatan || null,
   }).eq('id', params.id)
@@ -171,7 +181,8 @@ export async function approveStockOpname(params: {
   if (error) return { success: false, error: error.message }
 
   await supabase.from('audit_log').insert({
-    user_name: params.userName,
+    user_id: user.id,
+    user_name: userName,
     action: params.approved ? 'APPROVE' : 'REJECT',
     module: 'stock_opname',
     record_key: params.kode,

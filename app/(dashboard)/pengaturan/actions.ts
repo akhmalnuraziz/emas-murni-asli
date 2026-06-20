@@ -20,6 +20,8 @@ export async function createTim(formData: FormData) {
 
 export async function updateTim(id: number, formData: FormData) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
   const { error } = await supabase.from('tim_produksi').update({
     nama: formData.get('nama') as string,
     warna: formData.get('warna') as string,
@@ -30,6 +32,8 @@ export async function updateTim(id: number, formData: FormData) {
 
 export async function toggleTimAktif(id: number, aktif: boolean) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
   const { error } = await supabase.from('tim_produksi').update({ aktif }).eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/pengaturan')
@@ -37,7 +41,8 @@ export async function toggleTimAktif(id: number, aktif: boolean) {
 
 export async function deleteTim(id: number) {
   const supabase = await createClient()
-  // Cek apakah sudah dipakai
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
   const { count } = await supabase.from('produksi_item')
     .select('id', { count: 'exact', head: true }).eq('tim_id', id)
   if ((count ?? 0) > 0) {
@@ -52,6 +57,8 @@ export async function deleteTim(id: number) {
 
 export async function addAnggota(timId: number, nama: string) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
   const { error } = await supabase.from('tim_anggota').insert({ tim_id: timId, nama, aktif: true })
   if (error) return { error: error.message }
   revalidatePath('/pengaturan')
@@ -59,6 +66,8 @@ export async function addAnggota(timId: number, nama: string) {
 
 export async function deleteAnggota(id: number) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
   const { error } = await supabase.from('tim_anggota').update({ aktif: false }).eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/pengaturan')
@@ -68,6 +77,8 @@ export async function deleteAnggota(id: number) {
 
 export async function createAdminInput(nama: string) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
   const { error } = await supabase.from('admin_input').insert({ nama, aktif: true })
   if (error) return { error: error.message }
   revalidatePath('/pengaturan')
@@ -75,6 +86,8 @@ export async function createAdminInput(nama: string) {
 
 export async function updateAdminInput(id: number, nama: string) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
   const { error } = await supabase.from('admin_input').update({ nama }).eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/pengaturan')
@@ -82,6 +95,8 @@ export async function updateAdminInput(id: number, nama: string) {
 
 export async function toggleAdminInputAktif(id: number, aktif: boolean) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
   const { error } = await supabase.from('admin_input').update({ aktif }).eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/pengaturan')
@@ -89,7 +104,8 @@ export async function toggleAdminInputAktif(id: number, aktif: boolean) {
 
 export async function deleteAdminInput(id: number) {
   const supabase = await createClient()
-  // Soft delete
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
   const { error } = await supabase.from('admin_input').update({ voided_at: new Date().toISOString() }).eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/pengaturan')
@@ -270,6 +286,8 @@ export async function createGramasi(nilai: string) {
 
 export async function updateGramasi(id: number, nilai: string) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
   const v = nilai.trim()
   if (!v || isNaN(Number(v))) return { error: 'Nilai tidak valid' }
   const { error } = await supabase.from('gramasi_option').update({ nilai: v }).eq('id', id)
@@ -280,6 +298,8 @@ export async function updateGramasi(id: number, nilai: string) {
 
 export async function toggleGramasiAktif(id: number, aktif: boolean) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
   const { error } = await supabase.from('gramasi_option').update({ aktif }).eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/pengaturan')
@@ -288,6 +308,10 @@ export async function toggleGramasiAktif(id: number, aktif: boolean) {
 
 export async function deleteGramasi(id: number) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak ada akses' }
   const { error } = await supabase.from('gramasi_option').delete().eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/pengaturan')
@@ -322,6 +346,10 @@ export async function createProdukPengaturan(formData: FormData) {
 
 export async function updateProdukPengaturan(id: number, formData: FormData) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak ada akses' }
   const { error } = await supabase.from('produk_packaging').update({
     nama: (formData.get('nama') as string)?.trim(),
     satuan: (formData.get('satuan') as string) || 'pcs',
@@ -335,6 +363,8 @@ export async function updateProdukPengaturan(id: number, formData: FormData) {
 
 export async function toggleProdukPengaturanAktif(id: number, aktif: boolean) {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
   const { error } = await supabase.from('produk_packaging').update({ aktif }).eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/pengaturan')
