@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
   FileText, TrendingUp, Package, ArrowLeftRight, RotateCcw,
   ShoppingCart, Layers, Wallet, TrendingDown, Calendar, ExternalLink, Download,
@@ -463,7 +464,12 @@ function BatchTab({ rows, showHpp }: { rows: Props['batchList']; showHpp: boolea
           <tbody>
             {rows.map((b, i) => (
               <tr key={b.kode} style={{ borderTop: i === 0 ? 'none' : '1px solid rgba(0,0,0,0.04)' }} className="hover:bg-violet-50/10">
-                <td className="px-4 py-3.5 font-mono font-bold text-violet-700 text-xs">{b.kode}</td>
+                <td className="px-4 py-3.5">
+                  <Link href={`/laporan/batch/${encodeURIComponent(b.kode)}`}
+                    className="font-mono font-bold text-violet-700 text-xs hover:underline flex items-center gap-1">
+                    {b.kode} <ExternalLink size={9} />
+                  </Link>
+                </td>
                 <td className="px-4 py-3.5 text-slate-600 whitespace-nowrap">{formatDate(b.tanggal)}</td>
                 <td className="px-4 py-3.5 text-slate-600">{b.supplier ?? '—'}</td>
                 <td className="px-4 py-3.5 font-semibold text-slate-800">
