@@ -103,10 +103,21 @@ export async function registerShieldtags(formData: FormData) {
     return { error: `Kode sudah terdaftar: ${dupes.map((d: any) => d.kode).join(', ')}` }
   }
 
-  // Get HPP from batch
-  const { data: batchData } = await supabase
-    .from('batch').select('hpp_gr').eq('kode', packing.batch_kode).single()
-  const hppGr = batchData?.hpp_gr ?? 0
+  // Get HPP per gram from batch + biaya packaging untuk gramasi ini
+  const [{ data: batchData }, { data: pkgRows }] = await Promise.all([
+    supabase.from('batch').select('hpp_gr').eq('kode', packing.batch_kode).single(),
+    supabase.from('pengaturan').select('key, value').like('key', 'biaya_packaging_%'),
+  ])
+  const hppGr = Number(batchData?.hpp_gr ?? 0)
+  const gramasiVal = String(parseFloat(packing.gramasi ?? '0'))
+  const pkgMap: Record<string, number> = {}
+  for (const r of pkgRows ?? []) {
+    const k = r.key.replace('biaya_packaging_', '')
+    pkgMap[k] = Number(r.value ?? 0)
+  }
+  const biayaPkg = pkgMap[gramasiVal] ?? 0
+  // HPP per pcs = (HPP per gram × gramasi) + biaya packaging
+  const hppPerPcs = hppGr * parseFloat(packing.gramasi ?? '0') + biayaPkg
 
   // Insert all shieldtags
   const insertData = allCodes.map(kode => ({
@@ -114,7 +125,7 @@ export async function registerShieldtags(formData: FormData) {
     packing_id: packingId,
     batch_kode: packing.batch_kode,
     gramasi: packing.gramasi,
-    hpp: hppGr,
+    hpp: hppPerPcs,
     status: 'Aktif',
     lokasi: 'Gudang Pusat',
     tgl_regis: tanggal,

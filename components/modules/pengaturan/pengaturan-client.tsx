@@ -9,7 +9,7 @@ import {
   createTim, updateTim, toggleTimAktif, deleteTim,
   addAnggota, deleteAnggota,
   createAdminInput, updateAdminInput, toggleAdminInputAktif, deleteAdminInput,
-  updateToleransi,
+  updateToleransi, updateBiayaPackaging,
 } from '@/app/(dashboard)/pengaturan/actions'
 
 const inp = 'w-full h-11 px-4 bg-gray-50 rounded-2xl text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-200 border border-gray-200'
@@ -25,14 +25,15 @@ export default function PengaturanClient({
 }) {
   const [isPending, start] = useTransition()
   const [toast, setToast] = useState('')
-  const [tab, setTab] = useState<'tim' | 'admin' | 'umum'>('tim')
+  const [tab, setTab] = useState<'tim' | 'admin' | 'umum' | 'packaging'>('tim')
   const showToast = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500) }
   const canManage = ['owner','admin_pusat','spv'].includes(userRole)
 
   const TABS = [
-    { id: 'tim'   as const, label: 'Master Tim',        icon: Users     },
-    { id: 'admin' as const, label: 'Master Admin Input', icon: UserCheck },
-    { id: 'umum'  as const, label: 'Pengaturan Umum',    icon: Settings2 },
+    { id: 'tim'       as const, label: 'Master Tim',        icon: Users     },
+    { id: 'admin'     as const, label: 'Master Admin Input', icon: UserCheck },
+    { id: 'umum'      as const, label: 'Pengaturan Umum',    icon: Settings2 },
+    { id: 'packaging' as const, label: 'Biaya Packaging',    icon: Sliders   },
   ]
 
   return (
@@ -54,9 +55,10 @@ export default function PengaturanClient({
         ))}
       </div>
 
-      {tab === 'tim'   && <TimSection tims={tims} isPending={isPending} start={start} showToast={showToast} />}
-      {tab === 'admin' && <AdminInputSection list={adminInputList} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
-      {tab === 'umum'  && <PengaturanUmumSection pengaturan={pengaturan} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
+      {tab === 'tim'       && <TimSection tims={tims} isPending={isPending} start={start} showToast={showToast} />}
+      {tab === 'admin'     && <AdminInputSection list={adminInputList} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
+      {tab === 'umum'      && <PengaturanUmumSection pengaturan={pengaturan} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
+      {tab === 'packaging' && <BiayaPackagingSection pengaturan={pengaturan} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
     </div>
   )
 }
@@ -454,6 +456,81 @@ function PengaturanUmumSection({ pengaturan, isPending, start, showToast, canMan
             style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)', boxShadow: '0 4px 14px rgba(103,87,177,0.3)' }}>
             {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
             <Check size={15} /> Simpan Pengaturan
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ═══ BIAYA PACKAGING SECTION ════════════════════════════════════════════════
+const GRAMASI_LIST = ['0.1','0.5','1','2','5','10','20','25','50','100','250','500','1000']
+
+function BiayaPackagingSection({ pengaturan, isPending, start, showToast, canManage }: any) {
+  const init: Record<string, string> = {}
+  for (const g of GRAMASI_LIST) {
+    init[g] = pengaturan[`biaya_packaging_${g}`] ?? '10000'
+  }
+  const [vals, setVals] = useState<Record<string, string>>(init)
+  const set = (g: string, v: string) => setVals(p => ({ ...p, [g]: v }))
+
+  function handleSave() {
+    start(async () => {
+      const r = await updateBiayaPackaging(GRAMASI_LIST, vals)
+      if (r?.error) { showToast('❌ ' + r.error); return }
+      showToast('✅ Biaya packaging disimpan')
+    })
+  }
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-base font-bold text-gray-900">Biaya Packaging per Gramasi</h2>
+        <p className="text-xs text-gray-400 mt-0.5">
+          Digunakan untuk menghitung HPP per pcs saat registrasi Shieldtag.<br/>
+          <span className="font-semibold text-violet-600">HPP/pcs = (HPP/gr × gramasi) + biaya packaging</span>
+        </p>
+      </div>
+
+      <div className="rounded-3xl overflow-hidden bg-white border border-slate-100 shadow-sm">
+        <div className="px-5 py-3 border-b border-slate-100 grid grid-cols-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+          <span>Gramasi</span>
+          <span className="text-right col-span-2">Biaya Packaging / pcs (Rp)</span>
+        </div>
+        <div className="divide-y divide-slate-50">
+          {GRAMASI_LIST.map(g => (
+            <div key={g} className="px-5 py-3 flex items-center gap-3">
+              <span className="flex-1 text-sm font-semibold text-slate-700">{g} gr</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400">Rp</span>
+                <input
+                  type="number" min="0" step="500"
+                  disabled={!canManage}
+                  value={vals[g]}
+                  onChange={e => set(g, e.target.value)}
+                  className="w-32 h-10 px-3 bg-gray-50 rounded-xl text-sm text-gray-700 text-right border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-3xl p-4 bg-violet-50 border border-violet-100">
+        <p className="text-xs text-violet-700 font-semibold mb-1">Contoh perhitungan HPP</p>
+        <p className="text-xs text-violet-600">
+          Batch HPP/gr: <span className="font-mono">Rp 950.000</span> · Gramasi: <span className="font-mono">1 gr</span> · Biaya packaging: <span className="font-mono">Rp {Number(vals['1'] || 10000).toLocaleString('id-ID')}</span><br/>
+          <span className="font-bold">HPP/pcs = Rp 950.000 × 1 + Rp {Number(vals['1'] || 10000).toLocaleString('id-ID')} = Rp {(950000 + Number(vals['1'] || 10000)).toLocaleString('id-ID')}</span>
+        </p>
+      </div>
+
+      {canManage && (
+        <div className="flex justify-end">
+          <button onClick={handleSave} disabled={isPending}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-2xl text-sm font-bold text-white disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)', boxShadow: '0 4px 14px rgba(103,87,177,0.3)' }}>
+            {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+            <Check size={15} /> Simpan Biaya Packaging
           </button>
         </div>
       )}

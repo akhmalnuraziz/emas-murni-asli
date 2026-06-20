@@ -6,8 +6,8 @@ import { revalidatePath } from 'next/cache'
 const PCKG_PREFIX = 'PCKG.GDCJ'
 
 async function generatePackingCode(supabase: any): Promise<string> {
-  const { count } = await supabase.from('packing').select('*', { count: 'exact', head: true })
-  return `${PCKG_PREFIX}/${String((count ?? 0) + 1).padStart(4, '0')}`
+  const { data } = await supabase.rpc('increment_counter', { counter_name: 'packing' })
+  return `${PCKG_PREFIX}/${String(data ?? 1).padStart(4, '0')}`
 }
 
 

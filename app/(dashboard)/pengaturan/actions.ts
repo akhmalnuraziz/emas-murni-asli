@@ -118,3 +118,21 @@ export async function updateToleransi(formData: FormData) {
   }
   revalidatePath('/pengaturan')
 }
+
+export async function updateBiayaPackaging(gramasiList: string[], values: Record<string, string>) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+
+  for (const g of gramasiList) {
+    const key = `biaya_packaging_${g}`
+    const val = values[g]
+    if (val !== undefined && val !== '') {
+      await supabase.from('pengaturan').upsert({ key, value: val, updated_by: user.id }, { onConflict: 'key' })
+    }
+  }
+  revalidatePath('/pengaturan')
+  return { success: true }
+}
