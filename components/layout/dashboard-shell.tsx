@@ -20,6 +20,8 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
   '/kpi-tim':             { title: 'KPI Tim',               subtitle: 'Rating bintang ⭐ per tim per proses — efisiensi, loss, kecepatan' },
   '/pengeluaran':         { title: 'Pengeluaran',            subtitle: 'Pencatatan biaya operasional per periode' },
   '/laporan':             { title: 'Laporan',               subtitle: 'Per batch, laba rugi, performa cabang' },
+  '/scrap':               { title: 'Scrap Inventory',       subtitle: 'Sisa lebihan proses produksi' },
+  '/backup':              { title: 'Backup Data',           subtitle: 'Unduh data sebagai CSV untuk arsip' },
   '/audit-log':           { title: 'Audit Log',             subtitle: 'Riwayat semua aksi penting di sistem' },
   '/pengaturan':          { title: 'Pengaturan',            subtitle: 'Master tim, admin, toleransi, gramasi, dan konfigurasi sistem' },
 }

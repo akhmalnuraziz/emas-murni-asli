@@ -655,7 +655,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                         {label:'Siap Cetak',      val:formatGram(siapCetak),   accent:'#8B5CF6', sub:'bisa dipakai', highlight:true},
                         {label:'Terpakai Cetak',  val:formatGram(terpakai),    accent:'#A855F7', sub:'sudah dicetak'},
                         {label:'Sisa Seharusnya', val:formatGram(sisaSeharusnya), accent:sisaSeharusnya<0?'#EF4444':'#64748B', sub:'belum dilebur'},
-                        {label:'Losses Lebur',    val:formatGram(losses),      accent:losses>0?'#F87171':'#94A3B8', sub:'menyusut'},
+                        {label:'Total Losses',    val:formatGram(losses),      accent:losses>0?'#F87171':'#94A3B8', sub:`${bahanMasuk>0?(losses/bahanMasuk*100).toFixed(2):'0.00'}% dari bahan masuk`},
                       ]
                       return (
                         <div>

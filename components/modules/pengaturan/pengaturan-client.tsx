@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import {
   Users, Plus, Trash2, Edit2, X, Check, AlertTriangle,
-  Sliders, UserCheck, Settings2, UserPlus,
+  Sliders, UserCheck, Settings2, UserPlus, Building2,
 } from 'lucide-react'
 import {
   createTim, updateTim, toggleTimAktif, deleteTim,
@@ -11,33 +11,40 @@ import {
   createAdminInput, updateAdminInput, toggleAdminInputAktif, deleteAdminInput,
   updateToleransi, updateBiayaPackaging,
 } from '@/app/(dashboard)/pengaturan/actions'
+import { CabangSection, UsersSection } from './cabang-users-sections'
 
 const inp = 'w-full h-11 px-4 bg-gray-50 rounded-2xl text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-200 border border-gray-200'
 const WARNA = ['#8B5CF6','#3B82F6','#22C55E','#F59E0B','#EF4444','#EC4899','#14B8A6','#6366F1']
 
 export default function PengaturanClient({
-  tims, pengaturan, userRole, adminInputList,
+  tims, pengaturan, userRole, adminInputList, cabangList, userList, currentUserId,
 }: {
   tims: any[]
   pengaturan: Record<string, string>
   userRole: string
   adminInputList: { id: number; nama: string; aktif: boolean }[]
+  cabangList: any[]
+  userList: any[]
+  currentUserId: string
 }) {
   const [isPending, start] = useTransition()
   const [toast, setToast] = useState('')
-  const [tab, setTab] = useState<'tim' | 'admin' | 'umum' | 'packaging'>('tim')
+  const [tab, setTab] = useState<'tim' | 'admin' | 'umum' | 'packaging' | 'cabang' | 'users'>('tim')
   const showToast = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500) }
   const canManage = ['owner','admin_pusat','spv'].includes(userRole)
+  const isOwnerAdmin = ['owner','admin_pusat'].includes(userRole)
 
   const TABS = [
     { id: 'tim'       as const, label: 'Master Tim',        icon: Users     },
     { id: 'admin'     as const, label: 'Master Admin Input', icon: UserCheck },
+    { id: 'cabang'    as const, label: 'Cabang',             icon: Building2 },
+    { id: 'users'     as const, label: 'Manajemen User',     icon: UserPlus  },
     { id: 'umum'      as const, label: 'Pengaturan Umum',    icon: Settings2 },
     { id: 'packaging' as const, label: 'Biaya Packaging',    icon: Sliders   },
   ]
 
   return (
-    <div className="space-y-5 max-w-3xl">
+    <div className="space-y-5 max-w-4xl">
       {toast && (
         <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-2xl text-sm font-semibold text-white shadow-lg"
           style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>{toast}</div>
@@ -57,6 +64,8 @@ export default function PengaturanClient({
 
       {tab === 'tim'       && <TimSection tims={tims} isPending={isPending} start={start} showToast={showToast} />}
       {tab === 'admin'     && <AdminInputSection list={adminInputList} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
+      {tab === 'cabang'    && <CabangSection list={cabangList} showToast={showToast} canManage={isOwnerAdmin} />}
+      {tab === 'users'     && <UsersSection list={userList} currentUserId={currentUserId} showToast={showToast} canManage={isOwnerAdmin} />}
       {tab === 'umum'      && <PengaturanUmumSection pengaturan={pengaturan} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
       {tab === 'packaging' && <BiayaPackagingSection pengaturan={pengaturan} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
     </div>

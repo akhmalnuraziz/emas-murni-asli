@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Package, Hammer, Tag, Warehouse,
   ArrowLeftRight, ShoppingCart, FileText,
   ScrollText, Settings, LogOut, X, ChevronRight,
-  TrendingUp, Star, Store, ClipboardList, RotateCcw, SearchCode, Truck, Wallet,
+  TrendingUp, Star, Store, ClipboardList, RotateCcw, SearchCode, Truck, Wallet, Recycle, HardDrive,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
@@ -42,14 +42,16 @@ const NAV_GROUPS = [
       { href: '/buyback',      label: 'Buyback',              icon: RotateCcw,       module: 'buyback'      },
       { href: '/pengeluaran',  label: 'Pengeluaran',          icon: Wallet,          module: 'pengeluaran'  },
       { href: '/laporan',      label: 'Laporan',              icon: FileText,        module: 'laporan'      },
+      { href: '/scrap',        label: 'Scrap Inventory',      icon: Recycle,         module: 'scrap'        },
       { href: '/kpi-tim',      label: 'KPI Tim',              icon: Star,            module: 'kpi-tim'      },
     ],
   },
 ]
 
 const BOTTOM_NAV = [
-  { href: '/audit-log',   label: 'Audit Log',   icon: ScrollText, module: 'audit-log'  },
-  { href: '/pengaturan',  label: 'Pengaturan',  icon: Settings,   module: 'pengaturan' },
+  { href: '/audit-log',   label: 'Audit Log',   icon: ScrollText,  module: 'audit-log'  },
+  { href: '/backup',      label: 'Backup Data', icon: HardDrive,   module: 'backup'     },
+  { href: '/pengaturan',  label: 'Pengaturan',  icon: Settings,    module: 'pengaturan' },
 ]
 
 function getInitials(name?: string | null) {

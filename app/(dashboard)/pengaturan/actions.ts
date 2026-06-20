@@ -136,3 +136,115 @@ export async function updateBiayaPackaging(gramasiList: string[], values: Record
   revalidatePath('/pengaturan')
   return { success: true }
 }
+
+// ═══ MASTER CABANG ══════════════════════════════════════════════════════════
+
+export async function createCabang(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+
+  const nama = (formData.get('nama') as string)?.trim()
+  if (!nama) return { error: 'Nama cabang wajib diisi' }
+  const { count } = await supabase.from('cabang').select('*', { count: 'exact', head: true })
+  const kode = `CAB${String((count ?? 0) + 1).padStart(3, '0')}`
+
+  const { error } = await supabase.from('cabang').insert({
+    kode, nama,
+    alamat: (formData.get('alamat') as string) || null,
+    kepala: (formData.get('kepala') as string) || null,
+    telp: (formData.get('telp') as string) || null,
+    aktif: true,
+  })
+  if (error) return { error: error.message }
+  revalidatePath('/pengaturan')
+  return { success: true, kode }
+}
+
+export async function updateCabang(id: number, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { error } = await supabase.from('cabang').update({
+    nama: (formData.get('nama') as string)?.trim(),
+    alamat: (formData.get('alamat') as string) || null,
+    kepala: (formData.get('kepala') as string) || null,
+    telp: (formData.get('telp') as string) || null,
+  }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/pengaturan')
+  return { success: true }
+}
+
+export async function toggleCabangAktif(id: number, aktif: boolean) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { error } = await supabase.from('cabang').update({ aktif }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/pengaturan')
+  return { success: true }
+}
+
+// ═══ USER MANAGEMENT ════════════════════════════════════════════════════════
+
+export async function updateUserRole(userId: string, role: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+  if (userId === user.id) return { error: 'Tidak bisa ubah role diri sendiri' }
+
+  const { error } = await supabase.from('users_profile').update({ role }).eq('id', userId)
+  if (error) return { error: error.message }
+  revalidatePath('/pengaturan')
+  return { success: true }
+}
+
+export async function toggleUserAktif(userId: string, aktif: boolean) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+  if (userId === user.id) return { error: 'Tidak bisa nonaktifkan diri sendiri' }
+
+  const { error } = await supabase.from('users_profile').update({
+    aktif,
+    voided_at: aktif ? null : new Date().toISOString(),
+  }).eq('id', userId)
+  if (error) return { error: error.message }
+  revalidatePath('/pengaturan')
+  return { success: true }
+}
+
+export async function inviteUser(formData: FormData) {
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const supabase = createAdminClient()
+  const regularClient = await (await import('@/lib/supabase/server')).createClient()
+  const { data: { user } } = await regularClient.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await regularClient.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+
+  const email = (formData.get('email') as string)?.trim().toLowerCase()
+  const name  = (formData.get('name') as string)?.trim()
+  const role  = formData.get('role') as string
+  if (!email || !name || !role) return { error: 'Email, nama, dan role wajib diisi' }
+
+  const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, {
+    data: { name, role },
+  })
+  if (error) return { error: error.message }
+
+  // Upsert profile (will be created by trigger too, but ensure data is there)
+  await regularClient.from('users_profile').upsert({
+    id: data.user.id, email, name, role, aktif: true,
+  }, { onConflict: 'id' })
+
+  revalidatePath('/pengaturan')
+  return { success: true }
+}
