@@ -7,13 +7,13 @@ const PROD_PREFIX = 'PROD.GDCJ'
 const PCKG_PREFIX = 'PCKG.GDCJ'
 
 async function generateProduksiCode(supabase: any): Promise<string> {
-  const { count } = await supabase.from('produksi_item').select('*', { count: 'exact', head: true })
-  return `${PROD_PREFIX}/${String((count ?? 0) + 1).padStart(4, '0')}`
+  const { data } = await supabase.rpc('increment_counter', { counter_name: 'produksi' })
+  return `${PROD_PREFIX}/${String(data ?? 1).padStart(4, '0')}`
 }
 
 async function generatePackingCode(supabase: any): Promise<string> {
-  const { count } = await supabase.from('packing').select('*', { count: 'exact', head: true })
-  return `${PCKG_PREFIX}/${String((count ?? 0) + 1).padStart(4, '0')}`
+  const { data } = await supabase.rpc('increment_counter', { counter_name: 'packing' })
+  return `${PCKG_PREFIX}/${String(data ?? 1).padStart(4, '0')}`
 }
 
 async function updateBatchSisaSeharusnya(supabase: any, batchKode: string) {

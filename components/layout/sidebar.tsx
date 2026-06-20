@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Package, Hammer, Tag, Warehouse,
   ArrowLeftRight, ShoppingCart, FileText,
   ScrollText, Settings, LogOut, X, ChevronRight,
-  TrendingUp, Star, Store
+  TrendingUp, Star, Store, ClipboardList, RotateCcw, SearchCode
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
@@ -20,24 +20,27 @@ const NAV_GROUPS = [
       { href: '/bahan-baku',   label: 'Bahan Baku',           icon: Package,         module: 'bahan-baku'  },
       { href: '/produksi',     label: 'Produksi',             icon: Hammer,          module: 'produksi'    },
       { href: '/packing-log',  label: 'Packing Log',          icon: Package,         module: 'packing-log' },
-      { href: '/shieldtag',    label: 'Shieldtag',            icon: Tag,             module: 'shieldtag'   },
+      { href: '/shieldtag',          label: 'Shieldtag',            icon: Tag,          module: 'shieldtag'          },
+      { href: '/shieldtag-explorer', label: 'Shieldtag Explorer',   icon: SearchCode,   module: 'shieldtag-explorer' },
     ],
   },
   {
     label: 'Gudang & Distribusi',
     items: [
-      { href: '/inventory',    label: 'Inventory',            icon: Warehouse,       module: 'inventory'          },
-      { href: '/mutasi',       label: 'Pemindahan Barang',    icon: ArrowLeftRight,  module: 'mutasi'             },
-      { href: '/po-cabang',    label: 'Toko & PO',            icon: Store,           module: 'po-cabang', disabled: true },
-      { href: '/prioritas-produksi', label: 'Prioritas Produksi', icon: TrendingUp,  module: 'prioritas-produksi', disabled: true },
+      { href: '/inventory',      label: 'Inventory',            icon: Warehouse,       module: 'inventory'           },
+      { href: '/mutasi',         label: 'Pemindahan Barang',    icon: ArrowLeftRight,  module: 'mutasi'              },
+      { href: '/stock-opname',   label: 'Stock Opname',         icon: ClipboardList,   module: 'stock-opname'        },
+      { href: '/po-cabang',      label: 'Toko & PO',            icon: Store,           module: 'po-cabang'           },
+      { href: '/prioritas-produksi', label: 'Prioritas Produksi', icon: TrendingUp,    module: 'prioritas-produksi'  },
     ],
   },
   {
     label: 'Bisnis',
     items: [
-      { href: '/penjualan',    label: 'Penjualan',            icon: ShoppingCart,    module: 'penjualan', disabled: true },
+      { href: '/penjualan',    label: 'Penjualan',            icon: ShoppingCart,    module: 'penjualan'  },
+      { href: '/buyback',      label: 'Buyback',              icon: RotateCcw,       module: 'buyback'    },
       { href: '/laporan',      label: 'Laporan',              icon: FileText,        module: 'laporan'    },
-      { href: '/kpi-tim',      label: 'KPI Tim',              icon: Star,            module: 'kpi-tim', disabled: true  },
+      { href: '/kpi-tim',      label: 'KPI Tim',              icon: Star,            module: 'kpi-tim'    },
     ],
   },
 ]

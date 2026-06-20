@@ -50,7 +50,7 @@ const STATUS_CFG: Record<string,{bg:string;text:string;dot:string}> = {
   'Terjual':        {bg:'rgba(139,92,246,0.1)',  text:'#7C3AED', dot:'#8B5CF6'},
   'VOID':           {bg:'rgba(239,68,68,0.1)',   text:'#DC2626', dot:'#EF4444'},
 }
-const CAN_SEE_HPP: UserRole[] = ['admin_pusat']
+const CAN_SEE_HPP: UserRole[] = ['owner', 'admin_pusat']
 
 const today = new Date().toISOString().split('T')[0]
 const inp = "w-full px-4 py-3 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all placeholder:text-gray-400 bg-white/80 border border-gray-200/70"

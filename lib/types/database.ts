@@ -7,7 +7,7 @@ export type UserRole =
   | 'accounting'
   | 'kepala_cabang'
 
-export type StatusProduksi = 'Annealing' | 'Pas Berat' | 'Siap Packing' | 'Sudah Packing' | 'Reject'
+export type StatusProduksi = 'Cutting' | 'Pas Berat' | 'Annealing' | 'Siap Packing' | 'Sudah Packing' | 'Reject'
 export type StatusShieldtag = 'Aktif' | 'Terdistribusi' | 'Transit' | 'Terjual' | 'VOID' | 'RETURNED'
 export type StatusKirimMut = 'Belum Dikirim' | 'Sudah Dikirim' | 'Cancel'
 export type StatusTerimaMut = 'Belum Diterima' | 'Sudah Diterima' | 'Cancel'
@@ -288,12 +288,12 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 
 export const ROLE_ACCESS: Record<UserRole, string[]> = {
   owner: ['*'],
-  admin_pusat: ['dashboard', 'bahan-baku', 'produksi', 'shieldtag', 'inventory', 'mutasi', 'penjualan', 'po-cabang', 'laporan', 'pengaturan', 'audit-log'],
-  spv: ['dashboard', 'bahan-baku', 'produksi', 'shieldtag', 'inventory', 'mutasi', 'penjualan', 'po-cabang', 'laporan'],
+  admin_pusat: ['dashboard', 'bahan-baku', 'produksi', 'shieldtag', 'shieldtag-explorer', 'inventory', 'mutasi', 'stock-opname', 'penjualan', 'buyback', 'po-cabang', 'prioritas-produksi', 'laporan', 'kpi-tim', 'pengaturan', 'audit-log'],
+  spv: ['dashboard', 'bahan-baku', 'produksi', 'shieldtag', 'shieldtag-explorer', 'inventory', 'mutasi', 'stock-opname', 'penjualan', 'buyback', 'po-cabang', 'prioritas-produksi', 'laporan', 'kpi-tim'],
   operator_produksi: ['dashboard', 'produksi', 'bahan-baku', 'shieldtag'],
-  gudang: ['dashboard', 'inventory', 'mutasi', 'shieldtag', 'po-cabang'],
-  accounting: ['dashboard', 'penjualan', 'laporan'],
-  kepala_cabang: ['dashboard', 'inventory', 'mutasi', 'penjualan', 'po-cabang', 'laporan'],
+  gudang: ['dashboard', 'inventory', 'mutasi', 'stock-opname', 'shieldtag', 'shieldtag-explorer', 'po-cabang'],
+  accounting: ['dashboard', 'penjualan', 'buyback', 'laporan'],
+  kepala_cabang: ['dashboard', 'inventory', 'mutasi', 'stock-opname', 'shieldtag-explorer', 'penjualan', 'buyback', 'po-cabang', 'prioritas-produksi', 'laporan'],
 }
 
 export const GRAMASI_OPTIONS = [
@@ -301,7 +301,8 @@ export const GRAMASI_OPTIONS = [
 ]
 
 export const STATUS_PRODUKSI_COLOR: Record<StatusProduksi, string> = {
-  'Pas Berat': 'blue',
+  'Cutting': 'blue',
+  'Pas Berat': 'orange',
   'Annealing': 'amber',
   'Siap Packing': 'green',
   'Sudah Packing': 'purple',
