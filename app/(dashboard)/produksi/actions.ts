@@ -232,16 +232,60 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
   if (!produksi) return { error: 'Item produksi tidak ditemukan' }
 
   const statusBaru = formData.get('status') as string
-  const totalGramBaru = parseFloat(formData.get('total_gram') as string)
+  const isReject = formData.get('is_reject') === '1' || statusBaru === 'Reject'
   const tanggal = formData.get('tanggal') as string
-  const sisaSerbuk = statusBaru === 'Pas Berat' ? parseFloat(formData.get('sisa_serbuk') as string || '0') : 0
   const jamMulai = (formData.get('jam_mulai') as string) || null
 
   if (!statusBaru) return { error: 'Status wajib dipilih' }
-  if (!totalGramBaru || totalGramBaru <= 0) return { error: 'Total berat wajib diisi' }
   if (!tanggal) return { error: 'Tanggal wajib diisi' }
 
-  const beratSebelumnya = produksi.total_gram ?? 0
+  const beratSebelumnya = Number(produksi.total_gram ?? 0)
+
+  if (isReject) {
+    // ── Reject path ──────────────────────────────────────────────────────────
+    const pcsReject  = parseInt(formData.get('pcs_reject') as string)
+    const beratReject = parseFloat(formData.get('berat_reject') as string)
+    if (!pcsReject  || pcsReject  <= 0) return { error: 'PCS reject wajib diisi' }
+    if (!beratReject || beratReject <= 0) return { error: 'Berat reject wajib diisi' }
+    const pcsGoodNow  = Number(produksi.pcs_good ?? produksi.pcs ?? 0)
+    if (pcsReject > pcsGoodNow) return { error: `PCS reject (${pcsReject}) melebihi PCS good (${pcsGoodNow})` }
+
+    const newTotalGram = Math.max(0, beratSebelumnya - beratReject)
+
+    await supabase.from('produksi_event').insert({
+      produksi_item_id: produksiId, tanggal, status: 'Reject',
+      total_gram: newTotalGram, berat_sebelumnya: beratSebelumnya,
+      losses: beratReject, jam_mulai: jamMulai,
+      catatan: formData.get('catatan') as string || null,
+      user_name: profile?.name || null,
+    })
+
+    await supabase.from('produksi_item').update({
+      current_status: produksi.current_status,
+      total_gram: newTotalGram,
+      pcs_reject: (Number(produksi.pcs_reject) || 0) + pcsReject,
+      pcs_good: pcsGoodNow - pcsReject,
+      berat_reject: (Number(produksi.berat_reject) || 0) + beratReject,
+      status_reject: 'belum_dilebur',
+    }).eq('id', produksiId)
+
+    await supabase.from('audit_log').insert({
+      user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+      action: 'INPUT_REJECT', module: 'PRODUKSI',
+      record_key: produksiKode, record_id: String(produksiId),
+      after_data: { pcs_reject: pcsReject, berat_reject: beratReject, new_total_gram: newTotalGram },
+    })
+
+    revalidatePath('/produksi')
+    revalidatePath('/bahan-baku')
+    return { success: true }
+  }
+
+  // ── Normal status update path ────────────────────────────────────────────
+  const totalGramBaru = parseFloat(formData.get('total_gram') as string)
+  const sisaSerbuk = statusBaru === 'Pas Berat' ? parseFloat(formData.get('sisa_serbuk') as string || '0') : 0
+  if (!totalGramBaru || totalGramBaru <= 0) return { error: 'Total berat wajib diisi' }
+
   const losses = Math.max(0, beratSebelumnya - totalGramBaru - sisaSerbuk)
 
   const fotosB64Raw = formData.get('fotos_b64') as string
