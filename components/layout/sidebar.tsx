@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Package, Hammer, Tag, Warehouse,
   ArrowLeftRight, ShoppingCart, FileText,
   ScrollText, Settings, LogOut, X, ChevronRight,
-  TrendingUp, Star, Store, ClipboardList, RotateCcw, SearchCode, Truck
+  TrendingUp, Star, Store, ClipboardList, RotateCcw, SearchCode, Truck, Wallet,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
@@ -38,10 +38,11 @@ const NAV_GROUPS = [
   {
     label: 'Bisnis',
     items: [
-      { href: '/penjualan',    label: 'Penjualan',            icon: ShoppingCart,    module: 'penjualan'  },
-      { href: '/buyback',      label: 'Buyback',              icon: RotateCcw,       module: 'buyback'    },
-      { href: '/laporan',      label: 'Laporan',              icon: FileText,        module: 'laporan'    },
-      { href: '/kpi-tim',      label: 'KPI Tim',              icon: Star,            module: 'kpi-tim'    },
+      { href: '/penjualan',    label: 'Penjualan',            icon: ShoppingCart,    module: 'penjualan'    },
+      { href: '/buyback',      label: 'Buyback',              icon: RotateCcw,       module: 'buyback'      },
+      { href: '/pengeluaran',  label: 'Pengeluaran',          icon: Wallet,          module: 'pengeluaran'  },
+      { href: '/laporan',      label: 'Laporan',              icon: FileText,        module: 'laporan'      },
+      { href: '/kpi-tim',      label: 'KPI Tim',              icon: Star,            module: 'kpi-tim'      },
     ],
   },
 ]

@@ -5,14 +5,19 @@ import {
   Tag, Hammer, Package2, AlertTriangle, ArrowLeftRight,
   TrendingUp, ShoppingCart, RotateCcw, Layers, Flame,
   Scale, Thermometer, CheckCircle2, Clock, Truck, ClipboardCheck,
-  BoxSelect, TriangleAlert, Boxes,
+  BoxSelect, TriangleAlert, Boxes, Wallet, Calendar,
 } from 'lucide-react'
 import { cn, formatRupiah, formatDate } from '@/lib/utils'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useTransition } from 'react'
 
 interface Props {
   userName: string
   userRole: string
   canSeeRp: boolean
+  period: string
+  dateFrom: string
+  dateTo: string
   stok: { pcs: number; gram: number; nilaiRp: number }
   transit: { pcs: number; gram: number }
   penjualan: { pcs: number; omzetRp: number; buybackCount: number }
@@ -30,6 +35,7 @@ interface Props {
     rejectPendingQty: number
   }
   stokAkrilik: { produk_nama: string; produk_kode: string; gramasi: number; stok_qty: number }[]
+  totalPengeluaran: number
 }
 
 const PIPELINE_STAGES = [
@@ -39,15 +45,89 @@ const PIPELINE_STAGES = [
   { key: 'Siap Packing', label: 'Siap Packing', icon: Package2,     color: '#22C55E', bg: 'rgba(34,197,94,0.08)'  },
 ]
 
+const PERIOD_OPTIONS = [
+  { value: 'today', label: 'Hari Ini' },
+  { value: 'week',  label: '7 Hari' },
+  { value: 'month', label: 'Bulan Ini' },
+  { value: 'custom', label: 'Kustom' },
+]
+
+function PeriodSelector({ period, dateFrom, dateTo }: { period: string; dateFrom: string; dateTo: string }) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+  const [showCustom, setShowCustom] = useState(period === 'custom')
+  const [customFrom, setCustomFrom] = useState(dateFrom)
+  const [customTo,   setCustomTo]   = useState(dateTo)
+
+  function navigate(p: string, from?: string, to?: string) {
+    const params = new URLSearchParams()
+    params.set('period', p)
+    if (p === 'custom' && from && to) {
+      params.set('from', from)
+      params.set('to', to)
+    }
+    startTransition(() => router.push(`/dashboard?${params.toString()}`))
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <Calendar size={13} className="text-slate-400" />
+        {PERIOD_OPTIONS.map(opt => (
+          <button
+            key={opt.value}
+            onClick={() => {
+              if (opt.value === 'custom') { setShowCustom(true); return }
+              setShowCustom(false)
+              navigate(opt.value)
+            }}
+            className={cn(
+              'px-3 py-1.5 rounded-xl text-xs font-bold transition-all',
+              period === opt.value && opt.value !== 'custom'
+                ? 'bg-violet-600 text-white shadow-sm'
+                : showCustom && opt.value === 'custom'
+                ? 'bg-violet-600 text-white shadow-sm'
+                : 'bg-white text-slate-500 border border-slate-200 hover:border-violet-200 hover:text-violet-600'
+            )}
+          >
+            {opt.label}
+          </button>
+        ))}
+        {isPending && <span className="text-[10px] text-slate-400 ml-1">Memuat...</span>}
+      </div>
+      {showCustom && (
+        <div className="flex items-center gap-2 flex-wrap bg-white rounded-2xl px-3 py-2 border border-slate-200">
+          <span className="text-xs text-slate-400 font-medium">Dari</span>
+          <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
+            className="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-violet-400" />
+          <span className="text-xs text-slate-400 font-medium">s/d</span>
+          <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
+            className="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-violet-400" />
+          <button
+            onClick={() => navigate('custom', customFrom, customTo)}
+            className="px-3 py-1 rounded-xl bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 transition-colors"
+          >
+            Terapkan
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function DashboardClient({
-  userName, canSeeRp,
+  userName, canSeeRp, period, dateFrom, dateTo,
   stok, transit, penjualan, reject, pipeline, gramasiChartData, batchTerbaru, mutasiTransit,
-  poPackaging, stokAkrilik,
+  poPackaging, stokAkrilik, totalPengeluaran,
 }: Props) {
   const now  = new Date()
   const jam  = now.getHours()
   const greeting = jam < 12 ? 'Selamat Pagi' : jam < 15 ? 'Selamat Siang' : jam < 19 ? 'Selamat Sore' : 'Selamat Malam'
-  const bulan = now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+
+  const periodLabel = period === 'today' ? 'Hari Ini'
+    : period === 'week'  ? '7 Hari Terakhir'
+    : period === 'custom' ? `${dateFrom} – ${dateTo}`
+    : new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
 
   const alerts: string[] = []
   if (reject.count > 0)               alerts.push(`${reject.count} item reject emas (${reject.gram.toFixed(2)} gr) belum dilebur`)
@@ -68,7 +148,6 @@ export default function DashboardClient({
         <p className="text-violet-200 text-xs mt-1 relative">
           {now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
-        {/* Quick stats in header */}
         <div className="flex gap-4 mt-3 flex-wrap relative">
           <div className="flex items-center gap-1.5 bg-white/10 rounded-xl px-3 py-1.5">
             <Tag size={11} className="text-violet-200"/>
@@ -80,6 +159,9 @@ export default function DashboardClient({
           </div>
         </div>
       </div>
+
+      {/* ── Period Selector ───────────────────────────────────────────────── */}
+      <PeriodSelector period={period} dateFrom={dateFrom} dateTo={dateTo} />
 
       {/* ── Alert banner ──────────────────────────────────────────────────── */}
       {alerts.length > 0 && (
@@ -112,7 +194,7 @@ export default function DashboardClient({
           <KpiCard label="Transit Cabang" value={transit.pcs.toLocaleString('id-ID') + ' pcs'}
             sub={transit.gram.toFixed(2) + ' gr'} icon={ArrowLeftRight} color="#0EA5E9" bg="rgba(14,165,233,0.08)"
             alert={transit.pcs > 0} />
-          <KpiCard label={`Terjual (${bulan})`} value={penjualan.pcs.toLocaleString('id-ID') + ' pcs'}
+          <KpiCard label={`Terjual (${periodLabel})`} value={penjualan.pcs.toLocaleString('id-ID') + ' pcs'}
             sub={canSeeRp ? formatRupiah(penjualan.omzetRp) : undefined}
             sub2={penjualan.buybackCount > 0 ? `${penjualan.buybackCount} buyback` : undefined}
             icon={ShoppingCart} color="#16A34A" bg="rgba(22,163,74,0.08)" />
@@ -147,11 +229,11 @@ export default function DashboardClient({
 
       {/* ── KPI Row 2: Akrilik (PO Packaging) ────────────────────────────── */}
       <div>
-        <SectionLabel icon={<Package2 size={12} className="text-blue-500"/>} label={`Akrilik — Aktivitas ${bulan}`} />
+        <SectionLabel icon={<Package2 size={12} className="text-blue-500"/>} label={`Akrilik — ${periodLabel}`} />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <KpiCard label="PO Berjalan" value={poPackaging.openCount + ' PO'}
             sub="open / partial" icon={Boxes} color="#3B82F6" bg="rgba(59,130,246,0.08)" />
-          <KpiCard label="Datang Bulan Ini" value={poPackaging.datangBulan.toLocaleString('id-ID') + ' pcs'}
+          <KpiCard label="Datang Periode Ini" value={poPackaging.datangBulan.toLocaleString('id-ID') + ' pcs'}
             sub="dari semua PO" icon={Truck} color="#0EA5E9" bg="rgba(14,165,233,0.08)" />
           <KpiCard label="ACC QC" value={poPackaging.accBulan.toLocaleString('id-ID') + ' pcs'}
             sub={`reject: ${poPackaging.rejectBulan.toLocaleString('id-ID')} pcs`}
@@ -212,9 +294,29 @@ export default function DashboardClient({
         </div>
       </div>
 
-      {/* ── Row: Chart emas + Mutasi Transit ─────────────────────────────── */}
+      {/* ── Row: Pengeluaran + Penjualan summary ─────────────────────────── */}
+      {canSeeRp && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <KpiCard label={`Omzet (${periodLabel})`}
+            value={formatRupiah(penjualan.omzetRp)}
+            sub={penjualan.pcs + ' pcs terjual'}
+            icon={ShoppingCart} color="#16A34A" bg="rgba(22,163,74,0.08)" />
+          <KpiCard label={`Pengeluaran (${periodLabel})`}
+            value={formatRupiah(totalPengeluaran)}
+            sub="biaya operasional"
+            icon={Wallet} color="#EF4444" bg="rgba(239,68,68,0.08)"
+            alert={totalPengeluaran > 0} />
+          <KpiCard label="Estimasi Profit"
+            value={formatRupiah(Math.max(0, penjualan.omzetRp - totalPengeluaran))}
+            sub="omzet − pengeluaran"
+            icon={TrendingUp}
+            color={penjualan.omzetRp > totalPengeluaran ? '#16A34A' : '#EF4444'}
+            bg={penjualan.omzetRp > totalPengeluaran ? 'rgba(22,163,74,0.08)' : 'rgba(239,68,68,0.08)'} />
+        </div>
+      )}
+
+      {/* ── Row: Mutasi Transit + Batch Terbaru ───────────────────────────── */}
       <div className="grid lg:grid-cols-2 gap-4">
-        {/* Mutasi transit */}
         <div className="rounded-3xl p-5"
           style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
           <div className="flex items-center gap-2 mb-4">
@@ -236,7 +338,6 @@ export default function DashboardClient({
           ) : <EmptyChart text="Tidak ada mutasi yang menunggu" icon="✅" />}
         </div>
 
-        {/* Batch terbaru */}
         <div className="rounded-3xl p-5"
           style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
           <div className="flex items-center gap-2 mb-4">

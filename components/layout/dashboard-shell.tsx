@@ -18,6 +18,7 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
   '/po-vendor-packaging':    { title: 'PO Vendor Packaging', subtitle: 'Manajemen PO, QC, dan retur akrilik dari vendor' },
   '/prioritas-produksi':  { title: 'Prioritas Produksi',    subtitle: 'Auto-ranking P1/P2/P3 berdasar PO dan safety stock' },
   '/kpi-tim':             { title: 'KPI Tim',               subtitle: 'Rating bintang ⭐ per tim per proses — efisiensi, loss, kecepatan' },
+  '/pengeluaran':         { title: 'Pengeluaran',            subtitle: 'Pencatatan biaya operasional per periode' },
   '/laporan':             { title: 'Laporan',               subtitle: 'Per batch, laba rugi, performa cabang' },
   '/audit-log':           { title: 'Audit Log',             subtitle: 'Riwayat semua aksi penting di sistem' },
   '/pengaturan':          { title: 'Pengaturan',            subtitle: 'Master tim, admin, toleransi, gramasi, dan konfigurasi sistem' },

@@ -288,11 +288,11 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 
 export const ROLE_ACCESS: Record<UserRole, string[]> = {
   owner: ['*'],
-  admin_pusat: ['dashboard', 'bahan-baku', 'produksi', 'shieldtag', 'shieldtag-explorer', 'inventory', 'mutasi', 'stock-opname', 'penjualan', 'buyback', 'po-cabang', 'prioritas-produksi', 'laporan', 'kpi-tim', 'pengaturan', 'audit-log'],
-  spv: ['dashboard', 'bahan-baku', 'produksi', 'shieldtag', 'shieldtag-explorer', 'inventory', 'mutasi', 'stock-opname', 'penjualan', 'buyback', 'po-cabang', 'prioritas-produksi', 'laporan', 'kpi-tim'],
+  admin_pusat: ['dashboard', 'bahan-baku', 'produksi', 'shieldtag', 'shieldtag-explorer', 'inventory', 'mutasi', 'stock-opname', 'penjualan', 'buyback', 'po-cabang', 'po-vendor-packaging', 'prioritas-produksi', 'pengeluaran', 'laporan', 'kpi-tim', 'pengaturan', 'audit-log'],
+  spv: ['dashboard', 'bahan-baku', 'produksi', 'shieldtag', 'shieldtag-explorer', 'inventory', 'mutasi', 'stock-opname', 'penjualan', 'buyback', 'po-cabang', 'po-vendor-packaging', 'prioritas-produksi', 'laporan', 'kpi-tim'],
   operator_produksi: ['dashboard', 'produksi', 'bahan-baku', 'shieldtag'],
-  gudang: ['dashboard', 'inventory', 'mutasi', 'stock-opname', 'shieldtag', 'shieldtag-explorer', 'po-cabang'],
-  accounting: ['dashboard', 'penjualan', 'buyback', 'laporan'],
+  gudang: ['dashboard', 'inventory', 'mutasi', 'stock-opname', 'shieldtag', 'shieldtag-explorer', 'po-cabang', 'po-vendor-packaging'],
+  accounting: ['dashboard', 'penjualan', 'buyback', 'pengeluaran', 'laporan'],
   kepala_cabang: ['dashboard', 'inventory', 'mutasi', 'stock-opname', 'shieldtag-explorer', 'penjualan', 'buyback', 'po-cabang', 'prioritas-produksi', 'laporan'],
 }
 
