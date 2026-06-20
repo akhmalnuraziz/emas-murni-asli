@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { ShoppingBag, Plus, X, Search, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import { ShoppingBag, Plus, X, Search, Trash2, ChevronDown, ChevronUp, Printer } from 'lucide-react'
 import { createPenjualan, voidPenjualan } from '@/app/(dashboard)/penjualan/actions'
 
 type PenjualanItem = {
@@ -359,6 +359,12 @@ function PenjualanRow({ pj, canSeeRp, isOwner }: { pj: Penjualan; canSeeRp: bool
               </div>
             </div>
           )}
+
+          {/* Cetak Faktur */}
+          <a href={`/penjualan/faktur/${pj.id}`} target="_blank"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-600 hover:text-violet-800 hover:bg-violet-50 rounded-xl px-3 py-1.5 transition-colors border border-violet-200">
+            <Printer size={12} /> Cetak Faktur
+          </a>
 
           {/* Void action */}
           {isOwner && pj.status !== 'void' && (
