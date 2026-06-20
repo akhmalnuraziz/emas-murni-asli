@@ -1,0 +1,51 @@
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+import POVendorClient from '@/components/modules/po-packaging/po-vendor-client'
+
+export const dynamic = 'force-dynamic'
+
+export default async function POVendorPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: profile } = await supabase.from('users_profile').select('role, name').eq('id', user.id).single()
+
+  const [
+    { data: vendors },
+    { data: produkList },
+    { data: poList },
+    { data: batchList },
+    { data: rejectList },
+    { data: sjList },
+    { data: stokList },
+    { data: monitoring },
+  ] = await Promise.all([
+    supabase.from('vendor_packaging').select('*').is('voided_at', null).order('nama'),
+    supabase.from('produk_packaging').select('*').eq('aktif', true).order('gramasi'),
+    supabase.from('po_packaging').select('*').is('voided_at', null).order('created_at', { ascending: false }).limit(200),
+    supabase.from('po_batch_penerimaan').select('*').order('created_at', { ascending: false }).limit(500),
+    supabase.from('po_packaging_reject').select('*').order('created_at', { ascending: false }).limit(500),
+    supabase.from('sj_retur_packaging').select('*').order('created_at', { ascending: false }).limit(200),
+    supabase.from('stok_packaging').select('*, produk:produk_packaging(gramasi)').order('produk_id'),
+    supabase.from('po_packaging_monitoring').select('*').order('created_at', { ascending: false }),
+  ])
+
+  const canManage = ['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')
+
+  return (
+    <POVendorClient
+      vendors={vendors ?? []}
+      produkList={produkList ?? []}
+      poList={poList ?? []}
+      batchList={batchList ?? []}
+      rejectList={rejectList ?? []}
+      sjList={sjList ?? []}
+      stokList={stokList ?? []}
+      monitoring={monitoring ?? []}
+      userRole={profile?.role ?? 'operator_produksi'}
+      userName={profile?.name ?? ''}
+      canManage={canManage}
+    />
+  )
+}

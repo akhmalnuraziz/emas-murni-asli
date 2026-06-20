@@ -7,8 +7,9 @@ export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const today = new Date().toISOString().split('T')[0]
+  const today      = new Date().toISOString().split('T')[0]
   const monthStart = today.slice(0, 7) + '-01'
+  const weekAgo    = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
 
   const [
     { data: profile },
@@ -20,7 +21,11 @@ export default async function DashboardPage() {
     { data: rejectBelumDilebur },
     { data: batchTerbaru },
     { data: mutasiTransit },
-    { data: pengaturanRows },
+    // PO Packaging
+    { data: poOpen },
+    { data: batchPenerimaanBulanIni },
+    { data: rejectPending },
+    { data: stokPackaging },
   ] = await Promise.all([
     supabase.from('users_profile').select('name, role').eq('id', user?.id ?? '').single(),
     supabase.from('shieldtag').select('gramasi, hpp').eq('status', 'Aktif').is('voided_at', null),
@@ -48,40 +53,42 @@ export default async function DashboardPage() {
       .is('voided_at', null)
       .order('tanggal_kirim', { ascending: false })
       .limit(10),
-    supabase.from('pengaturan').select('key, value').like('key', 'biaya_packaging_%'),
+    // PO packaging
+    supabase.from('po_packaging').select('id, status').is('voided_at', null).in('status', ['open','partial']),
+    supabase.from('po_batch_penerimaan')
+      .select('qty_diterima, qty_acc, qty_reject, qty_lebih, status_qc')
+      .gte('tanggal_terima', monthStart),
+    supabase.from('po_packaging_reject').select('qty, jenis').eq('status_penanganan', 'pending'),
+    supabase.from('stok_packaging')
+      .select('stok_qty, produk_kode, produk_nama, produk:produk_packaging(gramasi)')
+      .order('produk_id'),
   ])
 
-  // Build biaya packaging map
-  const pkgMap: Record<string, number> = {}
-  for (const r of pengaturanRows ?? []) {
-    pkgMap[r.key.replace('biaya_packaging_', '')] = Number(r.value ?? 0)
-  }
+  // ── Build stats ──────────────────────────────────────────────────────────
 
-  // Stok aktif stats
-  const stokAktifPcs = (shieldtagAktif ?? []).length
+  // Emas stok
+  const stokAktifPcs  = (shieldtagAktif ?? []).length
   const stokAktifGram = (shieldtagAktif ?? []).reduce((s, t) => s + parseFloat(t.gramasi ?? '0'), 0)
-  const nilaiStok = (shieldtagAktif ?? []).reduce((s, t) => s + Number(t.hpp ?? 0), 0)
+  const nilaiStok     = (shieldtagAktif ?? []).reduce((s, t) => s + Number(t.hpp ?? 0), 0)
+  const transitPcs    = (shieldtagTransit ?? []).length
+  const transitGram   = (shieldtagTransit ?? []).reduce((s, t) => s + parseFloat(t.gramasi ?? '0'), 0)
 
-  // Transit stats
-  const transitPcs = (shieldtagTransit ?? []).length
-  const transitGram = (shieldtagTransit ?? []).reduce((s, t) => s + parseFloat(t.gramasi ?? '0'), 0)
+  // Penjualan
+  const terjualPcs     = (penjualanBulanIni ?? []).reduce((s, p) => s + (Number(p.pcs) || 0), 0)
+  const omzetBulanIni  = (penjualanBulanIni ?? []).reduce((s, p) => s + (Number(p.harga_jual) || 0), 0)
 
-  // Penjualan bulan ini
-  const terjualPcs = (penjualanBulanIni ?? []).reduce((s, p) => s + (Number(p.pcs) || 0), 0)
-  const omzetBulanIni = (penjualanBulanIni ?? []).reduce((s, p) => s + (Number(p.harga_jual) || 0), 0)
-
-  // Reject
-  const rejectPcs = (rejectBelumDilebur ?? []).length
+  // Reject produksi
+  const rejectPcs  = (rejectBelumDilebur ?? []).length
   const rejectGram = (rejectBelumDilebur ?? []).reduce((s, r) => s + Number(r.berat_reject ?? 0), 0)
 
-  // Produksi pipeline
+  // Pipeline
   const pipeline: Record<string, number> = {}
   for (const p of produksiPipeline ?? []) {
     const s = p.current_status ?? 'Unknown'
     pipeline[s] = (pipeline[s] ?? 0) + 1
   }
 
-  // Stok per gramasi (bar chart)
+  // Stok emas per gramasi
   const gramasiMap: Record<string, number> = {}
   for (const t of shieldtagAktif ?? []) {
     if (t.gramasi) gramasiMap[t.gramasi] = (gramasiMap[t.gramasi] ?? 0) + 1
@@ -89,6 +96,23 @@ export default async function DashboardPage() {
   const gramasiChartData = Object.entries(gramasiMap)
     .map(([gramasi, pcs]) => ({ gramasi: `${gramasi}gr`, pcs }))
     .sort((a, b) => parseFloat(a.gramasi) - parseFloat(b.gramasi))
+
+  // PO Packaging stats
+  const poOpenCount   = (poOpen ?? []).length
+  const batchBulanIni = batchPenerimaanBulanIni ?? []
+  const totalDatangBulan = batchBulanIni.reduce((s, b: any) => s + (b.qty_diterima ?? 0), 0)
+  const totalAccBulan    = batchBulanIni.reduce((s, b: any) => s + (b.qty_acc ?? 0), 0)
+  const totalRejectBulan = batchBulanIni.reduce((s, b: any) => s + (b.qty_reject ?? 0), 0)
+  const pendingQcCount   = batchBulanIni.filter((b: any) => b.status_qc === 'pending').length
+  const rejectPendingQty = (rejectPending ?? []).reduce((s: number, r: any) => s + (r.qty ?? 0), 0)
+
+  // Stok akrilik per gramasi
+  const stokAkrilik = (stokPackaging ?? []).map((s: any) => ({
+    produk_nama: s.produk_nama,
+    produk_kode: s.produk_kode,
+    gramasi: s.produk?.gramasi ?? 0,
+    stok_qty: s.stok_qty ?? 0,
+  })).sort((a: any, b: any) => a.gramasi - b.gramasi)
 
   const canSeeRp = ['owner', 'admin_pusat', 'accounting'].includes(profile?.role ?? '')
 
@@ -105,6 +129,15 @@ export default async function DashboardPage() {
       gramasiChartData={gramasiChartData}
       batchTerbaru={batchTerbaru ?? []}
       mutasiTransit={mutasiTransit ?? []}
+      poPackaging={{
+        openCount: poOpenCount,
+        datangBulan: totalDatangBulan,
+        accBulan: totalAccBulan,
+        rejectBulan: totalRejectBulan,
+        pendingQc: pendingQcCount,
+        rejectPendingQty,
+      }}
+      stokAkrilik={stokAkrilik}
     />
   )
 }
