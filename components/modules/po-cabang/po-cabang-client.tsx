@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Plus, X, Check, ChevronDown, ChevronUp, Trash2, ClipboardList } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import { createPO, updateStatusPO, updateQtyDikirim, deletePO } from '@/app/(dashboard)/po-cabang/actions'
+import { konfirmasiTerimaPoItem } from '@/app/(dashboard)/stok-cabang/actions'
 
 const GRAMASI_OPTIONS = ['0.1','0.5','1','2','5','10','20','25','50','100','250','500','1000']
 const inp = 'w-full px-3 py-2.5 text-sm rounded-2xl bg-white/80 border border-gray-200/70 focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all'
@@ -12,11 +13,12 @@ const today = new Date().toISOString().split('T')[0]
 const STATUS_CFG: Record<string, { label: string; bg: string; text: string }> = {
   pending:   { label: 'Pending',   bg: 'rgba(245,158,11,0.1)',  text: '#D97706' },
   diproses:  { label: 'Diproses',  bg: 'rgba(59,130,246,0.1)',  text: '#2563EB' },
+  partial:   { label: 'Sebagian',  bg: 'rgba(249,115,22,0.1)',  text: '#EA580C' },
   selesai:   { label: 'Selesai',   bg: 'rgba(34,197,94,0.1)',   text: '#16A34A' },
   ditolak:   { label: 'Ditolak',   bg: 'rgba(239,68,68,0.1)',   text: '#DC2626' },
 }
 
-interface PoItem { id: number; produk_nama: string; gramasi: string; qty_diminta: number; qty_dikirim: number | null; catatan_item: string | null }
+interface PoItem { id: number; produk_nama: string; gramasi: string; qty_diminta: number; qty_dikirim: number | null; qty_diterima: number | null; diterima_by: string | null; catatan_item: string | null }
 interface Po { id: number; kode: string; cabang_kode: string; cabang_nama: string; tanggal: string; status: string; catatan: string | null; catatan_admin: string | null; created_at: string; items: PoItem[] }
 
 export default function PoCabangClient({
@@ -123,34 +125,57 @@ export default function PoCabangClient({
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="bg-slate-50">
-                          {['Produk', 'Gramasi', 'Diminta', 'Dikirim'].map(h => (
+                          {['Produk', 'Gramasi', 'Diminta', 'Dikirim', 'Diterima'].map(h => (
                             <th key={h} className="px-3 py-2.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {po.items.map((it, i) => (
-                          <tr key={it.id} className={i % 2 === 0 ? '' : 'bg-slate-50/30'}>
-                            <td className="px-3 py-2 text-slate-700 font-medium">{it.produk_nama}</td>
-                            <td className="px-3 py-2 font-mono font-semibold text-slate-800">{it.gramasi} gr</td>
-                            <td className="px-3 py-2 font-bold text-slate-800">{it.qty_diminta} pcs</td>
-                            <td className="px-3 py-2">
-                              {canApprove && po.status === 'diproses' ? (
-                                <QtyDikirimInput itemId={it.id} current={it.qty_dikirim ?? 0} max={it.qty_diminta} />
-                              ) : (
-                                <span className={`font-semibold ${(it.qty_dikirim ?? 0) >= it.qty_diminta ? 'text-green-600' : 'text-slate-500'}`}>
-                                  {it.qty_dikirim ?? 0} pcs
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
+                        {po.items.map((it, i) => {
+                          const diterima = it.qty_diterima ?? 0
+                          const dikirim  = it.qty_dikirim ?? 0
+                          const sisaKonfirmasi = Math.max(0, dikirim - diterima)
+                          return (
+                            <tr key={it.id} className={i % 2 === 0 ? '' : 'bg-slate-50/30'}>
+                              <td className="px-3 py-2 text-slate-700 font-medium">{it.produk_nama}</td>
+                              <td className="px-3 py-2 font-mono font-semibold text-slate-800">{it.gramasi} gr</td>
+                              <td className="px-3 py-2 font-bold text-slate-800">{it.qty_diminta} pcs</td>
+                              <td className="px-3 py-2">
+                                {canApprove && po.status === 'diproses' ? (
+                                  <QtyDikirimInput itemId={it.id} current={dikirim} max={it.qty_diminta} />
+                                ) : (
+                                  <span className={`font-semibold ${dikirim >= it.qty_diminta ? 'text-blue-600' : 'text-slate-500'}`}>
+                                    {dikirim} pcs
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2">
+                                {diterima >= it.qty_diminta ? (
+                                  <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                                    ✓ {diterima} pcs
+                                  </span>
+                                ) : dikirim > 0 ? (
+                                  <KonfirmasiTerimaInput
+                                    itemId={it.id} poId={po.id}
+                                    current={diterima} maxQty={dikirim}
+                                    onDone={() => showToast('✅ Penerimaan dicatat')}
+                                  />
+                                ) : (
+                                  <span className="text-slate-300 text-xs">Belum dikirim</span>
+                                )}
+                              </td>
+                            </tr>
+                          )
+                        })}
                       </tbody>
                       <tfoot>
                         <tr className="border-t border-slate-100 bg-slate-50">
                           <td className="px-3 py-2 font-bold text-slate-600 text-xs" colSpan={2}>Total</td>
                           <td className="px-3 py-2 font-bold text-slate-800">{totalDiminta} pcs</td>
-                          <td className="px-3 py-2 font-bold text-green-600">{totalDikirim} pcs</td>
+                          <td className="px-3 py-2 font-bold text-blue-600">{totalDikirim} pcs</td>
+                          <td className="px-3 py-2 font-bold text-green-600">
+                            {po.items.reduce((s, it) => s + (it.qty_diterima ?? 0), 0)} pcs
+                          </td>
                         </tr>
                       </tfoot>
                     </table>
@@ -233,6 +258,33 @@ function QtyDikirimInput({ itemId, current, max }: { itemId: number; current: nu
         onBlur={save} disabled={isPending}
         className="w-16 h-7 px-2 text-xs rounded-xl border border-slate-200 text-center focus:outline-none focus:ring-1 focus:ring-sky-300" />
       <span className="text-[10px] text-slate-400">/{max}</span>
+    </div>
+  )
+}
+
+// ── Konfirmasi Terima Input ────────────────────────────────────────────────────
+function KonfirmasiTerimaInput({ itemId, poId, current, maxQty, onDone }: {
+  itemId: number; poId: number; current: number; maxQty: number; onDone: () => void
+}) {
+  const [val, setVal] = useState(String(maxQty))
+  const [isPending, start] = useTransition()
+  function confirm() {
+    const n = parseInt(val)
+    if (isNaN(n) || n < 0 || n > maxQty) return
+    start(async () => {
+      await konfirmasiTerimaPoItem({ itemId, poId, qtyDiterima: n })
+      onDone()
+    })
+  }
+  return (
+    <div className="flex items-center gap-1">
+      <input type="number" min="0" max={maxQty} value={val} onChange={e => setVal(e.target.value)}
+        className="w-14 h-7 px-2 text-xs rounded-xl border border-slate-200 text-center focus:outline-none focus:ring-1 focus:ring-green-300" />
+      <span className="text-[10px] text-slate-400">/{maxQty}</span>
+      <button onClick={confirm} disabled={isPending}
+        className="text-[10px] font-bold text-white bg-green-500 hover:bg-green-600 px-2 py-1 rounded-lg transition-colors disabled:opacity-50">
+        {isPending ? '...' : 'Terima'}
+      </button>
     </div>
   )
 }

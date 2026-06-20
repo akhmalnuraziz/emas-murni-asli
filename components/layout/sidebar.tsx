@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Package, Hammer, Tag, Warehouse,
   ArrowLeftRight, ShoppingCart, FileText,
   ScrollText, Settings, LogOut, X, ChevronRight,
-  TrendingUp, Star, Store, ClipboardList, RotateCcw, SearchCode, Truck, Wallet, Recycle, HardDrive,
+  TrendingUp, Star, Store, ClipboardList, RotateCcw, SearchCode, Truck, Wallet, Recycle, HardDrive, MapPin,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
@@ -30,7 +30,8 @@ const NAV_GROUPS = [
       { href: '/inventory',      label: 'Inventory',            icon: Warehouse,       module: 'inventory'           },
       { href: '/mutasi',         label: 'Pemindahan Barang',    icon: ArrowLeftRight,  module: 'mutasi'              },
       { href: '/stock-opname',   label: 'Stock Opname',         icon: ClipboardList,   module: 'stock-opname'        },
-      { href: '/po-cabang',           label: 'Toko & PO',       icon: Store,   module: 'po-cabang'           },
+      { href: '/stok-cabang',          label: 'Stok Cabang',      icon: MapPin,  module: 'stok-cabang'         },
+      { href: '/po-cabang',           label: 'PO Cabang',        icon: Store,   module: 'po-cabang'           },
       { href: '/po-vendor-packaging', label: 'PO Vendor Packaging', icon: Truck, module: 'po-vendor-packaging' },
       { href: '/prioritas-produksi', label: 'Prioritas Produksi', icon: TrendingUp, module: 'prioritas-produksi'  },
     ],
