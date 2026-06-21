@@ -4,7 +4,8 @@ import LaporanBatchDetail from '@/components/modules/laporan/laporan-batch-detai
 
 export const dynamic = 'force-dynamic'
 
-export default async function LaporanBatchPage({ params }: { params: { kode: string } }) {
+export default async function LaporanBatchPage({ params }: { params: Promise<{ kode: string }> }) {
+  const { kode: rawKode } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -14,7 +15,7 @@ export default async function LaporanBatchPage({ params }: { params: { kode: str
   const allowedRoles = ['owner', 'admin_pusat', 'spv', 'accounting']
   if (!allowedRoles.includes(role)) redirect('/dashboard')
 
-  const kode = decodeURIComponent(params.kode)
+  const kode = decodeURIComponent(rawKode)
 
   const [
     { data: batch },

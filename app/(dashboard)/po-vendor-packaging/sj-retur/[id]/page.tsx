@@ -3,12 +3,13 @@ import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
-export default async function SJReturPrintPage({ params }: { params: { id: string } }) {
+export default async function SJReturPrintPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const sjId = parseInt(params.id)
+  const sjId = parseInt(id)
   const { data: sj } = await supabase.from('sj_retur_packaging').select('*').eq('id', sjId).single()
   if (!sj) return <div className="p-8 text-center text-red-500">SJ Retur tidak ditemukan</div>
 
