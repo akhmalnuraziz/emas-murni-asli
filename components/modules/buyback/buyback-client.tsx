@@ -25,10 +25,10 @@ const HASIL_CFG: Record<string, { label: string; bg: string; text: string; icon:
   akan_dilebur:  { label: 'Akan Dilebur',      bg: 'rgba(245,158,11,0.1)', text: '#D97706', icon: Flame         },
 }
 
-const inp = "w-full px-4 py-3 text-sm rounded-2xl border border-gray-200/70 bg-white/80 focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all"
+const inp = "w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"
 const F = ({ label, req, children }: { label: string; req?: boolean; children: React.ReactNode }) => (
   <div className="flex flex-col gap-1.5">
-    <label className="text-[11px] font-bold text-gray-400 tracking-widest uppercase">
+    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
       {label}{req && <span className="text-red-400 ml-0.5">*</span>}
     </label>
     {children}
@@ -192,8 +192,7 @@ function BuybackForm({ userName, onClose, onSaved }: {
       <CheckCircle2 size={40} className="mx-auto text-emerald-500" />
       <p className="font-bold text-slate-800">Buyback Diterima</p>
       <p className="text-sm font-mono text-slate-500">{done}</p>
-      <button onClick={onSaved} className="px-6 py-2 rounded-xl text-sm font-bold text-white"
-        style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+      <button onClick={onSaved} className="px-6 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors">
         Selesai
       </button>
     </div>
@@ -277,16 +276,15 @@ function BuybackForm({ userName, onClose, onSaved }: {
           className={cn(inp, 'resize-none')} rows={2} placeholder="Keterangan tambahan" />
       </F>
 
-      {err && <p className="text-xs text-red-600 bg-red-50 rounded-2xl px-4 py-2">{err}</p>}
+      {err && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
 
-      <div className="flex gap-2">
+      <div className="flex gap-2.5">
         <button onClick={onClose}
-          className="flex-1 py-3 rounded-2xl text-sm font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors">
+          className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">
           Batal
         </button>
         <button onClick={handleSave} disabled={saving}
-          className="flex-1 py-3 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-50"
-          style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+          className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
           {saving ? 'Menyimpan…' : 'Simpan Buyback'}
         </button>
       </div>
@@ -369,10 +367,10 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, userName, onUp
 
           {/* Panel proses jika masih pending */}
           {b.status === 'pending' && canProses && (
-            <div className="bg-violet-50 rounded-2xl border border-violet-100 p-4 space-y-3">
-              <p className="text-xs font-bold text-violet-700">Tentukan Tindakan Buyback</p>
+            <div className="rounded-lg px-3 py-3 bg-violet-50 border border-violet-100 space-y-3">
+              <p className="text-[12px] font-bold text-violet-700">Tentukan Tindakan Buyback</p>
               <select value={aksi} onChange={e => setAksi(e.target.value)}
-                className="w-full px-3 py-2.5 text-sm rounded-xl border border-violet-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-300">
+                className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all">
                 <option value="">-- Pilih tindakan --</option>
                 <option value="ready_resell">Siap Jual Lagi (kondisi bagus)</option>
                 <option value="repair">Repair (perlu perbaikan)</option>
@@ -380,11 +378,10 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, userName, onUp
                 <option value="lebur">Lebur (tidak bisa diperbaiki)</option>
               </select>
               <textarea value={catatan} onChange={e => setCatatan(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-violet-200 bg-white focus:outline-none resize-none"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all resize-none"
                 rows={2} placeholder="Keterangan (opsional)" />
               <button onClick={doProses} disabled={saving || !aksi}
-                className="w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-40"
-                style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+                className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
                 {saving ? 'Memproses…' : 'Konfirmasi Tindakan'}
               </button>
             </div>

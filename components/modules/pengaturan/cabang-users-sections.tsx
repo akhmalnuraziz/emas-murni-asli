@@ -7,7 +7,7 @@ import {
   updateUserRole, toggleUserAktif, inviteUser,
 } from '@/app/(dashboard)/pengaturan/actions'
 
-const inp = 'w-full h-11 px-4 bg-gray-50 rounded-2xl text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-200 border border-gray-200'
+const inp = 'w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all'
 
 // ═══ CABANG SECTION ══════════════════════════════════════════════════════════
 export function CabangSection({ list, showToast, canManage }: {
@@ -72,30 +72,29 @@ export function CabangSection({ list, showToast, canManage }: {
       </div>
 
       {modal !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
-          <div className="w-full max-w-sm rounded-3xl p-6 space-y-4 bg-white shadow-2xl">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-slate-800">{modal === 'create' ? 'Tambah Cabang' : 'Edit Cabang'}</h2>
-              <button onClick={() => setModal(null)} className="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100"><X size={15}/></button>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+          <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <h2 className="text-[15px] font-bold text-slate-900">{modal === 'create' ? 'Tambah Cabang' : 'Edit Cabang'}</h2>
+              <button onClick={() => setModal(null)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X size={14}/></button>
             </div>
-            <form onSubmit={async e => { e.preventDefault(); start(async () => { await handleSave(new FormData(e.currentTarget)) }) }} className="space-y-3">
-              <div><label className="text-xs font-semibold text-slate-500">Nama Cabang *</label>
+            <form id="cabang-form" onSubmit={async e => { e.preventDefault(); start(async () => { await handleSave(new FormData(e.currentTarget)) }) }} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Cabang *</label>
                 <input name="nama" defaultValue={item?.nama} required placeholder="mis. Cabang Surabaya" className={inp}/></div>
-              <div><label className="text-xs font-semibold text-slate-500">Kepala Cabang</label>
+              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Kepala Cabang</label>
                 <input name="kepala" defaultValue={item?.kepala} placeholder="Nama kepala cabang" className={inp}/></div>
-              <div><label className="text-xs font-semibold text-slate-500">Telepon</label>
+              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Telepon</label>
                 <input name="telp" defaultValue={item?.telp} placeholder="08xx-xxxx-xxxx" className={inp}/></div>
-              <div><label className="text-xs font-semibold text-slate-500">Alamat</label>
+              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Alamat</label>
                 <input name="alamat" defaultValue={item?.alamat} placeholder="Alamat lengkap" className={inp}/></div>
               {err && <p className="text-xs text-red-500 font-semibold">{err}</p>}
-              <div className="flex gap-2 pt-1">
-                <button type="button" onClick={() => setModal(null)} className="flex-1 py-2.5 text-sm font-semibold rounded-2xl border border-gray-200 text-gray-500">Batal</button>
-                <button type="submit" disabled={isPending} className="flex-1 py-2.5 text-sm font-bold text-white rounded-2xl disabled:opacity-60"
-                  style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>
-                  {isPending ? 'Menyimpan...' : 'Simpan'}
-                </button>
-              </div>
             </form>
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+              <button type="button" onClick={() => setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+              <button type="submit" form="cabang-form" disabled={isPending} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+                {isPending ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -186,16 +185,13 @@ export function UsersSection({ list, currentUserId, showToast, canManage }: {
       </div>
 
       {inviteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
-          <div className="w-full max-w-sm rounded-3xl p-6 space-y-4 bg-white shadow-2xl">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-slate-800">Undang User Baru</h2>
-              <button onClick={() => setInviteModal(false)} className="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100"><X size={15}/></button>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+          <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <h2 className="text-[15px] font-bold text-slate-900">Undang User Baru</h2>
+              <button onClick={() => setInviteModal(false)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X size={14}/></button>
             </div>
-            <div className="rounded-2xl px-3 py-2.5 text-xs text-blue-700" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
-              Email undangan akan dikirim. User klik link di email untuk set password.
-            </div>
-            <form onSubmit={async e => {
+            <form id="invite-form" onSubmit={async e => {
               e.preventDefault(); setErr('')
               start(async () => {
                 const r = await inviteUser(new FormData(e.currentTarget))
@@ -203,25 +199,27 @@ export function UsersSection({ list, currentUserId, showToast, canManage }: {
                 showToast('✅ Undangan terkirim ke email')
                 setInviteModal(false)
               })
-            }} className="space-y-3">
-              <div><label className="text-xs font-semibold text-slate-500">Email *</label>
+            }} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+              <div className="rounded-lg px-3 py-2 text-[12px] bg-slate-50 border border-slate-100 text-slate-600">
+                Email undangan akan dikirim. User klik link di email untuk set password.
+              </div>
+              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Email *</label>
                 <input name="email" type="email" required placeholder="user@email.com" className={inp}/></div>
-              <div><label className="text-xs font-semibold text-slate-500">Nama Lengkap *</label>
+              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Lengkap *</label>
                 <input name="name" required placeholder="Nama user" className={inp}/></div>
-              <div><label className="text-xs font-semibold text-slate-500">Role *</label>
+              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Role *</label>
                 <select name="role" required className={inp}>
                   {ROLES.map(r => <option key={r} value={r}>{ROLE_LABEL[r] ?? r}</option>)}
                 </select>
               </div>
               {err && <p className="text-xs text-red-500 font-semibold">{err}</p>}
-              <div className="flex gap-2 pt-1">
-                <button type="button" onClick={() => setInviteModal(false)} className="flex-1 py-2.5 text-sm font-semibold rounded-2xl border border-gray-200 text-gray-500">Batal</button>
-                <button type="submit" disabled={isPending} className="flex-1 py-2.5 text-sm font-bold text-white rounded-2xl disabled:opacity-60"
-                  style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>
-                  {isPending ? 'Mengirim...' : 'Kirim Undangan'}
-                </button>
-              </div>
             </form>
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+              <button type="button" onClick={() => setInviteModal(false)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+              <button type="submit" form="invite-form" disabled={isPending} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+                {isPending ? 'Mengirim...' : 'Kirim Undangan'}
+              </button>
+            </div>
           </div>
         </div>
       )}

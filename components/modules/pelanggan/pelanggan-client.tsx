@@ -105,13 +105,11 @@ export default function PelangganClient({ pelangganList, canSeeRp }: Props) {
               <p className="text-sm text-slate-400">Tidak ada pelanggan ditemukan</p>
             </div>
           ) : filtered.map((p, i) => (
-            <div key={p.key} className="rounded-3xl overflow-hidden"
-              >
+            <div key={p.key} className="bg-white border border-slate-200 rounded-xl overflow-hidden">
               <div className="p-4 flex items-center justify-between gap-3 cursor-pointer"
                 onClick={() => setExpanded(expanded === p.key ? null : p.key)}>
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 font-black text-sm text-violet-700"
-                    style={{ background: 'rgba(124,58,237,0.08)' }}>
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 font-black text-sm text-violet-700 bg-violet-50">
                     {i + 1}
                   </div>
                   <div className="min-w-0">

@@ -68,12 +68,12 @@ function actionStyle(action: string): { text: string; bg: string; icon: typeof P
   return { text: '#6B7280', bg: 'rgba(107,114,128,0.1)', icon: HelpCircle }
 }
 
-const inp = "w-full px-4 py-2.5 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all placeholder:text-gray-400 bg-white/80 border border-gray-200/70"
+const inp = "w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"
 
 function JsonBlock({ label, data, color }: { label: string; data: Record<string, unknown> | null; color: string }) {
   const entries = data ? Object.entries(data) : []
   return (
-    <div className="rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(209,213,219,0.4)' }}>
+    <div className="rounded-lg px-3 py-2 bg-slate-50 border border-slate-100">
       <p className="text-[10px] font-bold tracking-widest uppercase mb-2" style={{ color }}>{label}</p>
       {entries.length === 0 ? (
         <p className="text-xs text-gray-400 italic">Tidak ada data</p>
@@ -100,42 +100,39 @@ function DetailDrawer({ log, onClose }: { log: AuditLogRow; onClose: () => void 
   const ActionIcon = acfg.icon
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
-      <div className="w-full max-w-lg rounded-3xl overflow-hidden max-h-[85vh] flex flex-col"
-        style={{ background: 'rgba(255,255,255,0.93)', backdropFilter: 'blur(24px)',
-          border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 32px 64px rgba(139,92,246,0.18)' }}>
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100/80 flex items-center justify-between flex-shrink-0">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: acfg.bg }}>
-              <ActionIcon size={18} style={{ color: acfg.text }}/>
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: acfg.bg }}>
+              <ActionIcon size={16} style={{ color: acfg.text }}/>
             </div>
             <div>
-              <p className="text-sm font-black text-gray-900">{log.record_key || log.record_id || `#${log.id}`}</p>
+              <p className="text-[15px] font-bold text-slate-900">{log.record_key || log.record_id || `#${log.id}`}</p>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full" style={{ background: mcfg.bg, color: mcfg.text }}>{mod}</span>
-                <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full" style={{ background: acfg.bg, color: acfg.text }}>{normAction(log.action)}</span>
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: mcfg.bg, color: mcfg.text }}>{mod}</span>
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: acfg.bg, color: acfg.text }}>{normAction(log.action)}</span>
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 flex-shrink-0"><X size={15}/></button>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 flex-shrink-0"><X size={14}/></button>
         </div>
-        <div className="px-6 py-5 overflow-y-auto space-y-4">
+        <div className="px-5 py-4 overflow-y-auto space-y-4 flex-1">
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(209,213,219,0.4)' }}>
-              <p className="text-[10px] text-gray-400 font-medium">Waktu</p>
-              <p className="text-sm font-semibold text-gray-700 mt-0.5">{formatDateTime(log.timestamp)}</p>
+            <div className="rounded-lg px-3 py-2 bg-slate-50 border border-slate-100">
+              <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Waktu</p>
+              <p className="text-[13px] font-semibold text-slate-700 mt-0.5">{formatDateTime(log.timestamp)}</p>
             </div>
-            <div className="rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(209,213,219,0.4)' }}>
-              <p className="text-[10px] text-gray-400 font-medium">Oleh</p>
-              <p className="text-sm font-semibold text-gray-700 mt-0.5">{log.user_name || '—'} <span className="text-gray-400 font-normal">({log.user_role || '—'})</span></p>
+            <div className="rounded-lg px-3 py-2 bg-slate-50 border border-slate-100">
+              <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Oleh</p>
+              <p className="text-[13px] font-semibold text-slate-700 mt-0.5">{log.user_name || '—'} <span className="text-slate-400 font-normal">({log.user_role || '—'})</span></p>
             </div>
           </div>
 
           {log.reason && (
-            <div className="rounded-2xl p-3" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)' }}>
-              <p className="text-[10px] text-red-400 font-bold tracking-widest uppercase mb-1">Alasan</p>
-              <p className="text-sm text-red-600">{log.reason}</p>
+            <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">
+              <p className="text-[10px] font-bold tracking-wide uppercase mb-1">Alasan</p>
+              <p>{log.reason}</p>
             </div>
           )}
 

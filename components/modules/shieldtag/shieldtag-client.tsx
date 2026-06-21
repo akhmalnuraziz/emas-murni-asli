@@ -53,10 +53,10 @@ const STATUS_CFG: Record<string,{bg:string;text:string;dot:string}> = {
 }
 
 const today = new Date().toISOString().split('T')[0]
-const inp = "w-full px-4 py-3 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all placeholder:text-gray-400 bg-white/80 border border-gray-200/70"
+const inp = "w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"
 const F = ({label,req,children}:{label:string;req?:boolean;children:React.ReactNode}) => (
   <div className="flex flex-col gap-1.5">
-    <label className="text-[11px] font-bold text-gray-400 tracking-widest uppercase">{label}{req&&<span className="text-red-400 ml-0.5">*</span>}</label>
+    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide">{label}{req&&<span className="text-red-400 ml-0.5">*</span>}</label>
     {children}
   </div>
 )
@@ -139,19 +139,16 @@ function RegisterModal({ packings, onClose, onSubmit, isPending, error }: {
   const overLimit = selPacking && previewCount > selPacking.pcs_tersisa
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
-      <div className="w-full max-w-xl rounded-3xl overflow-hidden"
-        style={{ background: 'rgba(255,255,255,0.93)', backdropFilter: 'blur(24px)',
-          border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 32px 64px rgba(139,92,246,0.18)' }}>
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100/80 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-xl bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Registrasi Shieldtag</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Input range kode dari stiker fisik vendor</p>
+            <h2 className="text-[15px] font-bold text-slate-900">Registrasi Shieldtag</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Input range kode dari stiker fisik vendor</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><X size={15}/></button>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X size={14}/></button>
         </div>
-        <form onSubmit={submit} className="px-6 py-5 space-y-4 overflow-y-auto max-h-[78vh]">
+        <form id="register-form" onSubmit={submit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           <F label="Packing Log" req>
             <select value={packingId} onChange={e=>setPackingId(e.target.value)} className={inp} required>
               {packings.map(p=>(
@@ -163,8 +160,7 @@ function RegisterModal({ packings, onClose, onSubmit, isPending, error }: {
           </F>
 
           {selPacking && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-violet-600 font-medium"
-              style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.15)' }}>
+            <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700">
               <Tag size={12}/>
               {selPacking.batch_kode} · {selPacking.gramasi}gr · {selPacking.pcs_dipack} PCS dipack ·
               <span className="font-bold">{selPacking.pcs_tersisa} slot Shieldtag tersisa</span>
@@ -178,7 +174,7 @@ function RegisterModal({ packings, onClose, onSubmit, isPending, error }: {
           {/* Ranges */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-[11px] font-bold text-gray-400 tracking-widest uppercase">
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
                 Range Kode Shieldtag
               </label>
               <button type="button" onClick={() => setRanges(p => [...p, { start: '', end: '' }])}
@@ -198,11 +194,10 @@ function RegisterModal({ packings, onClose, onSubmit, isPending, error }: {
 
           {/* Preview */}
           {previewCount > 0 && (
-            <div className={cn('rounded-2xl p-4 space-y-2',
-              overLimit ? 'border-2 border-red-200' : 'border border-violet-200/50')}
-              style={{ background: overLimit ? 'rgba(239,68,68,0.04)' : 'rgba(139,92,246,0.04)' }}>
+            <div className={cn('rounded-lg p-3 space-y-2',
+              overLimit ? 'bg-red-50 border border-red-100' : 'bg-violet-50 border border-violet-100')}>
               <div className="flex items-center justify-between">
-                <p className={cn('text-xs font-bold', overLimit ? 'text-red-600' : 'text-violet-700')}>
+                <p className={cn('text-[12px] font-bold', overLimit ? 'text-red-600' : 'text-violet-700')}>
                   {previewCount} kode ter-generate
                   {overLimit && ` — melebihi sisa slot (${selPacking?.pcs_tersisa})`}
                 </p>
@@ -217,7 +212,7 @@ function RegisterModal({ packings, onClose, onSubmit, isPending, error }: {
                   {editCodes.map((code, i) => (
                     <input key={i} value={code}
                       onChange={e => setEditCodes(p => p.map((c, j) => j === i ? e.target.value.toUpperCase() : c))}
-                      className="px-2 py-1.5 text-xs font-mono rounded-xl bg-white border border-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-400 text-center"/>
+                      className="px-2 py-1.5 text-xs font-mono rounded-lg bg-white border border-slate-200 focus:outline-none focus:ring-1 focus:ring-violet-400 text-center"/>
                   ))}
                 </div>
               ) : (
@@ -228,7 +223,7 @@ function RegisterModal({ packings, onClose, onSubmit, isPending, error }: {
                     </span>
                   ))}
                   {preview.length > 50 && (
-                    <span className="text-[11px] text-gray-400 self-center">+{preview.length - 50} lagi</span>
+                    <span className="text-[11px] text-slate-400 self-center">+{preview.length - 50} lagi</span>
                   )}
                 </div>
               )}
@@ -236,27 +231,25 @@ function RegisterModal({ packings, onClose, onSubmit, isPending, error }: {
           )}
 
           {previewError && (
-            <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600">
-              <AlertTriangle size={14}/>{previewError}
+            <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">
+              <AlertTriangle size={13}/>{previewError}
             </div>
           )}
           {error && (
-            <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600">
-              <AlertTriangle size={14}/>{error}
+            <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">
+              <AlertTriangle size={13}/>{error}
             </div>
           )}
-
-          <div className="flex gap-3 justify-end pt-1 pb-2">
-            <button type="button" onClick={onClose}
-              className="px-5 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
-            <button type="submit" disabled={isPending || overLimit || previewCount === 0}
-              className="px-6 py-2.5 text-sm font-bold text-white rounded-2xl flex items-center gap-2 disabled:opacity-60"
-              style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', boxShadow: '0 4px 16px rgba(139,92,246,0.35)' }}>
-              {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
-              {isPending ? 'Menyimpan...' : `Daftarkan ${editMode ? editCodes.filter(Boolean).length : previewCount} Shieldtag`}
-            </button>
-          </div>
         </form>
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+          <button type="button" onClick={onClose}
+            className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+          <button type="submit" form="register-form" disabled={isPending || overLimit || previewCount === 0}
+            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
+            {isPending ? 'Menyimpan...' : `Daftarkan ${editMode ? editCodes.filter(Boolean).length : previewCount} Shieldtag`}
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -268,26 +261,26 @@ function EditKodeModal({ st, onClose, onSubmit, isPending, error }: {
 }) {
   const [kode, setKode] = useState(st.kode)
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
-      <div className="w-full max-w-sm rounded-3xl p-6"
-        style={{ background: 'rgba(255,255,255,0.93)', backdropFilter: 'blur(24px)',
-          border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 32px 64px rgba(139,92,246,0.18)' }}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-gray-900">Ganti Kode Shieldtag</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"><X size={15}/></button>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <div>
+            <h2 className="text-[15px] font-bold text-slate-900">Ganti Kode Shieldtag</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Ganti kode jika stiker fisik rusak atau keliru input</p>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X size={14}/></button>
         </div>
-        <p className="text-xs text-gray-400 mb-4">Ganti kode jika stiker fisik rusak atau keliru input</p>
-        <F label="Kode Shieldtag Baru" req>
-          <input value={kode} onChange={e=>setKode(e.target.value.toUpperCase())}
-            placeholder="Masukkan kode baru" className={cn(inp,'font-mono tracking-wider')} required/>
-        </F>
-        {error && <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600 mt-3"><AlertTriangle size={14}/>{error}</div>}
-        <div className="flex gap-3 mt-4">
-          <button onClick={onClose} className="flex-1 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
+        <div className="px-5 py-4 space-y-4">
+          <F label="Kode Shieldtag Baru" req>
+            <input value={kode} onChange={e=>setKode(e.target.value.toUpperCase())}
+              placeholder="Masukkan kode baru" className={cn(inp,'font-mono tracking-wider')} required/>
+          </F>
+          {error && <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600"><AlertTriangle size={13}/>{error}</div>}
+        </div>
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100">
+          <button onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
           <button onClick={() => onSubmit(kode)} disabled={isPending || !kode}
-            className="flex-1 py-2.5 text-sm font-bold text-white rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2"
-            style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
             {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
             {isPending ? 'Menyimpan...' : 'Simpan'}
           </button>
@@ -775,26 +768,25 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
           onSubmit={handleEditKode} isPending={isPending} error={err}/>
       )}
       {modal === 'void' && activeItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
-          <div className="w-full max-w-sm rounded-3xl p-6"
-            style={{ background: 'rgba(255,255,255,0.93)', backdropFilter: 'blur(24px)',
-              border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 32px 64px rgba(239,68,68,0.15)' }}>
-            <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Trash2 size={24} className="text-red-500"/>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+          <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <h2 className="text-[15px] font-bold text-slate-900">VOID Shieldtag?</h2>
+              <button onClick={() => setModal(null)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X size={14}/></button>
             </div>
-            <h2 className="text-lg font-bold text-gray-900 text-center">VOID Shieldtag?</h2>
-            <p className="text-sm text-gray-500 text-center mt-1 mb-4">
-              <span className="font-mono font-black text-gray-700">{activeItem.kode}</span> akan di-VOID dan tidak bisa digunakan.
-            </p>
-            <F label="Alasan VOID" req>
-              <input value={voidReason} onChange={e => setVoidReason(e.target.value)}
-                placeholder="Contoh: stiker rusak, hilang, dll" className={inp}/>
-            </F>
-            <div className="flex gap-3 mt-4">
-              <button onClick={() => setModal(null)} className="flex-1 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
+            <div className="px-5 py-4 space-y-4">
+              <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">
+                <p><span className="font-mono font-bold">{activeItem.kode}</span> akan di-VOID dan tidak bisa digunakan.</p>
+              </div>
+              <F label="Alasan VOID" req>
+                <input value={voidReason} onChange={e => setVoidReason(e.target.value)}
+                  placeholder="Contoh: stiker rusak, hilang, dll" className={inp}/>
+              </F>
+            </div>
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100">
+              <button onClick={() => setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
               <button onClick={handleVoid} disabled={isPending || !voidReason.trim()}
-                className="flex-1 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2">
+                className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                 {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
                 {isPending ? 'Memproses...' : 'VOID'}
               </button>
@@ -803,24 +795,25 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
         </div>
       )}
       {modal === 'bulk_void' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
-          <div className="w-full max-w-sm rounded-3xl p-6"
-            style={{ background: 'rgba(255,255,255,0.93)', backdropFilter: 'blur(24px)',
-              border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 32px 64px rgba(239,68,68,0.15)' }}>
-            <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Trash2 size={24} className="text-red-500"/>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+          <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <h2 className="text-[15px] font-bold text-slate-900">VOID {selected.size} Shieldtag?</h2>
+              <button onClick={() => setModal(null)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X size={14}/></button>
             </div>
-            <h2 className="text-lg font-bold text-gray-900 text-center">VOID {selected.size} Shieldtag?</h2>
-            <p className="text-sm text-gray-500 text-center mt-1 mb-4">Semua yang dipilih akan di-VOID dan tidak bisa digunakan.</p>
-            <F label="Alasan VOID" req>
-              <input value={bulkVoidReason} onChange={e => setBulkVoidReason(e.target.value)}
-                placeholder="Contoh: stiker rusak, batch recall, dll" className="w-full px-4 py-3 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white/80 border border-gray-200/70"/>
-            </F>
-            <div className="flex gap-3 mt-4">
-              <button onClick={() => setModal(null)} className="flex-1 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
+            <div className="px-5 py-4 space-y-4">
+              <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">
+                <p className="font-semibold">Semua yang dipilih akan di-VOID dan tidak bisa digunakan.</p>
+              </div>
+              <F label="Alasan VOID" req>
+                <input value={bulkVoidReason} onChange={e => setBulkVoidReason(e.target.value)}
+                  placeholder="Contoh: stiker rusak, batch recall, dll" className={inp}/>
+              </F>
+            </div>
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100">
+              <button onClick={() => setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
               <button onClick={handleBulkVoid} disabled={isPending || !bulkVoidReason.trim()}
-                className="flex-1 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2">
+                className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                 {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
                 {isPending ? 'Memproses...' : 'VOID Semua'}
               </button>

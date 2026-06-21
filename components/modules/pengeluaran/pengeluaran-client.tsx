@@ -141,45 +141,50 @@ function PengeluaranModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h3 className="font-bold text-slate-800">{item ? 'Edit Pengeluaran' : 'Tambah Pengeluaran'}</h3>
-          <button onClick={onClose} className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-50"><X size={16}/></button>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <div>
+            <h2 className="text-[15px] font-bold text-slate-900">{item ? 'Edit Pengeluaran' : 'Tambah Pengeluaran'}</h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">Isi data pengeluaran dengan lengkap</p>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors">
+            <X size={14} className="text-slate-500"/>
+          </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {err && <p className="text-xs text-red-600 bg-red-50 rounded-xl px-3 py-2">{err}</p>}
+        <form id="pengeluaran-form" onSubmit={handleSubmit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+          {err && <p className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</p>}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Tanggal *</label>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal *</label>
               <input name="tanggal" type="date" defaultValue={item?.tanggal ?? today} required
-                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-violet-400"/>
+                className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Nominal (Rp) *</label>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nominal (Rp) *</label>
               <input name="nominal" type="number" step="1000" min="1" defaultValue={item?.nominal ?? ''}
                 placeholder="0" required
-                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-violet-400"/>
+                className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Pengeluaran *</label>
+            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Pengeluaran *</label>
             <input name="nama" type="text" defaultValue={item?.nama ?? ''} placeholder="Contoh: Bayar listrik" required
-              className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-violet-400"/>
+              className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Lokasi *</label>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Lokasi *</label>
               <input name="lokasi" type="text" defaultValue={item?.lokasi ?? ''} placeholder="Pusat / Cabang CJ" required
-                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-violet-400"/>
+                className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Kategori</label>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Kategori</label>
               <select name="kategori_id" defaultValue={item?.kategori_id ?? ''}
-                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-violet-400">
+                className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all">
                 <option value="">— Pilih —</option>
                 {kategoriList.filter(k => k.aktif).map(k => (
                   <option key={k.id} value={k.id}>{k.nama}</option>
@@ -189,31 +194,30 @@ function PengeluaranModal({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Keterangan</label>
+            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan</label>
             <textarea name="keterangan" rows={2} defaultValue={item?.keterangan ?? ''} placeholder="Opsional"
-              className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-violet-400 resize-none"/>
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all resize-none"/>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Foto Bukti</label>
+            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bukti</label>
             <input type="file" accept="image/*" onChange={handleFile}
               className="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"/>
             {fotoPreview && (
               <img src={fotoPreview} alt="preview" className="mt-2 w-24 h-24 object-cover rounded-xl border border-slate-200"/>
             )}
           </div>
-
-          <div className="flex gap-2 pt-2">
-            <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">
-              Batal
-            </button>
-            <button type="submit" disabled={isPending}
-              className="flex-1 px-4 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-bold hover:bg-violet-700 disabled:opacity-50">
-              {isPending ? 'Menyimpan...' : 'Simpan'}
-            </button>
-          </div>
         </form>
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+          <button type="button" onClick={onClose}
+            className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">
+            Batal
+          </button>
+          <button form="pengeluaran-form" type="submit" disabled={isPending}
+            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+            {isPending ? 'Menyimpan...' : 'Simpan'}
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -238,21 +242,26 @@ function KategoriModal({ onClose, item }: { onClose: () => void; item?: Kategori
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h3 className="font-bold text-slate-800">{item ? 'Edit Kategori' : 'Tambah Kategori'}</h3>
-          <button onClick={onClose} className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600"><X size={16}/></button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {err && <p className="text-xs text-red-600 bg-red-50 rounded-xl px-3 py-2">{err}</p>}
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Kategori *</label>
+            <h2 className="text-[15px] font-bold text-slate-900">{item ? 'Edit Kategori' : 'Tambah Kategori'}</h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">Kelola kategori pengeluaran</p>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors">
+            <X size={14} className="text-slate-500"/>
+          </button>
+        </div>
+        <form id="kategori-form" onSubmit={handleSubmit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+          {err && <p className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</p>}
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Kategori *</label>
             <input name="nama" type="text" defaultValue={item?.nama ?? ''} required placeholder="Contoh: Listrik & Air"
-              className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-violet-400"/>
+              className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-2">Warna</label>
+            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Warna</label>
             <div className="flex items-center gap-2 flex-wrap">
               {DEFAULT_COLORS.map(c => (
                 <button key={c} type="button" onClick={() => setWarna(c)}
@@ -261,15 +270,15 @@ function KategoriModal({ onClose, item }: { onClose: () => void; item?: Kategori
               ))}
             </div>
           </div>
-          <div className="flex gap-2 pt-1">
-            <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
-            <button type="submit" disabled={isPending}
-              className="flex-1 px-4 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-bold hover:bg-violet-700 disabled:opacity-50">
-              {isPending ? 'Menyimpan...' : 'Simpan'}
-            </button>
-          </div>
         </form>
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+          <button type="button" onClick={onClose}
+            className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+          <button form="kategori-form" type="submit" disabled={isPending}
+            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+            {isPending ? 'Menyimpan...' : 'Simpan'}
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -510,27 +519,29 @@ export default function PengeluaranClient({
 
       {/* ── Void Confirm ─────────────────────────────────────────────────── */}
       {voidId !== null && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-red-50 flex items-center justify-center">
-                <AlertTriangle size={18} className="text-red-500"/>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+          <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <div>
-                <p className="font-bold text-slate-800">Hapus Pengeluaran?</p>
-                <p className="text-xs text-slate-400">Data tidak bisa dikembalikan</p>
+                <h2 className="text-[15px] font-bold text-slate-900">Hapus Pengeluaran?</h2>
+                <p className="text-[11px] text-slate-400 mt-0.5">Data tidak bisa dikembalikan</p>
+              </div>
+              <button onClick={() => setVoidId(null)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors">
+                <X size={14} className="text-slate-500"/>
+              </button>
+            </div>
+            <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+              {voidErr && <p className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{voidErr}</p>}
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Alasan *</label>
+                <input value={voidReason} onChange={e => setVoidReason(e.target.value)}
+                  placeholder="Masukkan alasan penghapusan"
+                  className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
               </div>
             </div>
-            {voidErr && <p className="text-xs text-red-600 bg-red-50 rounded-xl px-3 py-2">{voidErr}</p>}
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Alasan *</label>
-              <input value={voidReason} onChange={e => setVoidReason(e.target.value)}
-                placeholder="Masukkan alasan penghapusan"
-                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-red-300"/>
-            </div>
-            <div className="flex gap-2">
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
               <button onClick={() => setVoidId(null)}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">
                 Batal
               </button>
               <button disabled={voidPending}
@@ -539,7 +550,7 @@ export default function PengeluaranClient({
                   if (res?.error) { setVoidErr(res.error); return }
                   setVoidId(null)
                 })}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-bold hover:bg-red-700 disabled:opacity-50">
+                className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
                 {voidPending ? 'Menghapus...' : 'Ya, Hapus'}
               </button>
             </div>

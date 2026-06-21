@@ -143,28 +143,28 @@ function CreatePenjualanModal({
   const feeInfo  = channels.find(c => c.channel === channel)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl"
-        style={{ background: 'rgba(255,255,255,0.97)' }}>
-        <div className="flex items-center justify-between p-6 pb-4 border-b border-slate-100">
-          <h2 className="text-lg font-black text-slate-900">Catat Penjualan Baru</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200">
-            <X size={14} />
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <div>
+            <h2 className="text-[15px] font-bold text-slate-900">Catat Penjualan Baru</h2>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors">
+            <X size={14} className="text-slate-500"/>
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form id="create-penjualan-form" onSubmit={handleSubmit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           {/* Header fields */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1">Tanggal *</label>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal *</label>
               <input name="tanggal" type="date" required defaultValue={new Date().toISOString().split('T')[0]}
-                className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
+                className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1">Channel *</label>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Channel *</label>
               <select name="channel" value={channel} onChange={e => setChannel(e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-purple-400 bg-white">
+                className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all">
                 <option value="toko">Toko Fisik</option>
                 {channels.map(c => (
                   <option key={c.channel} value={c.channel}>{c.label}</option>
@@ -180,8 +180,8 @@ function CreatePenjualanModal({
           {/* Conditional fields */}
           {isCabang && (
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1">Cabang *</label>
-              <select name="cabang_kode" required className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:border-purple-400"
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Cabang *</label>
+              <select name="cabang_kode" required className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"
                 onChange={e => {
                   const opt = e.target.options[e.target.selectedIndex]
                   const form = e.target.form!
@@ -196,12 +196,12 @@ function CreatePenjualanModal({
           {isMktpl && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Akun Marketplace</label>
-                <input name="marketplace_akun" placeholder="mis. tokomas_emas" className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Akun Marketplace</label>
+                <input name="marketplace_akun" placeholder="mis. tokomas_emas" className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">No. Invoice Marketplace</label>
-                <input name="no_invoice_mktpl" placeholder="INV/xxxxxxxx" className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">No. Invoice Marketplace</label>
+                <input name="no_invoice_mktpl" placeholder="INV/xxxxxxxx" className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all" />
               </div>
             </div>
           )}
@@ -209,31 +209,31 @@ function CreatePenjualanModal({
           {/* Customer */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1">Nama Customer</label>
-              <input name="nama_customer" placeholder="Opsional" className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Customer</label>
+              <input name="nama_customer" placeholder="Opsional" className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1">No. HP</label>
-              <input name="hp_customer" placeholder="08xx…" className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">No. HP</label>
+              <input name="hp_customer" placeholder="08xx…" className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1">No. KTP</label>
-              <input name="ktp_customer" placeholder="Opsional" className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">No. KTP</label>
+              <input name="ktp_customer" placeholder="Opsional" className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1">Alamat</label>
-              <input name="alamat_customer" placeholder="Opsional" className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Alamat</label>
+              <input name="alamat_customer" placeholder="Opsional" className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all" />
             </div>
           </div>
 
           {/* Items */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-bold text-slate-500">Item ShieldTag *</label>
+              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Item ShieldTag *</label>
               <button type="button" onClick={addItem}
-                className="text-[10px] font-bold text-purple-600 hover:text-purple-800 flex items-center gap-1">
+                className="text-[10px] font-bold text-violet-600 hover:text-violet-800 flex items-center gap-1">
                 <Plus size={12} /> Tambah
               </button>
             </div>
@@ -246,17 +246,17 @@ function CreatePenjualanModal({
                       value={it.shieldtag_kode}
                       onChange={e => updateItem(i, 'shieldtag_kode', e.target.value)}
                       onBlur={e => handleKodeLookup(i, e.target.value)}
-                      className="flex-1 rounded-2xl border border-slate-200 px-3 py-2 text-sm font-mono uppercase focus:outline-none focus:border-purple-400"
+                      className="flex-1 h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white font-mono uppercase focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"
                     />
                     <input
                       placeholder="Harga Jual"
                       type="number"
                       value={it.harga_jual}
                       onChange={e => updateItem(i, 'harga_jual', e.target.value)}
-                      className="w-36 rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
+                      className="w-36 h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"
                     />
                     {items.length > 1 && (
-                      <button type="button" onClick={() => removeItem(i)} className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center text-red-400 hover:bg-red-100">
+                      <button type="button" onClick={() => removeItem(i)} className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center text-red-400 hover:bg-red-100">
                         <X size={12} />
                       </button>
                     )}
@@ -281,9 +281,9 @@ function CreatePenjualanModal({
           {/* Payments */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-bold text-slate-500">Pembayaran</label>
+              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Pembayaran</label>
               <button type="button" onClick={addPayment}
-                className="text-[10px] font-bold text-purple-600 hover:text-purple-800 flex items-center gap-1">
+                className="text-[10px] font-bold text-violet-600 hover:text-violet-800 flex items-center gap-1">
                 <Plus size={12} /> Tambah metode
               </button>
             </div>
@@ -291,14 +291,14 @@ function CreatePenjualanModal({
               {payments.map((p, i) => (
                 <div key={i} className="flex gap-2 items-center">
                   <select value={p.metode} onChange={e => updatePayment(i, 'metode', e.target.value)}
-                    className="w-40 rounded-2xl border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:border-purple-400">
+                    className="w-40 h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all">
                     {METODE_BAYAR.map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
                   <input placeholder="Jumlah" type="number" value={p.jumlah}
                     onChange={e => updatePayment(i, 'jumlah', e.target.value)}
-                    className="flex-1 rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
+                    className="flex-1 h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all" />
                   {payments.length > 1 && (
-                    <button type="button" onClick={() => removePayment(i)} className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center text-red-400 hover:bg-red-100">
+                    <button type="button" onClick={() => removePayment(i)} className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center text-red-400 hover:bg-red-100">
                       <X size={12} />
                     </button>
                   )}
@@ -309,24 +309,23 @@ function CreatePenjualanModal({
 
           {/* Notes */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 mb-1">Catatan</label>
-            <input name="catatan" placeholder="Opsional" className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
+            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
+            <input name="catatan" placeholder="Opsional" className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all" />
           </div>
 
-          {error && <p className="text-sm text-red-600 bg-red-50 rounded-2xl px-4 py-2">{error}</p>}
-
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose}
-              className="flex-1 rounded-2xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">
-              Batal
-            </button>
-            <button type="submit" disabled={pending}
-              className="flex-1 rounded-2xl py-2.5 text-sm font-black text-white disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg,#7c3aed,#6d28d9)' }}>
-              {pending ? 'Menyimpan…' : 'Simpan & Buka Faktur'}
-            </button>
-          </div>
+          {error && <p className="text-[11px] text-red-500 mt-1">{error}</p>}
         </form>
+
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+          <button type="button" onClick={onClose}
+            className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">
+            Batal
+          </button>
+          <button type="submit" form="create-penjualan-form" disabled={pending}
+            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+            {pending ? 'Menyimpan…' : 'Simpan & Buka Faktur'}
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -429,12 +428,12 @@ function PenjualanRow({ pj, canSeeRp, isOwner }: { pj: Penjualan; canSeeRp: bool
                 <div className="flex gap-2 items-center">
                   <input value={voidReason} onChange={e => setVoidReason(e.target.value)}
                     placeholder="Alasan void…"
-                    className="flex-1 rounded-2xl border border-red-200 px-3 py-1.5 text-xs focus:outline-none" />
+                    className="flex-1 h-9 rounded-lg border border-red-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-red-400/30 transition-all" />
                   <button onClick={doVoid} disabled={pending || !voidReason.trim()}
-                    className="rounded-2xl bg-red-500 text-white px-3 py-1.5 text-xs font-bold disabled:opacity-50">
+                    className="h-9 px-3 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
                     {pending ? '…' : 'Void'}
                   </button>
-                  <button onClick={() => setShowVoid(false)} className="text-xs text-slate-400">Batal</button>
+                  <button onClick={() => setShowVoid(false)} className="text-[13px] text-slate-400 hover:text-slate-600">Batal</button>
                 </div>
               )}
             </div>

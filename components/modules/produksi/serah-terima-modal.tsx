@@ -5,7 +5,7 @@ import { X, Camera, AlertTriangle } from 'lucide-react'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
 import { compressImage } from '@/lib/compress-image'
 
-const inp = "w-full px-4 py-3 text-sm bg-white/80 border border-gray-200/70 rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all placeholder:text-gray-400"
+const inp = "w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"
 
 async function filesToBase64(files: File[]): Promise<string[]> {
   return Promise.all(files.map(f => compressImage(f)))
@@ -60,20 +60,20 @@ export function TimPickerStd({ tims, prefix, initialTimId, initialAnggota }: { t
 
   return (
     <div>
-      <label className="text-xs font-semibold text-gray-500 mb-1 block">Tim Pengerjaan</label>
+      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tim Pengerjaan</label>
       <select name={`${prefix}tim_id`} value={timId} onChange={e => pilih(e.target.value)} className={inp}>
         <option value="">Pilih tim…</option>
         {tims.map(t => <option key={t.id} value={t.id}>{t.nama}</option>)}
       </select>
       {(selected || anggotaAktif.length > 0) && (
-        <div className="mt-1.5 p-2.5 rounded-2xl" style={{ background: 'rgba(139,92,246,0.05)', border: '1px solid rgba(139,92,246,0.12)' }}>
+        <div className="mt-1.5 p-2.5 rounded-lg bg-violet-50 border border-violet-100">
           <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wide mb-1.5">Anggota yang mengerjakan</p>
           <div className="flex flex-wrap gap-1.5 mb-2">
-            {anggotaAktif.length === 0 && <span className="text-[11px] text-gray-300 italic">Tidak ada anggota</span>}
+            {anggotaAktif.length === 0 && <span className="text-[11px] text-slate-300 italic">Tidak ada anggota</span>}
             {anggotaAktif.map(n => (
-              <span key={n} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-gray-700 bg-white border border-violet-100">
+              <span key={n} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-slate-700 bg-white border border-violet-100">
                 {n}
-                <button type="button" onClick={() => hapus(n)} className="text-gray-400 hover:text-red-500"><X size={11} /></button>
+                <button type="button" onClick={() => hapus(n)} className="text-slate-400 hover:text-red-500"><X size={11} /></button>
               </span>
             ))}
           </div>
@@ -81,7 +81,7 @@ export function TimPickerStd({ tims, prefix, initialTimId, initialAnggota }: { t
             <input value={tambah} onChange={e => setTambah(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
               placeholder="Tambah anggota (cth: Pak Nendi)"
-              className="flex-1 h-8 px-2.5 bg-white rounded-lg text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-violet-300 border border-gray-200" />
+              className="flex-1 h-8 px-2.5 bg-white rounded-lg text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-300 border border-slate-200" />
             <button type="button" onClick={add} className="px-2.5 h-8 rounded-lg text-xs font-bold text-violet-600 bg-white border border-violet-200">+ Tambah</button>
           </div>
         </div>
@@ -101,7 +101,7 @@ export function AdminPickerStd({ adminList, prefix, initialValue }: { adminList:
   const [value, setValue] = useState(initialValue ?? '')
   return (
     <div>
-      <label className="text-xs font-semibold text-gray-500 mb-1 block">Admin Yang Input</label>
+      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Admin Yang Input</label>
       {manual ? (
         <input name={`${prefix}admin_input`} value={value} onChange={e => setValue(e.target.value)} placeholder="Ketik nama admin" className={inp} autoFocus />
       ) : (
@@ -121,13 +121,12 @@ export function AdminPickerStd({ adminList, prefix, initialValue }: { adminList:
 // ─── Foto picker seragam (pola Peleburan) ───────────────────────────────────────
 function FotoPickerStd({ fotos, setFotos, accent }: { fotos: File[]; setFotos: (f: File[]) => void; accent: 'violet' | 'green' }) {
   const border = accent === 'green' ? 'border-green-200' : 'border-violet-200'
-  const hover = accent === 'green' ? 'hover:bg-green-50' : 'hover:bg-violet-50'
   return (
     <div>
-      <label className="text-xs font-semibold text-gray-500 mb-1 block">Foto Bukti (max 10)</label>
-      <label className={`flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer ${hover} transition-colors`}>
-        <Camera size={14} className="text-gray-400 flex-shrink-0" />
-        <span className="text-xs text-gray-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto'}</span>
+      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bukti (max 10)</label>
+      <label className="flex items-center gap-2 h-10 px-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
+        <Camera size={14} className="text-slate-400 flex-shrink-0" />
+        <span className="text-[13px] text-slate-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto'}</span>
         <input type="file" accept="image/*" multiple className="hidden"
           onChange={e => setFotos([...fotos, ...Array.from(e.target.files ?? [])].slice(0, 10))} />
       </label>
@@ -135,7 +134,7 @@ function FotoPickerStd({ fotos, setFotos, accent }: { fotos: File[]; setFotos: (
         <div className="flex flex-wrap gap-2 mt-2">
           {fotos.map((f, i) => (
             <div key={i} className="relative">
-              <img src={URL.createObjectURL(f)} alt="" className={`w-14 h-14 rounded-xl object-cover border ${border}`} />
+              <img src={URL.createObjectURL(f)} alt="" className={`w-14 h-14 rounded-lg object-cover border ${border}`} />
               <button type="button" onClick={() => setFotos(fotos.filter((_, j) => j !== i))}
                 className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">×</button>
             </div>
@@ -170,46 +169,47 @@ export function SerahModalStd({ judul, kode, tims, adminList, isPending, error, 
 
   return (
     <ModalShell judul={judul} kode={kode} onClose={onClose}>
-      <form onSubmit={submit} className="px-5 pb-6 space-y-4 overflow-y-auto flex-1">
-        {/* Section box: Diserahkan (violet) */}
-        <div className="rounded-2xl overflow-hidden border border-violet-100">
-          <div className="px-4 py-2.5 text-xs font-bold text-violet-700 uppercase tracking-wide" style={{ background: 'rgba(139,92,246,0.06)' }}>
-            📤 Diserahkan
-          </div>
-          <div className="p-4 space-y-3">
-            <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1 block">Berat Diserahkan (gr) *</label>
-              <input name="serah_gram" type="number" step="0.001" defaultValue={d.serah_gram ?? serahGramDefault ?? ''} placeholder="cth: 100,000" className={inp} required />
+      <form onSubmit={submit} className="flex flex-col flex-1 overflow-hidden">
+        <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+          {/* Section box: Diserahkan (violet) */}
+          <div className="rounded-lg overflow-hidden border border-violet-100">
+            <div className="flex items-center gap-2 px-3 py-2 bg-violet-50 border-b border-violet-100">
+              <span className="text-[11px] font-bold text-violet-700 uppercase tracking-wide">📤 Diserahkan</span>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="p-4 space-y-3">
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Tanggal Serah *</label>
-                <input name="serah_tanggal" type="date" defaultValue={d.serah_tanggal ?? new Date().toISOString().split('T')[0]} className={inp} required />
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Berat Diserahkan (gr) *</label>
+                <input name="serah_gram" type="number" step="0.001" defaultValue={d.serah_gram ?? serahGramDefault ?? ''} placeholder="cth: 100,000" className={inp} required />
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Serah *</label>
+                  <input name="serah_tanggal" type="date" defaultValue={d.serah_tanggal ?? new Date().toISOString().split('T')[0]} className={inp} required />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jam Serah *</label>
+                  <input name="serah_jam" type="time" defaultValue={d.serah_jam ? String(d.serah_jam).slice(0,5) : undefined} className={inp} required />
+                </div>
+              </div>
+              <TimPickerStd tims={tims} prefix="serah_" initialTimId={initTimId} initialAnggota={initAnggota} />
+              <AdminPickerStd adminList={adminList} prefix="serah_" initialValue={d.serah_admin_input ?? ''} />
+              <FotoPickerStd fotos={fotos} setFotos={setFotos} accent="violet" />
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Jam Serah *</label>
-                <input name="serah_jam" type="time" defaultValue={d.serah_jam ? String(d.serah_jam).slice(0,5) : undefined} className={inp} required />
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan Penyerahan</label>
+                <input name="serah_catatan" type="text" defaultValue={d.serah_catatan ?? ''} placeholder="Opsional" className={inp} />
               </div>
-            </div>
-            <TimPickerStd tims={tims} prefix="serah_" initialTimId={initTimId} initialAnggota={initAnggota} />
-            <AdminPickerStd adminList={adminList} prefix="serah_" initialValue={d.serah_admin_input ?? ''} />
-            <FotoPickerStd fotos={fotos} setFotos={setFotos} accent="violet" />
-            <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1 block">Catatan Penyerahan</label>
-              <input name="serah_catatan" type="text" defaultValue={d.serah_catatan ?? ''} placeholder="Opsional" className={inp} />
             </div>
           </div>
-        </div>
 
-        {error && (
-          <div className="flex items-start gap-2 px-3 py-2.5 bg-red-50 rounded-xl text-xs text-red-600">
-            <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" /><span>{error}</span>
-          </div>
-        )}
-        <div className="flex gap-2">
-          <button type="button" onClick={onClose} className="flex-1 h-11 rounded-2xl bg-gray-100 text-sm font-semibold text-gray-600">Batal</button>
-          <button type="submit" disabled={isPending || up} className="flex-1 h-11 rounded-2xl text-sm font-bold text-white disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+          {error && (
+            <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-100 text-[12px] text-red-600">
+              <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" /><span>{error}</span>
+            </div>
+          )}
+        </div>
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+          <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+          <button type="submit" disabled={isPending || up} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
             {up ? 'Upload foto…' : isPending ? 'Menyimpan…' : isEdit ? 'Simpan Perubahan' : 'Serahkan'}
           </button>
         </div>
@@ -275,145 +275,145 @@ export function TerimaModalStd({
 
   return (
     <ModalShell judul={judul} kode={kode} onClose={onClose}>
-      <form onSubmit={submit} className="px-5 pb-6 space-y-4 overflow-y-auto flex-1">
-        {/* Info chip serah gram */}
-        <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs" style={{ background: 'rgba(139,92,246,0.06)' }}>
-          <span className="text-gray-500">Diserahkan:</span>
-          <span className="font-bold text-violet-700">{Number(serahGram).toFixed(3)} gr</span>
-        </div>
-
-        {/* Section box: Diterima (green) */}
-        <div className="rounded-2xl overflow-hidden border border-green-100">
-          <div className="px-4 py-2.5 text-xs font-bold text-green-700 uppercase tracking-wide" style={{ background: 'rgba(16,185,129,0.06)' }}>
-            📥 Diterima
+      <form onSubmit={submit} className="flex flex-col flex-1 overflow-hidden">
+        <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+          {/* Info chip serah gram */}
+          <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700">
+            <span>Diserahkan: </span>
+            <span className="font-bold">{Number(serahGram).toFixed(3)} gr</span>
           </div>
-          <div className="p-4 space-y-3">
-            <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1 block">Berat Diterima (gr) *</label>
-              <input name="terima_gram" type="number" step="0.001" placeholder={`Max ${Number(serahGram).toFixed(3)} gr`}
-                value={terimaVal} onChange={e => setTerimaVal(e.target.value)} className={inp} required />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Tanggal Terima *</label>
-                <input name="terima_tanggal" type="date" defaultValue={d.terima_tanggal ?? new Date().toISOString().split('T')[0]} className={inp} required />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Jam Terima *</label>
-                <input name="terima_jam" type="time" defaultValue={d.terima_jam ? String(d.terima_jam).slice(0,5) : undefined} className={inp} required />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1 block">Jumlah PCS</label>
-              <input name="terima_pcs" type="number" min="1" defaultValue={d.terima_pcs ?? ''} placeholder="Isi jika sudah dihitung" className={inp} />
-            </div>
 
-            {/* Khusus Pas Berat: Sisa Serbuk */}
-            {showSerbuk && (
+          {/* Section box: Diterima (green) */}
+          <div className="rounded-lg overflow-hidden border border-green-100">
+            <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border-b border-green-100">
+              <span className="text-[11px] font-bold text-green-700 uppercase tracking-wide">📥 Diterima</span>
+            </div>
+            <div className="p-4 space-y-3">
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Sisa Serbuk (gr)</label>
-                <input name="sisa_serbuk" type="number" step="0.001" value={serbukVal} onChange={e => setSerbukVal(e.target.value)} className={inp} />
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Berat Diterima (gr) *</label>
+                <input name="terima_gram" type="number" step="0.001" placeholder={`Max ${Number(serahGram).toFixed(3)} gr`}
+                  value={terimaVal} onChange={e => setTerimaVal(e.target.value)} className={inp} required />
               </div>
-            )}
-
-            {/* Reject: Cutting WAJIB selalu tampil, proses lain pakai checkbox */}
-            {prosesLabel === 'Cutting' ? (
-              <div className="rounded-xl p-3 border border-red-100" style={{ background: 'rgba(239,68,68,0.04)' }}>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <span className="text-[10px] font-bold text-red-500 uppercase tracking-wide">⚠ Reject Cutting</span>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Terima *</label>
+                  <input name="terima_tanggal" type="date" defaultValue={d.terima_tanggal ?? new Date().toISOString().split('T')[0]} className={inp} required />
                 </div>
-                <p className="text-[10px] text-gray-400 mb-2 leading-relaxed">
-                  Reject cutting dilebur ulang → kembali jadi bahan baku batch. Isi 0 jika tidak ada reject.
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[11px] text-gray-400 mb-1 block">Berat Reject Cutting (gr)</label>
-                    <input name="reject_gram" type="number" step="0.001" min="0"
-                      value={rejectVal} onChange={e => setRejectVal(e.target.value)}
-                      className={inp} placeholder="0.000" />
-                  </div>
-                  <div>
-                    <label className="text-[11px] text-gray-400 mb-1 block">Reject (pcs)</label>
-                    <input name="reject_pcs" type="number" min="0"
-                      defaultValue={d.reject_pcs ?? 0} className={inp} placeholder="0" />
-                  </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jam Terima *</label>
+                  <input name="terima_jam" type="time" defaultValue={d.terima_jam ? String(d.terima_jam).slice(0,5) : undefined} className={inp} required />
                 </div>
               </div>
-            ) : (
-              /* Proses lain (Pas Berat, Annealing, Siap Packing): reject opsional */
               <div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={adaReject} onChange={e => { setAdaReject(e.target.checked); if (!e.target.checked) setRejectVal('0') }}
-                    className="w-4 h-4 rounded accent-red-500" />
-                  <span className="text-xs font-semibold text-gray-500">Ada reject yang perlu dilebur ulang?</span>
-                </label>
-                {adaReject && (
-                  <div className="grid grid-cols-2 gap-3 mt-2">
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jumlah PCS</label>
+                <input name="terima_pcs" type="number" min="1" defaultValue={d.terima_pcs ?? ''} placeholder="Isi jika sudah dihitung" className={inp} />
+              </div>
+
+              {/* Khusus Pas Berat: Sisa Serbuk */}
+              {showSerbuk && (
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Sisa Serbuk (gr)</label>
+                  <input name="sisa_serbuk" type="number" step="0.001" value={serbukVal} onChange={e => setSerbukVal(e.target.value)} className={inp} />
+                </div>
+              )}
+
+              {/* Reject: Cutting WAJIB selalu tampil, proses lain pakai checkbox */}
+              {prosesLabel === 'Cutting' ? (
+                <div className="rounded-lg p-3 bg-red-50 border border-red-100">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="text-[10px] font-bold text-red-500 uppercase tracking-wide">⚠ Reject Cutting</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mb-2 leading-relaxed">
+                    Reject cutting dilebur ulang → kembali jadi bahan baku batch. Isi 0 jika tidak ada reject.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-[11px] text-gray-400 mb-1 block">Reject (gr)</label>
-                      <input name="reject_gram" type="number" step="0.001" value={rejectVal} onChange={e => setRejectVal(e.target.value)} className={inp} />
+                      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Berat Reject Cutting (gr)</label>
+                      <input name="reject_gram" type="number" step="0.001" min="0"
+                        value={rejectVal} onChange={e => setRejectVal(e.target.value)}
+                        className={inp} placeholder="0.000" />
                     </div>
                     <div>
-                      <label className="text-[11px] text-gray-400 mb-1 block">Reject (pcs)</label>
-                      <input name="reject_pcs" type="number" min="0" defaultValue={d.reject_pcs ?? 0} className={inp} />
+                      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Reject (pcs)</label>
+                      <input name="reject_pcs" type="number" min="0"
+                        defaultValue={d.reject_pcs ?? 0} className={inp} placeholder="0" />
                     </div>
                   </div>
-                )}
-              </div>
-            )}
-
-            <TimPickerStd tims={tims} prefix="terima_" initialTimId={initTimId} initialAnggota={initAnggota} />
-            <AdminPickerStd adminList={adminList} prefix="terima_" initialValue={d.terima_admin_input ?? ''} />
-            {existingFotos.length > 0 && (
-              <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Foto Sebelumnya</label>
-                <div className="flex flex-wrap gap-2">
-                  {existingFotos.map((u, i) => (
-                    <div key={i} className="relative">
-                      <img src={u} alt="" className="w-14 h-14 rounded-xl object-cover border-2 border-green-100" />
-                      <button type="button" onClick={() => setExistingFotos(existingFotos.filter((_, j) => j !== i))}
-                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">×</button>
-                    </div>
-                  ))}
                 </div>
+              ) : (
+                /* Proses lain (Pas Berat, Annealing, Siap Packing): reject opsional */
+                <div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={adaReject} onChange={e => { setAdaReject(e.target.checked); if (!e.target.checked) setRejectVal('0') }}
+                      className="w-4 h-4 rounded accent-red-500" />
+                    <span className="text-[13px] font-semibold text-slate-500">Ada reject yang perlu dilebur ulang?</span>
+                  </label>
+                  {adaReject && (
+                    <div className="grid grid-cols-2 gap-3 mt-2">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Reject (gr)</label>
+                        <input name="reject_gram" type="number" step="0.001" value={rejectVal} onChange={e => setRejectVal(e.target.value)} className={inp} />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Reject (pcs)</label>
+                        <input name="reject_pcs" type="number" min="0" defaultValue={d.reject_pcs ?? 0} className={inp} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <TimPickerStd tims={tims} prefix="terima_" initialTimId={initTimId} initialAnggota={initAnggota} />
+              <AdminPickerStd adminList={adminList} prefix="terima_" initialValue={d.terima_admin_input ?? ''} />
+              {existingFotos.length > 0 && (
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Sebelumnya</label>
+                  <div className="flex flex-wrap gap-2">
+                    {existingFotos.map((u, i) => (
+                      <div key={i} className="relative">
+                        <img src={u} alt="" className="w-14 h-14 rounded-lg object-cover border-2 border-green-100" />
+                        <button type="button" onClick={() => setExistingFotos(existingFotos.filter((_, j) => j !== i))}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">×</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <FotoPickerStd fotos={fotos} setFotos={setFotos} accent="green" />
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan Penerimaan</label>
+                <input name="terima_catatan" type="text" defaultValue={d.terima_catatan ?? ''} placeholder="Opsional" className={inp} />
               </div>
-            )}
-            <FotoPickerStd fotos={fotos} setFotos={setFotos} accent="green" />
-            <div>
-              <label className="text-xs font-semibold text-gray-500 mb-1 block">Catatan Penerimaan</label>
-              <input name="terima_catatan" type="text" defaultValue={d.terima_catatan ?? ''} placeholder="Opsional" className={inp} />
             </div>
           </div>
+
+          {/* Loss indicator realtime */}
+          {terimaVal !== '' && (
+            <div className={`rounded-lg px-3 py-2 text-[12px] font-semibold flex items-center justify-between border ${overTol ? 'bg-red-50 border-red-100 text-red-600' : 'bg-green-50 border-green-100 text-green-700'}`}>
+              <span>Loss: {lossNow.toFixed(3)} gr</span>
+              <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
+            </div>
+          )}
+
+          {overTol && (
+            <LossApprovalPanel
+              lossGram={lossNow} toleransiGram={toleransi} proses={prosesLabel}
+              alasan={lossAlasan} setAlasan={setLossAlasan}
+              operatorNama={lossOpNama} setOperatorNama={setLossOpNama}
+              adminNama={lossAdminNama} setAdminNama={setLossAdminNama}
+              setTtdOperator={setTtdOp} setTtdAdmin={setTtdAdmin}
+            />
+          )}
+
+          {error && (
+            <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-100 text-[12px] text-red-600">
+              <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" /><span>{error}</span>
+            </div>
+          )}
         </div>
-
-        {/* Loss indicator realtime */}
-        {terimaVal !== '' && (
-          <div className="px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between"
-            style={{ background: overTol ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)', color: overTol ? '#DC2626' : '#16A34A' }}>
-            <span>Loss: {lossNow.toFixed(3)} gr</span>
-            <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
-          </div>
-        )}
-
-        {overTol && (
-          <LossApprovalPanel
-            lossGram={lossNow} toleransiGram={toleransi} proses={prosesLabel}
-            alasan={lossAlasan} setAlasan={setLossAlasan}
-            operatorNama={lossOpNama} setOperatorNama={setLossOpNama}
-            adminNama={lossAdminNama} setAdminNama={setLossAdminNama}
-            setTtdOperator={setTtdOp} setTtdAdmin={setTtdAdmin}
-          />
-        )}
-
-        {error && (
-          <div className="flex items-start gap-2 px-3 py-2.5 bg-red-50 rounded-xl text-xs text-red-600">
-            <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" /><span>{error}</span>
-          </div>
-        )}
-        <div className="flex gap-2">
-          <button type="button" onClick={onClose} className="flex-1 h-11 rounded-2xl bg-gray-100 text-sm font-semibold text-gray-600">Batal</button>
-          <button type="submit" disabled={isPending || up} className="flex-1 h-11 rounded-2xl text-sm font-bold text-white disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg,#059669,#047857)' }}>
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+          <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+          <button type="submit" disabled={isPending || up} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
             {up ? 'Upload foto…' : isPending ? 'Menyimpan…' : isEdit ? 'Simpan Perubahan' : 'Terima'}
           </button>
         </div>
@@ -425,15 +425,15 @@ export function TerimaModalStd({
 // ─── Shell modal seragam (bottom-sheet mobile / center desktop) ─────────────────
 function ModalShell({ judul, kode, onClose, children }: { judul: string; kode: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}>
-      <div className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[92vh] flex flex-col" style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}>
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div>
-            <h2 className="text-base font-bold text-gray-900">{judul}</h2>
-            <p className="text-xs text-violet-500 font-semibold mt-0.5">{kode}</p>
+            <h2 className="text-[15px] font-bold text-slate-900">{judul}</h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">{kode}</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-            <X size={15} className="text-gray-500" />
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors">
+            <X size={14} className="text-slate-500" />
           </button>
         </div>
         {children}
@@ -441,7 +441,3 @@ function ModalShell({ judul, kode, onClose, children }: { judul: string; kode: s
     </div>
   )
 }
-
-
-
-

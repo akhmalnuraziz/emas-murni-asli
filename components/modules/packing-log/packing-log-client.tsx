@@ -18,10 +18,10 @@ interface Props {
 }
 
 const today = new Date().toISOString().split('T')[0]
-const inp = "w-full px-4 py-3 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all placeholder:text-gray-400 bg-white/80 border border-gray-200/70"
+const inp = "w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"
 const F = ({label,req,children}:{label:string;req?:boolean;children:React.ReactNode}) => (
   <div className="flex flex-col gap-1.5">
-    <label className="text-[11px] font-bold text-gray-400 tracking-widest uppercase">{label}{req&&<span className="text-red-400 ml-0.5">*</span>}</label>
+    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{label}{req&&<span className="text-red-400 ml-0.5">*</span>}</label>
     {children}
   </div>
 )
@@ -165,19 +165,22 @@ function CreateModal({items,onClose,onSubmit,isPending,error}:{
     onSubmit(fd)
   }
   return(
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"style={{background:'rgba(0,0,0,0.4)',backdropFilter:'blur(8px)'}}>
-      <div className="w-full max-w-md rounded-3xl overflow-hidden"style={{background:'rgba(255,255,255,0.93)',backdropFilter:'blur(24px)',border:'1px solid rgba(255,255,255,0.6)',boxShadow:'0 32px 64px rgba(139,92,246,0.18)'}}>
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100/80 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">Catat Packing Baru</h2>
-          <button onClick={onClose}className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><X size={15}/></button>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <div>
+            <h2 className="text-[15px] font-bold text-slate-900">Catat Packing Baru</h2>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
         </div>
-        <form onSubmit={submit}className="px-6 py-5 space-y-4 overflow-y-auto max-h-[76vh]">
+        <form onSubmit={submit} className="flex flex-col flex-1 min-h-0">
+          <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           <F label="Item Produksi (Siap Packing)" req>
             <select name="produksi_item_id" value={selId} onChange={e=>setSelId(e.target.value)} className={inp} required>
               {items.map(i=><option key={i.id} value={i.id}>{i.nama_item||i.kode} · {i.gramasi}gr · {i.pcs_tersisa} PCS tersisa</option>)}
             </select>
           </F>
-          {sel&&<div className="px-3 py-2 rounded-xl text-xs text-violet-600 font-medium"style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.15)'}}>
+          {sel&&<div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700">
             {sel.batch_kode} · {sel.gramasi} gr/pcs · Sisa {sel.pcs_tersisa} PCS
           </div>}
           <div className="grid grid-cols-2 gap-3">
@@ -196,10 +199,11 @@ function CreateModal({items,onClose,onSubmit,isPending,error}:{
           <F label="Foto Packing (max 10)">
             <FotoPicker files={fotos} onAdd={ff=>setFotos(p=>[...p,...ff].slice(0,10))} onRemove={i=>i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))} label="Tambah foto packing"/>
           </F>
-          {error&&<div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600"><AlertTriangle size={14}/>{error}</div>}
-          <div className="flex gap-3 justify-end pt-1 pb-2">
-            <button type="button"onClick={onClose}className="px-5 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
-            <button type="submit" disabled={isPending||up}className="px-6 py-2.5 text-sm font-bold text-white rounded-2xl flex items-center gap-2 disabled:opacity-60"style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)',boxShadow:'0 4px 16px rgba(139,92,246,0.3)'}}>
+          {error&&<div className="flex items-center gap-2 rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600"><AlertTriangle size={14}/>{error}</div>}
+          </div>
+          <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+            <button type="button"onClick={onClose}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+            <button type="submit" disabled={isPending||up}className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {(isPending||up)&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
               {up?'Kompres foto...':isPending?'Menyimpan...':'Simpan Packing'}
             </button>
@@ -226,13 +230,17 @@ function EditModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;
     onSubmit(fd)
   }
   return(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"style={{background:'rgba(0,0,0,0.4)',backdropFilter:'blur(8px)'}}>
-      <div className="w-full max-w-md rounded-3xl overflow-hidden"style={{background:'rgba(255,255,255,0.93)',backdropFilter:'blur(24px)',border:'1px solid rgba(255,255,255,0.6)',boxShadow:'0 32px 64px rgba(139,92,246,0.18)'}}>
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100/80 flex items-center justify-between">
-          <div><h2 className="text-lg font-bold text-gray-900">Edit Packing</h2><p className="text-xs text-violet-500 font-medium mt-0.5">{p.kode}</p></div>
-          <button onClick={onClose}className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><X size={15}/></button>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <div>
+            <h2 className="text-[15px] font-bold text-slate-900">Edit Packing</h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">{p.kode}</p>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
         </div>
-        <form onSubmit={submit}className="px-6 py-5 space-y-4 overflow-y-auto max-h-[76vh]">
+        <form onSubmit={submit} className="flex flex-col flex-1 min-h-0">
+          <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           <div className="grid grid-cols-2 gap-3">
             <F label="PCS Dipack" req><input name="pcs_dipack" type="number" min="1" defaultValue={p.pcs_dipack} className={inp} required/></F>
             <F label="Total Gram Aktual" req><input name="total_gram_aktual" type="number" step="0.001" defaultValue={p.total_gram_aktual} className={inp} required/></F>
@@ -249,10 +257,11 @@ function EditModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;
               onRemoveExisting={i=>setExistFotos(prev=>prev.filter((_,j)=>j!==i))}
               label="Tambah foto packing" small/>
           </F>
-          {error&&<div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600"><AlertTriangle size={14}/>{error}</div>}
-          <div className="flex gap-3 justify-end pt-1">
-            <button type="button"onClick={onClose}className="px-5 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
-            <button type="submit"disabled={isPending||up}className="px-6 py-2.5 text-sm font-bold text-white rounded-2xl flex items-center gap-2 disabled:opacity-60"style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
+          {error&&<div className="flex items-center gap-2 rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600"><AlertTriangle size={14}/>{error}</div>}
+          </div>
+          <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+            <button type="button"onClick={onClose}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+            <button type="submit"disabled={isPending||up}className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {(isPending||up)&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
               {up?'Kompres...':isPending?'Menyimpan...':'Simpan'}
             </button>
@@ -441,7 +450,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
             </button>
           ))}
           {dateFilter==='custom'&&(
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl" style={{background:'rgba(139,92,246,0.05)',border:'1px solid rgba(139,92,246,0.15)'}}>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
               <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)}
                 className="text-xs bg-white border border-gray-200 rounded-lg px-2 py-1 text-gray-700 focus:outline-none focus:border-violet-400"/>
               <span className="text-xs text-gray-400 font-medium">s/d</span>
@@ -571,14 +580,24 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
       {modal==='create'&&<CreateModal items={siapPackingItems} onClose={()=>setModal(null)} onSubmit={handleCreate} isPending={isPending} error={err}/>}
       {modal==='edit'&&active&&<EditModal p={active} onClose={()=>setModal(null)} onSubmit={handleEdit} isPending={isPending} error={err}/>}
       {modal==='delete'&&active&&(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"style={{background:'rgba(0,0,0,0.4)',backdropFilter:'blur(8px)'}}>
-          <div className="w-full max-w-sm rounded-3xl p-6 text-center"style={{background:'rgba(255,255,255,0.92)',backdropFilter:'blur(24px)',boxShadow:'0 32px 64px rgba(239,68,68,0.15)'}}>
-            <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><Trash2 size={24}className="text-red-500"/></div>
-            <h2 className="text-lg font-bold text-gray-900">Hapus Packing?</h2>
-            <p className="text-sm text-gray-500 mt-2 mb-6"><span className="font-semibold">{active.kode}</span> dihapus. Status produksi kembali ke Siap Packing.</p>
-            <div className="flex gap-3">
-              <button onClick={()=>setModal(null)}className="flex-1 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
-              <button onClick={handleDelete}disabled={isPending}className="flex-1 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+          <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div>
+                <h2 className="text-[15px] font-bold text-slate-900">Hapus Packing?</h2>
+                <p className="text-[11px] text-slate-400 mt-0.5">{active.kode}</p>
+              </div>
+              <button onClick={()=>setModal(null)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
+            </div>
+            <div className="px-5 py-4 overflow-y-auto flex-1">
+              <div className="flex items-center gap-3 rounded-lg px-3 py-2 bg-red-50 border border-red-100 text-red-600 text-[12px]">
+                <AlertTriangle size={16} className="flex-shrink-0"/>
+                <span><span className="font-semibold">{active.kode}</span> akan dihapus. Status produksi kembali ke Siap Packing.</span>
+              </div>
+            </div>
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+              <button onClick={()=>setModal(null)}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+              <button onClick={handleDelete}disabled={isPending}className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                 {isPending&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
                 {isPending?'Menghapus...':'Ya, Hapus'}
               </button>
@@ -602,27 +621,27 @@ function ShieldtagListModal({kode,list,onClose}:{kode:string;list:{kode:string;s
     'VOID':{bg:'rgba(239,68,68,0.1)',text:'#DC2626'},
   }
   return (
-    <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-0 sm:p-4" style={{background:'rgba(0,0,0,0.45)',backdropFilter:'blur(8px)'}} onClick={onClose}>
-      <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[85vh] flex flex-col" style={{boxShadow:'0 24px 64px rgba(0,0,0,0.18)'}} onClick={e=>e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100 flex-shrink-0">
+    <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col" onClick={e=>e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
           <div>
-            <h2 className="text-base font-bold text-gray-900">Daftar Shieldtag</h2>
-            <p className="text-xs text-violet-500 font-semibold mt-0.5">{kode} · {list.length} tag</p>
+            <h2 className="text-[15px] font-bold text-slate-900">Daftar Shieldtag</h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">{kode} · {list.length} tag</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><X size={15} className="text-gray-500"/></button>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
         </div>
         <div className="px-5 py-4 overflow-y-auto flex-1 space-y-1.5">
-          {list.length===0 && <p className="text-sm text-gray-400 text-center py-8">Belum ada shieldtag.</p>}
+          {list.length===0 && <p className="text-[13px] text-slate-400 text-center py-8">Belum ada shieldtag.</p>}
           {list.map((st,i)=>{
             const sc=statusColor[st.status]??{bg:'rgba(107,114,128,0.08)',text:'#6B7280'}
             return (
-              <div key={st.kode} className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl" style={{background:'rgba(139,92,246,0.04)'}}>
+              <div key={st.kode} className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50 border border-slate-100">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="text-[10px] font-bold text-gray-300 w-5 flex-shrink-0">{i+1}</span>
-                  <span className="text-sm font-mono font-bold text-gray-800 truncate">{st.kode}</span>
+                  <span className="text-[10px] font-bold text-slate-300 w-5 flex-shrink-0">{i+1}</span>
+                  <span className="text-[13px] font-mono font-bold text-slate-800 truncate">{st.kode}</span>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  {st.lokasi && <span className="text-[10px] text-gray-400">{st.lokasi}</span>}
+                  {st.lokasi && <span className="text-[10px] text-slate-400">{st.lokasi}</span>}
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{background:sc.bg,color:sc.text}}>{st.status}</span>
                 </div>
               </div>

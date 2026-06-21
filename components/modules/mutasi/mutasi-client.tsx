@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
 import {
@@ -29,8 +29,7 @@ export default function MutasiClient({ cabangList }: { cabangList: Cabang[] }) {
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+        <div className="w-11 h-11 rounded-xl bg-violet-600 flex items-center justify-center">
           <ArrowLeftRight size={20} className="text-white" />
         </div>
         <div>
@@ -43,10 +42,11 @@ export default function MutasiClient({ cabangList }: { cabangList: Cabang[] }) {
       <div className="flex gap-2 overflow-x-auto pb-1">
         {([['kirim', 'Kirim Barang', Send], ['terima', 'Konfirmasi Terima', PackageCheck], ['stok', 'Stok Cabang', Store], ['riwayat', 'Riwayat', Truck]] as const).map(([key, label, Icon]) => (
           <button key={key} onClick={() => setTab(key)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-all"
-            style={tab === key
-              ? { background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', color: '#fff', boxShadow: '0 4px 12px rgba(139,92,246,0.35)' }
-              : { background: 'rgba(255,255,255,0.8)', color: '#6B7280', border: '1px solid rgba(209,213,219,0.5)' }}>
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-all border ${
+              tab === key
+                ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
+                : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
+            }`}>
             <Icon size={13} /> {label}
           </button>
         ))}
@@ -91,33 +91,31 @@ function SerialPickerModal({ gramasi, available, selected, onConfirm, onClose }:
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)' }}>
-      <div className="w-full max-w-sm rounded-3xl overflow-hidden flex flex-col max-h-[80vh]"
-        style={{ background: '#fff', boxShadow: '0 32px 80px rgba(0,0,0,0.18)' }}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div>
-            <p className="font-bold text-slate-800 text-sm">Pilih Serial Emas {gramasi}gr</p>
-            <p className="text-[11px] text-slate-400">{available.length} tersedia di gudang</p>
+            <h2 className="text-[15px] font-bold text-slate-900">Pilih Serial Emas {gramasi}gr</h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">{available.length} tersedia di gudang</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200">
-            <X size={14} />
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors">
+            <X size={14} className="text-slate-500"/>
           </button>
         </div>
 
         {/* Search */}
-        <div className="px-4 py-3 border-b border-slate-50">
+        <div className="px-5 py-3 border-b border-slate-100">
           <div className="relative">
             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Cari kode serial…"
-              className="w-full pl-8 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-400/30 font-mono" />
+              className="w-full h-9 rounded-lg border border-slate-200 pl-8 pr-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all font-mono" />
           </div>
         </div>
 
         {/* Select all */}
-        <div className="px-4 py-2 border-b border-slate-50">
+        <div className="px-5 py-2 border-b border-slate-100">
           <button onClick={toggleAll} className="flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-violet-600">
             <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${allChecked ? 'bg-violet-500 border-violet-500' : 'border-slate-300'}`}>
               {allChecked && <Check size={10} className="text-white" />}
@@ -127,12 +125,12 @@ function SerialPickerModal({ gramasi, available, selected, onConfirm, onClose }:
         </div>
 
         {/* List */}
-        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-0.5">
+        <div className="flex-1 overflow-y-auto px-5 py-2 space-y-0.5">
           {filtered.map(t => {
             const checked = local.has(t.kode)
             return (
               <button key={t.kode} onClick={() => toggle(t.kode)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-50 transition-colors text-left">
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 transition-colors text-left">
                 <div className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-all ${checked ? 'bg-violet-500 border-violet-500' : 'border-slate-300'}`}>
                   {checked && <Check size={10} className="text-white" />}
                 </div>
@@ -144,11 +142,10 @@ function SerialPickerModal({ gramasi, available, selected, onConfirm, onClose }:
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-4 border-t border-slate-100 flex items-center justify-between gap-3">
-          <p className="text-xs text-slate-500 font-semibold">{local.size} Serial dipilih</p>
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0 items-center">
+          <p className="text-xs text-slate-500 font-semibold flex-1">{local.size} Serial dipilih</p>
           <button onClick={() => onConfirm(local)}
-            className="flex-1 py-2.5 rounded-2xl text-sm font-bold text-white transition-all"
-            style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', boxShadow: '0 4px 12px rgba(139,92,246,0.35)' }}>
+            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
             Konfirmasi
           </button>
         </div>
@@ -225,8 +222,7 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
   return (
     <div className="space-y-4">
       {/* Form header */}
-      <div className="rounded-3xl p-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-3"
-        style={{ background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.6)' }}>
+      <div className="bg-white border border-slate-200 rounded-xl p-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Field label="Cabang Tujuan">
           <select value={cabang} onChange={e => setCabang(e.target.value)} className={inp}>
             {cabangList.map(c => <option key={c.kode} value={c.kode}>{c.nama}</option>)}
@@ -244,8 +240,7 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
       </div>
 
       {/* Item table */}
-      <div className="rounded-3xl overflow-hidden"
-        style={{ background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.6)' }}>
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
         {/* Table header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
           <div className="flex items-center gap-2">
@@ -254,8 +249,7 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
           </div>
           <div className="flex items-center gap-3">
             {totalSelected > 0 && (
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                style={{ background: 'rgba(139,92,246,0.1)', color: '#7C3AED' }}>
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-violet-50 text-violet-700">
                 {totalSelected} pcs dipilih
               </span>
             )}
@@ -277,7 +271,7 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] text-sm">
               <thead>
-                <tr style={{ background: 'rgba(139,92,246,0.04)', borderBottom: '1px solid rgba(139,92,246,0.08)' }}>
+                <tr className="bg-slate-50 border-b border-slate-100">
                   {['Nama Barang', 'Gramasi', 'Tersedia', 'Dipilih', 'Satuan', 'Aksi'].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">{h}</th>
                   ))}
@@ -290,12 +284,10 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
                   const currentSelected = new Set(items.filter(t => selected.has(t.kode)).map(t => t.kode))
                   return (
                     <tr key={gramasi}
-                      style={{ borderTop: i === 0 ? 'none' : '1px solid rgba(0,0,0,0.04)' }}
-                      className="hover:bg-violet-50/20 transition-colors">
+                      className={`border-t border-slate-100 hover:bg-violet-50/20 transition-colors ${i === 0 ? 'border-t-0' : ''}`}>
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                            style={{ background: 'rgba(245,158,11,0.1)' }}>
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-amber-50">
                             <span className="text-[9px] font-black text-amber-600">AU</span>
                           </div>
                           <div>
@@ -305,8 +297,7 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
                         </div>
                       </td>
                       <td className="px-4 py-3.5">
-                        <span className="text-xs font-bold px-2 py-1 rounded-lg text-amber-700"
-                          style={{ background: 'rgba(245,158,11,0.1)' }}>{gramasi}gr</span>
+                        <span className="text-xs font-bold px-2 py-1 rounded-lg text-amber-700 bg-amber-50">{gramasi}gr</span>
                       </td>
                       <td className="px-4 py-3.5 font-semibold text-slate-600 text-sm">{items.length}</td>
                       <td className="px-4 py-3.5">
@@ -317,10 +308,11 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
                       <td className="px-4 py-3.5 text-xs font-semibold text-slate-500">PCS</td>
                       <td className="px-4 py-3.5">
                         <button onClick={() => setPickerGramasi(gramasi)}
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:-translate-y-0.5"
-                          style={selCount > 0
-                            ? { background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', color: '#fff', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }
-                            : { background: 'rgba(139,92,246,0.08)', color: '#7C3AED' }}>
+                          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                            selCount > 0
+                              ? 'bg-violet-600 text-white hover:bg-violet-700'
+                              : 'bg-violet-50 text-violet-700 hover:bg-violet-100'
+                          }`}>
                           <ListChecks size={12} />
                           {selCount > 0 ? `${selCount} dipilih` : 'Pilih Serial'}
                           <ChevronRight size={11} />
@@ -338,7 +330,7 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
         {tags.length > 0 && (
           <div className="px-5 py-4 border-t border-slate-100 flex items-center justify-between gap-4">
             {msg && (
-              <p className={`text-xs flex-1 px-3 py-2 rounded-xl ${msg.type === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+              <p className={`text-xs flex-1 px-3 py-2 rounded-lg ${msg.type === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 border border-red-100 text-red-600'}`}>
                 {msg.text}
               </p>
             )}
@@ -349,8 +341,7 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
                 </p>
               )}
               <button onClick={submit} disabled={submitting || totalSelected === 0}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-40 hover:-translate-y-0.5"
-                style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', boxShadow: '0 4px 12px rgba(139,92,246,0.35)' }}>
+                className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold text-white transition-colors disabled:opacity-40 bg-violet-600 hover:bg-violet-700">
                 <Send size={14} /> {submitting ? 'Mengirim…' : 'Kirim Barang'}
               </button>
             </div>
@@ -389,7 +380,7 @@ function TerimaMutasi({ cabangList }: { cabangList: Cabang[] }) {
 
   if (loading) return <div className="py-12 text-center text-sm text-slate-400">Memuat mutasi yang menunggu konfirmasi…</div>
   if (rows.length === 0) return (
-    <div className="py-12 text-center rounded-3xl" style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.5)' }}>
+    <div className="py-12 text-center bg-white border border-slate-200 rounded-xl">
       <PackageCheck size={28} className="text-slate-300 mx-auto mb-2" />
       <p className="text-sm text-slate-400">Tidak ada mutasi yang menunggu konfirmasi terima.</p>
     </div>
@@ -444,10 +435,10 @@ function TerimaCard({ mutasi, cabangNama, open, onToggle, onDone }: {
   }
 
   return (
-    <div className="rounded-2xl p-4" >
+    <div className="bg-white border border-slate-200 rounded-xl p-4">
       <button onClick={onToggle} className="w-full flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(139,92,246,0.1)' }}>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-violet-50">
             <Truck size={15} className="text-violet-600" />
           </div>
           <div className="text-left">
@@ -462,17 +453,18 @@ function TerimaCard({ mutasi, cabangNama, open, onToggle, onDone }: {
       </button>
 
       {open && (
-        <div className="mt-4 pt-4 space-y-3" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+        <div className="mt-4 pt-4 space-y-3 border-t border-slate-100">
           <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Centang shieldtag yang fisiknya benar-benar diterima</p>
           <div className="flex flex-wrap gap-1.5 max-h-[220px] overflow-y-auto pr-1">
             {sentKodes.map(kode => {
               const ok = checked.has(kode)
               return (
                 <button key={kode} onClick={() => toggle(kode)}
-                  className="px-2.5 py-1.5 rounded-xl text-[11px] font-mono font-semibold transition-all"
-                  style={ok
-                    ? { background: 'linear-gradient(135deg,#10B981,#059669)', color: '#fff' }
-                    : { background: 'rgba(239,68,68,0.08)', color: '#DC2626', border: '1px solid rgba(239,68,68,0.2)' }}>
+                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-mono font-semibold transition-colors border ${
+                    ok
+                      ? 'bg-green-500 text-white border-green-500'
+                      : 'bg-red-50 text-red-600 border-red-200'
+                  }`}>
                   {ok ? <Check size={10} className="inline mr-1" /> : <X size={10} className="inline mr-1" />}{kode}
                 </button>
               )
@@ -480,7 +472,7 @@ function TerimaCard({ mutasi, cabangNama, open, onToggle, onDone }: {
           </div>
 
           {hilangCount > 0 && (
-            <div className="rounded-2xl px-3 py-2.5 space-y-2" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)' }}>
+            <div className="rounded-lg px-3 py-2.5 space-y-2 bg-red-50 border border-red-100">
               <div className="flex items-center gap-1.5 text-red-600">
                 <AlertTriangle size={13} />
                 <p className="text-xs font-bold">{hilangCount} shieldtag tidak dicocokkan — terdeteksi short-shipment</p>
@@ -495,14 +487,15 @@ function TerimaCard({ mutasi, cabangNama, open, onToggle, onDone }: {
           </Field>
 
           {msg && (
-            <div className={`rounded-xl px-3 py-2 text-xs ${msg.type === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+            <div className={`rounded-lg px-3 py-2 text-xs ${msg.type === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 border border-red-100 text-red-600'}`}>
               {msg.text}
             </div>
           )}
 
           <button onClick={submit} disabled={submitting}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-40"
-            style={{ background: hilangCount > 0 ? 'linear-gradient(135deg,#F59E0B,#D97706)' : 'linear-gradient(135deg,#10B981,#059669)' }}>
+            className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-bold text-white transition-colors disabled:opacity-40 ${
+              hilangCount > 0 ? 'bg-amber-500 hover:bg-amber-600' : 'bg-green-500 hover:bg-green-600'
+            }`}>
             <PackageCheck size={15} /> {submitting ? 'Menyimpan…' : hilangCount > 0 ? 'Konfirmasi (dengan Short-Shipment)' : 'Konfirmasi Penerimaan'}
           </button>
         </div>
@@ -538,25 +531,23 @@ function StokCabang({ cabangList, selectedCabang, setSelectedCabang }: {
     <div className="space-y-4">
       <div className="flex items-center gap-3 flex-wrap">
         <select value={selectedCabang} onChange={e => setSelectedCabang(e.target.value)}
-          className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700"
-          style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(209,213,219,0.5)' }}>
+          className="h-9 px-3 rounded-lg text-sm font-semibold text-slate-700 bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all">
           {cabangList.map(c => <option key={c.kode} value={c.kode}>{c.nama}</option>)}
         </select>
         <div className="flex gap-2 text-xs">
-          <span className="px-3 py-2 rounded-xl bg-green-50 text-green-700 font-semibold">Total Ready: {totalStok} pcs</span>
-          <span className="px-3 py-2 rounded-xl bg-amber-50 text-amber-700 font-semibold">Total PO: {totalPo} pcs</span>
+          <span className="px-3 py-2 rounded-lg bg-green-50 text-green-700 font-semibold">Total Ready: {totalStok} pcs</span>
+          <span className="px-3 py-2 rounded-lg bg-amber-50 text-amber-700 font-semibold">Total PO: {totalPo} pcs</span>
         </div>
       </div>
 
-      <div className="rounded-3xl overflow-hidden"
-        >
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
         {loading ? (
           <div className="py-12 text-center text-sm text-slate-400">Memuat stok…</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-[11px] font-bold text-slate-400 uppercase tracking-wide" style={{ background: 'rgba(139,92,246,0.04)' }}>
+                <tr className="bg-slate-50 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wide">
                   <th className="text-left px-4 py-3">Gramasi</th>
                   <th className="text-right px-4 py-3">Stok Ready</th>
                   <th className="text-right px-4 py-3">PO</th>
@@ -566,7 +557,7 @@ function StokCabang({ cabangList, selectedCabang, setSelectedCabang }: {
                 {visibleRows.length === 0 ? (
                   <tr><td colSpan={3} className="py-10 text-center text-sm text-slate-400">Belum ada stok di cabang ini.</td></tr>
                 ) : visibleRows.map((r, i) => (
-                  <tr key={r.gramasi} className={i % 2 ? 'bg-white/40' : ''} style={{ borderTop: '1px solid rgba(0,0,0,0.04)' }}>
+                  <tr key={r.gramasi} className={`border-t border-slate-100 ${i % 2 ? 'bg-slate-50/50' : ''}`}>
                     <td className="px-4 py-3 font-bold text-slate-800">{r.gramasi}gr</td>
                     <td className="px-4 py-3 text-right font-semibold text-green-600">{r.stok_ready} pcs</td>
                     <td className="px-4 py-3 text-right font-semibold text-amber-600">{r.po_pcs > 0 ? `PO ${r.po_pcs}` : '—'}</td>
@@ -600,7 +591,7 @@ function RiwayatMutasi({ cabangList }: { cabangList: Cabang[] }) {
 
   if (loading) return <div className="py-12 text-center text-sm text-slate-400">Memuat riwayat…</div>
   if (rows.length === 0) return (
-    <div className="py-12 text-center rounded-3xl" style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.5)' }}>
+    <div className="py-12 text-center bg-white border border-slate-200 rounded-xl">
       <p className="text-sm text-slate-400">Belum ada mutasi.</p>
     </div>
   )
@@ -608,11 +599,10 @@ function RiwayatMutasi({ cabangList }: { cabangList: Cabang[] }) {
   return (
     <div className="space-y-2.5">
       {rows.map(m => (
-        <div key={m.id} className="rounded-2xl p-4"
-          >
+        <div key={m.id} className="bg-white border border-slate-200 rounded-xl p-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(139,92,246,0.1)' }}>
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-violet-50">
                 <Truck size={15} className="text-violet-600" />
               </div>
               <div>
@@ -626,8 +616,7 @@ function RiwayatMutasi({ cabangList }: { cabangList: Cabang[] }) {
                 <RiwayatBadge status={m.status} statusTerima={m.status_terima} />
               </div>
               <a href={`/mutasi/print/${m.id}`} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-colors"
-                style={{ background: 'rgba(139,92,246,0.08)', color: '#7C3AED' }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-colors bg-violet-50 text-violet-700 hover:bg-violet-100"
                 title="Print Surat Jalan">
                 <Printer size={13}/> SJ
               </a>
@@ -648,13 +637,12 @@ function RiwayatBadge({ status, statusTerima }: { status: string | null; statusT
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
-const inp = 'w-full px-3 py-2.5 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 bg-white/80 border border-slate-200'
+const inp = 'w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all'
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">{label}</label>
+      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{label}</label>
       {children}
     </div>
   )
 }
-

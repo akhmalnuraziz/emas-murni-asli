@@ -7,7 +7,7 @@ import { createPO, updateStatusPO, updateQtyDikirim, deletePO } from '@/app/(das
 import { konfirmasiTerimaPoItem } from '@/app/(dashboard)/stok-cabang/actions'
 
 const GRAMASI_OPTIONS = ['0.1','0.5','1','2','5','10','20','25','50','100','250','500','1000']
-const inp = 'w-full px-3 py-2.5 text-sm rounded-2xl bg-white/80 border border-gray-200/70 focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all'
+const inp = 'w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all'
 const today = new Date().toISOString().split('T')[0]
 
 const STATUS_CFG: Record<string, { label: string; bg: string; text: string }> = {
@@ -332,32 +332,33 @@ function CreatePoModal({ cabangList, onClose, onCreated }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
-      <div className="w-full max-w-lg rounded-3xl overflow-hidden max-h-[90dvh] flex flex-col"
-        style={{ background: 'rgba(255,255,255,0.97)', border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 32px 64px rgba(14,165,233,0.15)' }}>
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
-          <h2 className="text-base font-bold text-slate-900">Buat PO Baru</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"><X size={14} /></button>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
+          <div>
+            <h2 className="text-[15px] font-bold text-slate-900">Buat PO Baru</h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">Isi detail pesanan ke cabang</p>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
         </div>
 
-        <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
-          {err && <p className="text-xs text-red-600 bg-red-50 rounded-2xl px-4 py-2">{err}</p>}
+        <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+          {err && <p className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</p>}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5 col-span-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cabang Tujuan *</label>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Cabang Tujuan *</label>
               <select value={cabangKode} onChange={e => setCabangKode(e.target.value)} className={inp}>
                 <option value="">Pilih cabang…</option>
                 {cabangList.map(c => <option key={c.kode} value={c.kode}>{c.nama}</option>)}
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tanggal *</label>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal *</label>
               <input type="date" value={tanggal} onChange={e => setTanggal(e.target.value)} className={inp} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Catatan</label>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
               <input value={catatan} onChange={e => setCatatan(e.target.value)} className={inp} placeholder="Opsional" />
             </div>
           </div>
@@ -365,7 +366,7 @@ function CreatePoModal({ cabangList, onClose, onCreated }: {
           {/* Items */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Item Pesanan *</label>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Item Pesanan *</label>
               <button onClick={addItem} className="flex items-center gap-1 text-xs text-sky-600 font-semibold hover:underline">
                 <Plus size={12} /> Tambah item
               </button>
@@ -393,13 +394,12 @@ function CreatePoModal({ cabangList, onClose, onCreated }: {
           </div>
         </div>
 
-        <div className="px-6 pb-5 pt-3 border-t border-gray-100 flex gap-2 flex-shrink-0">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-2xl text-sm font-semibold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors">
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+          <button onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">
             Batal
           </button>
           <button onClick={handleSubmit} disabled={isPending}
-            className="flex-1 py-2.5 rounded-2xl text-sm font-bold text-white flex items-center justify-center gap-2 disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg,#0EA5E9,#0284C7)' }}>
+            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
             {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
             Buat PO
           </button>

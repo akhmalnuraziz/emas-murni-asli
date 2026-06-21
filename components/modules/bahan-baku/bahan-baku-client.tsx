@@ -80,11 +80,10 @@ const today = new Date().toISOString().split('T')[0]
 const CAN_SEE_HPP: UserRole[] = ['admin_pusat']
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
-const inp = "w-full px-4 py-3 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all placeholder:text-gray-400"
-  + " bg-white/80 border border-gray-200/70"
+const inp = "w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"
 const F = ({label,req,children}:{label:string;req?:boolean;children:React.ReactNode}) => (
   <div className="flex flex-col gap-1.5">
-    <label className="text-[11px] font-bold text-gray-400 tracking-widest uppercase leading-tight min-h-[28px] flex items-end">{label}{req&&<span className="text-red-400 ml-0.5">*</span>}</label>
+    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{label}{req&&<span className="text-red-400 ml-0.5">*</span>}</label>
     {children}
   </div>
 )
@@ -123,45 +122,52 @@ function FotoPicker({files,onAdd,onRemove,label='Tambah foto',small=false}:{
 
 // ─── Batch Ringkas Modal ──────────────────────────────────────────────────────
 function BatchRingkasModal({onSubmit,onClose,isPending,error}:{onSubmit:(fd:FormData)=>void;onClose:()=>void;isPending:boolean;error:string}){
-  const inp='w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30'
   return(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{background:'rgba(0,0,0,0.4)',backdropFilter:'blur(8px)'}}>
-      <div className="w-full max-w-md rounded-3xl p-6 space-y-4"
-        style={{background:'rgba(255,255,255,0.95)',border:'1px solid rgba(255,255,255,0.6)',boxShadow:'0 32px 64px rgba(0,0,0,0.2)'}}>
-        <div className="flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div>
-            <h2 className="text-lg font-bold text-slate-800">Impor Batch Lama</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Untuk batch 1-29 yang belum diinput — minimal data</p>
+            <h2 className="text-[15px] font-bold text-slate-900">Impor Batch Lama</h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">Untuk batch 1-29 yang belum diinput — minimal data</p>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl text-slate-400 hover:bg-slate-100"><X size={16}/></button>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors">
+            <X size={14} className="text-slate-500"/>
+          </button>
         </div>
-        <div className="rounded-2xl px-3 py-2.5 text-xs text-amber-700"
-          style={{background:'rgba(245,158,11,0.08)',border:'1px solid rgba(245,158,11,0.2)'}}>
-          <b>Catatan:</b> Batch ini akan langsung dikunci (tidak bisa ditambahkan proses produksi baru).
-          Hanya bisa dipakai sebagai referensi buyback / peleburan.
-        </div>
-        <form onSubmit={e=>{e.preventDefault();onSubmit(new FormData(e.currentTarget))}} className="space-y-3">
-          <div><label className="text-xs font-semibold text-slate-500">Kode Batch *</label>
-            <input name="kode" required placeholder="mis. B-001 atau BATCH-001" className={inp}
-              style={{fontFamily:'monospace',fontWeight:'bold'}} autoFocus/></div>
-          <div><label className="text-xs font-semibold text-slate-500">Tanggal Masuk *</label>
-            <input name="tanggal" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/></div>
-          <div><label className="text-xs font-semibold text-slate-500">Berat (gr) *</label>
-            <input name="berat" type="number" step="0.001" min="0.001" required placeholder="0.000" className={inp}/></div>
-          <div><label className="text-xs font-semibold text-slate-500">Keterangan</label>
-            <input name="catatan" placeholder="opsional — mis. Emas 24K batch awal" className={inp}/></div>
-          {error&&<p className="text-xs text-red-500 font-semibold">{error}</p>}
-          <div className="flex gap-2 pt-1">
-            <button type="button" onClick={onClose}
-              className="flex-1 py-2.5 text-sm font-semibold rounded-2xl border border-gray-200 text-gray-500">Batal</button>
-            <button type="submit" disabled={isPending}
-              className="flex-1 py-2.5 text-sm font-bold text-white rounded-2xl disabled:opacity-60"
-              style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
-              {isPending?'Menyimpan...':'Impor Batch'}
-            </button>
+        <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+          <div className="rounded-lg px-3 py-2 text-[12px] bg-amber-50 border border-amber-100 text-amber-700">
+            <b>Catatan:</b> Batch ini akan langsung dikunci (tidak bisa ditambahkan proses produksi baru).
+            Hanya bisa dipakai sebagai referensi buyback / peleburan.
           </div>
-        </form>
+          <form id="ringkas-form" onSubmit={e=>{e.preventDefault();onSubmit(new FormData(e.currentTarget))}} className="space-y-4">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Kode Batch *</label>
+              <input name="kode" required placeholder="mis. B-001 atau BATCH-001" className={inp}
+                style={{fontFamily:'monospace',fontWeight:'bold'}} autoFocus/>
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Masuk *</label>
+              <input name="tanggal" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/>
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Berat (gr) *</label>
+              <input name="berat" type="number" step="0.001" min="0.001" required placeholder="0.000" className={inp}/>
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan</label>
+              <input name="catatan" placeholder="opsional — mis. Emas 24K batch awal" className={inp}/>
+            </div>
+            {error&&<p className="text-[12px] text-red-500 font-semibold">{error}</p>}
+          </form>
+        </div>
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+          <button type="button" onClick={onClose}
+            className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+          <button type="submit" form="ringkas-form" disabled={isPending}
+            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+            {isPending?'Menyimpan...':'Impor Batch'}
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -219,13 +225,15 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
   }
 
   return(
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"style={{background:'rgba(0,0,0,0.4)',backdropFilter:'blur(8px)'}}>
-      <div className="w-full max-w-lg rounded-3xl overflow-hidden"style={{background:'rgba(255,255,255,0.93)',backdropFilter:'blur(24px)',border:'1px solid rgba(255,255,255,0.6)',boxShadow:'0 32px 64px rgba(139,92,246,0.18),0 8px 32px rgba(0,0,0,0.1)'}}>
-        <div className="px-6 pt-5 pb-4 border-b border-gray-100/80 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">{isEdit?'Edit Batch':'Registrasi Logam Mulia Masuk'}</h2>
-          <button onClick={onClose}className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><X size={15}/></button>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <div>
+            <h2 className="text-[15px] font-bold text-slate-900">{isEdit?'Edit Batch':'Registrasi Logam Mulia Masuk'}</h2>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
         </div>
-        <form onSubmit={submit}className="px-6 py-5 space-y-4 overflow-y-auto max-h-[78vh]">
+        <form id="batch-form" onSubmit={submit}className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           <div className="grid grid-cols-2 gap-3">
             <F label="Kode Batch"><input name="kode" defaultValue={initial?.kode??''} placeholder="Auto-generate" className={inp} readOnly={isEdit}/></F>
             <F label="Nama / Label Batch"><input name="nama_batch" defaultValue={initial?.nama_batch??''} placeholder="BATCH 26" className={inp}/></F>
@@ -240,9 +248,9 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
             <F label="Berat Timbangan Gudang (gr)" req><input name="timbangan_akhir" type="number" step="0.001" value={gudang} onChange={e=>setGudang(e.target.value)} placeholder="999.890" className={inp} required/></F>
           </div>
           {si&&(
-            <div className="flex items-start gap-3 px-4 py-3 rounded-2xl border"style={{background:si.bg,borderColor:`${si.dot}30`}}>
+            <div className={cn('flex items-start gap-3 px-4 py-3 rounded-lg border',si.warn?'bg-red-50 border-red-100':'bg-amber-50 border-amber-100')}>
               <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0"style={{background:si.dot}}/>
-              <p className={cn('text-xs font-medium',si.color)}>{si.desc}</p>
+              <p className={cn('text-[12px] font-medium',si.color)}>{si.desc}</p>
             </div>
           )}
           <F label="Harga Beli (IDR)">
@@ -251,7 +259,7 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
           </F>
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <label className="text-[11px] font-bold text-gray-400 tracking-widest uppercase">Biaya Tambahan</label>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Biaya Tambahan</label>
               <button type="button"onClick={()=>setBiaya(p=>[...p,{label:'',jumlah:0}])}className="text-xs text-violet-600 font-semibold hover:underline">+ Tambah</button>
             </div>
             {biaya.map((b,i)=>(
@@ -263,17 +271,19 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
             ))}
           </div>
           {hargaNum>0&&(
-            <div className="rounded-2xl px-4 py-3 space-y-2"style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.15)'}}>
-              <div className="flex justify-between text-xs"><span className="text-gray-500">Harga Beli</span><span className="font-semibold text-gray-700">{formatRupiah(hargaNum)}</span></div>
-              {totalBiaya>0&&<div className="flex justify-between text-xs"><span className="text-gray-500">Biaya Tambahan</span><span className="font-semibold text-gray-700">{formatRupiah(totalBiaya)}</span></div>}
-              <div className="flex justify-between text-xs border-t pt-2"style={{borderColor:'rgba(139,92,246,0.15)'}}>
-                <span className="font-semibold text-gray-500">Total HPP</span>
-                <span className="font-bold text-violet-700">{formatRupiah(totalHpp)}</span>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-50 border border-slate-100">
+              <div className="flex-1 space-y-1.5">
+                <div className="flex justify-between text-[12px]"><span className="text-slate-500">Harga Beli</span><span className="font-semibold text-slate-700">{formatRupiah(hargaNum)}</span></div>
+                {totalBiaya>0&&<div className="flex justify-between text-[12px]"><span className="text-slate-500">Biaya Tambahan</span><span className="font-semibold text-slate-700">{formatRupiah(totalBiaya)}</span></div>}
+                <div className="flex justify-between text-[12px] border-t border-slate-200 pt-1.5">
+                  <span className="font-semibold text-slate-500">Total HPP</span>
+                  <span className="font-bold text-violet-700">{formatRupiah(totalHpp)}</span>
+                </div>
+                {hppGr>0&&<div className="flex justify-between text-[12px]">
+                  <span className="font-semibold text-slate-500">HPP / gram</span>
+                  <span className="font-bold text-violet-700">{formatRupiah(hppGr)}/gr</span>
+                </div>}
               </div>
-              {hppGr>0&&<div className="flex justify-between text-xs">
-                <span className="font-semibold text-gray-500">HPP / gram</span>
-                <span className="font-bold text-violet-700 text-sm">{formatRupiah(hppGr)}/gr</span>
-              </div>}
             </div>
           )}
           <F label={`Catatan${si?.warn?' *':''}`}>
@@ -306,17 +316,16 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
             )}
             <FotoPicker files={newFotos} onAdd={f=>setNewFotos(p=>[...p,...f].slice(0,10-existingFotos.length))} onRemove={i=>i===-1?setNewFotos([]):setNewFotos(p=>p.filter((_,j)=>j!==i))}/>
           </F>
-          {error&&<div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-sm text-red-600"><AlertTriangle size={14}/>{error}</div>}
-          <div className="flex gap-3 justify-end pt-1 pb-2">
-            <button type="button" onClick={onClose}className="px-5 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
-            <button type="submit" disabled={isPending||uploading}
-              className="px-6 py-2.5 text-sm font-bold text-white rounded-2xl flex items-center gap-2 disabled:opacity-60"
-              style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)',boxShadow:'0 4px 16px rgba(139,92,246,0.35)'}}>
-              {(isPending||uploading)&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
-              {uploading?'Kompres foto...':isPending?'Menyimpan...':isEdit?'Simpan Perubahan':'Simpan & Rekonsiliasi'}
-            </button>
-          </div>
+          {error&&<div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/>{error}</div>}
         </form>
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+          <button type="button" onClick={onClose}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+          <button type="submit" form="batch-form" disabled={isPending||uploading}
+            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            {(isPending||uploading)&&<span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
+            {uploading?'Kompres foto...':isPending?'Menyimpan...':isEdit?'Simpan Perubahan':'Simpan & Rekonsiliasi'}
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -656,10 +665,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                           <p className="text-[11px] font-bold text-violet-600 uppercase tracking-wide mb-2.5 px-1">Rekonsiliasi Detail</p>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                             {cols.map(col=>(
-                              <div key={col.label} className="rounded-2xl px-3.5 py-3"
-                                style={col.highlight
-                                  ? {background:'linear-gradient(135deg,rgba(139,92,246,0.12),rgba(124,58,237,0.06))',border:'1px solid rgba(139,92,246,0.25)'}
-                                  : {background:'rgba(255,255,255,0.7)',border:'1px solid rgba(0,0,0,0.05)'}}>
+                              <div key={col.label} className={`rounded-lg px-3.5 py-3 ${col.highlight?'bg-violet-50 border border-violet-200':'bg-white border border-slate-100'}`}>
                                 <div className="flex items-center gap-1.5 mb-1.5">
                                   <span className="w-1.5 h-1.5 rounded-full" style={{background:col.accent}}/>
                                   <p className="text-[10px] font-semibold text-slate-500 leading-tight">{col.label}</p>
@@ -706,9 +712,8 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                       placeholder="Berat sisa fisik (gram)"
                                       className="flex-1 px-3 py-2 text-sm rounded-xl border border-green-200 bg-white focus:outline-none focus:ring-2 focus:ring-green-400/30"/>
                                     <button onClick={()=>handleSisaFisik(batch,sisaSeharusnya,toleransiPeleburan)} disabled={sfUploading[batch.id]}
-                                      className="px-3 py-2 text-sm font-bold text-white rounded-xl disabled:opacity-60 flex items-center gap-1 flex-shrink-0"
-                                      style={{background:'linear-gradient(135deg,#22C55E,#16A34A)'}}>
-                                      {sfUploading[batch.id]?<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<Check size={13}/>}
+                                      className="px-3 h-8 text-[12px] font-bold text-white rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-50 flex items-center gap-1 flex-shrink-0 transition-colors">
+                                      {sfUploading[batch.id]?<span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<Check size={13}/>}
                                       {sfUploading[batch.id]?'Simpan...':'Simpan'}
                                     </button>
                                     <button onClick={()=>{setEditingSF(null);setSfFotos(p=>({...p,[batch.id]:[]}))} }
@@ -749,13 +754,12 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                     })()}
 
                     {/* ─── Peleburan section ─────────────── */}
-                    <div className="rounded-2xl overflow-hidden" style={{border:'1px solid rgba(139,92,246,0.15)'}}>
-                      <div className="flex items-center justify-between px-4 py-3" style={{background:'rgba(139,92,246,0.06)'}}>
-                        <p className="text-xs font-bold text-violet-700">🔥 Riwayat Peleburan</p>
+                    <div className="rounded-lg overflow-hidden border border-slate-200">
+                      <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100">
+                        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">🔥 Riwayat Peleburan</p>
                         {status==='aktif'&&(
                           <button type="button" onClick={()=>setPeleburanModalBatch(batch.kode)}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-white"
-                            style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
+                            className="flex items-center gap-1 px-2.5 h-7 rounded-lg text-[11px] font-bold text-white bg-violet-600 hover:bg-violet-700 transition-colors">
                             + Buat Peleburan
                           </button>
                         )}
@@ -800,8 +804,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                               <div className="flex items-center gap-1 flex-shrink-0">
                                 {plb.status!=='selesai'&&batch.status==='aktif'&&(
                                   <button type="button" onClick={()=>setSelesaiLeburItem(plb)}
-                                    className="flex-shrink-0 px-2.5 py-1 rounded-xl text-[11px] font-bold text-white"
-                                    style={{background:'linear-gradient(135deg,#059669,#047857)'}}>
+                                    className="flex-shrink-0 px-2.5 h-7 rounded-lg text-[11px] font-bold text-white bg-green-600 hover:bg-green-700 transition-colors">
                                     Selesai Lebur
                                   </button>
                                 )}
@@ -998,16 +1001,24 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
       {editItem&&<BatchFormModal initial={editItem} onSubmit={handleUpdate} onClose={()=>setEditItem(null)} isPending={isPending} error={formError} isEdit/>}
 
       {lockModal&&(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"style={{background:'rgba(0,0,0,0.4)',backdropFilter:'blur(8px)'}}>
-          <div className="w-full max-w-sm rounded-3xl p-6 text-center"style={{background:'rgba(255,255,255,0.92)',backdropFilter:'blur(24px)',boxShadow:'0 32px 64px rgba(245,158,11,0.15)'}}>
-            <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><Lock size={24}className="text-amber-500"/></div>
-            <h2 className="text-lg font-bold text-gray-900">Kunci Batch?</h2>
-            <p className="text-sm text-gray-500 mt-2 mb-6"><span className="font-semibold text-gray-700">{lockModal.kode}</span> akan dikunci dan tidak bisa digunakan untuk produksi baru.</p>
-            <div className="flex gap-3">
-              <button onClick={()=>setLockModal(null)}className="flex-1 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+          <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div>
+                <h2 className="text-[15px] font-bold text-slate-900">Kunci Batch?</h2>
+                <p className="text-[11px] text-slate-400 mt-0.5"><span className="font-semibold text-slate-600">{lockModal.kode}</span> akan dikunci dan tidak bisa digunakan untuk produksi baru.</p>
+              </div>
+              <button onClick={()=>setLockModal(null)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
+            </div>
+            <div className="px-5 py-4 flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center flex-shrink-0"><Lock size={18}className="text-amber-500"/></div>
+              <p className="text-[13px] text-slate-500">Batch yang sudah dikunci tidak bisa digunakan untuk proses produksi baru.</p>
+            </div>
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100">
+              <button onClick={()=>setLockModal(null)}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
               <button onClick={()=>startTransition(async()=>{const r=await lockBatch(lockModal.id,lockModal.kode);if(r?.error)showToast(r.error,false);else{showToast('🔒 Batch dikunci');setLockModal(null)}})} disabled={isPending}
-                className="flex-1 py-2.5 text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2">
-                {isPending&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
+                className="flex-1 h-9 rounded-lg bg-amber-500 hover:bg-amber-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                {isPending&&<span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
                 {isPending?'Memproses...':'Kunci'}
               </button>
             </div>
@@ -1016,17 +1027,27 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
       )}
 
       {delModal&&(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"style={{background:'rgba(0,0,0,0.4)',backdropFilter:'blur(8px)'}}>
-          <div className="w-full max-w-sm rounded-3xl p-6 text-center"style={{background:'rgba(255,255,255,0.92)',backdropFilter:'blur(24px)',boxShadow:'0 32px 64px rgba(239,68,68,0.15)'}}>
-            <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><Trash2 size={24}className="text-red-500"/></div>
-            <h2 className="text-lg font-bold text-gray-900">Hapus Batch?</h2>
-            <p className="text-sm text-gray-500 mt-2 mb-1"><span className="font-semibold text-gray-700">{delModal.kode}</span> akan dihapus permanen.</p>
-            <p className="text-xs text-red-500 font-semibold mb-6">⚠ Tindakan ini tidak bisa dibatalkan</p>
-            <div className="flex gap-3">
-              <button onClick={()=>setDelModal(null)}className="flex-1 py-2.5 text-sm font-semibold bg-gray-100 rounded-2xl hover:bg-gray-200">Batal</button>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+          <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div>
+                <h2 className="text-[15px] font-bold text-slate-900">Hapus Batch?</h2>
+                <p className="text-[11px] text-slate-400 mt-0.5"><span className="font-semibold text-slate-600">{delModal.kode}</span> akan dihapus permanen.</p>
+              </div>
+              <button onClick={()=>setDelModal(null)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
+            </div>
+            <div className="px-5 py-4 flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center flex-shrink-0"><Trash2 size={18}className="text-red-500"/></div>
+              <div>
+                <p className="text-[13px] text-slate-500">Tindakan ini tidak bisa dibatalkan.</p>
+                <p className="text-[12px] text-red-500 font-semibold mt-0.5">⚠ Data akan dihapus permanen</p>
+              </div>
+            </div>
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100">
+              <button onClick={()=>setDelModal(null)}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
               <button onClick={()=>startTransition(async()=>{const r=await deleteBatch(delModal.id,delModal.kode);if(r?.error)showToast(r.error,false);else{showToast('🗑️ Batch dihapus');setDelModal(null)}})} disabled={isPending}
-                className="flex-1 py-2.5 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-2xl disabled:opacity-60 flex items-center justify-center gap-2">
-                {isPending&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
+                className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                {isPending&&<span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
                 {isPending?'Menghapus...':'Ya, Hapus'}
               </button>
             </div>
@@ -1098,21 +1119,21 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{background:'rgba(0,0,0,0.45)'}}>
-      <div className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[94vh] flex flex-col" style={{boxShadow:'0 8px 40px rgba(0,0,0,0.2)'}}>
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
           <div>
-            <h2 className="text-base font-bold text-gray-900">Buat Peleburan</h2>
-            <p className="text-xs text-violet-500 font-semibold mt-0.5">{batchNama||batchKode}</p>
+            <h2 className="text-[15px] font-bold text-slate-900">Buat Peleburan</h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">{batchNama||batchKode}</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><X size={15} className="text-gray-500"/></button>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
         </div>
-        <form onSubmit={handleSubmit} className="px-5 pb-6 space-y-4 overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
 
           {/* SUMBER BAHAN — 3 pilihan */}
-          <div className="rounded-2xl overflow-hidden border border-violet-100">
-            <div className="px-4 py-2.5 text-xs font-bold text-violet-700 uppercase tracking-wide" style={{background:'rgba(139,92,246,0.06)'}}>
-              🧱 Sumber Bahan
+          <div className="rounded-lg overflow-hidden border border-slate-200">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-100">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">🧱 Sumber Bahan</span>
             </div>
             <div className="p-4 space-y-4">
 
@@ -1188,31 +1209,31 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
               )}
 
               {/* Total */}
-              <div className="flex items-center justify-between px-3 py-2.5 rounded-xl" style={{background:'rgba(139,92,246,0.07)'}}>
-                <span className="text-xs text-gray-500 font-semibold">Total Dikasih</span>
-                <span className={`text-sm font-bold ${totalDikasih>0?'text-violet-700':'text-gray-400'}`}>{(Math.round(totalDikasih*100)/100).toFixed(2).replace('.',',')} gr</span>
+              <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-violet-50 border border-violet-100">
+                <span className="text-[12px] text-slate-500 font-semibold">Total Dikasih</span>
+                <span className={`text-[13px] font-bold ${totalDikasih>0?'text-violet-700':'text-slate-400'}`}>{(Math.round(totalDikasih*100)/100).toFixed(2).replace('.',',')} gr</span>
               </div>
             </div>
           </div>
 
           {/* DISERAHKAN */}
-          <div className="rounded-2xl overflow-hidden border border-violet-100">
-            <div className="px-4 py-2.5 text-xs font-bold text-violet-700 uppercase tracking-wide" style={{background:'rgba(139,92,246,0.06)'}}>
-              📤 Diserahkan
+          <div className="rounded-lg overflow-hidden border border-slate-200">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-100">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">📤 Diserahkan</span>
             </div>
             <div className="p-4 space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Tanggal Mulai *</label>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Mulai *</label>
                   <input name="tanggal" type="date" defaultValue={new Date().toISOString().split('T')[0]} className={inp} required/>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Jam Mulai *</label>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jam Mulai *</label>
                   <input name="jam_mulai" type="time" className={inp} required/>
                 </div>
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Foto</label>
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto</label>
                 <label className="flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-violet-50">
                   <Camera size={14} className="text-gray-400 flex-shrink-0"/>
                   <span className="text-xs text-gray-400">{fotos.length>0?`${fotos.length} foto dipilih`:'Tambah foto'}</span>
@@ -1234,7 +1255,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
               <TimPickerStd tims={tims} prefix="" />
               <AdminPickerStd adminList={adminList} prefix="" />
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
                   Keterangan {mentahNaik&&<span className="text-red-500">* (wajib — timbangan naik)</span>}
                 </label>
                 <input name="keterangan_serahkan" type="text"
@@ -1248,13 +1269,12 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
             <p className="text-xs text-gray-400">Bagian <span className="font-semibold text-gray-500">Diterima</span> diisi setelah proses lebur selesai</p>
           </div>
 
-          {err&&<div className="flex items-center gap-2 px-3 py-2 bg-red-50 rounded-xl text-xs text-red-600"><AlertTriangle size={13} className="flex-shrink-0"/><span>{err}</span></div>}
+          {err&&<div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13} className="flex-shrink-0"/><span>{err}</span></div>}
 
-          <div className="flex gap-2">
-            <button type="button" onClick={onClose} className="flex-1 h-11 rounded-2xl bg-gray-100 text-sm font-semibold text-gray-600">Batal</button>
+          <div className="flex gap-2.5 pb-2">
+            <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
             <button type="submit" disabled={pend||totalDikasih<=0}
-              className="flex-1 h-11 rounded-2xl text-sm font-bold text-white disabled:opacity-40"
-              style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)'}}>
+              className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
               {pend?'Menyimpan…':`Mulai Peleburan (${formatGram(totalDikasih)})`}
             </button>
           </div>
@@ -1314,51 +1334,48 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      style={{background:'rgba(0,0,0,0.4)'}}>
-      <div className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[92vh] flex flex-col"
-        style={{boxShadow:'0 8px 40px rgba(0,0,0,0.18)'}}>
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
           <div>
-            <h2 className="text-base font-bold text-gray-900">Selesai Lebur</h2>
-            <p className="text-xs text-violet-500 font-semibold mt-0.5">{peleburan.kode}</p>
+            <h2 className="text-[15px] font-bold text-slate-900">Selesai Lebur</h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">{peleburan.kode}</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-            <X size={15} className="text-gray-500"/>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors">
+            <X size={14} className="text-slate-500"/>
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="px-5 pb-6 space-y-4 overflow-y-auto flex-1">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs" style={{background:'rgba(139,92,246,0.06)'}}>
-            <span className="text-gray-500">Dikasih:</span>
-            <span className="font-bold text-violet-700">{formatGram(peleburan.dikasih_gram)}</span>
+        <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+          <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700 flex items-center gap-2">
+            <span>Dikasih:</span>
+            <span className="font-bold">{formatGram(peleburan.dikasih_gram)}</span>
           </div>
 
-          <div className="rounded-2xl overflow-hidden border border-green-100">
-            <div className="px-4 py-2.5 text-xs font-bold text-green-700 uppercase tracking-wide"
-              style={{background:'rgba(16,185,129,0.06)'}}>
-              📥 Diterima
+          <div className="rounded-lg overflow-hidden border border-slate-200">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-100">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">📥 Diterima</span>
             </div>
             <div className="p-4 space-y-3">
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Berat Diterima (gr) *</label>
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Berat Diterima (gr) *</label>
                 <input name="diterima_gram" type="number" step="0.001"
                   value={diterimaVal} onChange={e=>setDiterimaVal(e.target.value)}
                   placeholder="cth: 499.980" className={inp} required/>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Tanggal Selesai *</label>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Selesai *</label>
                   <input name="tanggal_diterima" type="date"
                     defaultValue={new Date().toISOString().split('T')[0]}
                     className={inp} required/>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Jam Selesai *</label>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jam Selesai *</label>
                   <input name="jam_selesai" type="time" className={inp} required/>
                 </div>
               </div>
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Foto Bukti</label>
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bukti</label>
                 <label className="flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-green-50 transition-colors">
                   <Camera size={14} className="text-gray-400 flex-shrink-0"/>
                   <span className="text-xs text-gray-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto'}</span>
@@ -1380,7 +1397,7 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
               <TimPickerStd tims={tims} prefix="terima_" />
               <AdminPickerStd adminList={adminList} prefix="terima_" />
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Catatan Selesai Lebur</label>
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan Selesai Lebur</label>
                 <input name="keterangan_diterima" type="text" placeholder="Opsional" className={inp}/>
               </div>
             </div>
@@ -1388,8 +1405,7 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
 
           {/* Loss indicator realtime */}
           {diterimaVal !== '' && (
-            <div className="px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between"
-              style={{ background: overTol ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)', color: overTol ? '#DC2626' : '#16A34A' }}>
+            <div className={`rounded-lg px-3 py-2 text-[12px] font-semibold flex items-center justify-between ${overTol?'bg-red-50 border border-red-100 text-red-600':'bg-green-50 border border-green-100 text-green-700'}`}>
               <span>Loss: {lossNow.toFixed(3)} gr</span>
               <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
             </div>
@@ -1406,18 +1422,17 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
           )}
 
           {err && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-red-50 rounded-xl text-xs text-red-600">
+            <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2">
               <AlertTriangle size={13} className="flex-shrink-0"/><span>{err}</span>
             </div>
           )}
-          <div className="flex gap-2">
+          <div className="flex gap-2.5 pb-2">
             <button type="button" onClick={onClose}
-              className="flex-1 h-11 rounded-2xl bg-gray-100 text-sm font-semibold text-gray-600">
+              className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">
               Batal
             </button>
             <button type="submit" disabled={pend}
-              className="flex-1 h-11 rounded-2xl text-sm font-bold text-white disabled:opacity-50"
-              style={{background:'linear-gradient(135deg,#059669,#047857)'}}>
+              className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
               {pend ? 'Menyimpan…' : 'Konfirmasi Selesai'}
             </button>
           </div>
@@ -1461,23 +1476,23 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
   const toTime = (t: any) => t ? String(t).slice(0,5) : ''
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{background:'rgba(0,0,0,0.4)'}}>
-      <div className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[92vh] flex flex-col" style={{boxShadow:'0 8px 40px rgba(0,0,0,0.18)'}}>
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
           <div>
-            <h2 className="text-base font-bold text-gray-900">Edit Diserahkan</h2>
-            <p className="text-xs text-violet-500 font-semibold mt-0.5">{peleburan.kode}</p>
+            <h2 className="text-[15px] font-bold text-slate-900">Edit Diserahkan</h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">{peleburan.kode}</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><X size={15} className="text-gray-500"/></button>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
         </div>
-        <form onSubmit={handleSubmit} className="px-5 pb-6 space-y-3 overflow-y-auto flex-1">
-          <div className="rounded-2xl overflow-hidden border border-violet-100">
-            <div className="px-4 py-2.5 text-xs font-bold text-violet-700 uppercase tracking-wide" style={{background:'rgba(139,92,246,0.06)'}}>
-              📤 Diserahkan
+        <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+          <div className="rounded-lg overflow-hidden border border-slate-200">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-100">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">📤 Diserahkan</span>
             </div>
             <div className="p-4 space-y-3">
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Berat Diserahkan (gr) *</label>
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Berat Diserahkan (gr) *</label>
                 <input name="dikasih_gram" type="number" step="0.001"
                   defaultValue={peleburan.dikasih_gram} className={inp}
                   onChange={e => setEditDikasih(e.target.value)} required/>
@@ -1495,17 +1510,17 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Tanggal Mulai *</label>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Mulai *</label>
                   <input name="tanggal" type="date" defaultValue={peleburan.tanggal} className={inp} required/>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Jam Mulai *</label>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jam Mulai *</label>
                   <input name="jam_mulai" type="time" defaultValue={toTime(peleburan.jam_mulai)} className={inp} required/>
                 </div>
               </div>
               {existingFotos.length > 0 && (
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Foto saat ini</label>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto saat ini</label>
                   <div className="flex flex-wrap gap-2">
                     {existingFotos.map((url,i) => (
                       <div key={i} className="relative">
@@ -1518,7 +1533,7 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
                 </div>
               )}
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Tambah Foto</label>
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tambah Foto</label>
                 <label className="flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-violet-50">
                   <Camera size={14} className="text-gray-400 flex-shrink-0"/>
                   <span className="text-xs text-gray-400">{newFotos.length > 0 ? `${newFotos.length} foto baru` : 'Tambah foto'}</span>
@@ -1529,15 +1544,15 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
               <TimPickerStd tims={tims} prefix="" initialTimId={peleburan.tim_id!=null?String(peleburan.tim_id):''} initialAnggota={peleburan.tim_anggota_aktif?String(peleburan.tim_anggota_aktif).split(',').map((x:string)=>x.trim()).filter(Boolean):undefined} />
               <AdminPickerStd adminList={adminList} prefix="" initialValue={peleburan.admin_input??''} />
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Keterangan</label>
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan</label>
                 <input name="keterangan_serahkan" type="text" defaultValue={peleburan.keterangan_serahkan??''} placeholder="Opsional" className={inp}/>
               </div>
             </div>
           </div>
-          {err && <div className="flex items-center gap-2 px-3 py-2 bg-red-50 rounded-xl text-xs text-red-600"><AlertTriangle size={13} className="flex-shrink-0"/><span>{err}</span></div>}
-          <div className="flex gap-2">
-            <button type="button" onClick={onClose} className="flex-1 h-11 rounded-2xl bg-gray-100 text-sm font-semibold text-gray-600">Batal</button>
-            <button type="submit" disabled={pend} className="flex-1 h-11 rounded-2xl text-sm font-bold text-white disabled:opacity-50" style={{background:'linear-gradient(135deg,#7F6DC6,#6857B1)'}}>
+          {err && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13} className="flex-shrink-0"/><span>{err}</span></div>}
+          <div className="flex gap-2.5 pb-2">
+            <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+            <button type="submit" disabled={pend} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
               {pend ? 'Menyimpan…' : 'Simpan Perubahan'}
             </button>
           </div>
@@ -1613,25 +1628,25 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
   const existingLoss = peleburan.loss_approval
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{background:'rgba(0,0,0,0.4)'}}>
-      <div className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[92vh] flex flex-col" style={{boxShadow:'0 8px 40px rgba(0,0,0,0.18)'}}>
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
           <div>
-            <h2 className="text-base font-bold text-gray-900">Edit Diterima</h2>
-            <p className="text-xs text-green-500 font-semibold mt-0.5">{peleburan.kode}</p>
+            <h2 className="text-[15px] font-bold text-slate-900">Edit Diterima</h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">{peleburan.kode}</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center"><X size={15} className="text-gray-500"/></button>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
         </div>
-        <form onSubmit={handleSubmit} className="px-5 pb-6 space-y-3 overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           {/* Info serah */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs" style={{background:'rgba(139,92,246,0.06)'}}>
-            <span className="text-gray-500">Diserahkan:</span>
-            <span className="font-bold text-violet-700">{formatGram(peleburan.dikasih_gram)}</span>
+          <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700 flex items-center gap-2">
+            <span>Diserahkan:</span>
+            <span className="font-bold">{formatGram(peleburan.dikasih_gram)}</span>
           </div>
 
           {/* Existing TTD notice */}
           {existingLoss && (
-            <div className="px-3 py-2.5 rounded-xl text-xs bg-amber-50 border border-amber-200">
+            <div className="rounded-lg px-3 py-2 text-[12px] bg-amber-50 border border-amber-100 text-amber-700">
               <p className="font-semibold text-amber-700 mb-1">
                 {hasExistingTtd ? '✅ TTD Loss Tersimpan — tidak perlu tanda tangan ulang' : '⚠ TTD Loss Belum Lengkap'}
               </p>
@@ -1640,30 +1655,30 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
             </div>
           )}
 
-          <div className="rounded-2xl overflow-hidden border border-green-100">
-            <div className="px-4 py-2.5 text-xs font-bold text-green-700 uppercase tracking-wide" style={{background:'rgba(34,197,94,0.06)'}}>
-              📥 Diterima
+          <div className="rounded-lg overflow-hidden border border-slate-200">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-100">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">📥 Diterima</span>
             </div>
             <div className="p-4 space-y-3">
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Berat Diterima (gr) *</label>
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Berat Diterima (gr) *</label>
                 <input name="diterima_gram" type="number" step="0.001"
                   value={diterimaVal} onChange={e => setDiterimaVal(e.target.value)}
                   className={inp} required/>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Tanggal Selesai</label>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Selesai</label>
                   <input name="tanggal_diterima" type="date" defaultValue={peleburan.tanggal_diterima ?? ''} className={inp}/>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Jam Selesai</label>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jam Selesai</label>
                   <input name="jam_selesai" type="time" defaultValue={toTime(peleburan.jam_selesai)} className={inp}/>
                 </div>
               </div>
               {existingFotosDiterima.length > 0 && (
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 mb-1 block">Foto diterima saat ini</label>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto diterima saat ini</label>
                   <div className="flex flex-wrap gap-2">
                     {existingFotosDiterima.map((url,i) => (
                       <div key={i} className="relative">
@@ -1676,7 +1691,7 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
                 </div>
               )}
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Tambah Foto Diterima</label>
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tambah Foto Diterima</label>
                 <label className="flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-green-50">
                   <Camera size={14} className="text-gray-400 flex-shrink-0"/>
                   <span className="text-xs text-gray-400">{newFotosDiterima.length > 0 ? `${newFotosDiterima.length} foto baru` : 'Tambah foto'}</span>
@@ -1698,7 +1713,7 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
           })()}
               <AdminPickerStd adminList={adminList} prefix="terima_" initialValue={peleburan.admin_input??''} />
               <div>
-                <label className="text-xs font-semibold text-gray-500 mb-1 block">Catatan Selesai Lebur</label>
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan Selesai Lebur</label>
                 <input name="keterangan_diterima" type="text" defaultValue={peleburan.keterangan_diterima??''} placeholder="Opsional" className={inp}/>
               </div>
             </div>
@@ -1706,8 +1721,7 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
 
           {/* Loss realtime indicator */}
           {diterimaVal !== '' && (
-            <div className="px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between"
-              style={{ background: overTol ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)', color: overTol ? '#DC2626' : '#16A34A' }}>
+            <div className={`rounded-lg px-3 py-2 text-[12px] font-semibold flex items-center justify-between ${overTol?'bg-red-50 border border-red-100 text-red-600':'bg-green-50 border border-green-100 text-green-700'}`}>
               <span>Loss: {lossNow.toFixed(3)} gr</span>
               <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
             </div>
@@ -1724,10 +1738,10 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
             />
           )}
 
-          {err && <div className="flex items-center gap-2 px-3 py-2 bg-red-50 rounded-xl text-xs text-red-600"><AlertTriangle size={13} className="flex-shrink-0"/><span>{err}</span></div>}
-          <div className="flex gap-2">
-            <button type="button" onClick={onClose} className="flex-1 h-11 rounded-2xl bg-gray-100 text-sm font-semibold text-gray-600">Batal</button>
-            <button type="submit" disabled={pend} className="flex-1 h-11 rounded-2xl text-sm font-bold text-white disabled:opacity-50" style={{background:'linear-gradient(135deg,#059669,#047857)'}}>
+          {err && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13} className="flex-shrink-0"/><span>{err}</span></div>}
+          <div className="flex gap-2.5 pb-2">
+            <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+            <button type="submit" disabled={pend} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
               {pend ? 'Menyimpan…' : 'Simpan Perubahan'}
             </button>
           </div>

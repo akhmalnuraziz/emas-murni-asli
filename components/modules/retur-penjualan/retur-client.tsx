@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useTransition } from 'react'
 import { Plus, X, Check, AlertTriangle, RotateCcw, Clock, CheckCircle2, XCircle, Search } from 'lucide-react'
@@ -121,15 +121,13 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Cari kode, nama customer, no. faktur..."
-            className="w-full pl-9 pr-3 h-8 text-[12px] rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30"
-            style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(209,213,219,0.5)' }}/>
+            className="w-full pl-9 pr-3 h-8 text-[12px] rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30"/>
         </div>
 
         {/* List */}
         <div className="space-y-3">
           {filtered.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-xl py-16 text-center"
-              >
+            <div className="bg-white border border-slate-200 rounded-xl py-16 text-center">
               <RotateCcw size={28} className="text-slate-200 mx-auto mb-2"/>
               <p className="text-sm text-slate-400">Belum ada retur{filterStatus !== 'Semua' ? ` berstatus ${filterStatus}` : ''}</p>
             </div>
@@ -138,7 +136,6 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
             const Icon = cfg.icon
             return (
               <div key={r.id} className="bg-white border border-slate-200 rounded-xl p-4 cursor-pointer hover:shadow-sm transition-shadow"
-                
                 onClick={() => { setActive(r); setCatatanInput(r.catatan_admin ?? ''); setModal('detail') }}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
@@ -171,67 +168,73 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
 
       {/* Create Modal */}
       {modal === 'form' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
-          <div className="w-full max-w-lg rounded-3xl p-6 max-h-[90vh] overflow-y-auto"
-            style={{ background: 'rgba(255,255,255,0.95)' }}>
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold text-slate-800">Catat Retur Penjualan</h2>
-              <button onClick={() => setModal(null)} className="p-2 rounded-xl hover:bg-slate-100"><X size={16}/></button>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+          <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div>
+                <h2 className="text-[15px] font-bold text-slate-900">Catat Retur Penjualan</h2>
+                <p className="text-[11px] text-slate-400 mt-0.5">Isi detail retur di bawah ini</p>
+              </div>
+              <button onClick={() => setModal(null)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors">
+                <X size={14} className="text-slate-500"/>
+              </button>
             </div>
-            <form action={handleCreate} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Tanggal *</label>
-                  <input name="tanggal" type="date" defaultValue={today} required
-                    className="mt-1 w-full px-4 py-2.5 text-sm rounded-2xl border border-slate-200 focus:outline-none focus:border-violet-400"/>
+            <form action={handleCreate} className="flex flex-col flex-1 overflow-hidden">
+              <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal *</label>
+                    <input name="tanggal" type="date" defaultValue={today} required
+                      className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Kondisi *</label>
+                    <select name="kondisi" required
+                      className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all">
+                      <option value="rusak">Rusak / Cacat</option>
+                      <option value="salah_produk">Salah Produk</option>
+                      <option value="lainnya">Lainnya</option>
+                    </select>
+                  </div>
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Kondisi *</label>
-                  <select name="kondisi" required
-                    className="mt-1 w-full px-4 py-2.5 text-sm rounded-2xl border border-slate-200 focus:outline-none focus:border-violet-400 bg-white">
-                    <option value="rusak">Rusak / Cacat</option>
-                    <option value="salah_produk">Salah Produk</option>
-                    <option value="lainnya">Lainnya</option>
-                  </select>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">No. Faktur Asal</label>
+                  <input name="no_faktur_asal" placeholder="INV/202X/XXXX (opsional)"
+                    className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
                 </div>
-              </div>
-              <div>
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">No. Faktur Asal</label>
-                <input name="no_faktur_asal" placeholder="INV/202X/XXXX (opsional)"
-                  className="mt-1 w-full px-4 py-2.5 text-sm rounded-2xl border border-slate-200 focus:outline-none focus:border-violet-400"/>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Nama Customer</label>
-                  <input name="nama_customer" placeholder="Opsional"
-                    className="mt-1 w-full px-4 py-2.5 text-sm rounded-2xl border border-slate-200 focus:outline-none focus:border-violet-400"/>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Customer</label>
+                    <input name="nama_customer" placeholder="Opsional"
+                      className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">No. HP</label>
+                    <input name="hp_customer" placeholder="08xx…"
+                      className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
+                  </div>
                 </div>
                 <div>
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">No. HP</label>
-                  <input name="hp_customer" placeholder="08xx…"
-                    className="mt-1 w-full px-4 py-2.5 text-sm rounded-2xl border border-slate-200 focus:outline-none focus:border-violet-400"/>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Kode ShieldTag</label>
+                  <input name="shieldtag_kodes" placeholder="A1B2C3, D4E5F6 (pisah koma)"
+                    className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
                 </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Alasan Retur *</label>
+                  <textarea name="alasan" required rows={3} placeholder="Jelaskan alasan retur..."
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all resize-none"/>
+                </div>
+                {err && (
+                  <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</div>
+                )}
               </div>
-              <div>
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Kode ShieldTag *</label>
-                <input name="shieldtag_kodes" placeholder="A1B2C3, D4E5F6 (pisah koma)"
-                  className="mt-1 w-full px-4 py-2.5 text-sm rounded-2xl border border-slate-200 focus:outline-none focus:border-violet-400"/>
-              </div>
-              <div>
-                <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Alasan Retur *</label>
-                <textarea name="alasan" required rows={3} placeholder="Jelaskan alasan retur..."
-                  className="mt-1 w-full px-4 py-2.5 text-sm rounded-2xl border border-slate-200 focus:outline-none focus:border-violet-400 resize-none"/>
-              </div>
-              {err && <p className="text-red-500 text-sm font-medium">{err}</p>}
-              <div className="flex gap-3 pt-2">
+              <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
                 <button type="button" onClick={() => setModal(null)}
-                  className="flex-1 py-3 rounded-2xl text-sm font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors">
+                  className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">
                   Batal
                 </button>
                 <button type="submit" disabled={isPending}
-                  className="flex-1 py-3 rounded-2xl text-sm font-bold text-white transition-all"
-                  style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+                  className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
                   {isPending ? 'Menyimpan...' : 'Simpan Retur'}
                 </button>
               </div>
@@ -242,51 +245,58 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
 
       {/* Detail / Update Status Modal */}
       {modal === 'detail' && active && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
-          <div className="w-full max-w-md rounded-3xl p-6"
-            style={{ background: 'rgba(255,255,255,0.95)' }}>
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-bold text-slate-800">{active.kode}</h2>
-              <button onClick={() => setModal(null)} className="p-2 rounded-xl hover:bg-slate-100"><X size={16}/></button>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+          <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <div>
+                <h2 className="text-[15px] font-bold text-slate-900">{active.kode}</h2>
+                <p className="text-[11px] text-slate-400 mt-0.5">Detail retur penjualan</p>
+              </div>
+              <button onClick={() => setModal(null)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors">
+                <X size={14} className="text-slate-500"/>
+              </button>
             </div>
-            <div className="space-y-3 text-sm">
-              <Row label="Customer"   value={active.nama_customer ?? '—'} />
-              <Row label="Faktur Asal" value={active.no_faktur_asal ?? '—'} />
-              <Row label="Kondisi"    value={KONDISI_LABEL[active.kondisi] ?? active.kondisi} />
-              <Row label="Alasan"     value={active.alasan} />
-              {active.shieldtag_kodes?.length > 0 && (
-                <Row label="ShieldTag" value={active.shieldtag_kodes.join(', ')} />
+            <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+              <div className="space-y-3 text-sm">
+                <Row label="Customer"    value={active.nama_customer ?? '—'} />
+                <Row label="Faktur Asal" value={active.no_faktur_asal ?? '—'} />
+                <Row label="Kondisi"     value={KONDISI_LABEL[active.kondisi] ?? active.kondisi} />
+                <Row label="Alasan"      value={active.alasan} />
+                {active.shieldtag_kodes?.length > 0 && (
+                  <Row label="ShieldTag" value={active.shieldtag_kodes.join(', ')} />
+                )}
+                {canSeeRp && active.total_nilai > 0 && (
+                  <Row label="Nilai" value={formatRupiah(active.total_nilai)} />
+                )}
+                <Row label="Status"      value={STATUS_CFG[active.status]?.label ?? active.status} />
+              </div>
+              {canManage && active.status !== 'selesai' && active.status !== 'ditolak' && (
+                <div className="space-y-3 pt-2">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan Admin</label>
+                    <textarea value={catatanInput} onChange={e => setCatatanInput(e.target.value)} rows={2}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all resize-none"
+                      placeholder="Opsional…"/>
+                  </div>
+                </div>
               )}
-              {canSeeRp && active.total_nilai > 0 && (
-                <Row label="Nilai" value={formatRupiah(active.total_nilai)} />
-              )}
-              <Row label="Status"     value={STATUS_CFG[active.status]?.label ?? active.status} />
             </div>
             {canManage && active.status !== 'selesai' && active.status !== 'ditolak' && (
-              <div className="mt-5 space-y-3">
-                <div>
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Catatan Admin</label>
-                  <textarea value={catatanInput} onChange={e => setCatatanInput(e.target.value)} rows={2}
-                    className="mt-1 w-full px-4 py-2.5 text-sm rounded-2xl border border-slate-200 focus:outline-none focus:border-violet-400 resize-none"
-                    placeholder="Opsional…"/>
-                </div>
-                <div className="flex gap-2">
-                  {active.status === 'pending' && (
-                    <button onClick={() => handleStatus('diproses')} disabled={isPending}
-                      className="flex-1 py-2.5 rounded-2xl text-xs font-bold text-white bg-blue-500 hover:bg-blue-600 transition-colors">
-                      Proses
-                    </button>
-                  )}
-                  <button onClick={() => handleStatus('selesai')} disabled={isPending}
-                    className="flex-1 py-2.5 rounded-2xl text-xs font-bold text-white bg-green-500 hover:bg-green-600 transition-colors">
-                    Selesai
+              <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+                {active.status === 'pending' && (
+                  <button onClick={() => handleStatus('diproses')} disabled={isPending}
+                    className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+                    Proses
                   </button>
-                  <button onClick={() => handleStatus('ditolak')} disabled={isPending}
-                    className="flex-1 py-2.5 rounded-2xl text-xs font-bold text-white bg-red-500 hover:bg-red-600 transition-colors">
-                    Tolak
-                  </button>
-                </div>
+                )}
+                <button onClick={() => handleStatus('selesai')} disabled={isPending}
+                  className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+                  Selesai
+                </button>
+                <button onClick={() => handleStatus('ditolak')} disabled={isPending}
+                  className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+                  Tolak
+                </button>
               </div>
             )}
           </div>

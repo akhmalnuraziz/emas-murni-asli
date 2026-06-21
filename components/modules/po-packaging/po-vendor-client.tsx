@@ -173,7 +173,7 @@ function SignaturePad({ onSave, label }: { onSave: (b64: string) => void; label:
   )
 }
 
-const inp = 'w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30'
+const inp = 'w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all'
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 export default function POVendorClient({
@@ -691,14 +691,15 @@ export default function POVendorClient({
 // ── Sub-modals ─────────────────────────────────────────────────────────────────
 function ModalShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{ background: 'rgba(0,0,0,0.45)' }}>
-      <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl max-h-[92vh] flex flex-col overflow-hidden"
-        style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.18)' }}>
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
-          <h2 className="font-bold text-slate-800">{title}</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"><X size={14}/></button>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
+          <div>
+            <h2 className="text-[15px] font-bold text-slate-900">{title}</h2>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
         </div>
-        <div className="overflow-y-auto flex-1 px-5 pb-5">{children}</div>
+        <div className="overflow-y-auto flex-1 px-5 py-4">{children}</div>
       </div>
     </div>
   )
@@ -710,9 +711,9 @@ function ProdukModal({ mode, produk, onClose, onSave }: { mode: string; produk?:
     <ModalShell title={mode === 'create' ? 'Tambah Produk Baru' : 'Edit Produk'} onClose={onClose}>
       <form onSubmit={async e => { e.preventDefault(); setLoading(true); await onSave(new FormData(e.currentTarget)); setLoading(false) }}
         className="space-y-3">
-        <div><label className="text-xs font-semibold text-slate-500">Nama Produk *</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Produk *</label>
           <input name="nama" defaultValue={produk?.nama} required placeholder="mis. Akrilik 2x3cm" className={inp}/></div>
-        <div><label className="text-xs font-semibold text-slate-500">Satuan</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Satuan</label>
           <select name="satuan" defaultValue={produk?.satuan ?? 'pcs'} className={inp}>
             <option value="pcs">pcs</option>
             <option value="set">set</option>
@@ -721,11 +722,10 @@ function ProdukModal({ mode, produk, onClose, onSave }: { mode: string; produk?:
             <option value="meter">meter</option>
           </select>
         </div>
-        <div><label className="text-xs font-semibold text-slate-500">Keterangan</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan</label>
           <textarea name="keterangan" defaultValue={produk?.keterangan} rows={2} placeholder="Deskripsi singkat produk..." className={inp}/></div>
         <button type="submit" disabled={loading}
-          className="w-full py-3 font-bold text-white rounded-2xl disabled:opacity-60"
-          style={{ background: 'linear-gradient(135deg,#059669,#047857)' }}>
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
           {loading ? 'Menyimpan...' : mode === 'create' ? 'Tambah Produk' : 'Simpan Perubahan'}
         </button>
       </form>
@@ -739,15 +739,15 @@ function VendorModal({ mode, vendor, onClose, onSave }: { mode: string; vendor?:
     <ModalShell title={mode === 'create' ? 'Tambah Vendor' : 'Edit Vendor'} onClose={onClose}>
       <form onSubmit={async e => { e.preventDefault(); setLoading(true); await onSave(new FormData(e.currentTarget)); setLoading(false) }}
         className="space-y-3">
-        <div><label className="text-xs font-semibold text-slate-500">Nama Vendor *</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Vendor *</label>
           <input name="nama" defaultValue={vendor?.nama} required className={inp}/></div>
-        <div><label className="text-xs font-semibold text-slate-500">PIC</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">PIC</label>
           <input name="pic" defaultValue={vendor?.pic} className={inp}/></div>
-        <div><label className="text-xs font-semibold text-slate-500">Telepon</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Telepon</label>
           <input name="telepon" defaultValue={vendor?.telepon} className={inp}/></div>
-        <div><label className="text-xs font-semibold text-slate-500">Email</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Email</label>
           <input name="email" type="email" defaultValue={vendor?.email} className={inp}/></div>
-        <div><label className="text-xs font-semibold text-slate-500">Alamat</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Alamat</label>
           <textarea name="alamat" defaultValue={vendor?.alamat} rows={2} className={inp}/></div>
         {mode === 'edit' && (
           <div className="flex items-center gap-2">
@@ -756,8 +756,7 @@ function VendorModal({ mode, vendor, onClose, onSave }: { mode: string; vendor?:
           </div>
         )}
         <button type="submit" disabled={loading}
-          className="w-full py-3 font-bold text-white rounded-2xl disabled:opacity-60"
-          style={{ background: 'linear-gradient(135deg,#7C3AED,#6D28D9)' }}>
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
           {loading ? 'Menyimpan...' : 'Simpan'}
         </button>
       </form>
@@ -771,36 +770,35 @@ function POModal({ mode, po, vendors, produkList, onClose, onSave }: { mode: str
     <ModalShell title={mode === 'create' ? 'Buat PO Baru' : 'Edit PO'} onClose={onClose}>
       <form onSubmit={async e => { e.preventDefault(); setLoading(true); await onSave(new FormData(e.currentTarget)); setLoading(false) }}
         className="space-y-3">
-        <div><label className="text-xs font-semibold text-slate-500">Nomor PO (kosongkan untuk auto)</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nomor PO (kosongkan untuk auto)</label>
           <input name="nomor_po" defaultValue={po?.nomor_po} placeholder="PO/2406/0001"
             className={inp}/></div>
-        <div><label className="text-xs font-semibold text-slate-500">Vendor *</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Vendor *</label>
           <select name="vendor_id" defaultValue={po?.vendor_id} required className={inp} disabled={mode === 'edit'}>
             <option value="">— Pilih Vendor —</option>
             {vendors.map((v: any) => <option key={v.id} value={v.id}>{v.nama}</option>)}
           </select>
           {mode === 'edit' && <input type="hidden" name="vendor_id" value={po?.vendor_id}/>}
         </div>
-        <div><label className="text-xs font-semibold text-slate-500">Produk *</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Produk *</label>
           <select name="produk_id" defaultValue={po?.produk_id} required className={inp} disabled={mode === 'edit'}>
             <option value="">— Pilih Produk —</option>
             {produkList.map((p: any) => <option key={p.id} value={p.id}>{p.nama}</option>)}
           </select>
           {mode === 'edit' && <input type="hidden" name="produk_id" value={po?.produk_id}/>}
         </div>
-        <div><label className="text-xs font-semibold text-slate-500">Qty PO (pcs) *</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Qty PO (pcs) *</label>
           <input name="qty_po" type="number" min="1" defaultValue={po?.qty_po} required className={inp}/></div>
-        <div><label className="text-xs font-semibold text-slate-500">Tanggal PO *</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal PO *</label>
           <input name="tanggal_po" type="date" defaultValue={po?.tanggal_po} required className={inp}/></div>
-        <div><label className="text-xs font-semibold text-slate-500">Tanggal Jatuh Tempo</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Jatuh Tempo</label>
           <input name="tanggal_jatuh_tempo" type="date" defaultValue={po?.tanggal_jatuh_tempo} className={inp}/></div>
-        <div><label className="text-xs font-semibold text-slate-500">Harga Satuan (Rp)</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Harga Satuan (Rp)</label>
           <input name="harga_satuan" type="number" min="0" defaultValue={po?.harga_satuan} className={inp}/></div>
-        <div><label className="text-xs font-semibold text-slate-500">Catatan</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
           <textarea name="catatan" defaultValue={po?.catatan} rows={2} className={inp}/></div>
         <button type="submit" disabled={loading}
-          className="w-full py-3 font-bold text-white rounded-2xl disabled:opacity-60"
-          style={{ background: 'linear-gradient(135deg,#7C3AED,#6D28D9)' }}>
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
           {loading ? 'Menyimpan...' : mode === 'create' ? 'Buat PO' : 'Simpan Perubahan'}
         </button>
       </form>
@@ -813,13 +811,13 @@ function BatchModal({ po, monitoring, onClose, onSave }: { po: any; monitoring?:
   const sisaPO = monitoring ? Math.max(0, monitoring.sisa_belum_datang) : po.qty_po
   return (
     <ModalShell title="Input Penerimaan Barang" onClose={onClose}>
-      <div className="rounded-2xl px-4 py-3 mb-4" style={{ background: 'rgba(124,58,237,0.06)' }}>
-        <p className="text-xs font-bold text-violet-700">{po.nomor_po}</p>
-        <p className="text-xs text-slate-500">{po.vendor_nama} · {po.produk_nama}</p>
-        <p className="text-xs text-slate-500 mt-1">
-          PO: <b>{po.qty_po?.toLocaleString('id-ID')} pcs</b> · Sisa belum datang: <b className="text-violet-700">{sisaPO?.toLocaleString('id-ID')} pcs</b>
+      <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700 mb-4">
+        <p className="font-bold">{po.nomor_po}</p>
+        <p className="text-violet-600 mt-0.5">{po.vendor_nama} · {po.produk_nama}</p>
+        <p className="text-violet-600 mt-0.5">
+          PO: <b>{po.qty_po?.toLocaleString('id-ID')} pcs</b> · Sisa belum datang: <b>{sisaPO?.toLocaleString('id-ID')} pcs</b>
         </p>
-        {sisaPO === 0 && <p className="text-xs font-bold text-green-600 mt-1">✅ PO sudah terpenuhi — input ini akan dianggap sebagai kelebihan</p>}
+        {sisaPO === 0 && <p className="font-bold text-green-600 mt-1">✅ PO sudah terpenuhi — input ini akan dianggap sebagai kelebihan</p>}
       </div>
       <form onSubmit={async e => {
         e.preventDefault()
@@ -829,16 +827,15 @@ function BatchModal({ po, monitoring, onClose, onSave }: { po: any; monitoring?:
         await onSave(fd)
         setLoading(false)
       }} className="space-y-3">
-        <div><label className="text-xs font-semibold text-slate-500">Tanggal Terima *</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Terima *</label>
           <input name="tanggal_terima" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/></div>
-        <div><label className="text-xs font-semibold text-slate-500">Qty Diterima (pcs) *</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Qty Diterima (pcs) *</label>
           <input name="qty_diterima" type="number" min="1" required className={inp}
             placeholder={`max sisa PO: ${sisaPO} pcs (lebih = kelebihan)`}/></div>
-        <div><label className="text-xs font-semibold text-slate-500">Catatan</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
           <textarea name="catatan" rows={2} className={inp}/></div>
         <button type="submit" disabled={loading}
-          className="w-full py-3 font-bold text-white rounded-2xl disabled:opacity-60"
-          style={{ background: 'linear-gradient(135deg,#3B82F6,#2563EB)' }}>
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
           {loading ? 'Menyimpan...' : 'Simpan Penerimaan'}
         </button>
       </form>
@@ -860,13 +857,13 @@ function QCModal({ batch, onClose, onSave }: { batch: any; onClose: () => void; 
 
   return (
     <ModalShell title="Input Hasil QC" onClose={onClose}>
-      <div className="rounded-2xl px-4 py-3 mb-4" style={{ background: 'rgba(34,197,94,0.06)' }}>
-        <p className="text-xs font-bold text-green-700">{batch.nomor_batch}</p>
-        <p className="text-xs text-slate-500">{batch.produk_nama} · {batch.vendor_nama}</p>
-        <p className="text-xs text-slate-500 mt-0.5">
+      <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700 mb-4">
+        <p className="font-bold">{batch.nomor_batch}</p>
+        <p className="text-violet-600 mt-0.5">{batch.produk_nama} · {batch.vendor_nama}</p>
+        <p className="text-violet-600 mt-0.5">
           Diterima: <b>{batch.qty_diterima} pcs</b>
-          {(batch.qty_lebih ?? 0) > 0 && <> · Lebihan: <b className="text-orange-600">{batch.qty_lebih} pcs</b></>}
-          {' '}· Perlu QC: <b className="text-green-700">{maxCheck} pcs</b>
+          {(batch.qty_lebih ?? 0) > 0 && <> · Lebihan: <b className="text-amber-600">{batch.qty_lebih} pcs</b></>}
+          {' '}· Perlu QC: <b>{maxCheck} pcs</b>
         </p>
       </div>
       <form onSubmit={async e => {
@@ -881,22 +878,22 @@ function QCModal({ batch, onClose, onSave }: { batch: any; onClose: () => void; 
         await onSave(fd)
         setLoading(false)
       }} className="space-y-3">
-        <div><label className="text-xs font-semibold text-slate-500">Tanggal QC *</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal QC *</label>
           <input name="qc_tanggal" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/></div>
-        <div><label className="text-xs font-semibold text-slate-500">Qty ACC (Lolos QC) *</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Qty ACC (Lolos QC) *</label>
           <input type="number" min="0" max={maxCheck} value={qtyAcc} onChange={e => setQtyAcc(parseInt(e.target.value) || 0)} className={inp}/></div>
-        <div><label className="text-xs font-semibold text-slate-500">Qty Reject *</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Qty Reject *</label>
           <input type="number" min="0" max={maxCheck} value={qtyReject} onChange={e => setQtyReject(parseInt(e.target.value) || 0)} className={inp}/></div>
         {/* Validation indicator */}
         <div className={`rounded-xl px-3 py-2 text-xs font-semibold flex items-center gap-2 ${ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
           {ok ? <CheckCircle2 size={12}/> : <XCircle size={12}/>}
           {ok ? `✅ Total sesuai (${maxCheck} pcs)` : `Total ACC+Reject = ${total} ≠ ${maxCheck}`}
         </div>
-        <div><label className="text-xs font-semibold text-slate-500">Nama Operator QC</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Operator QC</label>
           <input name="operator_nama" className={inp}/></div>
-        <div><label className="text-xs font-semibold text-slate-500">Nama Admin/Manager</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Admin/Manager</label>
           <input name="admin_nama" className={inp}/></div>
-        <div><label className="text-xs font-semibold text-slate-500">Catatan QC</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan QC</label>
           <textarea name="catatan_qc" rows={2} className={inp}/></div>
         {/* Optional TTD */}
         <button type="button" onClick={() => setShowTtd(p => !p)}
@@ -910,8 +907,7 @@ function QCModal({ batch, onClose, onSave }: { batch: any; onClose: () => void; 
           </div>
         )}
         <button type="submit" disabled={loading || !ok}
-          className="w-full py-3 font-bold text-white rounded-2xl disabled:opacity-50"
-          style={{ background: 'linear-gradient(135deg,#22C55E,#16A34A)' }}>
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
           {loading ? 'Menyimpan...' : 'Simpan Hasil QC'}
         </button>
       </form>
@@ -925,10 +921,10 @@ function RejectModal({ item, onClose, onSave }: { item: any; onClose: () => void
   const [loading, setLoading] = useState(false)
   return (
     <ModalShell title="Tangani Reject/Lebihan" onClose={onClose}>
-      <div className="rounded-2xl px-4 py-3 mb-4" style={{ background: 'rgba(239,68,68,0.06)' }}>
-        <p className="text-sm font-bold text-red-700">{item.qty} pcs — {item.produk_nama}</p>
-        <p className="text-xs text-slate-500">PO {item.po_nomor} · Batch {item.nomor_batch}</p>
-        <p className="text-xs text-slate-500">{item.vendor_nama} · {fmtDate(item.tanggal_terima)}</p>
+      <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 mb-4">
+        <p className="font-bold">{item.qty} pcs — {item.produk_nama}</p>
+        <p className="mt-0.5">PO {item.po_nomor} · Batch {item.nomor_batch}</p>
+        <p>{item.vendor_nama} · {fmtDate(item.tanggal_terima)}</p>
       </div>
       <div className="space-y-3">
         <div>
@@ -947,13 +943,12 @@ function RejectModal({ item, onClose, onSave }: { item: any; onClose: () => void
           </div>
           {status === 'diretur' && <p className="text-[10px] text-orange-500 mt-1">Untuk retur massal, gunakan fitur Buat SJ Retur</p>}
         </div>
-        <div><label className="text-xs font-semibold text-slate-500">Keterangan</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan</label>
           <textarea value={ket} onChange={e => setKet(e.target.value)} rows={2} className={inp}
             placeholder="Misal: ditukar dengan Akrilik 2gr, atau disimpan sebagai cadangan"/></div>
         <button onClick={async () => { setLoading(true); await onSave(status, ket); setLoading(false) }}
           disabled={loading}
-          className="w-full py-3 font-bold text-white rounded-2xl disabled:opacity-60"
-          style={{ background: 'linear-gradient(135deg,#7C3AED,#6D28D9)' }}>
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
           {loading ? 'Menyimpan...' : 'Simpan'}
         </button>
       </div>
@@ -977,14 +972,14 @@ function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]
   return (
     <ModalShell title="Buat Surat Jalan Retur" onClose={onClose}>
       <div className="space-y-3">
-        <div><label className="text-xs font-semibold text-slate-500">Vendor *</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Vendor *</label>
           <select value={vendorId ?? ''} onChange={e => { setVendorId(parseInt(e.target.value) || null); setSelected([]) }}
             className={inp}>
             <option value="">— Pilih Vendor —</option>
             {vendors.map((v: any) => <option key={v.id} value={v.id}>{v.nama}</option>)}
           </select>
         </div>
-        <div><label className="text-xs font-semibold text-slate-500">Tanggal Retur *</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Retur *</label>
           <input type="date" value={tanggal} onChange={e => setTanggal(e.target.value)} className={inp}/></div>
 
         {vendorId && (
@@ -1015,7 +1010,7 @@ function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]
           </div>
         )}
 
-        <div><label className="text-xs font-semibold text-slate-500">Catatan SJ</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan SJ</label>
           <textarea value={catatan} onChange={e => setCatatan(e.target.value)} rows={2} className={inp}/></div>
 
         <button onClick={async () => {
@@ -1029,8 +1024,7 @@ function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]
           await onSave(fd)
           setLoading(false)
         }} disabled={loading || !vendorId || !selected.length}
-          className="w-full py-3 font-bold text-white rounded-2xl disabled:opacity-50"
-          style={{ background: 'linear-gradient(135deg,#F97316,#EA580C)' }}>
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
           {loading ? 'Membuat SJ...' : `Buat SJ Retur (${totalSelected} pcs)`}
         </button>
       </div>
@@ -1044,15 +1038,15 @@ function VoidModal({ title, onClose, onConfirm }: { title: string; onClose: () =
   return (
     <ModalShell title={title} onClose={onClose}>
       <div className="space-y-3">
-        <div className="rounded-2xl px-4 py-3" style={{ background: 'rgba(239,68,68,0.06)' }}>
-          <p className="text-xs text-red-600 font-semibold">⚠️ PO akan divoid dan tidak bisa diaktifkan kembali</p>
+        <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">
+          <p className="font-semibold">⚠️ PO akan divoid dan tidak bisa diaktifkan kembali</p>
         </div>
-        <div><label className="text-xs font-semibold text-slate-500">Alasan Void *</label>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Alasan Void *</label>
           <textarea value={reason} onChange={e => setReason(e.target.value)} rows={3} required className={inp}
             placeholder="Alasan mengapa PO ini divoid..."/></div>
         <button onClick={async () => { setLoading(true); await onConfirm(reason); setLoading(false) }}
           disabled={loading || !reason.trim()}
-          className="w-full py-3 font-bold text-white rounded-2xl bg-red-500 disabled:opacity-50">
+          className="w-full h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
           {loading ? 'Memproses...' : 'Void PO'}
         </button>
       </div>

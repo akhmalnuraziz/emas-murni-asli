@@ -59,7 +59,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
     })
   }
 
-  const inp = 'w-full px-3 py-2.5 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30'
+  const inp = 'w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all'
 
   return (
     <div className="space-y-5 pb-20">
@@ -179,54 +179,63 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
 
       {/* Create Modal */}
       {modal === 'create' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
-          <div className="w-full max-w-sm rounded-3xl p-6 space-y-4 bg-white shadow-2xl">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-slate-800">Tambah Scrap</h2>
-              <button onClick={() => setModal(null)} className="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100"><X size={15}/></button>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+          <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <h2 className="text-[15px] font-bold text-slate-900">Tambah Scrap</h2>
+              <button onClick={() => setModal(null)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X size={14}/></button>
             </div>
-            <form onSubmit={e => { e.preventDefault(); handleCreate(new FormData(e.currentTarget)) }} className="space-y-3">
-              <div><label className="text-xs font-semibold text-slate-500">Tanggal *</label>
+            <form id="scrap-form" onSubmit={e => { e.preventDefault(); handleCreate(new FormData(e.currentTarget)) }} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal *</label>
                 <input name="tanggal" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/></div>
-              <div><label className="text-xs font-semibold text-slate-500">Berat (gr) *</label>
+              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Berat (gr) *</label>
                 <input name="berat_gram" type="number" step="0.001" min="0.001" required placeholder="0.000" className={inp}/></div>
-              <div><label className="text-xs font-semibold text-slate-500">Sumber Proses</label>
+              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Sumber Proses</label>
                 <select name="sumber_proses" className={inp}>
                   {SUMBER.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
-              <div><label className="text-xs font-semibold text-slate-500">Batch (opsional)</label>
+              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Batch (opsional)</label>
                 <input name="batch_kode" placeholder="mis. B-030" className={inp}/></div>
-              <div><label className="text-xs font-semibold text-slate-500">Tim</label>
+              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tim</label>
                 <select name="tim_nama" className={inp}>
                   <option value="">— Pilih Tim —</option>
                   {timList.map((t: any) => <option key={t.id} value={t.nama}>{t.nama}</option>)}
                 </select>
               </div>
-              <div><label className="text-xs font-semibold text-slate-500">Catatan</label>
+              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
                 <input name="catatan" placeholder="opsional" className={inp}/></div>
               {err && <p className="text-xs text-red-500 font-semibold">{err}</p>}
-              <div className="flex gap-2 pt-1">
-                <button type="button" onClick={() => setModal(null)} className="flex-1 py-2.5 text-sm font-semibold rounded-2xl border border-gray-200 text-gray-500">Batal</button>
-                <button type="submit" disabled={isPending} className="flex-1 py-2.5 text-sm font-bold text-white rounded-2xl disabled:opacity-60"
-                  style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
-                  {isPending ? 'Menyimpan...' : 'Simpan'}
-                </button>
-              </div>
             </form>
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+              <button type="button" onClick={() => setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+              <button type="submit" form="scrap-form" disabled={isPending} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+                {isPending ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Void confirm */}
       {voidModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
-          <div className="w-full max-w-sm rounded-3xl p-6 space-y-4 bg-white shadow-2xl">
-            <h2 className="text-base font-bold text-red-600">Void Scrap {voidModal.kode}?</h2>
-            <input value={voidReason} onChange={e => setVoidReason(e.target.value)}
-              placeholder="Alasan void *" className={inp}/>
-            <div className="flex gap-2">
-              <button onClick={() => setVoidModal(null)} className="flex-1 py-2.5 text-sm font-semibold rounded-2xl border border-gray-200 text-gray-500">Batal</button>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+          <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+              <h2 className="text-[15px] font-bold text-slate-900">Void Scrap {voidModal.kode}?</h2>
+              <button onClick={() => setVoidModal(null)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X size={14}/></button>
+            </div>
+            <div className="px-5 py-4 space-y-4">
+              <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">
+                <p className="font-semibold">⚠️ Scrap akan di-void dan tidak bisa diaktifkan kembali</p>
+              </div>
+              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Alasan Void *</label>
+                <input value={voidReason} onChange={e => setVoidReason(e.target.value)}
+                  placeholder="Alasan void..." className={inp}/>
+              </div>
+            </div>
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100">
+              <button onClick={() => setVoidModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
               <button disabled={!voidReason.trim() || isPending}
                 onClick={() => {
                   startTransition(async () => {
@@ -234,7 +243,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
                     if (r?.error) showToast(r.error, false); else { showToast('Scrap di-void'); setVoidModal(null) }
                   })
                 }}
-                className="flex-1 py-2.5 text-sm font-bold text-white rounded-2xl disabled:opacity-50 bg-red-500">
+                className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
                 {isPending ? 'Memproses...' : 'Void'}
               </button>
             </div>
