@@ -7,25 +7,30 @@ import IdleLogoutProvider from '@/components/layout/idle-logout-provider'
 import { usePathname } from 'next/navigation'
 
 const PAGE_META: Record<string, { title: string; subtitle: string }> = {
-  '/dashboard':           { title: 'Dashboard',             subtitle: 'Ringkasan aktivitas produksi dan stok hari ini' },
-  '/bahan-baku':          { title: 'Bahan Baku',            subtitle: 'Manajemen batch, peleburan, dan rekonsiliasi gram' },
-  '/produksi':            { title: 'Produksi',              subtitle: 'Tracking serah-terima per tahap — Cutting → Pas Berat → Annealing → Siap Packing' },
-  '/packing-log':         { title: 'Packing Log',           subtitle: 'Kelola packing & validasi vs Shieldtag' },
-  '/shieldtag':           { title: 'Shieldtag',             subtitle: 'Registrasi dan distribusi ID unik per PCS' },
-  '/inventory':           { title: 'Inventory',             subtitle: 'Stok per lokasi berbasis Shieldtag — realtime' },
-  '/mutasi':              { title: 'Pemindahan Barang',      subtitle: 'Keluar (cabang/toko) & masuk (buyback/retur)' },
-  '/penjualan':           { title: 'Penjualan',             subtitle: 'Rekap dari Accurate + cetak receipt' },
+  '/dashboard':             { title: 'Dashboard',             subtitle: 'Ringkasan aktivitas produksi dan stok hari ini' },
+  '/bahan-baku':            { title: 'Bahan Baku',            subtitle: 'Manajemen batch, peleburan, dan rekonsiliasi gram' },
+  '/produksi':              { title: 'Produksi',              subtitle: 'Tracking serah-terima per tahap — Cutting → Pas Berat → Annealing → Siap Packing' },
+  '/packing-log':           { title: 'Packing Log',           subtitle: 'Kelola packing & validasi vs Shieldtag' },
+  '/shieldtag':             { title: 'Shieldtag',             subtitle: 'Registrasi dan distribusi ID unik per PCS' },
+  '/inventory':             { title: 'Inventory',             subtitle: 'Stok per lokasi berbasis Shieldtag — realtime' },
+  '/mutasi':                { title: 'Pemindahan Barang',     subtitle: 'Keluar (cabang/toko) & masuk (buyback/retur)' },
+  '/penjualan':             { title: 'Penjualan',             subtitle: 'Rekap dari Accurate + cetak receipt' },
   '/stok-cabang':           { title: 'Stok Cabang',           subtitle: 'Ready stock, outstanding PO, dan adjustment per cabang' },
-  '/po-cabang':              { title: 'PO Cabang',            subtitle: 'Purchase order dari cabang ke pusat' },
-  '/po-vendor-packaging':    { title: 'PO Vendor Packaging', subtitle: 'Manajemen PO, QC, dan retur akrilik dari vendor' },
-  '/prioritas-produksi':  { title: 'Prioritas Produksi',    subtitle: 'Auto-ranking P1/P2/P3 berdasar PO dan safety stock' },
-  '/kpi-tim':             { title: 'KPI Tim',               subtitle: 'Rating bintang ⭐ per tim per proses — efisiensi, loss, kecepatan' },
-  '/pengeluaran':         { title: 'Pengeluaran',            subtitle: 'Pencatatan biaya operasional per periode' },
-  '/laporan':             { title: 'Laporan',               subtitle: 'Per batch, laba rugi, performa cabang' },
-  '/scrap':               { title: 'Scrap Inventory',       subtitle: 'Sisa lebihan proses produksi' },
-  '/backup':              { title: 'Backup Data',           subtitle: 'Unduh data sebagai CSV untuk arsip' },
-  '/audit-log':           { title: 'Audit Log',             subtitle: 'Riwayat semua aksi penting di sistem' },
-  '/pengaturan':          { title: 'Pengaturan',            subtitle: 'Master tim, admin, toleransi, gramasi, dan konfigurasi sistem' },
+  '/po-cabang':             { title: 'PO Cabang',             subtitle: 'Purchase order dari cabang ke pusat' },
+  '/po-vendor-packaging':   { title: 'PO Vendor Packaging',  subtitle: 'Manajemen PO, QC, dan retur akrilik dari vendor' },
+  '/prioritas-produksi':    { title: 'Prioritas Produksi',   subtitle: 'Auto-ranking P1/P2/P3 berdasar PO dan safety stock' },
+  '/kpi-tim':               { title: 'KPI Tim',              subtitle: 'Rating bintang per tim per proses — efisiensi, loss, kecepatan' },
+  '/pengeluaran':           { title: 'Pengeluaran',           subtitle: 'Pencatatan biaya operasional per periode' },
+  '/laporan':               { title: 'Laporan',              subtitle: 'Per batch, laba rugi, performa cabang' },
+  '/scrap':                 { title: 'Scrap Inventory',      subtitle: 'Sisa lebihan proses produksi' },
+  '/backup':                { title: 'Backup Data',          subtitle: 'Unduh data sebagai CSV untuk arsip' },
+  '/audit-log':             { title: 'Audit Log',            subtitle: 'Riwayat semua aksi penting di sistem' },
+  '/pengaturan':            { title: 'Pengaturan',           subtitle: 'Master tim, admin, toleransi, gramasi, dan konfigurasi sistem' },
+  '/stock-opname':          { title: 'Stock Opname',         subtitle: 'Rekonsiliasi fisik vs sistem per lokasi' },
+  '/pelanggan':             { title: 'Database Pelanggan',   subtitle: 'Manajemen data pelanggan tetap' },
+  '/retur-penjualan':       { title: 'Retur Penjualan',      subtitle: 'Pencatatan retur dan pengembalian barang' },
+  '/buyback':               { title: 'Buyback',              subtitle: 'Pembelian kembali emas dari pelanggan' },
+  '/shieldtag-explorer':    { title: 'Shieldtag Explorer',   subtitle: 'Lacak posisi dan riwayat lengkap per kode shieldtag' },
 }
 
 export default function DashboardShell({
@@ -47,7 +52,7 @@ export default function DashboardShell({
           onClose={() => setSidebarOpen(false)}
           serverProfile={serverProfile}
         />
-        <div className="lg:ml-64 flex flex-col min-h-screen">
+        <div className="lg:ml-60 flex flex-col min-h-screen">
           <Header
             title={meta.title}
             subtitle={meta.subtitle}

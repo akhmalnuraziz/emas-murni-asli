@@ -1,42 +1,54 @@
-// Skeleton loading reusable — dipakai semua halaman dashboard
 export default function PageSkeleton() {
   return (
-    <div className="space-y-5 animate-pulse">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-2xl bg-violet-100/60" />
+    <div className="space-y-5 pb-8">
+      {/* Header row */}
+      <div className="flex justify-between items-start gap-4">
         <div className="space-y-2">
-          <div className="h-4 w-40 rounded-lg bg-slate-200/70" />
-          <div className="h-3 w-56 rounded-lg bg-slate-100" />
+          <div className="skeleton h-5 w-44 rounded-lg" />
+          <div className="skeleton h-3 w-28 rounded" />
         </div>
+        <div className="skeleton h-8 w-24 rounded-lg" />
       </div>
 
-      {/* Search bar */}
-      <div className="h-11 w-full rounded-2xl bg-white/60 border border-white/60" />
-
-      {/* Filter chips */}
-      <div className="flex gap-2">
-        {[64, 80, 72, 88, 60].map((w, i) => (
-          <div key={i} className="h-8 rounded-full bg-slate-100" style={{ width: w }} />
-        ))}
-      </div>
-
-      {/* Cards */}
-      <div className="space-y-3">
-        {[0, 1, 2, 3].map(i => (
-          <div key={i} className="rounded-3xl p-4"
-            style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.5)' }}>
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-violet-100/50" />
-              <div className="flex-1 space-y-2">
-                <div className="h-3.5 w-32 rounded-lg bg-slate-200/70" />
-                <div className="h-3 w-48 rounded-lg bg-slate-100" />
-                <div className="h-3 w-40 rounded-lg bg-slate-100" />
-              </div>
-              <div className="w-20 h-8 rounded-xl bg-slate-100" />
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+            <div className="flex justify-between items-start">
+              <div className="skeleton h-2.5 w-20 rounded" />
+              <div className="skeleton h-8 w-8 rounded-lg" />
             </div>
+            <div className="skeleton h-7 w-20 rounded-lg" />
+            <div className="skeleton h-2.5 w-14 rounded" />
           </div>
         ))}
+      </div>
+
+      {/* Main content block */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-3">
+        <div className="flex justify-between items-center">
+          <div className="skeleton h-4 w-36 rounded" />
+          <div className="skeleton h-7 w-20 rounded-lg" />
+        </div>
+        <div className="skeleton h-40 w-full rounded-lg" />
+      </div>
+
+      {/* Table rows */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div className="px-5 py-3 border-b border-slate-100">
+          <div className="skeleton h-4 w-32 rounded" />
+        </div>
+        <div className="divide-y divide-slate-50">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="px-5 py-3 flex items-center gap-4">
+              <div className="skeleton h-3 w-24 rounded" />
+              <div className="skeleton h-3 w-16 rounded" />
+              <div className="skeleton h-3 w-20 rounded" />
+              <div className="flex-1" />
+              <div className="skeleton h-5 w-14 rounded-md" />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

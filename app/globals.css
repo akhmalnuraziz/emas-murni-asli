@@ -1,22 +1,23 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  /* ─── Font: Inter — standar enterprise premium ─── */
+  --font-sans: 'Inter', 'SF Pro Text', ui-sans-serif, system-ui, sans-serif;
 
-  /* ─── Soft Purple (mengganti violet keras) ─── */
-  --color-violet-50:  #F5F3FB;
-  --color-violet-100: #EBE7F7;
-  --color-violet-200: #D5CEEE;
-  --color-violet-300: #B8ACE2;
-  --color-violet-400: #9A89D4;
-  --color-violet-500: #7F6DC6;
-  --color-violet-600: #6857B1;
-  --color-violet-700: #534397;
-  --color-violet-800: #3E3278;
-  --color-violet-900: #2D2359;
-  --color-violet-950: #1C163A;
+  /* ─── Primary Brand — Deep Violet ─── */
+  --color-violet-50:  #F4F2FF;
+  --color-violet-100: #EAE6FF;
+  --color-violet-200: #D5CCFF;
+  --color-violet-300: #B8ADFA;
+  --color-violet-400: #9585F5;
+  --color-violet-500: #7B63EE;
+  --color-violet-600: #6450D6;   /* PRIMARY — main brand color */
+  --color-violet-700: #5340B8;
+  --color-violet-800: #42329A;
+  --color-violet-900: #30246E;
+  --color-violet-950: #1E1644;
 
-  /* ─── Gold ─── */
+  /* ─── Gold Accent — brand signature ─── */
   --color-gold-50:  #FDFAED;
   --color-gold-100: #F9F0CF;
   --color-gold-200: #F1DC96;
@@ -28,22 +29,63 @@
   --color-gold-800: #654814;
   --color-gold-900: #4A3412;
 
-  /* ─── Slate override untuk abu-abu yang lebih warm ─── */
-  --color-slate-50:  #FAFAF9;
-  --color-slate-100: #F4F4F2;
+  /* ─── Warm Neutrals — slate override ─── */
+  --color-slate-50:  #F8F8F6;
+  --color-slate-100: #F2F2EF;
+  --color-slate-200: #E4E4E0;
+  --color-slate-300: #C8C8C3;
+  --color-slate-400: #9A9A94;
+  --color-slate-500: #6B6B65;
+  --color-slate-600: #4E4E4A;
+  --color-slate-700: #373735;
+  --color-slate-800: #252523;
+  --color-slate-900: #141412;
+  --color-slate-950: #0A0A09;
 }
 
+/* ─── Base font ─── */
 *, body {
-  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  font-family: 'Inter', 'SF Pro Text', ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* scrollbar lembut */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+/* ─── Tabular numbers for data ─── */
+.tabular-nums,
+.font-mono,
+[data-tabular] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Scrollbar — minimal ─── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(99, 87, 177, 0.20);
-  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.10);
+  border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 87, 177, 0.38);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+/* ─── Selection ─── */
+::selection {
+  background: rgba(100, 80, 214, 0.15);
+}
+
+/* ─── Focus visible — accessible ─── */
+:focus-visible {
+  outline: 2px solid #6450D6;
+  outline-offset: 2px;
+}
+
+/* ─── Skeleton animation ─── */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+.skeleton {
+  background: #E4E4E0;
+  border-radius: 6px;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
 }
