@@ -20,6 +20,7 @@ interface Props {
     totalMutasiKeluar: number
   }
   penjualanByGramasi: Array<{ gramasi: string; pcs: number; total: number }>
+  penjualanByGramasiPeriode: Array<{ gramasi: string; pcs: number; omzet: number; hpp: number; profit: number; margin: number }>
   batchList: Array<{
     kode: string; tanggal: string; supplier: string | null
     timbangan_akhir: number | null; hpp_gr: number | null; status: string | null
@@ -167,7 +168,7 @@ function PeriodSelector({ period, dateFrom, dateTo }: { period: string; dateFrom
 }
 
 export default function LaporanClient({
-  summary, penjualanByGramasi, batchList, userRole,
+  summary, penjualanByGramasi, penjualanByGramasiPeriode, batchList, userRole,
   period, dateFrom, dateTo,
   labaRugi, channelBreakdown, penjualanList, pengeluaranList, neraca,
 }: Props) {
@@ -214,7 +215,7 @@ export default function LaporanClient({
           periodLabel={periodLabel}
         />
       )}
-      {tab === 'penjualan' && <PenjualanTab rows={penjualanByGramasi} showHpp={showHpp} />}
+      {tab === 'penjualan' && <PenjualanTab rowsAllTime={penjualanByGramasi} rowsPeriode={penjualanByGramasiPeriode} showHpp={showHpp} periodLabel={periodLabel} />}
       {tab === 'batch'     && <BatchTab rows={batchList} showHpp={showHpp} />}
       {tab === 'ringkasan' && <RingkasanTab summary={summary} />}
       {tab === 'neraca'    && <NeracaTab neraca={neraca} />}
@@ -330,32 +331,50 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
             <p className="text-sm font-bold text-slate-800">Detail Penjualan</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[560px] text-sm">
+            <table className="w-full min-w-[760px] text-sm">
               <thead>
                 <tr className="bg-slate-50">
-                  {['Tanggal', 'Faktur', 'Customer', 'Channel', 'Pcs', 'Total'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">{h}</th>
+                  {['Tanggal', 'Faktur', 'Customer', 'Channel', 'Pcs', 'Omzet', 'HPP', 'Profit', 'Margin'].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {penjualanList.map((p: any) => (
-                  <tr key={p.id} className="border-t border-slate-50 hover:bg-violet-50/10">
-                    <td className="px-4 py-2.5 text-xs text-slate-500 whitespace-nowrap">{formatDate(p.tanggal)}</td>
-                    <td className="px-4 py-2.5">
-                      <a href={`/penjualan/faktur/${p.id}`} target="_blank"
-                        className="text-xs font-mono text-violet-600 hover:underline flex items-center gap-1">
-                        {p.no_faktur ?? p.nomor_invoice ?? `#${p.id}`}
-                        <ExternalLink size={10} />
-                      </a>
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-slate-700 truncate max-w-[120px]">{p.nama_customer ?? '—'}</td>
-                    <td className="px-4 py-2.5 text-xs text-slate-500 capitalize">{p.channel ?? p.source ?? '—'}</td>
-                    <td className="px-4 py-2.5 text-xs font-semibold text-slate-700">{p.pcs}</td>
-                    <td className="px-4 py-2.5 text-xs font-bold text-green-700">{formatRupiah(Number(p.total_harga_jual ?? p.harga_jual ?? 0))}</td>
-                  </tr>
-                ))}
+                {penjualanList.map((p: any) => {
+                  const omzet  = Number(p.total_harga_jual ?? p.harga_jual ?? 0)
+                  const hpp    = Number(p.hpp_total ?? 0)
+                  const profit = Number(p.total_profit ?? p.profit ?? omzet - hpp)
+                  const margin = omzet > 0 ? (profit / omzet * 100) : 0
+                  return (
+                    <tr key={p.id} className="border-t border-slate-50 hover:bg-violet-50/10">
+                      <td className="px-4 py-2.5 text-xs text-slate-500 whitespace-nowrap">{formatDate(p.tanggal)}</td>
+                      <td className="px-4 py-2.5">
+                        <a href={`/penjualan/faktur/${p.id}`} target="_blank"
+                          className="text-xs font-mono text-violet-600 hover:underline flex items-center gap-1">
+                          {p.no_faktur ?? p.nomor_invoice ?? `#${p.id}`}
+                          <ExternalLink size={10} />
+                        </a>
+                      </td>
+                      <td className="px-4 py-2.5 text-xs text-slate-700 truncate max-w-[100px]">{p.nama_customer ?? '—'}</td>
+                      <td className="px-4 py-2.5 text-xs text-slate-500 capitalize">{p.channel ?? p.source ?? '—'}</td>
+                      <td className="px-4 py-2.5 text-xs font-semibold text-slate-700 text-center">{p.pcs}</td>
+                      <td className="px-4 py-2.5 text-xs font-bold text-green-700 whitespace-nowrap">{formatRupiah(omzet)}</td>
+                      <td className="px-4 py-2.5 text-xs text-amber-700 whitespace-nowrap">{formatRupiah(hpp)}</td>
+                      <td className="px-4 py-2.5 text-xs font-semibold whitespace-nowrap" style={{ color: profit >= 0 ? '#16a34a' : '#dc2626' }}>{formatRupiah(profit)}</td>
+                      <td className="px-4 py-2.5 text-xs font-semibold whitespace-nowrap" style={{ color: margin >= 10 ? '#7c3aed' : margin >= 0 ? '#d97706' : '#dc2626' }}>{margin.toFixed(1)}%</td>
+                    </tr>
+                  )
+                })}
               </tbody>
+              <tfoot>
+                <tr className="bg-slate-50 border-t-2 border-slate-200">
+                  <td className="px-4 py-3 text-xs font-bold text-slate-600" colSpan={5}>Total</td>
+                  <td className="px-4 py-3 text-xs font-black text-green-700 whitespace-nowrap">{formatRupiah(labaRugi.omzet)}</td>
+                  <td className="px-4 py-3 text-xs font-bold text-amber-700 whitespace-nowrap">{formatRupiah(labaRugi.hpp)}</td>
+                  <td className="px-4 py-3 text-xs font-black whitespace-nowrap" style={{ color: labaRugi.labaKotor >= 0 ? '#16a34a' : '#dc2626' }}>{formatRupiah(labaRugi.labaKotor)}</td>
+                  <td className="px-4 py-3 text-xs font-bold text-violet-700">{labaRugi.omzet > 0 ? (labaRugi.labaKotor / labaRugi.omzet * 100).toFixed(1) : '0.0'}%</td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
@@ -423,38 +442,100 @@ function RingkasanTab({ summary }: { summary: Props['summary'] }) {
 
 // ── Per Gramasi Tab ───────────────────────────────────────────────────────────
 
-function PenjualanTab({ rows, showHpp }: { rows: Props['penjualanByGramasi']; showHpp: boolean }) {
-  if (rows.length === 0) return <Empty text="Belum ada data penjualan." />
-  const total = rows.reduce((a, r) => a + r.total, 0)
+function PenjualanTab({
+  rowsAllTime, rowsPeriode, showHpp, periodLabel,
+}: {
+  rowsAllTime: Props['penjualanByGramasi']
+  rowsPeriode: Props['penjualanByGramasiPeriode']
+  showHpp: boolean
+  periodLabel: string
+}) {
+  const [view, setView] = useState<'periode' | 'alltime'>('periode')
+  const rows = rowsPeriode
+
+  if (rows.length === 0 && view === 'periode') {
+    return (
+      <div className="space-y-3">
+        <div className="flex gap-2">
+          <button onClick={() => setView('periode')} className={cn('px-3 py-1.5 rounded-xl text-xs font-bold', view === 'periode' ? 'bg-violet-600 text-white' : 'bg-white border border-slate-200 text-slate-500')}>Periode</button>
+          <button onClick={() => setView('alltime')} className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-500">Semua Waktu</button>
+        </div>
+        <Empty text={`Belum ada penjualan di periode ${periodLabel}.`} />
+      </div>
+    )
+  }
+
+  const displayRows = view === 'periode' ? rowsPeriode : rowsAllTime.map(r => ({ gramasi: r.gramasi, pcs: r.pcs, omzet: r.total, hpp: 0, profit: 0, margin: 0 }))
+  const totalOmzet  = displayRows.reduce((a, r) => a + r.omzet, 0)
+  const totalHpp    = displayRows.reduce((a, r) => a + r.hpp, 0)
+  const totalProfit = displayRows.reduce((a, r) => a + r.profit, 0)
+  const totalMargin = totalOmzet > 0 ? (totalProfit / totalOmzet * 100) : 0
+
   return (
-    <div className="rounded-3xl overflow-hidden"
-      style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.6)' }}>
-      <table className="w-full text-sm">
-        <thead>
-          <tr style={{ background: 'rgba(139,92,246,0.04)', borderBottom: '1px solid rgba(139,92,246,0.08)' }}>
-            {['Gramasi', 'Terjual (pcs)', showHpp ? 'Total Omzet' : null].filter(Boolean).map(h => (
-              <th key={h!} className="px-5 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={r.gramasi} style={{ borderTop: i === 0 ? 'none' : '1px solid rgba(0,0,0,0.04)' }} className="hover:bg-violet-50/10">
-              <td className="px-5 py-3.5 font-bold text-slate-800">{r.gramasi}gr</td>
-              <td className="px-5 py-3.5 font-semibold text-slate-700">{r.pcs} pcs</td>
-              {showHpp && <td className="px-5 py-3.5 font-semibold text-green-600">{formatRupiah(r.total)}</td>}
-            </tr>
-          ))}
-        </tbody>
-        {showHpp && (
-          <tfoot>
-            <tr style={{ borderTop: '2px solid rgba(139,92,246,0.15)', background: 'rgba(139,92,246,0.04)' }}>
-              <td className="px-5 py-3.5 font-bold text-slate-800" colSpan={2}>Total</td>
-              <td className="px-5 py-3.5 font-black text-violet-700">{formatRupiah(total)}</td>
-            </tr>
-          </tfoot>
-        )}
-      </table>
+    <div className="space-y-3">
+      <div className="flex gap-2">
+        <button onClick={() => setView('periode')} className={cn('px-3 py-1.5 rounded-xl text-xs font-bold transition-all', view === 'periode' ? 'bg-violet-600 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-violet-200')}>
+          {periodLabel}
+        </button>
+        <button onClick={() => setView('alltime')} className={cn('px-3 py-1.5 rounded-xl text-xs font-bold transition-all', view === 'alltime' ? 'bg-violet-600 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-violet-200')}>
+          Semua Waktu
+        </button>
+      </div>
+
+      <div className="rounded-3xl overflow-hidden"
+        style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.6)' }}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ background: 'rgba(139,92,246,0.04)', borderBottom: '1px solid rgba(139,92,246,0.08)' }}>
+                <th className="px-5 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Gramasi</th>
+                <th className="px-5 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Terjual</th>
+                {showHpp && <>
+                  <th className="px-5 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Omzet</th>
+                  {view === 'periode' && <>
+                    <th className="px-5 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">HPP</th>
+                    <th className="px-5 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Profit</th>
+                    <th className="px-5 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Margin</th>
+                  </>}
+                </>}
+              </tr>
+            </thead>
+            <tbody>
+              {displayRows.map((r, i) => (
+                <tr key={r.gramasi} style={{ borderTop: i === 0 ? 'none' : '1px solid rgba(0,0,0,0.04)' }} className="hover:bg-violet-50/10">
+                  <td className="px-5 py-3.5 font-black text-slate-800">{r.gramasi}gr</td>
+                  <td className="px-5 py-3.5 font-semibold text-slate-700">{r.pcs} pcs</td>
+                  {showHpp && <>
+                    <td className="px-5 py-3.5 font-semibold text-green-600 whitespace-nowrap">{formatRupiah(r.omzet)}</td>
+                    {view === 'periode' && <>
+                      <td className="px-5 py-3.5 text-amber-700 whitespace-nowrap">{formatRupiah(r.hpp)}</td>
+                      <td className="px-5 py-3.5 font-semibold whitespace-nowrap" style={{ color: r.profit >= 0 ? '#16a34a' : '#dc2626' }}>{formatRupiah(r.profit)}</td>
+                      <td className="px-5 py-3.5">
+                        <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full', r.margin >= 10 ? 'bg-violet-50 text-violet-700' : r.margin >= 0 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-600')}>
+                          {r.margin.toFixed(1)}%
+                        </span>
+                      </td>
+                    </>}
+                  </>}
+                </tr>
+              ))}
+            </tbody>
+            {showHpp && (
+              <tfoot>
+                <tr style={{ borderTop: '2px solid rgba(139,92,246,0.15)', background: 'rgba(139,92,246,0.04)' }}>
+                  <td className="px-5 py-3.5 font-bold text-slate-800" colSpan={2}>Total</td>
+                  <td className="px-5 py-3.5 font-black text-green-700 whitespace-nowrap">{formatRupiah(totalOmzet)}</td>
+                  {view === 'periode' && <>
+                    <td className="px-5 py-3.5 font-bold text-amber-700 whitespace-nowrap">{formatRupiah(totalHpp)}</td>
+                    <td className="px-5 py-3.5 font-black whitespace-nowrap" style={{ color: totalProfit >= 0 ? '#16a34a' : '#dc2626' }}>{formatRupiah(totalProfit)}</td>
+                    <td className="px-5 py-3.5 font-bold text-violet-700">{totalMargin.toFixed(1)}%</td>
+                  </>}
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+      </div>
     </div>
   )
 }

@@ -52,10 +52,10 @@ export default async function LaporanPage({
       if (cabangFilter) q = (q as any).eq('cabang_kode', cabangFilter)
       return q
     })(),
-    // Period penjualan for laba rugi
+    // Period penjualan for laba rugi (include items for per-gramasi breakdown)
     (() => {
       let q = supabase.from('penjualan')
-        .select('id, no_faktur, nomor_invoice, tanggal, nama_customer, channel, source, toko, cabang_nama, pcs, gramasi, total_harga_jual, harga_jual, hpp_total, profit, metode_pembayaran')
+        .select('id, no_faktur, nomor_invoice, tanggal, nama_customer, channel, source, toko, cabang_nama, pcs, gramasi, total_harga_jual, harga_jual, hpp_total, total_profit, profit, metode_pembayaran, items:penjualan_item(gramasi, hpp, harga_jual, profit)')
         .gte('tanggal', dateFrom).lte('tanggal', dateTo).is('voided_at' as any, null).order('tanggal', { ascending: false })
       if (cabangFilter) q = (q as any).eq('cabang_kode', cabangFilter)
       return q
@@ -144,6 +144,38 @@ export default async function LaporanPage({
     selisihGram,
   }
 
+  // Per-gramasi breakdown dari penjualan_item periode (dengan HPP + margin)
+  const gramasiPeriodeMap = new Map<string, { pcs: number; omzet: number; hpp: number; profit: number }>()
+  for (const p of penjualanPeriode ?? []) {
+    const pItems: any[] = (p as any).items ?? []
+    if (pItems.length > 0) {
+      for (const it of pItems) {
+        const g = String(it.gramasi ?? '?')
+        const cur = gramasiPeriodeMap.get(g) ?? { pcs: 0, omzet: 0, hpp: 0, profit: 0 }
+        gramasiPeriodeMap.set(g, {
+          pcs:    cur.pcs + 1,
+          omzet:  cur.omzet  + Number(it.harga_jual ?? 0),
+          hpp:    cur.hpp    + Number(it.hpp ?? 0),
+          profit: cur.profit + Number(it.profit ?? 0),
+        })
+      }
+    } else {
+      // fallback: penjualan header jika items kosong
+      const g = String((p as any).gramasi ?? '?')
+      const cur = gramasiPeriodeMap.get(g) ?? { pcs: 0, omzet: 0, hpp: 0, profit: 0 }
+      const pcs = Number((p as any).pcs ?? 1)
+      gramasiPeriodeMap.set(g, {
+        pcs:    cur.pcs + pcs,
+        omzet:  cur.omzet  + Number((p as any).total_harga_jual ?? (p as any).harga_jual ?? 0),
+        hpp:    cur.hpp    + Number((p as any).hpp_total ?? 0),
+        profit: cur.profit + Number((p as any).total_profit ?? (p as any).profit ?? 0),
+      })
+    }
+  }
+  const penjualanByGramasiPeriode = [...gramasiPeriodeMap.entries()]
+    .map(([gramasi, v]) => ({ gramasi, ...v, margin: v.omzet > 0 ? (v.profit / v.omzet * 100) : 0 }))
+    .sort((a, b) => parseFloat(a.gramasi) - parseFloat(b.gramasi))
+
   // Channel breakdown
   const channelMap: Record<string, { omzet: number; pcs: number }> = {}
   for (const p of penjualanPeriode ?? []) {
@@ -162,6 +194,7 @@ export default async function LaporanPage({
     <LaporanClient
       summary={{ totalProduksiGram, totalPackingPcs, totalShieldtagAktif, totalTerjual, totalBuyback, totalMutasiKeluar }}
       penjualanByGramasi={penjualanByGramasi}
+      penjualanByGramasiPeriode={penjualanByGramasiPeriode}
       batchList={(batches ?? []) as any}
       userRole={profile?.role ?? 'operator_produksi'}
       period={period}
