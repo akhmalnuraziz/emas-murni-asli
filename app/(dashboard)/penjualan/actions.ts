@@ -11,6 +11,23 @@ async function generateNoFaktur(supabase: any): Promise<string> {
   return `INV/${ym}/${String(data ?? 1).padStart(4, '0')}`
 }
 
+export async function lookupShieldtag(kode: string) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('shieldtag')
+    .select('kode, gramasi, status')
+    .eq('kode', kode.toUpperCase().trim())
+    .is('voided_at', null)
+    .single()
+  if (error || !data) return { error: 'Kode tidak ditemukan' }
+  return {
+    kode: data.kode,
+    gramasi: data.gramasi as string,
+    produk_nama: `LM REI ${data.gramasi}GR`,
+    status: data.status as string,
+  }
+}
+
 export async function createPenjualan(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -21,6 +38,7 @@ export async function createPenjualan(formData: FormData) {
   const namaCustomer   = formData.get('nama_customer') as string | null
   const hpCustomer     = formData.get('hp_customer') as string | null
   const ktpCustomer    = formData.get('ktp_customer') as string | null
+  const alamatCustomer = formData.get('alamat_customer') as string | null
   const marketplaceAkun= formData.get('marketplace_akun') as string | null
   const noInvoiceMktpl = formData.get('no_invoice_mktpl') as string | null
   const cabangKode     = formData.get('cabang_kode') as string | null
@@ -96,6 +114,7 @@ export async function createPenjualan(formData: FormData) {
     nama_customer: namaCustomer || null,
     hp_customer: hpCustomer || null,
     ktp_customer: ktpCustomer || null,
+    alamat_customer: alamatCustomer || null,
     marketplace_akun: marketplaceAkun || null,
     no_invoice_mktpl: noInvoiceMktpl || null,
     cabang_kode: cabangKode || null,
@@ -142,7 +161,7 @@ export async function createPenjualan(formData: FormData) {
     untuk_role: ['owner', 'admin_pusat', 'spv'],
   })
 
-  return { success: true, noFaktur }
+  return { success: true, noFaktur, id: pj.id as number }
 }
 
 export async function voidPenjualan(penjualanId: number, reason: string) {

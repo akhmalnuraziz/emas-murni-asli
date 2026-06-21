@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { ShoppingBag, Plus, X, Search, Trash2, ChevronDown, ChevronUp, Printer } from 'lucide-react'
-import { createPenjualan, voidPenjualan } from '@/app/(dashboard)/penjualan/actions'
+import { createPenjualan, voidPenjualan, lookupShieldtag } from '@/app/(dashboard)/penjualan/actions'
 
 type PenjualanItem = {
   id: number
@@ -69,6 +69,14 @@ function ChannelBadge({ channel }: { channel: string }) {
 }
 
 // ─── Create Modal ──────────────────────────────────────────────────────────────
+type ItemRow = {
+  shieldtag_kode: string
+  harga_jual: string
+  preview?: { gramasi: string; produk_nama: string; status: string } | null
+  lookupError?: string
+  looking?: boolean
+}
+
 function CreatePenjualanModal({
   cabangList, channels, onClose,
 }: {
@@ -79,14 +87,28 @@ function CreatePenjualanModal({
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState('')
   const [channel, setChannel] = useState('toko')
-  const [items, setItems] = useState([{ shieldtag_kode: '', harga_jual: '' }])
+  const [items, setItems] = useState<ItemRow[]>([{ shieldtag_kode: '', harga_jual: '' }])
   const [payments, setPayments] = useState([{ metode: 'Tunai', jumlah: '' }])
 
   function addItem() { setItems(prev => [...prev, { shieldtag_kode: '', harga_jual: '' }]) }
   function removeItem(i: number) { setItems(prev => prev.filter((_, idx) => idx !== i)) }
-  function updateItem(i: number, key: string, val: string) {
-    setItems(prev => prev.map((it, idx) => idx === i ? { ...it, [key]: val } : it))
+  function updateItem(i: number, key: keyof ItemRow, val: string) {
+    setItems(prev => prev.map((it, idx) => idx === i ? { ...it, [key]: val, preview: key === 'shieldtag_kode' ? undefined : it.preview, lookupError: key === 'shieldtag_kode' ? undefined : it.lookupError } : it))
   }
+
+  async function handleKodeLookup(i: number, kode: string) {
+    const trimmed = kode.trim().toUpperCase()
+    if (!trimmed) return
+    setItems(prev => prev.map((it, idx) => idx === i ? { ...it, looking: true, preview: undefined, lookupError: undefined } : it))
+    const res = await lookupShieldtag(trimmed)
+    setItems(prev => prev.map((it, idx) => idx === i ? {
+      ...it,
+      looking: false,
+      preview: 'error' in res ? null : { gramasi: res.gramasi, produk_nama: res.produk_nama, status: res.status },
+      lookupError: 'error' in res ? res.error : (res.status !== 'Aktif' ? `Status: ${res.status} (bukan Aktif)` : undefined),
+    } : it))
+  }
+
   function addPayment() { setPayments(prev => [...prev, { metode: 'Tunai', jumlah: '' }]) }
   function removePayment(i: number) { setPayments(prev => prev.filter((_, idx) => idx !== i)) }
   function updatePayment(i: number, key: string, val: string) {
@@ -108,7 +130,11 @@ function CreatePenjualanModal({
     startTransition(async () => {
       const res = await createPenjualan(fd)
       if (res?.error) { setError(res.error); return }
-      onClose()
+      if (res?.id) {
+        window.location.href = `/penjualan/faktur/${res.id}`
+      } else {
+        onClose()
+      }
     })
   }
 
@@ -191,6 +217,16 @@ function CreatePenjualanModal({
               <input name="hp_customer" placeholder="08xx…" className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 mb-1">No. KTP</label>
+              <input name="ktp_customer" placeholder="Opsional" className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 mb-1">Alamat</label>
+              <input name="alamat_customer" placeholder="Opsional" className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
+            </div>
+          </div>
 
           {/* Items */}
           <div>
@@ -201,26 +237,41 @@ function CreatePenjualanModal({
                 <Plus size={12} /> Tambah
               </button>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {items.map((it, i) => (
-                <div key={i} className="flex gap-2 items-center">
-                  <input
-                    placeholder="Kode ShieldTag"
-                    value={it.shieldtag_kode}
-                    onChange={e => updateItem(i, 'shieldtag_kode', e.target.value)}
-                    className="flex-1 rounded-2xl border border-slate-200 px-3 py-2 text-sm font-mono uppercase focus:outline-none focus:border-purple-400"
-                  />
-                  <input
-                    placeholder="Harga Jual"
-                    type="number"
-                    value={it.harga_jual}
-                    onChange={e => updateItem(i, 'harga_jual', e.target.value)}
-                    className="w-36 rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
-                  />
-                  {items.length > 1 && (
-                    <button type="button" onClick={() => removeItem(i)} className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center text-red-400 hover:bg-red-100">
-                      <X size={12} />
-                    </button>
+                <div key={i} className="space-y-1">
+                  <div className="flex gap-2 items-center">
+                    <input
+                      placeholder="Kode ShieldTag"
+                      value={it.shieldtag_kode}
+                      onChange={e => updateItem(i, 'shieldtag_kode', e.target.value)}
+                      onBlur={e => handleKodeLookup(i, e.target.value)}
+                      className="flex-1 rounded-2xl border border-slate-200 px-3 py-2 text-sm font-mono uppercase focus:outline-none focus:border-purple-400"
+                    />
+                    <input
+                      placeholder="Harga Jual"
+                      type="number"
+                      value={it.harga_jual}
+                      onChange={e => updateItem(i, 'harga_jual', e.target.value)}
+                      className="w-36 rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
+                    />
+                    {items.length > 1 && (
+                      <button type="button" onClick={() => removeItem(i)} className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center text-red-400 hover:bg-red-100">
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                  {it.looking && (
+                    <p className="text-[10px] text-slate-400 pl-3">Mencari ShieldTag…</p>
+                  )}
+                  {it.preview && !it.lookupError && (
+                    <div className="flex items-center gap-2 pl-3">
+                      <span className="text-[10px] font-bold text-green-700 bg-green-50 rounded-lg px-2 py-0.5">✓ {it.preview.produk_nama}</span>
+                      <span className="text-[10px] text-slate-400">{it.preview.gramasi} gr</span>
+                    </div>
+                  )}
+                  {it.lookupError && (
+                    <p className="text-[10px] text-red-500 pl-3">{it.lookupError}</p>
                   )}
                 </div>
               ))}
@@ -272,7 +323,7 @@ function CreatePenjualanModal({
             <button type="submit" disabled={pending}
               className="flex-1 rounded-2xl py-2.5 text-sm font-black text-white disabled:opacity-50"
               style={{ background: 'linear-gradient(135deg,#7c3aed,#6d28d9)' }}>
-              {pending ? 'Menyimpan…' : 'Catat Penjualan'}
+              {pending ? 'Menyimpan…' : 'Simpan & Buka Faktur'}
             </button>
           </div>
         </form>

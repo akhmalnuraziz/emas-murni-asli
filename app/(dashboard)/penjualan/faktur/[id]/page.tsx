@@ -3,12 +3,13 @@ import { notFound } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
-export default async function FakturPage({ params }: { params: { id: string } }) {
+export default async function FakturPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: p } = await supabase
     .from('penjualan')
     .select('*, items:penjualan_item(*), payments:penjualan_payment(*)')
-    .eq('id', params.id)
+    .eq('id', id)
     .is('voided_at', null)
     .single()
 
@@ -77,6 +78,8 @@ export default async function FakturPage({ params }: { params: { id: string } })
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Kepada</p>
             <p className="text-sm font-bold text-slate-800">{p.nama_customer || 'Pelanggan'}</p>
             {p.hp_customer && <p className="text-xs text-slate-500">{p.hp_customer}</p>}
+            {p.ktp_customer && <p className="text-xs text-slate-400">KTP: {p.ktp_customer}</p>}
+            {p.alamat_customer && <p className="text-xs text-slate-500 mt-0.5">{p.alamat_customer}</p>}
           </div>
           <div className="text-right">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Toko / Channel</p>
