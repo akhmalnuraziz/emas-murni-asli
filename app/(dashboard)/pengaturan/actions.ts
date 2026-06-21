@@ -387,6 +387,21 @@ export async function updateKpiTargetTim(timId: number, targetGram: number) {
   return { success: true }
 }
 
+export async function updateSafetyStockGlobal(value: number) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki akses' }
+  await supabase.from('pengaturan').upsert(
+    { key: 'safety_stock_global', value: String(value), label: 'Safety Stock Default (pcs per gramasi)', updated_by: user.id },
+    { onConflict: 'key' }
+  )
+  revalidatePath('/pengaturan')
+  revalidatePath('/prioritas-produksi')
+  return { success: true }
+}
+
 export async function updateTargetProduksi(targetPcs: number) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

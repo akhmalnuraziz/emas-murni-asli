@@ -14,6 +14,9 @@ export default async function PrioritasProduksiPage() {
     { data: poItems },
     { data: stokAktif },
     { data: stokTransit },
+    { data: wipItems },
+    { data: gramasiOptions },
+    { data: pengaturanRows },
   ] = await Promise.all([
     supabase.from('users_profile').select('role').eq('id', user.id).single(),
     // PO aktif (pending + diproses) dengan items
@@ -24,7 +27,22 @@ export default async function PrioritasProduksiPage() {
     supabase.from('shieldtag').select('gramasi').eq('status', 'Aktif').is('voided_at', null),
     // Stok transit per gramasi
     supabase.from('shieldtag').select('gramasi').eq('status', 'Terdistribusi').is('voided_at', null),
+    // WIP: produksi_item yang sedang berjalan (belum jadi shieldtag)
+    supabase.from('produksi_item')
+      .select('gramasi')
+      .not('current_status', 'in', '("Sudah Packing","Reject")')
+      .is('voided_at', null),
+    // Semua gramasi yang ada di master
+    supabase.from('gramasi_option').select('nilai').eq('aktif', true).order('urutan'),
+    // Safety stock setting dari pengaturan (global + per-gramasi)
+    supabase.from('pengaturan').select('key, value')
+      .or('key.eq.safety_stock_global,key.like.safety_stock_%'),
   ])
+
+  // Build pengaturan map
+  const pMap: Record<string, string> = {}
+  for (const r of pengaturanRows ?? []) pMap[r.key] = r.value
+  const safetyStockGlobal = Number(pMap['safety_stock_global'] ?? 10)
 
   // Aggregate stok per gramasi
   const stokMap: Record<string, number> = {}
@@ -34,6 +52,12 @@ export default async function PrioritasProduksiPage() {
   const transitMap: Record<string, number> = {}
   for (const s of stokTransit ?? []) {
     if (s.gramasi) transitMap[s.gramasi] = (transitMap[s.gramasi] ?? 0) + 1
+  }
+
+  // WIP per gramasi (item dalam proses produksi)
+  const wipMap: Record<string, number> = {}
+  for (const w of wipItems ?? []) {
+    if (w.gramasi) wipMap[w.gramasi] = (wipMap[w.gramasi] ?? 0) + 1
   }
 
   // Aggregate PO demand per gramasi
@@ -50,28 +74,36 @@ export default async function PrioritasProduksiPage() {
     }
   }
 
-  // Safety stock threshold: 10 pcs per gramasi (simple rule)
-  const SAFETY_STOCK = 10
-
-  // Build priority list
+  // Gabungkan semua gramasi yang relevan
+  const masterGramasi = (gramasiOptions ?? []).map((g: any) => g.nilai as string)
   const gramasiSet = new Set([
+    ...masterGramasi,
     ...Object.keys(stokMap),
     ...Object.keys(poMap),
+    ...Object.keys(wipMap),
   ])
 
+  // Build priority list
   const prioritasList = [...gramasiSet].map(g => {
-    const stok = stokMap[g] ?? 0
-    const transit = transitMap[g] ?? 0
-    const poDemand = poMap[g]?.qty ?? 0
-    const poKodes = poMap[g]?.pos ?? []
-    const tersedia = stok + transit
+    const stok      = stokMap[g] ?? 0
+    const transit   = transitMap[g] ?? 0
+    const wip       = wipMap[g] ?? 0
+    const poDemand  = poMap[g]?.qty ?? 0
+    const poKodes   = poMap[g]?.pos ?? []
+    const tersedia  = stok + transit
+    const safetyStock = Number(pMap[`safety_stock_${g}`] ?? safetyStockGlobal)
+
+    // Rekomendasi = berapa pcs perlu diproduksi
+    const totalKebutuhan = safetyStock + poDemand
+    const totalAda       = stok + transit + wip
+    const rekomendasi    = Math.max(0, totalKebutuhan - totalAda)
 
     let prioritas: 'P1' | 'P2' | 'P3'
     if (poDemand > 0 && stok < poDemand) prioritas = 'P1'
-    else if (tersedia < SAFETY_STOCK) prioritas = 'P2'
+    else if (tersedia < safetyStock) prioritas = 'P2'
     else prioritas = 'P3'
 
-    return { gramasi: g, stok, transit, poDemand, poKodes, tersedia, prioritas }
+    return { gramasi: g, stok, transit, wip, poDemand, poKodes, tersedia, safetyStock, rekomendasi, prioritas }
   }).sort((a, b) => {
     const order = { P1: 0, P2: 1, P3: 2 }
     if (order[a.prioritas] !== order[b.prioritas]) return order[a.prioritas] - order[b.prioritas]
@@ -81,7 +113,8 @@ export default async function PrioritasProduksiPage() {
   return (
     <PrioritasProduksiClient
       prioritasList={prioritasList}
-      safetyStock={SAFETY_STOCK}
+      safetyStockGlobal={safetyStockGlobal}
+      userRole={profile?.role ?? ''}
     />
   )
 }

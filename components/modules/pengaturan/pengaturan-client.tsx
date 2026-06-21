@@ -12,6 +12,7 @@ import {
   updateToleransi, updateBiayaPackaging, updateTargetProduksi, updateKpiTargetTim,
   createGramasi, updateGramasi, toggleGramasiAktif, deleteGramasi,
   createProdukPengaturan, updateProdukPengaturan, toggleProdukPengaturanAktif,
+  updateSafetyStockGlobal,
 } from '@/app/(dashboard)/pengaturan/actions'
 import { CabangSection, UsersSection } from './cabang-users-sections'
 
@@ -401,6 +402,7 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
   })
   const set = (k: string, v: string) => setVals(p => ({ ...p, [k]: v }))
   const [targetPacking, setTargetPacking] = useState(pengaturan.target_packing_harian ?? '0')
+  const [safetyStockGlobal, setSafetyStockGlobal] = useState(pengaturan.safety_stock_global ?? '10')
 
   function handleSave() {
     const fd = new FormData()
@@ -409,6 +411,7 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
       const r = await updateToleransi(fd)
       if (r?.error) { showToast('❌ ' + r.error); return }
       await updateTargetProduksi(Number(targetPacking) || 0)
+      await updateSafetyStockGlobal(Number(safetyStockGlobal) || 10)
       showToast('✅ Pengaturan disimpan')
     })
   }
@@ -481,6 +484,26 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
             <div className="flex items-center gap-2">
               <input type="number" min="0" step="1" disabled={!canManage}
                 value={targetPacking} onChange={e => setTargetPacking(e.target.value)}
+                className="w-28 h-10 px-3 bg-gray-50 rounded-xl text-sm text-gray-700 text-right border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60" />
+              <span className="text-xs text-gray-400 w-6">pcs</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Safety Stock */}
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-base font-bold text-gray-900">Safety Stock Stok Minimum</h2>
+          <p className="text-xs text-gray-400 mt-0.5">Batas stok minimum per gramasi. Jika di bawah ini, item masuk Prioritas Produksi P2.</p>
+        </div>
+        <div className="rounded-3xl p-4 bg-white border border-slate-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="text-lg w-8 text-center">🛡️</span>
+            <span className="flex-1 text-sm font-semibold text-gray-700">Safety Stock Default (semua gramasi)</span>
+            <div className="flex items-center gap-2">
+              <input type="number" min="0" step="1" disabled={!canManage}
+                value={safetyStockGlobal} onChange={e => setSafetyStockGlobal(e.target.value)}
                 className="w-28 h-10 px-3 bg-gray-50 rounded-xl text-sm text-gray-700 text-right border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60" />
               <span className="text-xs text-gray-400 w-6">pcs</span>
             </div>
