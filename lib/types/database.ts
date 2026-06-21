@@ -288,12 +288,12 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 
 export const ROLE_ACCESS: Record<UserRole, string[]> = {
   owner: ['*'],
-  admin_pusat: ['dashboard', 'bahan-baku', 'produksi', 'shieldtag', 'shieldtag-explorer', 'inventory', 'mutasi', 'stock-opname', 'stok-cabang', 'penjualan', 'buyback', 'po-cabang', 'po-vendor-packaging', 'prioritas-produksi', 'pengeluaran', 'laporan', 'scrap', 'backup', 'kpi-tim', 'pengaturan', 'audit-log'],
-  spv: ['dashboard', 'bahan-baku', 'produksi', 'shieldtag', 'shieldtag-explorer', 'inventory', 'mutasi', 'stock-opname', 'stok-cabang', 'penjualan', 'buyback', 'po-cabang', 'po-vendor-packaging', 'prioritas-produksi', 'laporan', 'scrap', 'kpi-tim'],
+  admin_pusat: ['dashboard', 'bahan-baku', 'produksi', 'shieldtag', 'shieldtag-explorer', 'inventory', 'mutasi', 'stock-opname', 'stok-cabang', 'penjualan', 'retur-penjualan', 'pelanggan', 'buyback', 'po-cabang', 'po-vendor-packaging', 'prioritas-produksi', 'pengeluaran', 'laporan', 'scrap', 'backup', 'kpi-tim', 'pengaturan', 'audit-log'],
+  spv: ['dashboard', 'bahan-baku', 'produksi', 'shieldtag', 'shieldtag-explorer', 'inventory', 'mutasi', 'stock-opname', 'stok-cabang', 'penjualan', 'retur-penjualan', 'pelanggan', 'buyback', 'po-cabang', 'po-vendor-packaging', 'prioritas-produksi', 'laporan', 'scrap', 'kpi-tim'],
   operator_produksi: ['dashboard', 'produksi', 'bahan-baku', 'shieldtag'],
   gudang: ['dashboard', 'inventory', 'mutasi', 'stock-opname', 'stok-cabang', 'shieldtag', 'shieldtag-explorer', 'po-cabang', 'po-vendor-packaging', 'scrap'],
-  accounting: ['dashboard', 'penjualan', 'buyback', 'pengeluaran', 'laporan', 'backup'],
-  kepala_cabang: ['dashboard', 'inventory', 'mutasi', 'stock-opname', 'stok-cabang', 'shieldtag-explorer', 'penjualan', 'buyback', 'po-cabang', 'prioritas-produksi', 'laporan'],
+  accounting: ['dashboard', 'penjualan', 'retur-penjualan', 'pelanggan', 'buyback', 'pengeluaran', 'laporan', 'backup'],
+  kepala_cabang: ['dashboard', 'inventory', 'mutasi', 'stock-opname', 'stok-cabang', 'shieldtag-explorer', 'penjualan', 'retur-penjualan', 'buyback', 'po-cabang', 'prioritas-produksi', 'laporan'],
 }
 
 export const GRAMASI_OPTIONS = [

@@ -57,6 +57,8 @@ export default async function DashboardPage({
     { data: packingHariIni },
     // Siap packing
     { data: siapPackingItems },
+    // Target packing
+    { data: targetRow },
     // Balance Engine
     { data: balanceBatches },
     { data: balanceProduksi },
@@ -122,6 +124,8 @@ export default async function DashboardPage({
       .is('voided_at', null)
       .order('updated_at', { ascending: false })
       .limit(30),
+    // Target packing harian
+    supabase.from('pengaturan').select('value').eq('key', 'target_packing_harian').single(),
     // Balance Engine — untuk alert dashboard
     supabase.from('batch').select('timbangan_akhir').is('voided_at', null),
     supabase.from('produksi_item').select('total_gram, current_status, berat_reject, status_reject').is('voided_at', null),
@@ -249,6 +253,7 @@ export default async function DashboardPage({
       siapPacking={siapPackingItems ?? []}
       rejectList={rejectBelumDilebur ?? []}
       balanceSelisih={balanceSelisih}
+      targetPackingHarian={Number((targetRow as any)?.value ?? 0)}
     />
   )
 }

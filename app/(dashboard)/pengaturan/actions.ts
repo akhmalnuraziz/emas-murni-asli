@@ -371,3 +371,18 @@ export async function toggleProdukPengaturanAktif(id: number, aktif: boolean) {
   revalidatePath('/po-vendor-packaging')
   return { success: true }
 }
+
+export async function updateTargetProduksi(targetPcs: number) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki akses' }
+  await supabase.from('pengaturan').upsert(
+    { key: 'target_packing_harian', value: String(targetPcs), label: 'Target Packing Harian (pcs)', updated_by: user.id },
+    { onConflict: 'key' }
+  )
+  revalidatePath('/pengaturan')
+  revalidatePath('/dashboard')
+  return { success: true }
+}

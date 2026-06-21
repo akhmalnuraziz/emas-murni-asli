@@ -10,7 +10,9 @@ export default async function LaporanPage({
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase.from('users_profile').select('role,name').eq('id', user?.id ?? '').single()
+  const { data: profile } = await supabase.from('users_profile').select('role,name,cabang_kode').eq('id', user?.id ?? '').single()
+  const isKepala = profile?.role === 'kepala_cabang'
+  const cabangFilter = isKepala ? (profile?.cabang_kode ?? null) : null
 
   const sp = await searchParams
   const period   = sp?.period ?? 'month'
@@ -44,15 +46,20 @@ export default async function LaporanPage({
     supabase.from('produksi_item').select('total_gram, current_status, berat_reject, status_reject').is('voided_at', null),
     supabase.from('packing').select('pcs').is('voided_at', null),
     supabase.from('shieldtag').select('status, gramasi').is('voided_at', null),
-    // All-time penjualan for ringkasan
-    supabase.from('penjualan').select('gramasi, pcs, harga_jual').is('voided_at' as any, null),
+    // All-time penjualan for ringkasan (filter cabang jika kepala_cabang)
+    (() => {
+      let q = supabase.from('penjualan').select('gramasi, pcs, harga_jual').is('voided_at' as any, null)
+      if (cabangFilter) q = (q as any).eq('cabang_kode', cabangFilter)
+      return q
+    })(),
     // Period penjualan for laba rugi
-    supabase.from('penjualan')
-      .select('id, no_faktur, nomor_invoice, tanggal, nama_customer, channel, source, toko, cabang_nama, pcs, gramasi, total_harga_jual, harga_jual, hpp_total, profit, metode_pembayaran')
-      .gte('tanggal', dateFrom)
-      .lte('tanggal', dateTo)
-      .is('voided_at' as any, null)
-      .order('tanggal', { ascending: false }),
+    (() => {
+      let q = supabase.from('penjualan')
+        .select('id, no_faktur, nomor_invoice, tanggal, nama_customer, channel, source, toko, cabang_nama, pcs, gramasi, total_harga_jual, harga_jual, hpp_total, profit, metode_pembayaran')
+        .gte('tanggal', dateFrom).lte('tanggal', dateTo).is('voided_at' as any, null).order('tanggal', { ascending: false })
+      if (cabangFilter) q = (q as any).eq('cabang_kode', cabangFilter)
+      return q
+    })(),
     supabase.from('buyback').select('id, tanggal').gte('tanggal', dateFrom).lte('tanggal', dateTo).is('voided_at', null),
     supabase.from('mutasi').select('pcs').eq('status_kirim', 'Sudah Dikirim'),
     supabase.from('batch').select('kode, tanggal, supplier, timbangan_akhir, hpp_gr, status').is('voided_at', null).order('created_at', { ascending: false }),

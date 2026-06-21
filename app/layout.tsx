@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: 'PT Emas Murni Asli — Production System',
   description: 'Enterprise ERP System untuk Produksi & Inventory Logam Mulia',
   robots: 'noindex, nofollow',
+  manifest: '/manifest.json',
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Emas Murni' },
+  other: { 'mobile-web-app-capable': 'yes', 'msapplication-TileColor': '#7C3AED' },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

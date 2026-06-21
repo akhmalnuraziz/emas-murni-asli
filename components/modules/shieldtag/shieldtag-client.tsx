@@ -4,7 +4,7 @@ import { useState, useTransition, useEffect, useRef } from 'react'
 import {
   Plus, Search, X, Check, AlertTriangle, Tag,
   Edit2, Trash2, ChevronDown, ChevronUp, ExternalLink,
-  MapPin, Package, Clock, ArrowRight, Loader2
+  MapPin, Package, Clock, ArrowRight, Loader2, Printer,
 } from 'lucide-react'
 import { cn, formatDate, formatRupiah } from '@/lib/utils'
 import { registerShieldtags, editShieldtagKode, voidShieldtag, bulkVoidShieldtag, searchShieldtag } from '@/app/(dashboard)/shieldtag/actions'
@@ -604,6 +604,15 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
                 </button>
               ))}
             </div>
+            {selected.size > 0 && view === 'list' && (
+              <a
+                href={`/shieldtag/print?kodes=${filtered.filter(st => selected.has(st.id)).map(st => st.kode).join(',')}`}
+                target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white rounded-2xl transition-all"
+                style={{ background: 'linear-gradient(135deg,#7C3AED,#6D28D9)', boxShadow: '0 4px 20px rgba(124,58,237,0.3)' }}>
+                <Printer size={14}/> Print {selected.size} Label
+              </a>
+            )}
             {selected.size > 0 && canVoid && view === 'list' && (
               <button onClick={() => { setModal('bulk_void'); setBulkVoidReason('') }}
                 className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white rounded-2xl transition-all"
@@ -732,6 +741,11 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
                     <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">{formatDate(st.tgl_regis)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">
+                        <a href={`/shieldtag/print?kodes=${st.kode}`} target="_blank" rel="noopener noreferrer"
+                          className="w-8 h-8 rounded-xl bg-purple-50 text-purple-500 flex items-center justify-center hover:bg-purple-100 hover:scale-110 transition-all"
+                          title="Print label QR">
+                          <Printer size={12}/>
+                        </a>
                         <a href={`/shieldtag-explorer?q=${st.kode}`}
                           className="w-8 h-8 rounded-xl bg-violet-50 text-violet-500 flex items-center justify-center hover:bg-violet-100 hover:scale-110 transition-all"
                           title="Lihat riwayat di Explorer">

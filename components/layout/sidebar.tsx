@@ -7,6 +7,7 @@ import {
   ArrowLeftRight, ShoppingCart, FileText,
   ScrollText, Settings, LogOut, X, ChevronRight,
   TrendingUp, Star, Store, ClipboardList, RotateCcw, SearchCode, Truck, Wallet, Recycle, HardDrive, MapPin,
+  Users, RefreshCcw,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth'
@@ -39,9 +40,11 @@ const NAV_GROUPS = [
   {
     label: 'Bisnis',
     items: [
-      { href: '/penjualan',    label: 'Penjualan',            icon: ShoppingCart,    module: 'penjualan'    },
-      { href: '/buyback',      label: 'Buyback',              icon: RotateCcw,       module: 'buyback'      },
-      { href: '/pengeluaran',  label: 'Pengeluaran',          icon: Wallet,          module: 'pengeluaran'  },
+      { href: '/penjualan',       label: 'Penjualan',            icon: ShoppingCart,    module: 'penjualan'       },
+      { href: '/retur-penjualan', label: 'Retur Penjualan',     icon: RefreshCcw,      module: 'retur-penjualan' },
+      { href: '/pelanggan',       label: 'Database Pelanggan',  icon: Users,           module: 'pelanggan'       },
+      { href: '/buyback',         label: 'Buyback',              icon: RotateCcw,       module: 'buyback'         },
+      { href: '/pengeluaran',     label: 'Pengeluaran',          icon: Wallet,          module: 'pengeluaran'     },
       { href: '/laporan',      label: 'Laporan',              icon: FileText,        module: 'laporan'      },
       { href: '/scrap',        label: 'Scrap Inventory',      icon: Recycle,         module: 'scrap'        },
       { href: '/kpi-tim',      label: 'KPI Tim',              icon: Star,            module: 'kpi-tim'      },

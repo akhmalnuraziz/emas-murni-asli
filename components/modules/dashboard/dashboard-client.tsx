@@ -40,6 +40,7 @@ interface Props {
   siapPacking: { id: number; kode: string; gramasi: string; batch_kode: string }[]
   rejectList: { id: number; kode: string; gramasi: string; berat_reject: number; batch_kode: string }[]
   balanceSelisih: number
+  targetPackingHarian: number
   produksiTrend: {
     gramasi: string[]
     trendMap: Record<string, Record<number, number>>
@@ -132,7 +133,7 @@ export default function DashboardClient({
   userName, canSeeRp, period, dateFrom, dateTo,
   stok, transit, penjualan, reject, pipeline, gramasiChartData, batchTerbaru, mutasiTransit,
   poPackaging, stokAkrilik, totalPengeluaran, produksiTrend,
-  packingHariIni, siapPacking, rejectList, balanceSelisih,
+  packingHariIni, siapPacking, rejectList, balanceSelisih, targetPackingHarian,
 }: Props) {
   const now  = new Date()
   const jam  = now.getHours()
@@ -306,7 +307,6 @@ export default function DashboardClient({
         <a href="/packing-log" className="block rounded-3xl p-5 hover:shadow-sm transition-shadow"
           style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
           {packingHariIni.length > 0 ? (() => {
-            // group by gramasi
             const byGramasi: Record<string, { pcs: number; batches: Set<string> }> = {}
             for (const p of packingHariIni) {
               const g = p.gramasi ?? '?'
@@ -315,12 +315,30 @@ export default function DashboardClient({
               if (p.batch_kode) byGramasi[g].batches.add(p.batch_kode)
             }
             const totalPcs = packingHariIni.reduce((s, p) => s + Number(p.pcs_dipack ?? 0), 0)
+            const pct = targetPackingHarian > 0 ? Math.min(100, Math.round(totalPcs / targetPackingHarian * 100)) : 0
             return (
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-2xl font-black text-slate-800">{totalPcs.toLocaleString('id-ID')} pcs</p>
+                  <div>
+                    <p className="text-2xl font-black text-slate-800">{totalPcs.toLocaleString('id-ID')} pcs</p>
+                    {targetPackingHarian > 0 && (
+                      <p className="text-xs text-slate-400 mt-0.5">Target: {targetPackingHarian.toLocaleString('id-ID')} pcs/hari</p>
+                    )}
+                  </div>
                   <span className="text-xs text-green-600 font-bold bg-green-50 px-2.5 py-1 rounded-full">{packingHariIni.length} lot packing</span>
                 </div>
+                {targetPackingHarian > 0 && (
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] text-slate-400 font-semibold">Progress Target Harian</span>
+                      <span className={`text-[11px] font-black ${pct >= 100 ? 'text-green-600' : pct >= 70 ? 'text-amber-500' : 'text-slate-500'}`}>{pct}%</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${pct}%`, background: pct >= 100 ? '#22C55E' : pct >= 70 ? '#F59E0B' : '#7C3AED' }} />
+                    </div>
+                  </div>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(byGramasi)
                     .sort((a, b) => parseFloat(a[0]) - parseFloat(b[0]))

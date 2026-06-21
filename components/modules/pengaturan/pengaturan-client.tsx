@@ -9,7 +9,7 @@ import {
   createTim, updateTim, toggleTimAktif, deleteTim,
   addAnggota, deleteAnggota,
   createAdminInput, updateAdminInput, toggleAdminInputAktif, deleteAdminInput,
-  updateToleransi, updateBiayaPackaging,
+  updateToleransi, updateBiayaPackaging, updateTargetProduksi,
   createGramasi, updateGramasi, toggleGramasiAktif, deleteGramasi,
   createProdukPengaturan, updateProdukPengaturan, toggleProdukPengaturanAktif,
 } from '@/app/(dashboard)/pengaturan/actions'
@@ -400,6 +400,7 @@ function PengaturanUmumSection({ pengaturan, isPending, start, showToast, canMan
     ambang_loss_kumulatif:       pengaturan.ambang_loss_kumulatif       ?? '0.15',
   })
   const set = (k: string, v: string) => setVals(p => ({ ...p, [k]: v }))
+  const [targetPacking, setTargetPacking] = useState(pengaturan.target_packing_harian ?? '0')
 
   function handleSave() {
     const fd = new FormData()
@@ -407,6 +408,7 @@ function PengaturanUmumSection({ pengaturan, isPending, start, showToast, canMan
     start(async () => {
       const r = await updateToleransi(fd)
       if (r?.error) { showToast('❌ ' + r.error); return }
+      await updateTargetProduksi(Number(targetPacking) || 0)
       showToast('✅ Pengaturan disimpan')
     })
   }
@@ -464,6 +466,25 @@ function PengaturanUmumSection({ pengaturan, isPending, start, showToast, canMan
               <p className="text-[11px] text-gray-400 pl-12">{desc}</p>
             </div>
           ))}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-base font-bold text-gray-900">Target Produksi Harian</h2>
+          <p className="text-xs text-gray-400 mt-0.5">Target packing per hari. Ditampilkan sebagai progress bar di dashboard.</p>
+        </div>
+        <div className="rounded-3xl p-4 bg-white border border-slate-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="text-lg w-8 text-center">🎯</span>
+            <span className="flex-1 text-sm font-semibold text-gray-700">Target Packing Harian</span>
+            <div className="flex items-center gap-2">
+              <input type="number" min="0" step="1" disabled={!canManage}
+                value={targetPacking} onChange={e => setTargetPacking(e.target.value)}
+                className="w-28 h-10 px-3 bg-gray-50 rounded-xl text-sm text-gray-700 text-right border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60" />
+              <span className="text-xs text-gray-400 w-6">pcs</span>
+            </div>
+          </div>
         </div>
       </div>
 
