@@ -1,9 +1,11 @@
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import ScrapClient from '@/components/modules/scrap/scrap-client'
 
 export default async function ScrapPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
   const { data: profile } = await supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single()
 
   const [

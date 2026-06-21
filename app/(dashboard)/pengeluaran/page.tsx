@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import PengeluaranClient from '@/components/modules/pengeluaran/pengeluaran-client'
 
@@ -10,6 +11,7 @@ export default async function PengeluaranPage({
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   const period   = searchParams?.period ?? 'month'
   const todayStr = new Date().toISOString().split('T')[0]

@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import ProduksiClient from '@/components/modules/produksi/produksi-client'
 
@@ -6,6 +7,7 @@ export const dynamic = 'force-dynamic'
 export default async function ProduksiPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   const [
     { data: profile },

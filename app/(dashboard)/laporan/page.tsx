@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import LaporanClient from '@/components/modules/laporan/laporan-client'
 
@@ -10,6 +11,7 @@ export default async function LaporanPage({
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
   const { data: profile } = await supabase.from('users_profile').select('role,name,cabang_kode').eq('id', user?.id ?? '').single()
   const isKepala = profile?.role === 'kepala_cabang'
   const cabangFilter = isKepala ? (profile?.cabang_kode ?? null) : null

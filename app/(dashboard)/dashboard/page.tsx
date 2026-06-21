@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import DashboardClient from '@/components/modules/dashboard/dashboard-client'
 
@@ -10,6 +11,7 @@ export default async function DashboardPage({
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   // Next.js 15+ searchParams is a Promise
   const sp = await searchParams

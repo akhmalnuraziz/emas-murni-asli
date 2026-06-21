@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import StockOpnameClient from '@/components/modules/stock-opname/stock-opname-client'
 import { getStockOpnameList, getCabangList } from './actions'
@@ -6,6 +7,7 @@ import type { UserRole } from '@/lib/types/database'
 export default async function StockOpnamePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
   const { data: profile } = await supabase
     .from('users_profile')
     .select('name, role')

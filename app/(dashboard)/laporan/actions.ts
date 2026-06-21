@@ -1,9 +1,15 @@
 'use server'
 import { createClient } from '@/lib/supabase/server'
 
+const PRIVILEGED = ['owner', 'admin_pusat', 'accounting', 'spv']
+
 export async function fetchBatchReport(batchKode: string) {
   if (!batchKode) return { error: 'Kode batch kosong' }
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!profile) return { error: 'Unauthorized' }
 
   const [
     { data: batch, error: batchErr },
@@ -24,5 +30,10 @@ export async function fetchBatchReport(batchKode: string) {
   ])
 
   if (batchErr) return { error: batchErr.message }
-  return { batch, peleburan: peleburan ?? [], produksiItems: produksiItems ?? [] }
+
+  // Sembunyikan HPP dari role non-privileged
+  const canSeeHpp = PRIVILEGED.includes(profile.role ?? '')
+  const safeBatch = canSeeHpp ? batch : { ...batch, hpp_gr: undefined, hpp_total: undefined }
+
+  return { batch: safeBatch, peleburan: peleburan ?? [], produksiItems: produksiItems ?? [] }
 }
