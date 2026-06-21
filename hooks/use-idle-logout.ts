@@ -1,10 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
 const IDLE_TIMEOUT_MS   = 30 * 60 * 1000 // 30 menit tidak aktif → logout
-const WARNING_BEFORE_MS =  2 * 60 * 1000 // warning 2 menit sebelum logout
+const WARNING_BEFORE_MS =  2 * 60 * 1000 // tampilkan warning 2 menit sebelum logout
 
 const ACTIVITY_EVENTS = [
   'mousedown', 'mousemove', 'keydown',
@@ -13,7 +12,7 @@ const ACTIVITY_EVENTS = [
 
 interface Options {
   onWarning?: (secondsLeft: number) => void
-  onLogout?: () => void
+  onLogout?:  () => void
 }
 
 export function useIdleLogout({ onWarning, onLogout }: Options = {}) {
@@ -21,13 +20,15 @@ export function useIdleLogout({ onWarning, onLogout }: Options = {}) {
   const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const warningFiredRef = useRef(false)
 
-  const logout = useCallback(async () => {
+  /**
+   * Logout via server-side route handler — memastikan session cookie
+   * terhapus di sisi server, tidak hanya di browser storage.
+   */
+  const logout = useCallback(() => {
     if (timerRef.current)        clearTimeout(timerRef.current)
     if (warningTimerRef.current) clearTimeout(warningTimerRef.current)
-    const supabase = createClient()
-    await supabase.auth.signOut()
     onLogout?.()
-    window.location.href = '/login?reason=idle'
+    window.location.href = '/api/auth/signout?reason=idle'
   }, [onLogout])
 
   const resetTimer = useCallback(() => {

@@ -1,16 +1,19 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import type { User } from '@supabase/supabase-js'
 import type { UserProfile } from '@/lib/types/database'
 import { ROLE_ACCESS } from '@/lib/types/database'
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null)
+  const [user,    setUser]    = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+
+  // Singleton client — dibuat sekali, tidak direcreate tiap render
+  const supabaseRef = useRef(createClient())
+  const supabase    = supabaseRef.current
 
   useEffect(() => {
     const getUser = async () => {
@@ -47,11 +50,15 @@ export function useAuth() {
     )
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const signOut = async () => {
-    await supabase.auth.signOut()
-    window.location.href = '/login'
+  /**
+   * Sign out melalui server-side route handler.
+   * Ini memastikan cookies Supabase dihapus di level server
+   * sehingga middleware tidak salah redirect balik ke dashboard.
+   */
+  const signOut = () => {
+    window.location.href = '/api/auth/signout'
   }
 
   const hasAccess = (module: string): boolean => {
@@ -62,5 +69,3 @@ export function useAuth() {
 
   return { user, profile, loading, signOut, hasAccess }
 }
-
-

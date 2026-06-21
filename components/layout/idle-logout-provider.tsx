@@ -3,7 +3,6 @@
 import { useState, useCallback } from 'react'
 import { Clock, LogOut, RefreshCw } from 'lucide-react'
 import { useIdleLogout } from '@/hooks/use-idle-logout'
-import { createClient } from '@/lib/supabase/client'
 
 export default function IdleLogoutProvider({ children }: { children: React.ReactNode }) {
   const [showWarning, setShowWarning] = useState(false)
@@ -13,7 +12,6 @@ export default function IdleLogoutProvider({ children }: { children: React.React
     setSecondsLeft(secs)
     setShowWarning(true)
 
-    // Countdown tiap detik
     let remaining = secs
     const interval = setInterval(() => {
       remaining -= 1
@@ -29,57 +27,72 @@ export default function IdleLogoutProvider({ children }: { children: React.React
     stayLoggedIn()
   }
 
-  async function handleLogoutNow() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    window.location.href = '/login?reason=idle'
+  // Logout via server-side route — cookie terhapus bersih
+  function handleLogoutNow() {
+    window.location.href = '/api/auth/signout?reason=idle'
   }
+
+  const mins = Math.floor(secondsLeft / 60)
+  const secs = secondsLeft % 60
+  const countdownStr = `${mins}:${String(secs).padStart(2, '0')}`
 
   return (
     <>
       {children}
 
-      {/* Warning dialog */}
       {showWarning && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)' }}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200">
+
             {/* Header */}
             <div className="px-6 pt-6 pb-4 text-center">
-              <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center"
-                style={{ background: 'rgba(245,158,11,0.1)' }}>
-                <Clock size={26} className="text-amber-500" />
+              <div className="w-12 h-12 rounded-2xl mx-auto mb-3 flex items-center justify-center bg-amber-50 border border-amber-100">
+                <Clock size={22} className="text-amber-500" />
               </div>
-              <h2 className="text-base font-bold text-slate-800">Sesi hampir habis</h2>
-              <p className="text-sm text-slate-500 mt-1">
-                Kamu tidak aktif cukup lama. Mau tetap login?
+              <h2 className="text-[15px] font-semibold text-slate-900">Sesi hampir berakhir</h2>
+              <p className="text-[13px] text-slate-500 mt-1 font-normal">
+                Tidak ada aktivitas terdeteksi. Ingin tetap login?
               </p>
             </div>
 
             {/* Countdown */}
-            <div className="mx-6 mb-5 rounded-2xl py-4 text-center"
-              style={{ background: secondsLeft <= 30 ? 'rgba(239,68,68,0.06)' : 'rgba(245,158,11,0.06)',
-                       border: `1px solid ${secondsLeft <= 30 ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)'}` }}>
-              <p className={`text-3xl font-black tabular-nums ${secondsLeft <= 30 ? 'text-red-500' : 'text-amber-500'}`}>
-                {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, '0')}
+            <div className={`mx-6 mb-5 rounded-xl py-4 text-center border transition-colors ${
+              secondsLeft <= 30
+                ? 'bg-red-50 border-red-100'
+                : 'bg-amber-50 border-amber-100'
+            }`}>
+              <p className={`text-4xl font-bold tabular-nums tracking-tight ${
+                secondsLeft <= 30 ? 'text-red-600' : 'text-amber-600'
+              }`}>
+                {countdownStr}
               </p>
-              <p className="text-xs text-slate-400 mt-1">
-                {secondsLeft <= 30 ? 'Hampir logout nih!' : 'Otomatis logout dalam'}
+              <p className="text-[11px] text-slate-400 mt-1 font-medium uppercase tracking-wide">
+                {secondsLeft <= 30 ? 'Segera logout' : 'Tersisa sebelum logout'}
               </p>
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 px-6 pb-6">
-              <button onClick={handleLogoutNow}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-semibold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors">
-                <LogOut size={14} /> Logout
+            <div className="flex gap-2.5 px-6 pb-6">
+              <button
+                onClick={handleLogoutNow}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl
+                  text-[13px] font-medium text-slate-500 bg-slate-100 hover:bg-slate-200
+                  border border-slate-200 transition-colors"
+              >
+                <LogOut size={14} />
+                Logout
               </button>
-              <button onClick={handleStayLoggedIn}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-bold text-white transition-colors"
-                style={{ background: 'linear-gradient(135deg,#7C3AED,#6D28D9)' }}>
-                <RefreshCw size={14} /> Tetap Login
+              <button
+                onClick={handleStayLoggedIn}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl
+                  text-[13px] font-semibold text-white bg-violet-600 hover:bg-violet-700
+                  border border-violet-600 transition-colors"
+              >
+                <RefreshCw size={14} />
+                Tetap Login
               </button>
             </div>
+
           </div>
         </div>
       )}
