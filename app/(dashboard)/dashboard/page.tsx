@@ -57,6 +57,11 @@ export default async function DashboardPage({
     { data: packingHariIni },
     // Siap packing
     { data: siapPackingItems },
+    // Balance Engine
+    { data: balanceBatches },
+    { data: balanceProduksi },
+    { data: balanceShieldtag },
+    { data: balancePenjualan },
   ] = await Promise.all([
     supabase.from('users_profile').select('name, role').eq('id', user?.id ?? '').single(),
     supabase.from('shieldtag').select('gramasi, hpp').eq('status', 'Aktif').is('voided_at', null),
@@ -117,6 +122,11 @@ export default async function DashboardPage({
       .is('voided_at', null)
       .order('updated_at', { ascending: false })
       .limit(30),
+    // Balance Engine — untuk alert dashboard
+    supabase.from('batch').select('timbangan_akhir').is('voided_at', null),
+    supabase.from('produksi_item').select('total_gram, current_status, berat_reject, status_reject').is('voided_at', null),
+    supabase.from('shieldtag').select('status, gramasi').is('voided_at', null),
+    supabase.from('penjualan').select('gramasi, pcs').is('voided_at' as any, null),
   ])
 
   // ── Build stats ──────────────────────────────────────────────────────────
@@ -165,6 +175,15 @@ export default async function DashboardPage({
 
   // Pengeluaran stats
   const totalPengeluaran = (pengeluaranPeriode ?? []).reduce((s: number, p: any) => s + Number(p.nominal ?? 0), 0)
+
+  // Balance Engine — selisih emas
+  const balanceMasuk = (balanceBatches ?? []).reduce((s: number, b: any) => s + Number(b.timbangan_akhir ?? 0), 0)
+  const balanceStokAktif = (balanceShieldtag ?? []).filter((t: any) => t.status === 'Aktif').reduce((s: number, t: any) => s + parseFloat(t.gramasi ?? '0'), 0)
+  const balanceTransit   = (balanceShieldtag ?? []).filter((t: any) => t.status === 'Terdistribusi').reduce((s: number, t: any) => s + parseFloat(t.gramasi ?? '0'), 0)
+  const balanceTerjual   = (balancePenjualan ?? []).reduce((s: number, p: any) => s + parseFloat(p.gramasi ?? '0') * (Number(p.pcs) || 1), 0)
+  const balanceWIP       = (balanceProduksi ?? []).filter((r: any) => !['Sudah Packing','Reject'].includes(r.current_status ?? '')).reduce((s: number, r: any) => s + Number(r.total_gram ?? 0), 0)
+  const balanceReject    = (balanceProduksi ?? []).filter((r: any) => r.status_reject === 'belum_dilebur').reduce((s: number, r: any) => s + Number(r.berat_reject ?? 0), 0)
+  const balanceSelisih   = balanceMasuk - (balanceStokAktif + balanceTransit + balanceTerjual + balanceWIP + balanceReject)
 
   // Trend produksi harian
   const GRAMASI_ORDER = ['0.1','0.5','1','2','5','10','20','25','50','100','250','500','1000']
@@ -229,6 +248,7 @@ export default async function DashboardPage({
       packingHariIni={packingHariIni ?? []}
       siapPacking={siapPackingItems ?? []}
       rejectList={rejectBelumDilebur ?? []}
+      balanceSelisih={balanceSelisih}
     />
   )
 }

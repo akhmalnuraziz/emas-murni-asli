@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createNotif } from '@/app/(dashboard)/notifikasi/actions'
 
 const PROD_PREFIX = 'PROD.GDCJ'
 const PCKG_PREFIX = 'PCKG.GDCJ'
@@ -220,6 +221,15 @@ export async function createProduksi(formData: FormData) {
 
   revalidatePath('/produksi')
   revalidatePath('/bahan-baku')
+
+  await createNotif({
+    judul: `Item Produksi Baru — ${kode}`,
+    pesan: `${formData.get('gramasi') ?? ''}gr dari batch ${batchKode} · ${beratAwal}gr`,
+    tipe: 'info',
+    link: '/produksi',
+    untuk_role: ['owner', 'admin_pusat', 'spv', 'operator_produksi'],
+  })
+
   return { success: true, kode }
 }
 
@@ -323,6 +333,25 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
   })
 
   revalidatePath('/produksi')
+
+  if (statusBaru === 'Siap Packing') {
+    await createNotif({
+      judul: `Siap Packing — ${produksiKode}`,
+      pesan: `${produksi.gramasi}gr dari batch ${produksi.batch_kode} · ${totalGramBaru}gr siap dipacking`,
+      tipe: 'success',
+      link: '/produksi',
+      untuk_role: ['owner', 'admin_pusat', 'spv', 'operator_produksi'],
+    })
+  } else if (statusBaru === 'Reject') {
+    await createNotif({
+      judul: `Reject — ${produksiKode}`,
+      pesan: `${produksi.gramasi}gr dari batch ${produksi.batch_kode} · belum dilebur`,
+      tipe: 'warning',
+      link: '/produksi',
+      untuk_role: ['owner', 'admin_pusat', 'spv'],
+    })
+  }
+
   return { success: true }
 }
 
@@ -529,6 +558,14 @@ export async function createPacking(formData: FormData) {
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'CREATE_PACKING', module: 'PRODUKSI',
     record_key: kode, record_id: String(packing.id), after_data: packing,
+  })
+
+  await createNotif({
+    judul: `Packing Selesai — ${kode}`,
+    pesan: `${pcsDispack} pcs ${produksi.gramasi}gr dari batch ${produksi.batch_kode} · ${totalGramAktual}gr`,
+    tipe: 'success',
+    link: '/packing-log',
+    untuk_role: ['owner', 'admin_pusat', 'spv'],
   })
 
   revalidatePath('/produksi')

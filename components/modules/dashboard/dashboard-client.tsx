@@ -39,6 +39,7 @@ interface Props {
   packingHariIni: { kode: string; batch_kode: string; gramasi: string; pcs_dipack: number }[]
   siapPacking: { id: number; kode: string; gramasi: string; batch_kode: string }[]
   rejectList: { id: number; kode: string; gramasi: string; berat_reject: number; batch_kode: string }[]
+  balanceSelisih: number
   produksiTrend: {
     gramasi: string[]
     trendMap: Record<string, Record<number, number>>
@@ -131,7 +132,7 @@ export default function DashboardClient({
   userName, canSeeRp, period, dateFrom, dateTo,
   stok, transit, penjualan, reject, pipeline, gramasiChartData, batchTerbaru, mutasiTransit,
   poPackaging, stokAkrilik, totalPengeluaran, produksiTrend,
-  packingHariIni, siapPacking, rejectList,
+  packingHariIni, siapPacking, rejectList, balanceSelisih,
 }: Props) {
   const now  = new Date()
   const jam  = now.getHours()
@@ -144,6 +145,7 @@ export default function DashboardClient({
 
   const alerts: string[] = []
   if (reject.count > 0)               alerts.push(`${reject.count} item reject emas (${reject.gram.toFixed(2)} gr) nunggu dilebur`)
+  if (Math.abs(balanceSelisih) > 0.5) alerts.push(`Neraca emas selisih ${balanceSelisih >= 0 ? '+' : ''}${balanceSelisih.toFixed(3)} gr — cek tab Neraca di Laporan`)
   if (transit.pcs > 20)               alerts.push(`${transit.pcs} pcs lagi dalam perjalanan ke cabang, belum dikonfirmasi`)
   if (poPackaging.pendingQc > 0)      alerts.push(`${poPackaging.pendingQc} batch akrilik nunggu QC`)
   if (poPackaging.rejectPendingQty > 0) alerts.push(`${poPackaging.rejectPendingQty} pcs akrilik reject belum ditangani`)

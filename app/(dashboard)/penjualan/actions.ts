@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createNotif } from '@/app/(dashboard)/notifikasi/actions'
 
 async function generateNoFaktur(supabase: any): Promise<string> {
   const { data } = await supabase.rpc('increment_counter', { counter_name: 'penjualan' })
@@ -129,6 +130,18 @@ export async function createPenjualan(formData: FormData) {
 
   revalidatePath('/penjualan')
   revalidatePath('/dashboard')
+
+  // Notif ke owner/admin_pusat/spv
+  const itemSummary = itemRows.map(r => `${r.gramasi}gr`).join(', ')
+  const channelLabel = channel === 'toko' ? 'Toko' : channel === 'cabang' ? `Cabang ${cabangNama ?? ''}` : channel
+  await createNotif({
+    judul: `Penjualan Baru — ${noFaktur}`,
+    pesan: `${items.length} pcs (${itemSummary}) via ${channelLabel} · Rp ${totalHargaJual.toLocaleString('id-ID')}`,
+    tipe: 'success',
+    link: '/penjualan',
+    untuk_role: ['owner', 'admin_pusat', 'spv'],
+  })
+
   return { success: true, noFaktur }
 }
 
@@ -155,5 +168,14 @@ export async function voidPenjualan(penjualanId: number, reason: string) {
 
   revalidatePath('/penjualan')
   revalidatePath('/dashboard')
+
+  await createNotif({
+    judul: `Penjualan Divoid`,
+    pesan: `ID ${penjualanId} · alasan: ${reason}`,
+    tipe: 'warning',
+    link: '/penjualan',
+    untuk_role: ['owner', 'admin_pusat'],
+  })
+
   return { success: true }
 }
