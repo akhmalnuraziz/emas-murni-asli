@@ -157,16 +157,6 @@ export default function DashboardClient({
         <p className="text-violet-200 text-xs mt-1 relative">
           {now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
-        <div className="flex gap-4 mt-3 flex-wrap relative">
-          <div className="flex items-center gap-1.5 bg-white/10 rounded-xl px-3 py-1.5">
-            <Tag size={11} className="text-violet-200"/>
-            <span className="text-xs font-bold text-white">{stok.pcs.toLocaleString('id-ID')} pcs aktif</span>
-          </div>
-          <div className="flex items-center gap-1.5 bg-white/10 rounded-xl px-3 py-1.5">
-            <Package2 size={11} className="text-violet-200"/>
-            <span className="text-xs font-bold text-white">{poPackaging.openCount} PO akrilik berjalan</span>
-          </div>
-        </div>
       </div>
 
       {/* ── Period Selector ───────────────────────────────────────────────── */}

@@ -6,13 +6,16 @@ export const dynamic = 'force-dynamic'
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams?: { period?: string; from?: string; to?: string }
+  searchParams?: Promise<{ period?: string; from?: string; to?: string }>
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Next.js 15+ searchParams is a Promise
+  const sp = await searchParams
+
   // ── Date range from period filter ──────────────────────────────────────
-  const period  = searchParams?.period ?? 'month'
+  const period  = sp?.period ?? 'month'
   const todayStr = new Date().toISOString().split('T')[0]
   let dateFrom: string
   let dateTo: string = todayStr
@@ -24,8 +27,8 @@ export default async function DashboardPage({
     d.setDate(d.getDate() - 6)
     dateFrom = d.toISOString().split('T')[0]
   } else if (period === 'custom') {
-    dateFrom = searchParams?.from ?? todayStr.slice(0, 7) + '-01'
-    dateTo   = searchParams?.to ?? todayStr
+    dateFrom = sp?.from ?? todayStr.slice(0, 7) + '-01'
+    dateTo   = sp?.to ?? todayStr
   } else {
     // month (default)
     dateFrom = todayStr.slice(0, 7) + '-01'
