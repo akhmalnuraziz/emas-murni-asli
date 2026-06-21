@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { Clock, LogOut, RefreshCw } from 'lucide-react'
 import { useIdleLogout } from '@/hooks/use-idle-logout'
+import { createClient } from '@/lib/supabase/client'
 
 export default function IdleLogoutProvider({ children }: { children: React.ReactNode }) {
   const [showWarning, setShowWarning] = useState(false)
@@ -28,7 +29,9 @@ export default function IdleLogoutProvider({ children }: { children: React.React
     stayLoggedIn()
   }
 
-  function handleLogoutNow() {
+  async function handleLogoutNow() {
+    const supabase = createClient()
+    await supabase.auth.signOut()
     window.location.href = '/login?reason=idle'
   }
 

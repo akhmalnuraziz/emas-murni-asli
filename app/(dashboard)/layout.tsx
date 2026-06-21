@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import DashboardShell from '@/components/layout/dashboard-shell'
-import SessionGuard from '@/components/auth/session-guard'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -15,10 +14,5 @@ export default async function DashboardLayout({ children }: { children: React.Re
     profile = data
   }
 
-  return (
-    <DashboardShell serverProfile={profile}>
-      <SessionGuard />
-      {children}
-    </DashboardShell>
-  )
+  return <DashboardShell serverProfile={profile}>{children}</DashboardShell>
 }

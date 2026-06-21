@@ -3,13 +3,13 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-const IDLE_TIMEOUT_MS = 60 * 60 * 1000 // 60 menit
-const WARNING_BEFORE_MS = 2 * 60 * 1000  // warning 2 menit sebelum logout
+const IDLE_TIMEOUT_MS   = 30 * 60 * 1000 // 30 menit tidak aktif → logout
+const WARNING_BEFORE_MS =  2 * 60 * 1000 // warning 2 menit sebelum logout
 
 const ACTIVITY_EVENTS = [
   'mousedown', 'mousemove', 'keydown',
   'scroll', 'touchstart', 'click', 'wheel',
-]
+] as const
 
 interface Options {
   onWarning?: (secondsLeft: number) => void
@@ -22,6 +22,8 @@ export function useIdleLogout({ onWarning, onLogout }: Options = {}) {
   const warningFiredRef = useRef(false)
 
   const logout = useCallback(async () => {
+    if (timerRef.current)        clearTimeout(timerRef.current)
+    if (warningTimerRef.current) clearTimeout(warningTimerRef.current)
     const supabase = createClient()
     await supabase.auth.signOut()
     onLogout?.()
@@ -33,23 +35,18 @@ export function useIdleLogout({ onWarning, onLogout }: Options = {}) {
     if (warningTimerRef.current) clearTimeout(warningTimerRef.current)
     warningFiredRef.current = false
 
-    // Warning 2 menit sebelum logout
     warningTimerRef.current = setTimeout(() => {
       warningFiredRef.current = true
       onWarning?.(Math.round(WARNING_BEFORE_MS / 1000))
     }, IDLE_TIMEOUT_MS - WARNING_BEFORE_MS)
 
-    // Actual logout
-    timerRef.current = setTimeout(() => {
-      logout()
-    }, IDLE_TIMEOUT_MS)
+    timerRef.current = setTimeout(logout, IDLE_TIMEOUT_MS)
   }, [logout, onWarning])
 
   useEffect(() => {
     resetTimer()
 
     const handleActivity = () => {
-      // Kalau warning sudah muncul, biarkan user dismiss dulu — jangan auto-reset
       if (!warningFiredRef.current) resetTimer()
     }
 
@@ -62,10 +59,10 @@ export function useIdleLogout({ onWarning, onLogout }: Options = {}) {
     }
   }, [resetTimer])
 
-  // Public method: user klik "Tetap Login" di warning dialog
   const stayLoggedIn = useCallback(() => {
+    warningFiredRef.current = false
     resetTimer()
   }, [resetTimer])
 
-  return { stayLoggedIn }
+  return { stayLoggedIn, logout }
 }
