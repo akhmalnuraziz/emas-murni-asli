@@ -6,6 +6,7 @@ import Link from 'next/link'
 import {
   FileText, TrendingUp, Package, ArrowLeftRight, RotateCcw,
   ShoppingCart, Layers, Wallet, TrendingDown, Calendar, ExternalLink, Download,
+  Scale, AlertTriangle, CheckCircle2,
 } from 'lucide-react'
 import { formatRupiah, formatDate, cn } from '@/lib/utils'
 
@@ -39,6 +40,17 @@ interface Props {
   channelBreakdown: Array<{ channel: string; omzet: number; pcs: number }>
   penjualanList: any[]
   pengeluaranList: any[]
+  neraca: {
+    masukBatch: number
+    stokAktifGram: number
+    stokTransitGram: number
+    gramTerjual: number
+    gramWIP: number
+    gramRejectBelumDilebur: number
+    gramRejectSudahDilebur: number
+    totalTertracking: number
+    selisihGram: number
+  }
 }
 
 const canSeeHpp = (role: string) => ['owner', 'admin_pusat', 'accounting'].includes(role)
@@ -157,9 +169,9 @@ function PeriodSelector({ period, dateFrom, dateTo }: { period: string; dateFrom
 export default function LaporanClient({
   summary, penjualanByGramasi, batchList, userRole,
   period, dateFrom, dateTo,
-  labaRugi, channelBreakdown, penjualanList, pengeluaranList,
+  labaRugi, channelBreakdown, penjualanList, pengeluaranList, neraca,
 }: Props) {
-  const [tab, setTab] = useState<'laba-rugi' | 'penjualan' | 'batch' | 'ringkasan'>('laba-rugi')
+  const [tab, setTab] = useState<'laba-rugi' | 'penjualan' | 'batch' | 'ringkasan' | 'neraca'>('laba-rugi')
   const showHpp = canSeeHpp(userRole)
 
   const periodLabel = period === 'today' ? 'Hari Ini'
@@ -172,6 +184,7 @@ export default function LaporanClient({
     ['penjualan', 'Per Gramasi', ShoppingCart],
     ['batch', 'Batch', Layers],
     ['ringkasan', 'Ringkasan', Package],
+    ['neraca', 'Neraca Emas', Scale],
   ] as const
 
   return (
@@ -204,6 +217,7 @@ export default function LaporanClient({
       {tab === 'penjualan' && <PenjualanTab rows={penjualanByGramasi} showHpp={showHpp} />}
       {tab === 'batch'     && <BatchTab rows={batchList} showHpp={showHpp} />}
       {tab === 'ringkasan' && <RingkasanTab summary={summary} />}
+      {tab === 'neraca'    && <NeracaTab neraca={neraca} />}
     </div>
   )
 }
@@ -500,6 +514,132 @@ function Empty({ text }: { text: string }) {
       style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.6)' }}>
       <FileText size={28} className="text-slate-200 mx-auto mb-2" />
       <p className="text-sm text-slate-400">{text}</p>
+    </div>
+  )
+}
+
+// ── Neraca Emas Tab ────────────────────────────────────────────────────────────
+
+function NeracaTab({ neraca }: { neraca: Props['neraca'] }) {
+  const fmt = (n: number) => `${Math.abs(n).toFixed(3)} gr`
+  const selisihOk = Math.abs(neraca.selisihGram) < 0.5
+
+  const rows: { label: string; value: number; color: string; desc: string; href?: string }[] = [
+    {
+      label: 'Stok Aktif (ShieldTag)',
+      value: neraca.stokAktifGram,
+      color: '#7C3AED',
+      desc: 'Shieldtag status Aktif di gudang',
+      href: '/shieldtag',
+    },
+    {
+      label: 'Transit ke Cabang',
+      value: neraca.stokTransitGram,
+      color: '#0EA5E9',
+      desc: 'Shieldtag status Terdistribusi, belum diterima',
+      href: '/mutasi',
+    },
+    {
+      label: 'WIP Produksi',
+      value: neraca.gramWIP,
+      color: '#F97316',
+      desc: 'Item produksi masih dalam pipeline (Cutting/Pas Berat/Annealing/Siap Packing)',
+      href: '/produksi',
+    },
+    {
+      label: 'Sudah Terjual',
+      value: neraca.gramTerjual,
+      color: '#16A34A',
+      desc: 'Total gram dari semua penjualan (gramasi × pcs)',
+      href: '/penjualan',
+    },
+    {
+      label: 'Reject Belum Dilebur',
+      value: neraca.gramRejectBelumDilebur,
+      color: '#EF4444',
+      desc: 'Reject emas yang belum kembali jadi bahan baku',
+      href: '/bahan-baku',
+    },
+  ]
+
+  return (
+    <div className="space-y-4">
+
+      {/* Status banner */}
+      <div className="rounded-3xl p-5 flex items-start gap-4"
+        style={{
+          background: selisihOk ? 'rgba(34,197,94,0.06)' : 'rgba(239,68,68,0.06)',
+          border: `1px solid ${selisihOk ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'}`,
+        }}>
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+          style={{ background: selisihOk ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)' }}>
+          {selisihOk
+            ? <CheckCircle2 size={22} className="text-green-600" />
+            : <AlertTriangle size={22} className="text-red-500" />}
+        </div>
+        <div>
+          <p className={`text-base font-black ${selisihOk ? 'text-green-700' : 'text-red-700'}`}>
+            {selisihOk ? 'Neraca Emas Seimbang ✅' : 'Ada Selisih Emas — Perlu Dicek! ⚠️'}
+          </p>
+          <p className={`text-sm font-semibold mt-0.5 ${selisihOk ? 'text-green-600' : 'text-red-600'}`}>
+            Selisih: {neraca.selisihGram >= 0 ? '+' : ''}{neraca.selisihGram.toFixed(3)} gr
+            {!selisihOk && ' — Total masuk tidak sesuai dengan yang tertracking'}
+          </p>
+          <p className="text-xs text-slate-400 mt-1">
+            Data real-time · reject sudah dilebur ({fmt(neraca.gramRejectSudahDilebur)} gr) tidak dihitung karena sudah kembali jadi bahan baku
+          </p>
+        </div>
+      </div>
+
+      {/* Flow diagram */}
+      <div className="rounded-3xl p-5"
+        style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.6)' }}>
+        <div className="flex items-center gap-2 mb-5">
+          <Scale size={15} className="text-violet-500" />
+          <h3 className="font-bold text-slate-800 text-sm">Alur Emas — All Time</h3>
+        </div>
+
+        {/* Masuk */}
+        <div className="rounded-2xl p-4 mb-4"
+          style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.12)' }}>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Masuk</p>
+          <p className="text-2xl font-black text-violet-700">{fmt(neraca.masukBatch)}</p>
+          <p className="text-xs text-slate-400 mt-0.5">dari semua batch bahan baku</p>
+        </div>
+
+        <p className="text-[10px] font-bold text-slate-300 uppercase tracking-wider text-center mb-3">= Tersebar ke</p>
+
+        {/* Breakdown rows */}
+        <div className="space-y-2">
+          {rows.map(r => (
+            <a key={r.label} href={r.href ?? '#'}
+              className="flex items-center justify-between p-3 rounded-2xl hover:opacity-80 transition-opacity"
+              style={{ background: `${r.color}08`, border: `1px solid ${r.color}18` }}>
+              <div>
+                <p className="text-sm font-bold" style={{ color: r.color }}>{r.label}</p>
+                <p className="text-[10px] text-slate-400">{r.desc}</p>
+              </div>
+              <p className="text-sm font-black text-slate-700 flex-shrink-0 ml-3">{fmt(r.value)}</p>
+            </a>
+          ))}
+        </div>
+
+        {/* Total tracked vs masuk */}
+        <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold text-slate-500">Total Tertracking</p>
+            <p className="text-[10px] text-slate-400">stok aktif + transit + WIP + terjual + reject belum dilebur</p>
+          </div>
+          <p className="text-base font-black text-slate-800">{fmt(neraca.totalTertracking)}</p>
+        </div>
+        <div className="mt-2 flex items-center justify-between">
+          <p className="text-xs font-bold text-slate-500">Selisih (Masuk − Tertracking)</p>
+          <p className={`text-base font-black ${selisihOk ? 'text-green-600' : 'text-red-600'}`}>
+            {neraca.selisihGram >= 0 ? '+' : ''}{neraca.selisihGram.toFixed(3)} gr
+          </p>
+        </div>
+      </div>
+
     </div>
   )
 }

@@ -41,9 +41,9 @@ export default async function LaporanPage({
     { data: batches },
     { data: pengeluaranPeriode },
   ] = await Promise.all([
-    supabase.from('produksi_item').select('total_gram').is('voided_at', null),
+    supabase.from('produksi_item').select('total_gram, current_status, berat_reject, status_reject').is('voided_at', null),
     supabase.from('packing').select('pcs').is('voided_at', null),
-    supabase.from('shieldtag').select('status').is('voided_at', null),
+    supabase.from('shieldtag').select('status, gramasi').is('voided_at', null),
     // All-time penjualan for ringkasan
     supabase.from('penjualan').select('gramasi, pcs, harga_jual').is('voided_at' as any, null),
     // Period penjualan for laba rugi
@@ -89,6 +89,54 @@ export default async function LaporanPage({
   const labaKotor        = omzetPeriode - hppPeriode
   const labaBersih       = labaKotor - pengeluaranTotal
 
+  // ── Neraca Emas (Balance Engine) ────────────────────────────────────────
+  const allItems = produksiItems ?? []
+  const allShieldtag = shieldtags ?? []
+  const allPenjualan = penjualanAll ?? []
+  const allBatches = batches ?? []
+
+  // MASUK: total emas dari semua batch
+  const masukBatch = allBatches.reduce((s, b: any) => s + Number(b.timbangan_akhir ?? 0), 0)
+
+  // STOK: shieldtag aktif + terdistribusi (transit cabang)
+  const stokAktifGram    = allShieldtag.filter(s => s.status === 'Aktif').reduce((s, t) => s + parseFloat(t.gramasi ?? '0'), 0)
+  const stokTransitGram  = allShieldtag.filter(s => s.status === 'Terdistribusi').reduce((s, t) => s + parseFloat(t.gramasi ?? '0'), 0)
+
+  // KELUAR: terjual (gramasi × pcs dari penjualan)
+  const gramTerjual = allPenjualan.reduce((s, p) => s + parseFloat(p.gramasi ?? '0') * (Number(p.pcs) || 1), 0)
+
+  // WIP: produksi item yang masih di pipeline (belum jadi shieldtag, belum reject)
+  const DONE_STATUSES = ['Sudah Packing', 'Reject']
+  const gramWIP = allItems
+    .filter(r => !DONE_STATUSES.includes((r as any).current_status ?? ''))
+    .reduce((s, r) => s + Number(r.total_gram ?? 0), 0)
+
+  // REJECT: belum dilebur
+  const gramRejectBelumDilebur = allItems
+    .filter(r => (r as any).status_reject === 'belum_dilebur')
+    .reduce((s, r) => s + Number((r as any).berat_reject ?? 0), 0)
+
+  // REJECT: sudah dilebur (kembali jadi bahan baku, bukan keluar)
+  const gramRejectSudahDilebur = allItems
+    .filter(r => (r as any).status_reject === 'sudah_dilebur')
+    .reduce((s, r) => s + Number((r as any).berat_reject ?? 0), 0)
+
+  // TOTAL TERTRACKING = stok aktif + transit + WIP + terjual + reject belum dilebur
+  const totalTertracking = stokAktifGram + stokTransitGram + gramWIP + gramTerjual + gramRejectBelumDilebur
+  const selisihGram = masukBatch - totalTertracking
+
+  const neraca = {
+    masukBatch,
+    stokAktifGram,
+    stokTransitGram,
+    gramTerjual,
+    gramWIP,
+    gramRejectBelumDilebur,
+    gramRejectSudahDilebur,
+    totalTertracking,
+    selisihGram,
+  }
+
   // Channel breakdown
   const channelMap: Record<string, { omzet: number; pcs: number }> = {}
   for (const p of penjualanPeriode ?? []) {
@@ -124,6 +172,7 @@ export default async function LaporanPage({
       channelBreakdown={channelBreakdown}
       penjualanList={(penjualanPeriode ?? []) as any}
       pengeluaranList={(pengeluaranPeriode ?? []) as any}
+      neraca={neraca}
     />
   )
 }
