@@ -22,9 +22,10 @@ interface Props {
   stokData: CabangStokSummary[]
   userRole: string
   canAdjust: boolean
+  isCabangView?: boolean
 }
 
-export default function StokCabangClient({ stokData, canAdjust }: Props) {
+export default function StokCabangClient({ stokData, canAdjust, isCabangView }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [expanded, setExpanded] = useState<string | null>(stokData[0]?.kode ?? null)

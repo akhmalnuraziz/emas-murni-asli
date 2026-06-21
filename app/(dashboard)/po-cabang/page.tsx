@@ -9,16 +9,24 @@ export default async function PoCabangPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const { data: profile } = await supabase.from('users_profile')
+    .select('role, name, cabang_kode').eq('id', user.id).single()
+
+  const isKepala = profile?.role === 'kepala_cabang'
+
+  let poQuery = supabase.from('po_cabang')
+    .select('*, items:po_cabang_item(*)')
+    .order('created_at', { ascending: false })
+    .limit(100)
+  if (isKepala && profile?.cabang_kode) {
+    poQuery = poQuery.eq('cabang_kode', profile.cabang_kode) as any
+  }
+
   const [
-    { data: profile },
     { data: poList },
     { data: cabangList },
   ] = await Promise.all([
-    supabase.from('users_profile').select('role, name').eq('id', user.id).single(),
-    supabase.from('po_cabang')
-      .select('*, items:po_cabang_item(*)')
-      .order('created_at', { ascending: false })
-      .limit(100),
+    poQuery,
     supabase.from('cabang')
       .select('kode, nama')
       .eq('aktif', true)
