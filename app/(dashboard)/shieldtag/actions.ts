@@ -229,6 +229,30 @@ export async function voidShieldtag(shieldtagId: number, reason: string) {
   return { success: true }
 }
 
+export async function searchShieldtag(query: string): Promise<{ data: any | null; error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { data: null, error: 'Unauthorized' }
+
+  const q = query.toUpperCase().trim()
+  if (!q) return { data: null, error: 'Masukkan kode Shieldtag' }
+
+  const { data, error } = await supabase
+    .from('shieldtag')
+    .select(`
+      *,
+      packing:packing_id (
+        kode, gramasi, pcs_dipack, tanggal,
+        produksi_item ( kode, nama_item )
+      )
+    `)
+    .eq('kode', q)
+    .single()
+
+  if (error || !data) return { data: null, error: 'Shieldtag tidak ditemukan' }
+  return { data }
+}
+
 export async function bulkVoidShieldtag(ids: number[], reason: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

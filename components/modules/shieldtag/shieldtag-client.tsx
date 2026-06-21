@@ -3,10 +3,11 @@
 import { useState, useTransition, useEffect, useRef } from 'react'
 import {
   Plus, Search, X, Check, AlertTriangle, Tag,
-  Edit2, Trash2, ChevronDown, ChevronUp, ExternalLink
+  Edit2, Trash2, ChevronDown, ChevronUp, ExternalLink,
+  MapPin, Package, Clock, ArrowRight, Loader2
 } from 'lucide-react'
 import { cn, formatDate, formatRupiah } from '@/lib/utils'
-import { registerShieldtags, editShieldtagKode, voidShieldtag, bulkVoidShieldtag } from '@/app/(dashboard)/shieldtag/actions'
+import { registerShieldtags, editShieldtagKode, voidShieldtag, bulkVoidShieldtag, searchShieldtag } from '@/app/(dashboard)/shieldtag/actions'
 import type { UserRole } from '@/lib/types/database'
 
 interface Props {
@@ -297,7 +298,203 @@ function EditKodeModal({ st, onClose, onSubmit, isPending, error }: {
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
+// ─── Explorer Panel ────────────────────────────────────────────────────────────
+function ExplorerPanel() {
+  const [query, setQuery] = useState('')
+  const [result, setResult] = useState<any | null>(null)
+  const [notFound, setNotFound] = useState(false)
+  const [isPending, startTransition] = useTransition()
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  function doSearch(q?: string) {
+    const kode = (q ?? query).trim().toUpperCase()
+    if (!kode) return
+    setNotFound(false)
+    setResult(null)
+    startTransition(async () => {
+      const r = await searchShieldtag(kode)
+      if (r.error || !r.data) { setNotFound(true); setResult(null) }
+      else setResult(r.data)
+    })
+  }
+
+  const cfg = result ? STATUS_CFG[result.status] ?? STATUS_CFG['Aktif'] : null
+  const history: any[] = result
+    ? (Array.isArray(result.shieldtag_history) ? result.shieldtag_history : [])
+    : []
+
+  const InfoRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
+    <div className="flex items-start justify-between gap-4 py-2.5 border-b last:border-0"
+      style={{ borderColor: 'rgba(243,244,246,0.8)' }}>
+      <span className="text-[11px] font-bold text-gray-400 tracking-widest uppercase flex-shrink-0 mt-0.5">{label}</span>
+      <span className="text-sm font-semibold text-gray-800 text-right">{value ?? '—'}</span>
+    </div>
+  )
+
+  return (
+    <div className="space-y-5">
+      {/* Search bar */}
+      <div className="rounded-3xl p-5"
+        style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(24px)',
+          border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 8px 40px rgba(139,92,246,0.08)' }}>
+        <p className="text-xs font-bold text-gray-400 tracking-widest uppercase mb-3">Cari Shieldtag by Kode</p>
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={e => { setQuery(e.target.value.toUpperCase()); setNotFound(false) }}
+              onKeyDown={e => e.key === 'Enter' && doSearch()}
+              placeholder="Masukkan kode Shieldtag, contoh: 1H80AA"
+              className="w-full pl-10 pr-4 py-3 text-sm font-mono rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all uppercase"
+              style={{ background: 'rgba(249,250,251,0.8)', border: '1px solid rgba(209,213,219,0.5)' }}
+            />
+          </div>
+          <button
+            onClick={() => doSearch()}
+            disabled={isPending || !query.trim()}
+            className="px-6 py-3 text-sm font-bold text-white rounded-2xl transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 flex items-center gap-2"
+            style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', boxShadow: '0 4px 20px rgba(139,92,246,0.35)' }}>
+            {isPending ? <Loader2 size={14} className="animate-spin"/> : <Search size={14}/>}
+            Cari
+          </button>
+        </div>
+
+        {notFound && (
+          <div className="mt-4 px-4 py-3 rounded-2xl text-sm font-medium text-red-600"
+            style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.12)' }}>
+            Shieldtag <span className="font-mono font-bold">{query}</span> tidak ditemukan.
+          </div>
+        )}
+      </div>
+
+      {/* Result card */}
+      {result && cfg && (
+        <div className="rounded-3xl overflow-hidden"
+          style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(24px)',
+            border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 8px 40px rgba(139,92,246,0.08)' }}>
+
+          {/* Card header */}
+          <div className="px-6 py-5 flex items-center justify-between gap-4"
+            style={{ background: `linear-gradient(135deg,${cfg.bg},rgba(255,255,255,0))`,
+              borderBottom: '1px solid rgba(243,244,246,0.9)' }}>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                style={{ background: cfg.bg, border: `1.5px solid ${cfg.dot}30` }}>
+                <Tag size={22} style={{ color: cfg.dot }}/>
+              </div>
+              <div>
+                <p className="text-xl font-black font-mono tracking-wider" style={{ color: '#111827' }}>
+                  {result.kode}
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {result.gramasi}gr · {result.batch_kode}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold"
+              style={{ background: cfg.bg, color: cfg.text, border: `1px solid ${cfg.dot}25` }}>
+              <div className="w-2 h-2 rounded-full" style={{ background: cfg.dot }}/>
+              {result.status}
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-0 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+
+            {/* Detail info */}
+            <div className="px-6 py-5">
+              <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-3 flex items-center gap-1.5">
+                <Package size={11}/> Detail
+              </p>
+              <InfoRow label="Kode" value={<span className="font-mono">{result.kode}</span>}/>
+              <InfoRow label="Gramasi" value={`${result.gramasi} gr`}/>
+              <InfoRow label="Batch" value={<span className="font-mono">{result.batch_kode}</span>}/>
+              <InfoRow label="Status" value={
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold"
+                  style={{ background: cfg.bg, color: cfg.text }}>{result.status}</span>
+              }/>
+              <InfoRow label="Lokasi" value={
+                <span className="flex items-center gap-1.5 justify-end">
+                  <MapPin size={12} className="text-gray-400"/>{result.lokasi ?? '—'}
+                </span>
+              }/>
+              <InfoRow label="HPP / pcs" value={result.hpp ? formatRupiah(result.hpp) : '—'}/>
+              <InfoRow label="Tgl Registrasi" value={result.tgl_regis ? formatDate(result.tgl_regis) : '—'}/>
+              <InfoRow label="Didaftarkan oleh" value={result.registered_by ?? '—'}/>
+              {result.packing && (
+                <InfoRow label="Packing" value={
+                  <span className="font-mono text-xs">{result.packing.kode}</span>
+                }/>
+              )}
+              {result.voided_at && (
+                <InfoRow label="Void reason" value={
+                  <span className="text-red-500 text-xs">{result.void_reason}</span>
+                }/>
+              )}
+            </div>
+
+            {/* Riwayat */}
+            <div className="px-6 py-5">
+              <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-3 flex items-center gap-1.5">
+                <Clock size={11}/> Riwayat Pergerakan
+              </p>
+              {history.length === 0 ? (
+                <p className="text-sm text-gray-400 italic">Belum ada riwayat</p>
+              ) : (
+                <div className="space-y-0 relative">
+                  {/* Timeline line */}
+                  <div className="absolute left-3 top-2 bottom-2 w-px"
+                    style={{ background: 'linear-gradient(to bottom, rgba(139,92,246,0.3), rgba(139,92,246,0.05))' }}/>
+                  {history.slice().reverse().map((h: any, i: number) => (
+                    <div key={i} className="flex gap-4 pb-4 last:pb-0 relative">
+                      <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center z-10 mt-0.5"
+                        style={{ background: i === 0 ? 'rgba(139,92,246,0.15)' : 'rgba(243,244,246,0.9)',
+                          border: i === 0 ? '1.5px solid rgba(139,92,246,0.3)' : '1px solid rgba(209,213,219,0.5)' }}>
+                        <div className="w-2 h-2 rounded-full"
+                          style={{ background: i === 0 ? '#8B5CF6' : '#D1D5DB' }}/>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-gray-700 leading-snug">{h.action}</p>
+                        {(h.status || h.lokasi) && (
+                          <p className="text-[11px] text-gray-400 mt-0.5">
+                            {[h.status, h.lokasi].filter(Boolean).join(' · ')}
+                          </p>
+                        )}
+                        {h.alasan && (
+                          <p className="text-[11px] text-red-500 mt-0.5 italic">{h.alasan}</p>
+                        )}
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                          {h.tanggal} {h.oleh && `· ${h.oleh}`}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!result && !notFound && !isPending && (
+        <div className="rounded-3xl py-20 text-center"
+          style={{ background: 'rgba(255,255,255,0.4)', border: '1px dashed rgba(139,92,246,0.2)' }}>
+          <div className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4"
+            style={{ background: 'rgba(139,92,246,0.06)' }}>
+            <Search size={28} className="text-violet-300"/>
+          </div>
+          <p className="text-sm font-semibold text-gray-400">Masukkan kode Shieldtag untuk mulai cari</p>
+          <p className="text-xs text-gray-300 mt-1">Cari tahu status, lokasi, dan riwayat pergerakan</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRole, userName }: Props) {
+  const [view, setView] = useState<'list' | 'explorer'>('list')
   const [isPending, startTransition] = useTransition()
   const [modal, setModal] = useState<'register' | 'edit' | 'void' | 'bulk_void' | null>(null)
   const [selected, setSelected] = useState<Set<number>>(new Set())
@@ -394,14 +591,27 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
             <p className="text-sm text-gray-400 mt-0.5 font-medium">{shieldtags.length} shieldtag terdaftar</p>
           </div>
           <div className="flex items-center gap-2">
-            {selected.size > 0 && canVoid && (
+            {/* View toggle */}
+            <div className="flex rounded-2xl p-1 gap-1"
+              style={{ background: 'rgba(243,244,246,0.8)', border: '1px solid rgba(209,213,219,0.4)' }}>
+              {(['list','explorer'] as const).map(v => (
+                <button key={v} onClick={() => setView(v)}
+                  className="px-4 py-1.5 rounded-xl text-xs font-bold transition-all"
+                  style={view === v
+                    ? { background: '#fff', color: '#7C3AED', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }
+                    : { color: '#9CA3AF' }}>
+                  {v === 'list' ? 'Daftar' : 'Cari Kode'}
+                </button>
+              ))}
+            </div>
+            {selected.size > 0 && canVoid && view === 'list' && (
               <button onClick={() => { setModal('bulk_void'); setBulkVoidReason('') }}
                 className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white rounded-2xl transition-all"
                 style={{ background: 'linear-gradient(135deg,#EF4444,#DC2626)', boxShadow: '0 4px 20px rgba(239,68,68,0.4)' }}>
                 <Trash2 size={14}/> VOID {selected.size} dipilih
               </button>
             )}
-            {canRegister && packingsWithSlots.length > 0 && (
+            {canRegister && packingsWithSlots.length > 0 && view === 'list' && (
               <button onClick={() => { setModal('register'); setErr('') }}
                 className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white rounded-2xl transition-all hover:-translate-y-0.5"
                 style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', boxShadow: '0 4px 20px rgba(139,92,246,0.4)' }}>
@@ -411,6 +621,8 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
           </div>
         </div>
 
+        {view === 'explorer' && <ExplorerPanel/>}
+        {view === 'list' && <>
         {/* Summary cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
@@ -547,6 +759,8 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
             </tbody>
           </table>
         </div>
+
+        </>}
       </div>
 
       {/* Modals */}
