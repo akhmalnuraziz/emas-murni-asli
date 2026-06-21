@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
@@ -149,7 +149,7 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
 
       {/* Legend bobot */}
       <div className="rounded-3xl p-4 flex gap-4 flex-wrap"
-        style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+        >
         {[
           { label: 'Efisiensi', pct: bobot.efisiensi, color: '#7C3AED', desc: 'Output / Input (gain wajar tidak dihukum)' },
           { label: 'Loss',      pct: bobot.loss,      color: '#EF4444', desc: 'Loss rendah = skor tinggi' },
@@ -169,7 +169,7 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
       <div className="space-y-3">
         {sorted.map((tim, rank) => (
           <div key={tim.id} className="rounded-3xl overflow-hidden"
-            style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+            >
             <button
               onClick={() => setExpanded(expanded === tim.id ? null : tim.id)}
               className="w-full px-5 py-4 flex items-center gap-4 text-left hover:bg-slate-50/50 transition-colors">
@@ -295,8 +295,8 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
       </div>
 
       {kpiList.length === 0 && (
-        <div className="rounded-3xl py-20 text-center"
-          style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+        <div className="bg-white border border-slate-200 rounded-xl py-16 text-center"
+          >
           <Star size={32} className="mx-auto text-slate-200 mb-2" />
           <p className="text-slate-300 text-sm">Belum ada tim produksi yang aktif.</p>
         </div>

@@ -1492,53 +1492,46 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
   }
 
   return (
-    <div className="min-h-screen pb-24" style={{background:'linear-gradient(160deg,#F5F5F7 0%,#EFEFF4 60%,#F5F5F7 100%)'}}>
+    <div className="space-y-5 pb-8">
 
       {/* Toast */}
       {toast&&(
-        <div className={`fixed top-4 right-4 z-[200] flex items-center gap-2.5 px-5 py-3.5 rounded-2xl text-sm font-semibold text-white shadow-2xl transition-all ${toast.ok?'bg-gradient-to-r from-emerald-500 to-green-600':'bg-gradient-to-r from-red-500 to-rose-600'}`}>
+        <div className={`fixed top-4 right-4 z-[200] flex items-center gap-2.5 px-5 py-3.5 rounded-xl text-sm font-semibold text-white shadow-2xl transition-all ${toast.ok?'bg-emerald-600':'bg-red-600'}`}>
           {toast.ok?<Check size={15}/>:<AlertTriangle size={15}/>}{toast.msg}
         </div>
       )}
 
-      <div className="p-4 lg:p-6 max-w-4xl mx-auto space-y-5">
-
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">Produksi</h1>
-            <p className="text-sm text-gray-400 mt-0.5 font-medium">{produksiList.length} item total</p>
+            <h1 className="text-[18px] font-bold text-slate-900 tracking-tight">Produksi</h1>
+            <p className="text-[12px] text-slate-400 mt-0.5">{produksiList.length} item total</p>
           </div>
           {canEdit&&(
             <button onClick={()=>openModal('create')}
-              className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white rounded-2xl hover:-translate-y-0.5 transition-all"
-              style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)',boxShadow:'0 4px 20px rgba(139,92,246,0.4)'}}>
-              <Plus size={15}/> Cetak Baru
+              className="flex items-center gap-1.5 h-8 px-3 text-[12px] font-semibold text-white rounded-lg bg-violet-600 hover:bg-violet-700 transition-colors">
+              <Plus size={14}/> Cetak Baru
             </button>
           )}
         </div>
 
         {/* ── Search ──────────────────────────────────────────────────────── */}
         <div className="relative">
-          <Search size={13} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
           <input value={search} onChange={e=>setSearch(e.target.value)}
             placeholder="Cari kode, nama item, gramasi, batch..."
-            className="w-full pl-10 pr-4 py-3 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all"
-            style={{background:'rgba(255,255,255,0.8)',backdropFilter:'blur(12px)',border:'1px solid rgba(209,213,219,0.5)'}}/>
+            className="w-full pl-9 pr-3 h-8 text-[12px] rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
         </div>
 
         {/* ── Filter tabs ─────────────────────────────────────────────────── */}
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
           {STATUS_TABS.map(tab=>{
             const count = tab==='Semua' ? produksiList.length : produksiList.filter(i=>i.current_status===tab).length
-            const active = filterStatus===tab
+            const isActive = filterStatus===tab
             return (
               <button key={tab} onClick={()=>setFilter(tab)}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap flex-shrink-0 transition-all"
-                style={active
-                  ? {background:'linear-gradient(135deg,#8B5CF6,#7C3AED)',color:'#fff',boxShadow:'0 4px 12px rgba(139,92,246,0.35)'}
-                  : {background:'rgba(255,255,255,0.8)',color:'#6B7280',border:'1px solid rgba(209,213,219,0.5)'}}>
-                {tab} <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${active?'bg-white/20':'bg-gray-100'}`}>{count}</span>
+                className={`flex items-center gap-1.5 h-7 px-3 rounded-full text-[11px] font-semibold whitespace-nowrap flex-shrink-0 transition-colors ${isActive?'bg-violet-600 text-white':'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'}`}>
+                {tab} <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${isActive?'bg-white/25':'bg-slate-100'}`}>{count}</span>
               </button>
             )
           })}
@@ -1547,13 +1540,11 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
         {/* ── Item cards ──────────────────────────────────────────────────── */}
         <div className="space-y-3">
           {filtered.length===0?(
-            <div className="text-center py-16 rounded-3xl"
-              style={{background:'rgba(255,255,255,0.6)',backdropFilter:'blur(20px)',border:'1px solid rgba(255,255,255,0.5)'}}>
-              <div className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4"
-                style={{background:'rgba(139,92,246,0.08)'}}>
-                <Package size={28} className="text-violet-300"/>
+            <div className="text-center py-16 bg-white border border-slate-200 rounded-xl">
+              <div className="w-14 h-14 rounded-xl bg-violet-50 flex items-center justify-center mx-auto mb-3">
+                <Package size={24} className="text-violet-400"/>
               </div>
-              <p className="text-sm font-medium text-gray-400">
+              <p className="text-[13px] font-medium text-slate-400">
                 {search ? `Tidak ada hasil untuk "${search}"` : 'Belum ada item produksi'}
               </p>
             </div>

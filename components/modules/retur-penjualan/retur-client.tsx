@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useTransition } from 'react'
 import { Plus, X, Check, AlertTriangle, RotateCcw, Clock, CheckCircle2, XCircle, Search } from 'lucide-react'
@@ -77,26 +77,25 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
   const today = new Date().toISOString().split('T')[0]
 
   return (
-    <div className="min-h-screen pb-24" style={{ background: 'linear-gradient(160deg,#F5F5F7 0%,#EFEFF4 60%,#F5F5F7 100%)' }}>
+    <div className="space-y-5 pb-8">
       {toast && (
-        <div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-2xl text-sm font-semibold text-white shadow-2xl',
-          toast.ok ? 'bg-emerald-500' : 'bg-red-500')}>
+        <div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-xl text-sm font-semibold text-white shadow-2xl',
+          toast.ok ? 'bg-emerald-600' : 'bg-red-600')}>
           {toast.ok ? <Check size={15}/> : <AlertTriangle size={15}/>} {toast.msg}
         </div>
       )}
 
-      <div className="p-4 lg:p-6 max-w-4xl mx-auto space-y-5">
+      <div className="space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Retur Penjualan</h1>
-            <p className="text-sm text-gray-400 mt-0.5">{returList.length} retur tercatat</p>
+            <h1 className="text-[18px] font-bold text-slate-900 tracking-tight">Retur Penjualan</h1>
+            <p className="text-[12px] text-slate-400 mt-0.5">{returList.length} retur tercatat</p>
           </div>
           {canManage && (
             <button onClick={() => { setErr(''); setModal('form') }}
-              className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white rounded-2xl hover:-translate-y-0.5 transition-transform"
-              style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', boxShadow: '0 4px 20px rgba(139,92,246,0.4)' }}>
-              <Plus size={15}/> Catat Retur
+              className="flex items-center gap-1.5 h-8 px-3 text-[12px] font-semibold text-white rounded-lg bg-violet-600 hover:bg-violet-700 transition-colors">
+              <Plus size={14}/> Catat Retur
             </button>
           )}
         </div>
@@ -106,15 +105,12 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
           {['Semua', 'pending', 'diproses', 'selesai', 'ditolak'].map(s => {
             const cfg = STATUS_CFG[s]
             const cnt = s === 'Semua' ? returList.length : (counts[s] ?? 0)
-            const active = filterStatus === s
+            const isActive = filterStatus === s
             return (
               <button key={s} onClick={() => setFilterStatus(s)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
-                style={active
-                  ? { background: cfg?.bg ?? 'linear-gradient(135deg,#7C3AED,#6D28D9)', color: cfg?.text ?? '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }
-                  : { background: 'rgba(255,255,255,0.8)', color: '#6B7280', border: '1px solid rgba(209,213,219,0.5)' }}>
-                {cfg ? cfg.label : 'Semua'} {cnt > 0 && <span className="px-1 py-0.5 rounded-full text-[10px]"
-                  style={{ background: active ? 'rgba(0,0,0,0.1)' : 'rgba(107,114,128,0.1)' }}>{cnt}</span>}
+                className={cn('flex items-center gap-1.5 h-7 px-3 rounded-full text-[11px] font-semibold transition-colors',
+                  isActive ? 'bg-violet-600 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50')}>
+                {cfg ? cfg.label : 'Semua'} {cnt > 0 && <span className={`px-1 py-0.5 rounded-full text-[10px] ${isActive?'bg-white/25':'bg-slate-100'}`}>{cnt}</span>}
               </button>
             )
           })}
@@ -122,18 +118,18 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
 
         {/* Search */}
         <div className="relative">
-          <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Cari kode, nama customer, no. faktur..."
-            className="w-full pl-10 pr-4 py-2.5 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40"
+            className="w-full pl-9 pr-3 h-8 text-[12px] rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30"
             style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(209,213,219,0.5)' }}/>
         </div>
 
         {/* List */}
         <div className="space-y-3">
           {filtered.length === 0 ? (
-            <div className="rounded-3xl py-20 text-center"
-              style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.6)' }}>
+            <div className="bg-white border border-slate-200 rounded-xl py-16 text-center"
+              >
               <RotateCcw size={28} className="text-slate-200 mx-auto mb-2"/>
               <p className="text-sm text-slate-400">Belum ada retur{filterStatus !== 'Semua' ? ` berstatus ${filterStatus}` : ''}</p>
             </div>
@@ -141,8 +137,8 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
             const cfg = STATUS_CFG[r.status] ?? STATUS_CFG.pending
             const Icon = cfg.icon
             return (
-              <div key={r.id} className="rounded-3xl p-5 cursor-pointer hover:shadow-sm transition-shadow"
-                style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}
+              <div key={r.id} className="bg-white border border-slate-200 rounded-xl p-4 cursor-pointer hover:shadow-sm transition-shadow"
+                
                 onClick={() => { setActive(r); setCatatanInput(r.catatan_admin ?? ''); setModal('detail') }}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">

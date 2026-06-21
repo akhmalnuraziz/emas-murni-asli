@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useTransition, useEffect, useRef } from 'react'
 import {
@@ -479,7 +479,7 @@ function ExplorerPanel() {
 
       {/* Empty state */}
       {!result && !notFound && !isPending && (
-        <div className="rounded-3xl py-20 text-center"
+        <div className="bg-white border border-slate-200 rounded-xl py-16 text-center"
           style={{ background: 'rgba(255,255,255,0.4)', border: '1px dashed rgba(139,92,246,0.2)' }}>
           <div className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4"
             style={{ background: 'rgba(139,92,246,0.06)' }}>
@@ -571,35 +571,28 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
   }
 
   return (
-    <div className="min-h-screen pb-24"
-      style={{ background: 'linear-gradient(160deg,#F5F5F7 0%,#EFEFF4 60%,#F5F5F7 100%)' }}>
+    <div className="space-y-5 pb-8">
       {toast && (
-        <div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-2xl text-sm font-semibold text-white shadow-2xl',
-          toast.ok ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 'bg-gradient-to-r from-red-500 to-rose-600')}>
+        <div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-xl text-sm font-semibold text-white shadow-2xl',
+          toast.ok ? 'bg-emerald-600' : 'bg-red-600')}>
           {toast.ok ? <Check size={15}/> : <AlertTriangle size={15}/>}{toast.msg}
         </div>
       )}
 
-      <div className="p-4 lg:p-6 max-w-6xl mx-auto space-y-5">
+      <div className="space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight"
-              style={{ color: '#111827', fontFamily: "'SF Pro Display','Inter',sans-serif" }}>
-              Shieldtag
-            </h1>
-            <p className="text-sm text-gray-400 mt-0.5 font-medium">{shieldtags.length} shieldtag terdaftar</p>
+            <h1 className="text-[18px] font-bold text-slate-900 tracking-tight">Shieldtag</h1>
+            <p className="text-[12px] text-slate-400 mt-0.5">{shieldtags.length} shieldtag terdaftar</p>
           </div>
           <div className="flex items-center gap-2">
             {/* View toggle */}
-            <div className="flex rounded-2xl p-1 gap-1"
-              style={{ background: 'rgba(243,244,246,0.8)', border: '1px solid rgba(209,213,219,0.4)' }}>
+            <div className="flex bg-slate-100 rounded-lg p-0.5 gap-0.5">
               {(['list','explorer'] as const).map(v => (
                 <button key={v} onClick={() => setView(v)}
-                  className="px-4 py-1.5 rounded-xl text-xs font-bold transition-all"
-                  style={view === v
-                    ? { background: '#fff', color: '#7C3AED', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }
-                    : { color: '#9CA3AF' }}>
+                  className={cn('px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all',
+                    view === v ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-400 hover:text-slate-600')}>
                   {v === 'list' ? 'Daftar' : 'Cari Kode'}
                 </button>
               ))}
@@ -608,23 +601,20 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
               <a
                 href={`/shieldtag/print?kodes=${filtered.filter(st => selected.has(st.id)).map(st => st.kode).join(',')}`}
                 target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white rounded-2xl transition-all"
-                style={{ background: 'linear-gradient(135deg,#7C3AED,#6D28D9)', boxShadow: '0 4px 20px rgba(124,58,237,0.3)' }}>
-                <Printer size={14}/> Print {selected.size} Label
+                className="flex items-center gap-1.5 h-8 px-3 text-[12px] font-semibold text-white rounded-lg bg-violet-600 hover:bg-violet-700 transition-colors">
+                <Printer size={13}/> Print {selected.size} Label
               </a>
             )}
             {selected.size > 0 && canVoid && view === 'list' && (
               <button onClick={() => { setModal('bulk_void'); setBulkVoidReason('') }}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white rounded-2xl transition-all"
-                style={{ background: 'linear-gradient(135deg,#EF4444,#DC2626)', boxShadow: '0 4px 20px rgba(239,68,68,0.4)' }}>
-                <Trash2 size={14}/> VOID {selected.size} dipilih
+                className="flex items-center gap-1.5 h-8 px-3 text-[12px] font-semibold text-white rounded-lg bg-red-600 hover:bg-red-700 transition-colors">
+                <Trash2 size={13}/> VOID {selected.size}
               </button>
             )}
             {canRegister && packingsWithSlots.length > 0 && view === 'list' && (
               <button onClick={() => { setModal('register'); setErr('') }}
-                className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white rounded-2xl transition-all hover:-translate-y-0.5"
-                style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', boxShadow: '0 4px 20px rgba(139,92,246,0.4)' }}>
-                <Plus size={15}/> Registrasi Shieldtag
+                className="flex items-center gap-1.5 h-8 px-3 text-[12px] font-semibold text-white rounded-lg bg-violet-600 hover:bg-violet-700 transition-colors">
+                <Plus size={14}/> Registrasi Shieldtag
               </button>
             )}
           </div>
@@ -635,16 +625,14 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
         {/* Summary cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Aktif', val: counts['Aktif'] ?? 0, color: '#22C55E', bg: 'rgba(34,197,94,0.06)' },
-            { label: 'Terdistribusi', val: counts['Terdistribusi'] ?? 0, color: '#3B82F6', bg: 'rgba(59,130,246,0.06)' },
-            { label: 'Terjual', val: counts['Terjual'] ?? 0, color: '#8B5CF6', bg: 'rgba(139,92,246,0.06)' },
-            { label: 'VOID', val: counts['VOID'] ?? 0, color: '#EF4444', bg: 'rgba(239,68,68,0.06)' },
+            { label: 'Aktif', val: counts['Aktif'] ?? 0, cls: 'text-green-600' },
+            { label: 'Terdistribusi', val: counts['Terdistribusi'] ?? 0, cls: 'text-blue-600' },
+            { label: 'Terjual', val: counts['Terjual'] ?? 0, cls: 'text-violet-600' },
+            { label: 'VOID', val: counts['VOID'] ?? 0, cls: 'text-red-500' },
           ].map(c => (
-            <div key={c.label} className="rounded-2xl p-4 text-center"
-              style={{ background: c.bg, border: '1px solid rgba(255,255,255,0.6)' }}>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{c.label}</p>
-              <p className="text-2xl font-black mt-0.5"
-                style={{ color: c.color, fontFamily: "'SF Pro Display','Inter',sans-serif" }}>{c.val}</p>
+            <div key={c.label} className="bg-white border border-slate-200 rounded-xl p-4 text-center">
+              <p className="text-[10.5px] font-semibold text-slate-400 uppercase tracking-wide">{c.label}</p>
+              <p className={`text-[22px] font-bold mt-1 tabular-nums leading-none ${c.cls}`}>{c.val}</p>
             </div>
           ))}
         </div>

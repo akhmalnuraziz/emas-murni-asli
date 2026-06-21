@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import {
@@ -444,7 +444,7 @@ function TerimaCard({ mutasi, cabangNama, open, onToggle, onDone }: {
   }
 
   return (
-    <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.6)' }}>
+    <div className="rounded-2xl p-4" >
       <button onClick={onToggle} className="w-full flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(139,92,246,0.1)' }}>
@@ -549,7 +549,7 @@ function StokCabang({ cabangList, selectedCabang, setSelectedCabang }: {
       </div>
 
       <div className="rounded-3xl overflow-hidden"
-        style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.6)' }}>
+        >
         {loading ? (
           <div className="py-12 text-center text-sm text-slate-400">Memuat stok…</div>
         ) : (
@@ -609,7 +609,7 @@ function RiwayatMutasi({ cabangList }: { cabangList: Cabang[] }) {
     <div className="space-y-2.5">
       {rows.map(m => (
         <div key={m.id} className="rounded-2xl p-4"
-          style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.6)' }}>
+          >
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(139,92,246,0.1)' }}>

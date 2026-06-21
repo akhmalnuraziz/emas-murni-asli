@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useTransition } from 'react'
 import {
@@ -396,31 +396,29 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
   }
 
   return(
-    <div className="min-h-screen pb-24"style={{background:'linear-gradient(160deg,#F5F5F7 0%,#EFEFF4 60%,#F5F5F7 100%)'}}>
+    <div className="space-y-5 pb-8">
       {filtered.map(p=><PrintView key={p.id} p={p}/>)}
       {lightbox&&<Lightbox url={lightbox} onClose={()=>setLightbox(null)}/>}
-      {toast&&<div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-2xl text-sm font-semibold text-white shadow-2xl',toast.ok?'bg-gradient-to-r from-emerald-500 to-green-600':'bg-gradient-to-r from-red-500 to-rose-600')}>{toast.ok?<Check size={15}/>:<AlertTriangle size={15}/>}{toast.msg}</div>}
+      {toast&&<div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-xl text-sm font-semibold text-white shadow-2xl',toast.ok?'bg-emerald-600':'bg-red-600')}>{toast.ok?<Check size={15}/>:<AlertTriangle size={15}/>}{toast.msg}</div>}
 
-      <div className="p-4 lg:p-6 max-w-7xl mx-auto space-y-5">
+      <div className="space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight"style={{color:'#111827',fontFamily:"'SF Pro Display','Inter',sans-serif"}}>Packing Log</h1>
-            <p className="text-xs text-gray-400 mt-0.5 font-medium">Kelola packing & registrasi Shieldtag</p>
+            <h1 className="text-[18px] font-bold text-slate-900 tracking-tight">Packing Log</h1>
+            <p className="text-[12px] text-slate-400 mt-0.5">Kelola packing & registrasi Shieldtag</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
             {selectedIds.size>0&&(
               <button onClick={()=>handlePrintMulti(filteredByDate(filtered))}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white rounded-2xl transition-all hover:-translate-y-0.5"
-                style={{background:'linear-gradient(135deg,#0EA5E9,#0284C7)',boxShadow:'0 4px 16px rgba(14,165,233,0.4)'}}>
-                <Printer size={14}/> Print {selectedIds.size} Item
+                className="flex items-center gap-1.5 h-8 px-3 text-[12px] font-semibold text-white rounded-lg bg-sky-600 hover:bg-sky-700 transition-colors">
+                <Printer size={13}/> Print {selectedIds.size} Item
               </button>
             )}
             {canManage&&siapPackingItems.length>0&&(
               <button onClick={()=>{setModal('create');setErr('')}}
-                className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white rounded-2xl transition-all hover:-translate-y-0.5"
-                style={{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)',boxShadow:'0 4px 20px rgba(139,92,246,0.4)'}}>
-                <Plus size={15}/> Catat Packing
+                className="flex items-center gap-1.5 h-8 px-3 text-[12px] font-semibold text-white rounded-lg bg-violet-600 hover:bg-violet-700 transition-colors">
+                <Plus size={14}/> Catat Packing
               </button>
             )}
           </div>
@@ -428,21 +426,17 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
 
         {/* Search */}
         <div className="relative">
-          <Search size={15}className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cari kode PKG, batch, PIC..."
-            className="w-full pl-10 pr-4 py-3 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all"
-            style={{background:'rgba(255,255,255,0.8)',backdropFilter:'blur(12px)',border:'1px solid rgba(209,213,219,0.5)'}}/>
+            className="w-full pl-9 pr-3 h-8 text-[12px] rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
         </div>
 
-        {/* Summary cards */}
         {/* Date filter */}
         <div className="flex gap-2 flex-wrap items-center">
           {([['all','Semua'],['week','7 Hari'],['month','30 Hari'],['custom','Pilih Tanggal']] as const).map(([val,label])=>(
             <button key={val} onClick={()=>setDateFilter(val)}
-              className="px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all"
-              style={dateFilter===val
-                ?{background:'linear-gradient(135deg,#8B5CF6,#7C3AED)',color:'#fff',boxShadow:'0 4px 12px rgba(139,92,246,0.35)'}
-                :{background:'rgba(255,255,255,0.8)',color:'#6B7280',border:'1px solid rgba(209,213,219,0.5)'}}>
+              className={cn('h-7 px-3 rounded-full text-[11px] font-semibold transition-colors',
+                dateFilter===val?'bg-violet-600 text-white':'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50')}>
               {label}
             </button>
           ))}
@@ -467,7 +461,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
             {label:'Sisa Siap Packing',val:totalSiapPackingPcs+' PCS',color:'#22C55E',bg:'rgba(34,197,94,0.06)'},
             {label:'Total Sudah Dipack',val:filteredByDate(packingList).reduce((s:number,p:any)=>s+(p.pcs_dipack||0),0)+' PCS',color:'#3B82F6',bg:'rgba(59,130,246,0.06)'},
           ].map(c=>(
-            <div key={c.label}className="rounded-2xl p-4 text-center"style={{background:c.bg,backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.6)'}}>
+            <div key={c.label}className="bg-white border border-slate-200 rounded-xl p-4 text-center"style={{background:c.bg,backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.6)'}}>
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{c.label}</p>
               <p className="text-base font-bold mt-0.5"style={{color:c.color,fontFamily:"'SF Pro Display','Inter',sans-serif"}}>{c.val}</p>
             </div>

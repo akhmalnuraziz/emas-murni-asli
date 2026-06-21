@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { AlertTriangle, CheckCircle2, Info, ArrowUp, Settings } from 'lucide-react'
 
@@ -113,8 +113,8 @@ export default function PrioritasProduksiClient({
       )}
 
       {prioritasList.length === 0 && (
-        <div className="rounded-3xl py-20 text-center"
-          style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+        <div className="bg-white border border-slate-200 rounded-xl py-16 text-center"
+          >
           <CheckCircle2 size={32} className="mx-auto text-slate-200 mb-2" />
           <p className="text-slate-300 text-sm">Belum ada data stok atau PO untuk dianalisa.</p>
         </div>
@@ -135,7 +135,7 @@ export default function PrioritasProduksiClient({
               </p>
             </div>
             <div className="rounded-3xl overflow-hidden"
-              style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+              >
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>

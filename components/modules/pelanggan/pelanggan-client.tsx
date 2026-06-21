@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { Users, Search, Phone, CreditCard, ShoppingCart, TrendingUp, X, ChevronDown, ChevronUp } from 'lucide-react'
@@ -50,29 +50,28 @@ export default function PelangganClient({ pelangganList, canSeeRp }: Props) {
   const totalOmzet = pelangganList.reduce((s, p) => s + p.totalBelanja, 0)
 
   return (
-    <div className="min-h-screen pb-24" style={{ background: 'linear-gradient(160deg,#F5F5F7 0%,#EFEFF4 60%,#F5F5F7 100%)' }}>
-      <div className="p-4 lg:p-6 max-w-5xl mx-auto space-y-5">
+    <div className="space-y-5 pb-8">
+      <div className="space-y-5">
 
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Database Pelanggan</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Agregasi dari riwayat penjualan · {totalCustomer} pelanggan unik</p>
+          <h1 className="text-[18px] font-bold text-slate-900 tracking-tight">Database Pelanggan</h1>
+          <p className="text-[12px] text-slate-400 mt-0.5">Agregasi dari riwayat penjualan · {totalCustomer} pelanggan unik</p>
         </div>
 
         {/* KPI row */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Total Pelanggan', value: totalCustomer.toLocaleString('id-ID'), icon: Users, color: '#7C3AED', bg: 'rgba(124,58,237,0.08)' },
-            { label: 'Repeat Buyer', value: repeatBuyer.toLocaleString('id-ID'), icon: TrendingUp, color: '#16A34A', bg: 'rgba(22,163,74,0.08)' },
-            { label: 'Total Omzet', value: canSeeRp ? formatRupiah(totalOmzet) : '—', icon: ShoppingCart, color: '#0EA5E9', bg: 'rgba(14,165,233,0.08)' },
+            { label: 'Total Pelanggan', value: totalCustomer.toLocaleString('id-ID'), icon: Users, cls: 'bg-violet-50 text-violet-600' },
+            { label: 'Repeat Buyer', value: repeatBuyer.toLocaleString('id-ID'), icon: TrendingUp, cls: 'bg-green-50 text-green-600' },
+            { label: 'Total Omzet', value: canSeeRp ? formatRupiah(totalOmzet) : '—', icon: ShoppingCart, cls: 'bg-sky-50 text-sky-600' },
           ].map(k => (
-            <div key={k.label} className="rounded-3xl p-4"
-              style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-2" style={{ background: k.bg }}>
-                <k.icon size={15} style={{ color: k.color }} />
+            <div key={k.label} className="bg-white border border-slate-200 rounded-xl p-4">
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-3 ${k.cls}`}>
+                <k.icon size={15} />
               </div>
-              <p className="text-lg font-black text-slate-800 leading-tight">{k.value}</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">{k.label}</p>
+              <p className="text-[18px] font-bold text-slate-800 leading-none tabular-nums">{k.value}</p>
+              <p className="text-[10.5px] font-semibold text-slate-400 uppercase tracking-wide mt-1">{k.label}</p>
             </div>
           ))}
         </div>
@@ -80,12 +79,11 @@ export default function PelangganClient({ pelangganList, canSeeRp }: Props) {
         {/* Search + Sort */}
         <div className="flex gap-3 flex-wrap items-center">
           <div className="relative flex-1 min-w-[200px]">
-            <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Cari nama, no. HP, atau KTP..."
-              className="w-full pl-10 pr-4 py-2.5 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40"
-              style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(209,213,219,0.5)' }} />
-            {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2"><X size={13} className="text-gray-400" /></button>}
+              className="w-full pl-9 pr-3 h-8 text-[12px] rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all" />
+            {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2"><X size={13} className="text-slate-400" /></button>}
           </div>
           <div className="flex rounded-2xl overflow-hidden border border-slate-200">
             {(['belanja', 'transaksi', 'terakhir'] as const).map(s => (
@@ -101,14 +99,14 @@ export default function PelangganClient({ pelangganList, canSeeRp }: Props) {
         {/* List */}
         <div className="space-y-2">
           {filtered.length === 0 ? (
-            <div className="rounded-3xl py-20 text-center"
-              style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.6)' }}>
+            <div className="bg-white border border-slate-200 rounded-xl py-16 text-center"
+              >
               <Users size={28} className="text-slate-200 mx-auto mb-2" />
               <p className="text-sm text-slate-400">Tidak ada pelanggan ditemukan</p>
             </div>
           ) : filtered.map((p, i) => (
             <div key={p.key} className="rounded-3xl overflow-hidden"
-              style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+              >
               <div className="p-4 flex items-center justify-between gap-3 cursor-pointer"
                 onClick={() => setExpanded(expanded === p.key ? null : p.key)}>
                 <div className="flex items-center gap-3 min-w-0">

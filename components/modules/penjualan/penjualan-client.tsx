@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useTransition } from 'react'
 import { ShoppingBag, Plus, X, Search, Trash2, ChevronDown, ChevronUp, Printer } from 'lucide-react'
@@ -349,7 +349,7 @@ function PenjualanRow({ pj, canSeeRp, isOwner }: { pj: Penjualan; canSeeRp: bool
 
   return (
     <div className="rounded-3xl overflow-hidden"
-      style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+      >
       <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50/50"
         onClick={() => setOpen(o => !o)}>
         <div className="flex-1 min-w-0">
@@ -475,47 +475,38 @@ export default function PenjualanClient({
     .reduce((sum, pj) => sum + (pj.total_harga_jual ?? 0), 0)
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,#7c3aed,#6d28d9)' }}>
-            <ShoppingBag size={20} className="text-white" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-slate-900">Penjualan</h1>
-            <p className="text-xs text-slate-400">
-              {penjualanList.length} transaksi
-              {canSeeRp && ` · Omzet bulan ini: ${fmtRp(totalBulanIni)}`}
-            </p>
-          </div>
+        <div>
+          <h1 className="text-[18px] font-bold text-slate-900 tracking-tight">Penjualan</h1>
+          <p className="text-[12px] text-slate-400 mt-0.5">
+            {penjualanList.length} transaksi
+            {canSeeRp && ` · Omzet bulan ini: ${fmtRp(totalBulanIni)}`}
+          </p>
         </div>
         <button onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-black text-white shadow"
-          style={{ background: 'linear-gradient(135deg,#7c3aed,#6d28d9)' }}>
-          <Plus size={16} /> Catat Penjualan
+          className="flex items-center gap-1.5 h-8 px-3 text-[12px] font-semibold text-white rounded-lg bg-violet-600 hover:bg-violet-700 transition-colors">
+          <Plus size={14} /> Catat Penjualan
         </button>
       </div>
 
       {/* Search */}
       <div className="relative">
-        <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300" />
+        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Cari no. faktur atau nama customer…"
-          className="w-full rounded-2xl border border-slate-200 pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-purple-400"
-          style={{ background: 'rgba(255,255,255,0.85)' }}
+          className="w-full pl-9 pr-3 h-8 text-[12px] rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"
         />
       </div>
 
       {/* List */}
       {filtered.length === 0 ? (
-        <div className="rounded-3xl py-20 text-center"
-          style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
-          <ShoppingBag size={32} className="mx-auto text-slate-200 mb-2" />
-          <p className="text-slate-300 text-sm">Belum ada transaksi penjualan.</p>
+        <div className="py-16 text-center bg-white border border-slate-200 rounded-xl">
+          <ShoppingBag size={28} className="mx-auto text-slate-300 mb-2" />
+          <p className="text-[13px] font-medium text-slate-400">Belum ada transaksi penjualan.</p>
         </div>
       ) : (
         <div className="space-y-2">

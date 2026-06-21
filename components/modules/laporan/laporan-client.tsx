@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
@@ -238,7 +238,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
   return (
     <div className="space-y-4">
       {/* P&L Summary Card */}
-      <div className="rounded-3xl p-6"
+      <div className="bg-white border border-slate-200 rounded-xl p-6"
         style={{ background: profitPositif ? 'linear-gradient(135deg,#16A34A,#15803D)' : 'linear-gradient(135deg,#DC2626,#B91C1C)', color: 'white' }}>
         <p className="text-xs font-semibold opacity-80 mb-1">Laba Bersih — {periodLabel}</p>
         <p className="text-4xl font-black">{formatRupiah(labaRugi.labaBersih)}</p>
@@ -259,7 +259,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <button onClick={() => setShowDetail(showDetail === 'penjualan' ? null : 'penjualan')}
           className="rounded-3xl p-5 text-left hover:shadow-sm transition-shadow"
-          style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+          >
           <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: 'rgba(22,163,74,0.08)' }}>
             <ShoppingCart size={15} className="text-green-600" />
           </div>
@@ -269,7 +269,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
         </button>
 
         <div className="rounded-3xl p-5"
-          style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+          >
           <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: 'rgba(245,158,11,0.08)' }}>
             <Package size={15} className="text-amber-500" />
           </div>
@@ -284,7 +284,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
 
         <button onClick={() => setShowDetail(showDetail === 'pengeluaran' ? null : 'pengeluaran')}
           className="rounded-3xl p-5 text-left hover:shadow-sm transition-shadow"
-          style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+          >
           <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: 'rgba(239,68,68,0.08)' }}>
             <TrendingDown size={15} className="text-red-500" />
           </div>
@@ -297,7 +297,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
       {/* Channel breakdown */}
       {channelBreakdown.length > 0 && (
         <div className="rounded-3xl p-5"
-          style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+          >
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Omzet per Channel</p>
           <div className="space-y-3">
             {channelBreakdown.map(ch => {
@@ -326,7 +326,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
       {/* Penjualan detail */}
       {showDetail === 'penjualan' && (
         <div className="rounded-3xl overflow-hidden"
-          style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+          >
           <div className="px-5 py-4 border-b border-slate-50">
             <p className="text-sm font-bold text-slate-800">Detail Penjualan</p>
           </div>
@@ -383,7 +383,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
       {/* Pengeluaran detail */}
       {showDetail === 'pengeluaran' && (
         <div className="rounded-3xl overflow-hidden"
-          style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+          >
           <div className="px-5 py-4 border-b border-slate-50 flex items-center justify-between">
             <p className="text-sm font-bold text-slate-800">Detail Pengeluaran</p>
             <a href="/pengeluaran" className="text-xs text-violet-500 font-semibold hover:underline">Kelola →</a>
@@ -428,7 +428,7 @@ function RingkasanTab({ summary }: { summary: Props['summary'] }) {
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
       {cards.map(c => (
         <div key={c.label} className="rounded-3xl p-5"
-          style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.6)' }}>
+          >
           <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: c.bg }}>
             <c.icon size={16} style={{ color: c.color }} />
           </div>
@@ -483,7 +483,7 @@ function PenjualanTab({
       </div>
 
       <div className="rounded-3xl overflow-hidden"
-        style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.6)' }}>
+        >
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -546,7 +546,7 @@ function BatchTab({ rows, showHpp }: { rows: Props['batchList']; showHpp: boolea
   if (rows.length === 0) return <Empty text="Belum ada batch." />
   return (
     <div className="rounded-3xl overflow-hidden"
-      style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.6)' }}>
+      >
       <div className="overflow-x-auto">
         <table className="w-full min-w-[520px] text-sm">
           <thead>
@@ -591,8 +591,8 @@ function BatchTab({ rows, showHpp }: { rows: Props['batchList']; showHpp: boolea
 
 function Empty({ text }: { text: string }) {
   return (
-    <div className="rounded-3xl py-20 text-center"
-      style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.6)' }}>
+    <div className="bg-white border border-slate-200 rounded-xl py-16 text-center"
+      >
       <FileText size={28} className="text-slate-200 mx-auto mb-2" />
       <p className="text-sm text-slate-400">{text}</p>
     </div>
@@ -674,7 +674,7 @@ function NeracaTab({ neraca }: { neraca: Props['neraca'] }) {
 
       {/* Flow diagram */}
       <div className="rounded-3xl p-5"
-        style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.6)' }}>
+        >
         <div className="flex items-center gap-2 mb-5">
           <Scale size={15} className="text-violet-500" />
           <h3 className="font-bold text-slate-800 text-sm">Alur Emas — All Time</h3>

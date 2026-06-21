@@ -198,33 +198,27 @@ export default function AuditLogClient({ logs }: Props) {
   const distinctUsers = new Set(logs.map(l => l.user_name).filter(Boolean)).size
 
   return (
-    <div className="min-h-screen pb-24"
-      style={{ background: 'linear-gradient(160deg,#F5F5F7 0%,#EFEFF4 60%,#F5F5F7 100%)' }}>
-      <div className="p-4 lg:p-6 max-w-6xl mx-auto space-y-5">
+    <div className="space-y-5 pb-8">
+      <div className="space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight"
-              style={{ color: '#111827', fontFamily: "'SF Pro Display','Inter',sans-serif" }}>
-              Audit Center
-            </h1>
-            <p className="text-sm text-gray-400 mt-0.5 font-medium">{logs.length} aktivitas tercatat (500 terbaru)</p>
+            <h1 className="text-[18px] font-bold text-slate-900 tracking-tight">Audit Center</h1>
+            <p className="text-[12px] text-slate-400 mt-0.5">{logs.length} aktivitas tercatat (500 terbaru)</p>
           </div>
         </div>
 
         {/* Summary cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Total Log', val: logs.length, color: '#8B5CF6', bg: 'rgba(139,92,246,0.06)' },
-            { label: 'Hari Ini', val: todayCount, color: '#3B82F6', bg: 'rgba(59,130,246,0.06)' },
-            { label: 'Modul Aktif', val: modules.length - 1, color: '#22C55E', bg: 'rgba(34,197,94,0.06)' },
-            { label: 'User Tercatat', val: distinctUsers, color: '#F59E0B', bg: 'rgba(245,158,11,0.06)' },
+            { label: 'Total Log', val: logs.length, cls: 'text-violet-600' },
+            { label: 'Hari Ini', val: todayCount, cls: 'text-blue-600' },
+            { label: 'Modul Aktif', val: modules.length - 1, cls: 'text-green-600' },
+            { label: 'User Tercatat', val: distinctUsers, cls: 'text-amber-600' },
           ].map(c => (
-            <div key={c.label} className="rounded-2xl p-4 text-center"
-              style={{ background: c.bg, border: '1px solid rgba(255,255,255,0.6)' }}>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{c.label}</p>
-              <p className="text-2xl font-black mt-0.5"
-                style={{ color: c.color, fontFamily: "'SF Pro Display','Inter',sans-serif" }}>{c.val}</p>
+            <div key={c.label} className="bg-white border border-slate-200 rounded-xl p-4 text-center">
+              <p className="text-[10.5px] font-semibold text-slate-400 uppercase tracking-wide">{c.label}</p>
+              <p className={`text-[22px] font-bold mt-1 tabular-nums leading-none ${c.cls}`}>{c.val}</p>
             </div>
           ))}
         </div>

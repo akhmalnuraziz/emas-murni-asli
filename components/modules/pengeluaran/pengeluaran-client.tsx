@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useTransition } from 'react'
 import { compressImage } from '@/lib/compress-image'
@@ -328,7 +328,7 @@ export default function PengeluaranClient({
           <p className="text-xs opacity-70 mt-1">{periodLabel}</p>
         </div>
         <div className="rounded-3xl p-5 sm:col-span-2"
-          style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+          >
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Per Kategori</p>
           {sorted.length > 0 ? (
             <div className="space-y-2">
