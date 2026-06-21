@@ -372,6 +372,21 @@ export async function toggleProdukPengaturanAktif(id: number, aktif: boolean) {
   return { success: true }
 }
 
+export async function updateKpiTargetTim(timId: number, targetGram: number) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki akses' }
+  await supabase.from('pengaturan').upsert(
+    { key: `kpi_target_tim_${timId}`, value: String(targetGram), label: `KPI Target Serah Tim ${timId} (gr/bulan)`, updated_by: user.id },
+    { onConflict: 'key' }
+  )
+  revalidatePath('/pengaturan')
+  revalidatePath('/kpi-tim')
+  return { success: true }
+}
+
 export async function updateTargetProduksi(targetPcs: number) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

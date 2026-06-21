@@ -9,7 +9,7 @@ import {
   createTim, updateTim, toggleTimAktif, deleteTim,
   addAnggota, deleteAnggota,
   createAdminInput, updateAdminInput, toggleAdminInputAktif, deleteAdminInput,
-  updateToleransi, updateBiayaPackaging, updateTargetProduksi,
+  updateToleransi, updateBiayaPackaging, updateTargetProduksi, updateKpiTargetTim,
   createGramasi, updateGramasi, toggleGramasiAktif, deleteGramasi,
   createProdukPengaturan, updateProdukPengaturan, toggleProdukPengaturanAktif,
 } from '@/app/(dashboard)/pengaturan/actions'
@@ -75,7 +75,7 @@ export default function PengaturanClient({
       {tab === 'users'     && <UsersSection list={userList} currentUserId={currentUserId} showToast={showToast} canManage={isOwnerAdmin} />}
       {tab === 'produk'    && <MasterProdukSection list={produkList} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
       {tab === 'gramasi'   && <MasterGramasiSection list={gramasiList} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
-      {tab === 'umum'      && <PengaturanUmumSection pengaturan={pengaturan} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
+      {tab === 'umum'      && <PengaturanUmumSection pengaturan={pengaturan} tims={tims} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
       {tab === 'packaging' && <BiayaPackagingSection pengaturan={pengaturan} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
     </div>
   )
@@ -389,7 +389,7 @@ function AdminInputSection({ list, isPending, start, showToast, canManage }: any
 }
 
 // ═══ PENGATURAN UMUM ════════════════════════════════════════════════════════
-function PengaturanUmumSection({ pengaturan, isPending, start, showToast, canManage }: any) {
+function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, canManage }: any) {
   const [vals, setVals] = useState({
     toleransi_loss_peleburan:    pengaturan.toleransi_loss_peleburan    ?? '0.05',
     toleransi_loss_cutting:      pengaturan.toleransi_loss_cutting      ?? '0.05',
@@ -487,6 +487,41 @@ function PengaturanUmumSection({ pengaturan, isPending, start, showToast, canMan
           </div>
         </div>
       </div>
+
+      {/* KPI Target per Tim */}
+      {tims && tims.length > 0 && (
+        <div className="space-y-3">
+          <div>
+            <h2 className="text-base font-bold text-gray-900">Target KPI per Tim</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Target gram serah per bulan per tim. Digunakan untuk menghitung achievement rate di KPI Tim.</p>
+          </div>
+          <div className="rounded-3xl p-4 space-y-3 bg-white border border-slate-100 shadow-sm">
+            {tims.filter((t: any) => t.aktif).map((tim: any) => {
+              const key = `kpi_target_tim_${tim.id}`
+              return (
+                <div key={tim.id} className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: tim.warna ?? '#7F6DC6' }} />
+                  <span className="flex-1 text-sm font-semibold text-gray-700">{tim.nama}</span>
+                  <div className="flex items-center gap-2">
+                    <input type="number" min="0" step="10" disabled={!canManage}
+                      defaultValue={pengaturan[key] ?? '0'}
+                      onBlur={e => {
+                        if (!canManage) return
+                        const val = Number(e.target.value) || 0
+                        start(async () => {
+                          await updateKpiTargetTim(tim.id, val)
+                          showToast(`✅ Target ${tim.nama} disimpan`)
+                        })
+                      }}
+                      className="w-28 h-10 px-3 bg-gray-50 rounded-xl text-sm text-gray-700 text-right border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60" />
+                    <span className="text-xs text-gray-400 w-10">gr/bln</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {canManage && (
         <div className="flex justify-end">

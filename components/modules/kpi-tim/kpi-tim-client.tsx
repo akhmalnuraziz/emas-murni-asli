@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { Star, TrendingUp, AlertTriangle, Clock, ChevronDown, ChevronUp } from 'lucide-react'
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { Star, TrendingUp, AlertTriangle, Clock, ChevronDown, ChevronUp, Calendar, Target } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface KpiEntry {
   id: number; nama: string; warna: string | null
@@ -12,12 +14,24 @@ interface KpiEntry {
     totalSerah: number; totalTerima: number; totalLoss: number; lossRate: number
     count: number; onTimeCount: number; lateCount: number
   } | null
+  targetSerah: number
+  achievementPct: number | null
 }
 
 interface Props {
   kpiList: KpiEntry[]
   bobot: { efisiensi: number; loss: number; kecepatan: number }
+  period: string
+  dateFrom: string
+  dateTo: string
 }
+
+const PERIOD_OPTIONS = [
+  { value: 'today', label: 'Hari Ini' },
+  { value: 'week',  label: '7 Hari' },
+  { value: 'month', label: 'Bulan Ini' },
+  { value: 'custom', label: 'Kustom' },
+]
 
 function Stars({ n }: { n: number }) {
   return (
@@ -40,10 +54,79 @@ function ScoreBar({ value, color }: { value: number; color: string }) {
   )
 }
 
-export default function KpiTimClient({ kpiList, bobot }: Props) {
+function AchievementBar({ pct, targetSerah, actual }: { pct: number; targetSerah: number; actual: number }) {
+  const clamped = Math.min(120, pct)
+  const color   = pct >= 100 ? '#16a34a' : pct >= 70 ? '#d97706' : '#dc2626'
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+          <Target size={10} /> Achievement Target
+        </p>
+        <span className="text-xs font-black" style={{ color }}>{pct.toFixed(0)}%</span>
+      </div>
+      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div className="h-full rounded-full transition-all" style={{ width: `${clamped}%`, background: color }} />
+      </div>
+      <div className="flex justify-between text-[10px] text-slate-400">
+        <span>Aktual: <b className="text-slate-600">{actual.toFixed(2)} gr</b></span>
+        <span>Target: <b className="text-slate-600">{targetSerah.toFixed(0)} gr</b></span>
+      </div>
+    </div>
+  )
+}
+
+function PeriodSelector({ period, dateFrom, dateTo }: { period: string; dateFrom: string; dateTo: string }) {
+  const router = useRouter()
+  const [, startTransition] = useTransition()
+  const [showCustom, setShowCustom] = useState(period === 'custom')
+  const [customFrom, setCustomFrom] = useState(dateFrom)
+  const [customTo, setCustomTo]     = useState(dateTo)
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <Calendar size={13} className="text-slate-400" />
+        {PERIOD_OPTIONS.map(opt => {
+          if (opt.value === 'custom') return (
+            <button key="custom" onClick={() => setShowCustom(v => !v)}
+              className={cn('px-3 py-1.5 rounded-xl text-xs font-bold transition-all',
+                showCustom ? 'bg-violet-600 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:border-violet-200 hover:text-violet-600'
+              )}>{opt.label}</button>
+          )
+          return (
+            <a key={opt.value} href={`/kpi-tim?period=${opt.value}`}
+              className={cn('px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer',
+                period === opt.value && !showCustom ? 'bg-violet-600 text-white shadow-sm' : 'bg-white text-slate-500 border border-slate-200 hover:border-violet-200 hover:text-violet-600'
+              )}>{opt.label}</a>
+          )
+        })}
+      </div>
+      {showCustom && (
+        <div className="flex items-center gap-2 flex-wrap bg-white rounded-2xl px-3 py-2 border border-slate-200">
+          <span className="text-xs text-slate-400">Dari</span>
+          <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
+            className="text-xs border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-violet-400" />
+          <span className="text-xs text-slate-400">s/d</span>
+          <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
+            className="text-xs border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-violet-400" />
+          <button onClick={() => startTransition(() => router.push(`/kpi-tim?period=custom&from=${customFrom}&to=${customTo}`))}
+            className="px-3 py-1 rounded-xl bg-violet-600 text-white text-xs font-bold">Terapkan</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo }: Props) {
   const [expanded, setExpanded] = useState<number | null>(null)
 
   const sorted = [...kpiList].sort((a, b) => (b.bintang ?? 0) - (a.bintang ?? 0))
+
+  const periodLabel = period === 'today' ? 'Hari Ini'
+    : period === 'week'   ? '7 Hari Terakhir'
+    : period === 'custom' ? `${dateFrom} – ${dateTo}`
+    : new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
 
   return (
     <div className="space-y-5">
@@ -56,10 +139,13 @@ export default function KpiTimClient({ kpiList, bobot }: Props) {
         <div>
           <h1 className="text-lg font-bold text-slate-900">KPI Tim Produksi</h1>
           <p className="text-xs text-slate-400">
-            Rating bintang · Efisiensi {bobot.efisiensi}% · Loss {bobot.loss}% · Kecepatan {bobot.kecepatan}%
+            {periodLabel} · Efisiensi {bobot.efisiensi}% · Loss {bobot.loss}% · Kecepatan {bobot.kecepatan}%
           </p>
         </div>
       </div>
+
+      {/* Period selector */}
+      <PeriodSelector period={period} dateFrom={dateFrom} dateTo={dateTo} />
 
       {/* Legend bobot */}
       <div className="rounded-3xl p-4 flex gap-4 flex-wrap"
@@ -84,25 +170,30 @@ export default function KpiTimClient({ kpiList, bobot }: Props) {
         {sorted.map((tim, rank) => (
           <div key={tim.id} className="rounded-3xl overflow-hidden"
             style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
-            {/* Header row */}
             <button
               onClick={() => setExpanded(expanded === tim.id ? null : tim.id)}
               className="w-full px-5 py-4 flex items-center gap-4 text-left hover:bg-slate-50/50 transition-colors">
-              {/* Rank */}
               <div className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black text-white flex-shrink-0"
                 style={{ background: tim.warna ?? '#7F6DC6' }}>
                 {rank + 1}
               </div>
-              {/* Tim info */}
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-slate-800">{tim.nama}</p>
                 <p className="text-xs text-slate-400">
                   {tim.anggota.filter(a => a.aktif).length} anggota
-                  {tim.stats ? ` · ${tim.stats.count} proses` : ''}
+                  {tim.stats ? ` · ${tim.stats.count} proses · ${tim.stats.totalSerah.toFixed(1)} gr serah` : ''}
                 </p>
               </div>
-              {/* Stars + score */}
-              <div className="flex items-center gap-3">
+              {/* Achievement badge jika ada target */}
+              {tim.achievementPct !== null && (
+                <div className="flex-shrink-0 text-center hidden sm:block">
+                  <p className="text-[10px] text-slate-400 font-semibold">Target</p>
+                  <p className="text-sm font-black" style={{ color: tim.achievementPct >= 100 ? '#16a34a' : tim.achievementPct >= 70 ? '#d97706' : '#dc2626' }}>
+                    {tim.achievementPct.toFixed(0)}%
+                  </p>
+                </div>
+              )}
+              <div className="flex items-center gap-3 flex-shrink-0">
                 {tim.kpi ? (
                   <>
                     <Stars n={tim.bintang} />
@@ -117,19 +208,33 @@ export default function KpiTimClient({ kpiList, bobot }: Props) {
               </div>
             </button>
 
-            {/* Expanded detail */}
             {expanded === tim.id && (
               <div className="px-5 pb-5 pt-1 border-t border-slate-50 space-y-4">
                 {tim.kpi && tim.stats ? (
                   <>
+                    {/* Achievement vs Target */}
+                    {tim.targetSerah > 0 && tim.achievementPct !== null && (
+                      <div className="rounded-2xl p-4"
+                        style={{ background: 'rgba(148,163,184,0.05)', border: '1px solid rgba(148,163,184,0.1)' }}>
+                        <AchievementBar
+                          pct={tim.achievementPct}
+                          targetSerah={tim.targetSerah}
+                          actual={tim.stats.totalSerah}
+                        />
+                      </div>
+                    )}
+                    {tim.targetSerah === 0 && (
+                      <p className="text-[11px] text-slate-300 italic">
+                        Target serah belum diset. Atur di Pengaturan → KPI untuk tim ini.
+                      </p>
+                    )}
+
                     {/* Score bars */}
                     <div className="space-y-2.5">
                       <div>
-                        <div className="flex justify-between mb-1">
-                          <p className="text-xs font-semibold text-slate-600 flex items-center gap-1">
-                            <TrendingUp size={11} className="text-violet-500" /> Efisiensi
-                          </p>
-                        </div>
+                        <p className="text-xs font-semibold text-slate-600 flex items-center gap-1 mb-1">
+                          <TrendingUp size={11} className="text-violet-500" /> Efisiensi
+                        </p>
                         <ScoreBar value={tim.kpi.efisiensiScore} color="#7C3AED" />
                       </div>
                       <div>
@@ -179,7 +284,7 @@ export default function KpiTimClient({ kpiList, bobot }: Props) {
                   </>
                 ) : (
                   <div className="py-6 text-center">
-                    <p className="text-xs text-slate-300">Belum ada data proses untuk tim ini.</p>
+                    <p className="text-xs text-slate-300">Belum ada data proses untuk tim ini di periode {periodLabel}.</p>
                     <p className="text-[11px] text-slate-300 mt-1">KPI akan muncul setelah ada data cutting/pas berat/annealing.</p>
                   </div>
                 )}
