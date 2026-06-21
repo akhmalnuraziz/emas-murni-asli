@@ -8,8 +8,8 @@ import {
   BoxSelect, TriangleAlert, Boxes, Wallet, Calendar,
 } from 'lucide-react'
 import { cn, formatRupiah, formatDate } from '@/lib/utils'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 
 interface Props {
   userName: string
@@ -68,46 +68,41 @@ const PERIOD_OPTIONS = [
 
 function PeriodSelector({ period, dateFrom, dateTo }: { period: string; dateFrom: string; dateTo: string }) {
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
   const [showCustom, setShowCustom] = useState(period === 'custom')
   const [customFrom, setCustomFrom] = useState(dateFrom)
   const [customTo,   setCustomTo]   = useState(dateTo)
-
-  function navigate(p: string, from?: string, to?: string) {
-    const params = new URLSearchParams()
-    params.set('period', p)
-    if (p === 'custom' && from && to) {
-      params.set('from', from)
-      params.set('to', to)
-    }
-    startTransition(() => router.push(`/dashboard?${params.toString()}`))
-  }
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-1.5 flex-wrap">
         <Calendar size={13} className="text-slate-400" />
-        {PERIOD_OPTIONS.map(opt => (
-          <button
-            key={opt.value}
-            onClick={() => {
-              if (opt.value === 'custom') { setShowCustom(true); return }
-              setShowCustom(false)
-              navigate(opt.value)
-            }}
-            className={cn(
-              'px-3 py-1.5 rounded-xl text-xs font-bold transition-all',
-              period === opt.value && opt.value !== 'custom'
-                ? 'bg-violet-600 text-white shadow-sm'
-                : showCustom && opt.value === 'custom'
-                ? 'bg-violet-600 text-white shadow-sm'
-                : 'bg-white text-slate-500 border border-slate-200 hover:border-violet-200 hover:text-violet-600'
-            )}
-          >
-            {opt.label}
-          </button>
-        ))}
-        {isPending && <span className="text-[10px] text-slate-400 ml-1">Memuat...</span>}
+        {PERIOD_OPTIONS.map(opt => {
+          const isActive = opt.value === 'custom' ? showCustom : period === opt.value
+          if (opt.value === 'custom') {
+            return (
+              <button key="custom"
+                onClick={() => setShowCustom(v => !v)}
+                className={cn(
+                  'px-3 py-1.5 rounded-xl text-xs font-bold transition-all',
+                  isActive ? 'bg-violet-600 text-white shadow-sm' : 'bg-white text-slate-500 border border-slate-200 hover:border-violet-200 hover:text-violet-600'
+                )}
+              >
+                {opt.label}
+              </button>
+            )
+          }
+          return (
+            <a key={opt.value}
+              href={`/dashboard?period=${opt.value}`}
+              className={cn(
+                'px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer',
+                isActive ? 'bg-violet-600 text-white shadow-sm' : 'bg-white text-slate-500 border border-slate-200 hover:border-violet-200 hover:text-violet-600'
+              )}
+            >
+              {opt.label}
+            </a>
+          )
+        })}
       </div>
       {showCustom && (
         <div className="flex items-center gap-2 flex-wrap bg-white rounded-2xl px-3 py-2 border border-slate-200">
@@ -118,7 +113,7 @@ function PeriodSelector({ period, dateFrom, dateTo }: { period: string; dateFrom
           <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
             className="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-violet-400" />
           <button
-            onClick={() => navigate('custom', customFrom, customTo)}
+            onClick={() => router.push(`/dashboard?period=custom&from=${customFrom}&to=${customTo}`)}
             className="px-3 py-1 rounded-xl bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 transition-colors"
           >
             Terapkan
@@ -430,9 +425,7 @@ export default function DashboardClient({
       )}
 
       {/* ── Trend Produksi Harian ─────────────────────────────────────────── */}
-      {produksiTrend.gramasi.length > 0 && (
-        <TrendProduksi trend={produksiTrend} />
-      )}
+      <TrendProduksi trend={produksiTrend} />
 
       {/* ── Row: Mutasi Transit + Batch Terbaru ───────────────────────────── */}
       <div className="grid lg:grid-cols-2 gap-4">
@@ -536,7 +529,7 @@ function TrendProduksi({ trend }: {
     totalPcs: number
   }
 }) {
-  const [view, setView] = useState<'grid' | 'chart'>('chart')
+  const [view, setView] = useState<'grid' | 'chart'>('grid')
   const { gramasi, trendMap, dailyTotal, allDays, bulan, totalPcs } = trend
 
   // Hitung rata-rata harian (hanya hari yang ada produksi)
@@ -618,7 +611,12 @@ function TrendProduksi({ trend }: {
       )}
 
       {/* Grid view */}
-      {view === 'grid' && (
+      {view === 'grid' && gramasi.length === 0 && (
+        <div className="px-5 pb-5 text-center text-slate-400 text-xs py-8">
+          Belum ada data packing untuk periode ini
+        </div>
+      )}
+      {view === 'grid' && gramasi.length > 0 && (
         <div className="overflow-x-auto pb-4">
           <table className="text-[10px] min-w-max">
             <thead>
