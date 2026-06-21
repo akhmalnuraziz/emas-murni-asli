@@ -963,7 +963,6 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
             )
           })}
         </div>
-      </div>
 
       {/* Modals */}
       {showCreate&&<BatchFormModal onSubmit={handleCreate} onClose={()=>setShowCreate(false)} isPending={isPending} error={formError}/>}

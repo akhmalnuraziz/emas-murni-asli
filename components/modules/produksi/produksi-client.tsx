@@ -1884,7 +1884,6 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
             })
           })()}
         </div>
-      </div>
 
       {/* ── Modals ──────────────────────────────────────────────────────────── */}
       {modal==='create'        && batches.length>0 && <CreateModal batches={batches} peleburanByBatch={peleburanByBatch} tims={tims} adminList={adminList} onClose={()=>setModal(null)} onSubmit={handleCreate} isPending={isPending} error={err}/>}
