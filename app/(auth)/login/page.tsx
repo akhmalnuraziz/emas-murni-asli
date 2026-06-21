@@ -11,7 +11,9 @@ function LoginForm() {
   const [error,    setError]    = useState<string | null>(null)
   const router       = useRouter()
   const searchParams = useSearchParams()
-  const wasIdle      = searchParams.get('reason') === 'idle'
+  const reason       = searchParams.get('reason')
+  const wasIdle      = reason === 'idle'
+  const wasExpired   = reason === 'expired'
   const supabase     = createClient()
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -31,7 +33,12 @@ function LoginForm() {
     <>
       {wasIdle && (
         <div className="mb-4 rounded-2xl px-4 py-3 text-sm text-amber-700 bg-amber-50 border border-amber-100 text-center">
-          ⏱️ Sesi kamu habis karena tidak aktif. Silakan login lagi.
+          ⏱️ Kamu di-logout otomatis karena tidak aktif selama 30 menit.
+        </div>
+      )}
+      {wasExpired && (
+        <div className="mb-4 rounded-2xl px-4 py-3 text-sm text-slate-600 bg-slate-50 border border-slate-200 text-center">
+          🔒 Sesi kamu telah berakhir. Silakan login lagi.
         </div>
       )}
 
