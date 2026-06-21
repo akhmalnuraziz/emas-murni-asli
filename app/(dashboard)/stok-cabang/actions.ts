@@ -24,10 +24,13 @@ export interface CabangStokSummary {
   last_adjustment?: string
 }
 
-export async function getStokSemuaCabang(): Promise<{ data: CabangStokSummary[]; error?: string }> {
+export async function getStokSemuaCabang(cabangKodeFilter?: string): Promise<{ data: CabangStokSummary[]; error?: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { data: [], error: 'Unauthorized' }
+
+  let cabangQuery = supabase.from('cabang').select('kode, nama').eq('aktif', true).order('nama')
+  if (cabangKodeFilter) cabangQuery = cabangQuery.eq('kode', cabangKodeFilter) as any
 
   const [
     { data: cabangList },
@@ -35,7 +38,7 @@ export async function getStokSemuaCabang(): Promise<{ data: CabangStokSummary[];
     { data: adjustments },
     { data: poItems },
   ] = await Promise.all([
-    supabase.from('cabang').select('kode, nama').eq('aktif', true).order('nama'),
+    cabangQuery,
     supabase.from('shieldtag')
       .select('gramasi, lokasi')
       .eq('status', 'Terdistribusi')
@@ -175,6 +178,41 @@ export async function createStockAdjustment(params: {
 
   revalidatePath('/stok-cabang')
   return { success: true }
+}
+
+export async function exportStokCabangCsv(cabangKodeFilter?: string): Promise<{ csv: string; error?: string }> {
+  const result = await getStokSemuaCabang(cabangKodeFilter)
+  if (result.error) return { csv: '', error: result.error }
+
+  const rows: string[] = []
+  rows.push(['Cabang', 'Gramasi (gr)', 'Shieldtag', 'Adj Net', 'Ready Stock', 'Outstanding PO', 'Total Stok'].join(','))
+
+  for (const cab of result.data) {
+    for (const r of cab.rows) {
+      rows.push([
+        `"${cab.nama}"`,
+        r.gramasi,
+        r.qty_shieldtag,
+        r.net_adjustment,
+        r.ready_stock,
+        r.outstanding_po,
+        r.total_stock,
+      ].join(','))
+    }
+    // Summary row per cabang
+    rows.push([
+      `"${cab.nama} — TOTAL"`,
+      '',
+      '',
+      '',
+      cab.total_ready,
+      cab.total_outstanding,
+      cab.total_stok,
+    ].join(','))
+    rows.push('') // blank separator
+  }
+
+  return { csv: rows.join('\n') }
 }
 
 export async function konfirmasiTerimaPoItem(params: {

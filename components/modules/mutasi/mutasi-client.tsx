@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import {
   ArrowLeftRight, Send, Store, ShieldCheck, X, RefreshCw, Check,
-  Truck, PackageCheck, AlertTriangle, Search, ListChecks, ChevronRight
+  Truck, PackageCheck, AlertTriangle, Search, ListChecks, ChevronRight, Printer
 } from 'lucide-react'
 import {
   fetchShieldtagSiapMutasi, kirimMutasiCabang, fetchStokCabang,
@@ -620,9 +620,17 @@ function RiwayatMutasi({ cabangList }: { cabangList: Cabang[] }) {
                 <p className="text-[11px] text-slate-400">{cabangNama(m.cabang_tujuan)} · {m.tanggal_kirim}</p>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-sm font-bold text-slate-800">{m.pcs} pcs</p>
-              <RiwayatBadge status={m.status} statusTerima={m.status_terima} />
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-sm font-bold text-slate-800">{m.pcs} pcs</p>
+                <RiwayatBadge status={m.status} statusTerima={m.status_terima} />
+              </div>
+              <a href={`/mutasi/print/${m.id}`} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-colors"
+                style={{ background: 'rgba(139,92,246,0.08)', color: '#7C3AED' }}
+                title="Print Surat Jalan">
+                <Printer size={13}/> SJ
+              </a>
             </div>
           </div>
           {m.catatan && <p className="text-[11px] text-slate-400 mt-2 italic">{m.catatan}</p>}

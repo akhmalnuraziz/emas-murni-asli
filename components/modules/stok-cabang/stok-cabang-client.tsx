@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation'
 import {
   Store, Package, Clock, TrendingUp, RefreshCw,
   ChevronDown, ChevronRight, SlidersHorizontal,
-  History, AlertTriangle, CheckCircle2, X,
+  History, AlertTriangle, CheckCircle2, X, Download,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { CabangStokSummary } from '@/app/(dashboard)/stok-cabang/actions'
-import { createStockAdjustment, getAdjustmentHistory } from '@/app/(dashboard)/stok-cabang/actions'
+import { createStockAdjustment, getAdjustmentHistory, exportStokCabangCsv } from '@/app/(dashboard)/stok-cabang/actions'
 
 const GRAMASI_OPTIONS = ['0.1','0.5','1','2','5','10','20','25','50','100','250','500','1000']
 
@@ -36,6 +36,20 @@ export default function StokCabangClient({ stokData, canAdjust, isCabangView }: 
 
   function refresh() {
     startTransition(() => router.refresh())
+  }
+
+  function handleExport() {
+    startTransition(async () => {
+      const { csv, error } = await exportStokCabangCsv()
+      if (error || !csv) return
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href     = url
+      a.download = `stok-cabang-${new Date().toISOString().split('T')[0]}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    })
   }
 
   async function openHistory(cabang: CabangStokSummary) {
@@ -65,10 +79,16 @@ export default function StokCabangClient({ stokData, canAdjust, isCabangView }: 
             <p className="text-xs text-slate-400">Ready stock + outstanding PO per cabang</p>
           </div>
         </div>
-        <button onClick={refresh}
-          className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-violet-600 bg-violet-50 hover:bg-violet-100 transition-colors">
-          <RefreshCw size={13} className={isPending ? 'animate-spin' : ''} /> Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={handleExport} disabled={isPending}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors disabled:opacity-50">
+            <Download size={13} /> Export CSV
+          </button>
+          <button onClick={refresh}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-violet-600 bg-violet-50 hover:bg-violet-100 transition-colors">
+            <RefreshCw size={13} className={isPending ? 'animate-spin' : ''} /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* KPI summary semua cabang */}
