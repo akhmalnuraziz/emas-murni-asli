@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createNotif } from '@/app/(dashboard)/notifikasi/actions'
 
 async function generatePoKode(supabase: any): Promise<string> {
   const { data } = await supabase.rpc('increment_counter', { counter_name: 'po_cabang' })
@@ -52,6 +53,17 @@ export async function createPO(formData: FormData) {
   if (itemErr) return { error: itemErr.message }
 
   revalidatePath('/po-cabang')
+
+  // Notif ke admin_pusat, spv, gudang
+  const itemSummary = items.map(it => `${it.qty_diminta}pcs ${it.gramasi}gr`).join(', ')
+  await createNotif({
+    judul: `PO Baru dari ${cabangNama}`,
+    pesan: `${kode} — ${itemSummary}`,
+    tipe: 'info',
+    link: '/po-cabang',
+    untuk_role: ['owner', 'admin_pusat', 'spv', 'gudang'],
+  })
+
   return { success: true, kode }
 }
 
@@ -68,8 +80,23 @@ export async function updateStatusPO(poId: number, status: 'diproses' | 'selesai
   if (status === 'selesai')  update.selesai_at  = now
   if (status === 'ditolak')  update.ditolak_at  = now
 
+  const { data: po } = await supabase.from('po_cabang').select('kode, cabang_nama, cabang_kode').eq('id', poId).single()
   const { error } = await supabase.from('po_cabang').update(update).eq('id', poId)
   if (error) return { error: error.message }
+
+  // Notif ke kepala_cabang cabang tersebut
+  if (po) {
+    const statusLabel = status === 'diproses' ? 'sedang diproses' : status === 'selesai' ? 'selesai dikirim' : 'ditolak'
+    const tipe = status === 'ditolak' ? 'warning' : status === 'selesai' ? 'success' : 'info'
+    await createNotif({
+      judul: `PO ${po.kode} ${statusLabel}`,
+      pesan: catatanAdmin ? `Catatan: ${catatanAdmin}` : `Status PO kamu dari ${po.cabang_nama} diperbarui`,
+      tipe,
+      link: '/po-cabang',
+      untuk_role: ['kepala_cabang'],
+    })
+  }
+
   revalidatePath('/po-cabang')
   return { success: true }
 }

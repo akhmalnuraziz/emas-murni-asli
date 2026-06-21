@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createNotif } from '@/app/(dashboard)/notifikasi/actions'
 
 const GUDANG_LOKASI = 'Gudang Pusat'
 
@@ -133,6 +134,33 @@ export async function kirimMutasiCabang(formData: FormData) {
     after_data: { cabang: cabangKode, pcs: totalPcs, shieldtags: shieldtagKodes },
   })
 
+  // Notif ke kepala_cabang tujuan + gudang
+  await createNotif({
+    judul: `Mutasi dikirim ke ${cabang?.nama ?? cabangKode}`,
+    pesan: `${kode} — ${totalPcs} pcs dalam perjalanan`,
+    tipe: 'info',
+    link: '/mutasi',
+    untuk_role: ['kepala_cabang', 'gudang'],
+  })
+
+  // Cek stok rendah per gramasi setelah pengiriman
+  const SAFETY = 10
+  const gramasiDikirim = [...new Set(tags.map((t: any) => t.gramasi))]
+  for (const g of gramasiDikirim) {
+    const { count } = await supabase.from('shieldtag')
+      .select('*', { count: 'exact', head: true })
+      .eq('gramasi', g).eq('status', 'Aktif').eq('lokasi', 'Gudang Pusat').is('voided_at', null)
+    if ((count ?? 0) < SAFETY) {
+      await createNotif({
+        judul: `Stok ${g}gr di bawah safety stock`,
+        pesan: `Sisa ${count ?? 0} pcs di Gudang Pusat (min. ${SAFETY} pcs). Segera produksi.`,
+        tipe: 'warning',
+        link: '/prioritas-produksi',
+        untuk_role: ['owner', 'admin_pusat', 'spv'],
+      })
+    }
+  }
+
   revalidatePath('/mutasi')
   revalidatePath('/inventory')
   revalidatePath('/shieldtag')
@@ -230,6 +258,26 @@ export async function terimaMutasiCabang(formData: FormData) {
       record_key: mutasi.kode, record_id: String(mutasiId),
       after_data: { shieldtag_kodes_hilang: hilangKodes },
       reason: alasanHilang,
+    })
+  }
+
+  // Notif terima normal → admin_pusat + gudang
+  await createNotif({
+    judul: `Mutasi ${mutasi.kode} diterima`,
+    pesan: `${diterimaKodes.length} pcs dikonfirmasi diterima oleh ${profile?.name ?? 'penerima'}`,
+    tipe: 'success',
+    link: '/mutasi',
+    untuk_role: ['owner', 'admin_pusat', 'spv', 'gudang'],
+  })
+
+  // Notif short-shipment → owner + admin_pusat (lebih urgent)
+  if (isShort) {
+    await createNotif({
+      judul: `⚠️ Short-Shipment: ${mutasi.kode}`,
+      pesan: `${hilangKodes.length} shieldtag tidak ditemukan saat penerimaan. Perlu investigasi.`,
+      tipe: 'warning',
+      link: '/mutasi',
+      untuk_role: ['owner', 'admin_pusat'],
     })
   }
 

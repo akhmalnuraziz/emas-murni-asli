@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createNotif } from '@/app/(dashboard)/notifikasi/actions'
 
 const BATCH_PREFIX = 'PROD.GDCJ/BATCH'
 
@@ -366,6 +367,15 @@ export async function lockBatch(batchId: number, batchKode: string) {
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'LOCK_BATCH', module: 'BAHAN_BAKU', record_key: batchKode, record_id: String(batchId),
   })
+
+  await createNotif({
+    judul: `Batch ${batchKode} dikunci`,
+    pesan: `Batch sudah final dan siap untuk referensi produksi. Dikunci oleh ${profile?.name ?? 'SPV'}.`,
+    tipe: 'produksi',
+    link: '/bahan-baku',
+    untuk_role: ['owner', 'admin_pusat', 'spv', 'operator_produksi'],
+  })
+
   revalidatePath('/bahan-baku')
   return { success: true }
 }
