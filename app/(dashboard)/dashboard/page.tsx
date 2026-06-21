@@ -53,6 +53,10 @@ export default async function DashboardPage({
     { data: pengeluaranPeriode },
     // Trend produksi
     { data: packingHarian },
+    // Packing hari ini
+    { data: packingHariIni },
+    // Siap packing
+    { data: siapPackingItems },
   ] = await Promise.all([
     supabase.from('users_profile').select('name, role').eq('id', user?.id ?? '').single(),
     supabase.from('shieldtag').select('gramasi, hpp').eq('status', 'Aktif').is('voided_at', null),
@@ -100,6 +104,19 @@ export default async function DashboardPage({
       .gte('tanggal', dateFrom).lte('tanggal', dateTo)
       .is('voided_at', null)
       .order('tanggal'),
+    // Packing hari ini
+    supabase.from('packing')
+      .select('kode, batch_kode, gramasi, pcs_dipack')
+      .eq('tanggal', todayStr)
+      .is('voided_at', null)
+      .order('created_at', { ascending: false }),
+    // Siap packing — menunggu dipacking
+    supabase.from('produksi_item')
+      .select('id, kode, gramasi, batch_kode')
+      .eq('current_status', 'Siap Packing')
+      .is('voided_at', null)
+      .order('updated_at', { ascending: false })
+      .limit(30),
   ])
 
   // ── Build stats ──────────────────────────────────────────────────────────
@@ -209,6 +226,9 @@ export default async function DashboardPage({
       stokAkrilik={stokAkrilik}
       totalPengeluaran={totalPengeluaran}
       produksiTrend={produksiTrend}
+      packingHariIni={packingHariIni ?? []}
+      siapPacking={siapPackingItems ?? []}
+      rejectList={rejectBelumDilebur ?? []}
     />
   )
 }

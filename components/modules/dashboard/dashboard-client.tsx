@@ -36,6 +36,9 @@ interface Props {
   }
   stokAkrilik: { produk_nama: string; produk_kode: string; gramasi: number; stok_qty: number }[]
   totalPengeluaran: number
+  packingHariIni: { kode: string; batch_kode: string; gramasi: string; pcs_dipack: number }[]
+  siapPacking: { id: number; kode: string; gramasi: string; batch_kode: string }[]
+  rejectList: { id: number; kode: string; gramasi: string; berat_reject: number; batch_kode: string }[]
   produksiTrend: {
     gramasi: string[]
     trendMap: Record<string, Record<number, number>>
@@ -128,6 +131,7 @@ export default function DashboardClient({
   userName, canSeeRp, period, dateFrom, dateTo,
   stok, transit, penjualan, reject, pipeline, gramasiChartData, batchTerbaru, mutasiTransit,
   poPackaging, stokAkrilik, totalPengeluaran, produksiTrend,
+  packingHariIni, siapPacking, rejectList,
 }: Props) {
   const now  = new Date()
   const jam  = now.getHours()
@@ -278,7 +282,8 @@ export default function DashboardClient({
           {PIPELINE_STAGES.map(({ key, label, icon: Icon, color, bg }) => {
             const count = pipeline[key] ?? 0
             return (
-              <div key={key} className="rounded-3xl p-4 flex items-center gap-3"
+              <a key={key} href="/produksi"
+                className="rounded-3xl p-4 flex items-center gap-3 hover:scale-[1.02] transition-transform cursor-pointer"
                 style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
                 <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
                   <Icon size={16} style={{ color }} />
@@ -287,11 +292,101 @@ export default function DashboardClient({
                   <p className="text-xl font-black text-slate-800">{count}</p>
                   <p className="text-[11px] text-slate-400 font-semibold">{label}</p>
                 </div>
-              </div>
+              </a>
             )
           })}
         </div>
       </div>
+
+      {/* ── Packing Hari Ini ──────────────────────────────────────────────── */}
+      <div>
+        <SectionLabel icon={<Package2 size={12} className="text-green-500"/>} label="Packing Hari Ini" />
+        <a href="/packing-log" className="block rounded-3xl p-5 hover:shadow-sm transition-shadow"
+          style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+          {packingHariIni.length > 0 ? (() => {
+            // group by gramasi
+            const byGramasi: Record<string, { pcs: number; batches: Set<string> }> = {}
+            for (const p of packingHariIni) {
+              const g = p.gramasi ?? '?'
+              if (!byGramasi[g]) byGramasi[g] = { pcs: 0, batches: new Set() }
+              byGramasi[g].pcs += Number(p.pcs_dipack ?? 0)
+              if (p.batch_kode) byGramasi[g].batches.add(p.batch_kode)
+            }
+            const totalPcs = packingHariIni.reduce((s, p) => s + Number(p.pcs_dipack ?? 0), 0)
+            return (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-2xl font-black text-slate-800">{totalPcs.toLocaleString('id-ID')} pcs</p>
+                  <span className="text-xs text-green-600 font-bold bg-green-50 px-2.5 py-1 rounded-full">{packingHariIni.length} lot packing</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(byGramasi)
+                    .sort((a, b) => parseFloat(a[0]) - parseFloat(b[0]))
+                    .map(([g, v]) => (
+                      <div key={g} className="rounded-2xl px-3 py-2 text-center"
+                        style={{ background: 'rgba(34,197,94,0.07)', border: '1px solid rgba(34,197,94,0.15)' }}>
+                        <p className="text-sm font-black text-green-700">{v.pcs} pcs</p>
+                        <p className="text-[10px] text-slate-400 font-semibold">{g}gr</p>
+                        <p className="text-[9px] text-slate-300">{[...v.batches].join(', ')}</p>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )
+          })() : (
+            <div className="flex items-center gap-3">
+              <Package2 size={28} className="text-slate-200" />
+              <p className="text-sm text-slate-400">Belum ada packing hari ini</p>
+            </div>
+          )}
+        </a>
+      </div>
+
+      {/* ── Siap Packing — Menunggu Dipacking ────────────────────────────── */}
+      {siapPacking.length > 0 && (
+        <div>
+          <SectionLabel icon={<CheckCircle2 size={12} className="text-green-500"/>} label={`Siap Packing — ${siapPacking.length} item menunggu`} />
+          <a href="/produksi" className="block rounded-3xl p-5 hover:shadow-sm transition-shadow"
+            style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)' }}>
+            <div className="flex flex-wrap gap-2">
+              {siapPacking.map((item) => (
+                <div key={item.id} className="rounded-2xl px-3 py-2"
+                  style={{ background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)' }}>
+                  <p className="text-xs font-mono font-bold text-green-700">{item.kode}</p>
+                  <p className="text-[10px] text-slate-400">{item.gramasi}gr · {item.batch_kode}</p>
+                </div>
+              ))}
+            </div>
+            {siapPacking.length >= 30 && (
+              <p className="text-xs text-slate-300 mt-3 text-center">Tampil 30 teratas · klik untuk lihat semua →</p>
+            )}
+          </a>
+        </div>
+      )}
+
+      {/* ── Reject Belum Dilebur ──────────────────────────────────────────── */}
+      {rejectList.length > 0 && (
+        <div>
+          <SectionLabel icon={<AlertTriangle size={12} className="text-red-500"/>} label={`Reject Belum Dilebur — ${rejectList.length} item`} />
+          <a href="/bahan-baku" className="block rounded-3xl p-5 hover:shadow-sm transition-shadow"
+            style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.6)', borderColor: 'rgba(239,68,68,0.15)' }}>
+            <div className="space-y-2">
+              {rejectList.slice(0, 8).map((item) => (
+                <div key={item.id} className="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0">
+                  <div>
+                    <p className="text-xs font-mono font-bold text-red-600">{item.kode}</p>
+                    <p className="text-[10px] text-slate-400">Batch {item.batch_kode} · {item.gramasi}gr</p>
+                  </div>
+                  <span className="text-sm font-black text-red-500">{Number(item.berat_reject).toFixed(2)} gr</span>
+                </div>
+              ))}
+              {rejectList.length > 8 && (
+                <p className="text-xs text-slate-300 text-center pt-1">+{rejectList.length - 8} item lainnya · klik untuk lihat semua →</p>
+              )}
+            </div>
+          </a>
+        </div>
+      )}
 
       {/* ── Row: Pengeluaran + Penjualan summary ─────────────────────────── */}
       {canSeeRp && (
