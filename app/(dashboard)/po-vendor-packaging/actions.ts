@@ -10,6 +10,16 @@ async function genNomor(supabase: any, counter: string, prefix: string): Promise
   return `${prefix}/${ym}/${String(data ?? 1).padStart(4, '0')}`
 }
 
+// Generate nomor dengan reset per bulan: PREFIX/001/MM/YY (urutan 3 digit, reset tiap year_month)
+async function genNomorBulanan(supabase: any, counter: string, prefix: string): Promise<string> {
+  const now = new Date()
+  const mm = String(now.getMonth() + 1).padStart(2, '0')
+  const yy = String(now.getFullYear() % 100).padStart(2, '0')
+  const ym = `${now.getFullYear()}${mm}`
+  const { data } = await supabase.rpc('increment_monthly_counter', { p_counter: counter, p_ym: ym })
+  return `${prefix}/${String(data ?? 1).padStart(3, '0')}/${mm}/${yy}`
+}
+
 async function uploadSignature(supabase: any, b64: string, name: string): Promise<string> {
   const base64Data = b64.replace(/^data:image\/\w+;base64,/, '')
   const buf = Buffer.from(base64Data, 'base64')
@@ -234,7 +244,7 @@ export async function createPO(formData: FormData) {
   const produkMap = Object.fromEntries(produkList.map((p: any) => [p.id, p]))
 
   let nomorPO = nomorManual
-  if (!nomorPO) nomorPO = await genNomor(supabase, 'po_packaging', 'PO')
+  if (!nomorPO) nomorPO = await genNomorBulanan(supabase, 'po_packaging', 'PO.VP')
 
   const { data: existing } = await supabase.from('po_packaging').select('id').eq('nomor_po', nomorPO).single()
   if (existing) return { error: `Nomor PO "${nomorPO}" sudah digunakan` }
@@ -330,18 +340,23 @@ export async function deletePO(id: number) {
 
   // 1. Cari semua batch terkait PO ini (batch awal + batch pengganti yang link ke PO ini)
   const { data: allBatches } = await supabase.from('po_batch_penerimaan')
-    .select('id, produk_id, qty_acc, status_qc, is_pengganti').eq('po_id', id)
+    .select('id, status_qc, is_pengganti').eq('po_id', id)
   const bIds = (allBatches ?? []).map((b: any) => b.id)
 
-  // 2. Reverse stok semua batch QC selesai (termasuk pengganti)
-  for (const b of allBatches ?? []) {
-    if (b.status_qc === 'selesai' && (b.qty_acc ?? 0) > 0) {
-      const { data: stok } = await supabase.from('stok_packaging')
-        .select('stok_qty').eq('produk_id', b.produk_id).single()
-      if (stok) {
-        await supabase.from('stok_packaging')
-          .update({ stok_qty: Math.max(0, (stok.stok_qty ?? 0) - b.qty_acc) })
-          .eq('produk_id', b.produk_id)
+  // 2. Reverse stok semua batch QC selesai (termasuk pengganti) — pakai child items per produk
+  if (bIds.length > 0) {
+    const { data: childItems } = await supabase.from('po_batch_items')
+      .select('batch_id, produk_id, qty_acc').in('batch_id', bIds)
+    const batchQCMap: Record<number, string> = Object.fromEntries((allBatches ?? []).map((b: any) => [b.id, b.status_qc]))
+    for (const ci of childItems ?? []) {
+      if (batchQCMap[ci.batch_id] === 'selesai' && (ci.qty_acc ?? 0) > 0) {
+        const { data: stok } = await supabase.from('stok_packaging')
+          .select('stok_qty').eq('produk_id', ci.produk_id).single()
+        if (stok) {
+          await supabase.from('stok_packaging')
+            .update({ stok_qty: Math.max(0, (stok.stok_qty ?? 0) - ci.qty_acc) })
+            .eq('produk_id', ci.produk_id)
+        }
       }
     }
   }
@@ -414,23 +429,28 @@ async function cascadeDeleteSJForScope(supabase: any, scopeKey: 'po_id' | 'batch
     if ((outOfScope?.length ?? 0) === 0) {
       // SJ akan kosong → hapus SJ (cascade ke sj_retur_packaging_items)
 
-      // Reverse stok + hapus batch pengganti yang link ke SJ ini
+      // Reverse stok + hapus batch pengganti yang link ke SJ ini (pakai child items)
       const { data: pengBatches } = await supabase.from('po_batch_penerimaan')
-        .select('id, produk_id, qty_acc, status_qc')
+        .select('id, status_qc')
         .eq('is_pengganti', true).eq('sj_retur_id_origin', sjId)
-      for (const pb of pengBatches ?? []) {
-        if (pb.status_qc === 'selesai' && (pb.qty_acc ?? 0) > 0) {
-          const { data: stok } = await supabase.from('stok_packaging')
-            .select('stok_qty').eq('produk_id', pb.produk_id).single()
-          if (stok) {
-            await supabase.from('stok_packaging')
-              .update({ stok_qty: Math.max(0, (stok.stok_qty ?? 0) - pb.qty_acc) })
-              .eq('produk_id', pb.produk_id)
-          }
-        }
-      }
       const pengIds = (pengBatches ?? []).map((b: any) => b.id)
       if (pengIds.length > 0) {
+        const { data: pengChild } = await supabase.from('po_batch_items')
+          .select('batch_id, produk_id, qty_acc').in('batch_id', pengIds)
+        const pengQCMap: Record<number, string> = Object.fromEntries(
+          (pengBatches ?? []).map((b: any) => [b.id, b.status_qc])
+        )
+        for (const ci of pengChild ?? []) {
+          if (pengQCMap[ci.batch_id] === 'selesai' && (ci.qty_acc ?? 0) > 0) {
+            const { data: stok } = await supabase.from('stok_packaging')
+              .select('stok_qty').eq('produk_id', ci.produk_id).single()
+            if (stok) {
+              await supabase.from('stok_packaging')
+                .update({ stok_qty: Math.max(0, (stok.stok_qty ?? 0) - ci.qty_acc) })
+                .eq('produk_id', ci.produk_id)
+            }
+          }
+        }
         await supabase.from('po_packaging_reject').delete().in('batch_id', pengIds)
         await supabase.from('po_batch_penerimaan').delete().in('id', pengIds)
       }
@@ -471,43 +491,66 @@ async function recomputeSJStatus(supabase: any, sjId: number) {
 
 // ── BATCH PENERIMAAN ──────────────────────────────────────────────────────────
 
+// Multi-produk: items: [{ po_item_id, qty_diterima }]
 export async function createBatchPenerimaan(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
 
-  const poId        = parseInt(formData.get('po_id') as string)
-  const poItemId    = parseInt(formData.get('po_item_id') as string)
-  const qtyDiterima = parseInt(formData.get('qty_diterima') as string)
-  const tanggal     = formData.get('tanggal_terima') as string
+  const poId      = parseInt(formData.get('po_id') as string)
+  const tanggal   = formData.get('tanggal_terima') as string
+  const itemsRaw  = formData.get('items') as string
 
-  if (!poId)                           return { error: 'PO wajib dipilih' }
-  if (!poItemId)                       return { error: 'Item produk wajib dipilih' }
-  if (!qtyDiterima || qtyDiterima <= 0) return { error: 'Qty diterima wajib diisi' }
-  if (!tanggal)                        return { error: 'Tanggal terima wajib diisi' }
+  if (!poId)     return { error: 'PO wajib dipilih' }
+  if (!tanggal)  return { error: 'Tanggal terima wajib diisi' }
+  if (!itemsRaw) return { error: 'Minimal satu produk harus diisi' }
+
+  const itemsInput: { po_item_id: number; qty_diterima: number }[] = JSON.parse(itemsRaw)
+  if (!itemsInput.length) return { error: 'Minimal satu produk harus diisi' }
+  for (const it of itemsInput) {
+    if (!it.po_item_id) return { error: 'Item produk wajib dipilih' }
+    if (!it.qty_diterima || it.qty_diterima <= 0) return { error: 'Qty diterima setiap produk wajib > 0' }
+  }
 
   const { data: po } = await supabase.from('po_packaging')
-    .select('nomor_po, vendor_id, vendor_nama, status')
-    .eq('id', poId).single()
+    .select('nomor_po, vendor_id, vendor_nama, status').eq('id', poId).single()
   if (!po) return { error: 'PO tidak ditemukan' }
   if (po.status === 'void') return { error: 'PO sudah divoid' }
 
-  const { data: item } = await supabase.from('po_packaging_items')
-    .select('produk_id, produk_kode, produk_nama, qty_po, qty_diterima')
-    .eq('id', poItemId).single()
-  if (!item) return { error: 'Item PO tidak ditemukan' }
+  // Ambil semua po_items terkait sekaligus
+  const itemIds = itemsInput.map(i => i.po_item_id)
+  const { data: poItems } = await supabase.from('po_packaging_items')
+    .select('id, produk_id, produk_kode, produk_nama, qty_po, qty_diterima').in('id', itemIds)
+  if (!poItems || poItems.length !== itemIds.length) return { error: 'Satu atau lebih item PO tidak ditemukan' }
 
-  // Already received for this item
-  const { data: batches } = await supabase.from('po_batch_penerimaan')
-    .select('qty_diterima, qty_lebih').eq('po_item_id', poItemId)
-  const totalSudahDatang = (batches ?? []).reduce((s: number, b: any) => s + (b.qty_diterima - (b.qty_lebih ?? 0)), 0)
-  const sisaPO = item.qty_po - totalSudahDatang
-  const qtyLebih = Math.max(0, qtyDiterima - sisaPO)
+  // Hitung sisa per po_item (mengikutsertakan penerimaan sebelumnya)
+  const { data: prevBatches } = await supabase.from('po_batch_items')
+    .select('po_item_id, qty_diterima, qty_lebih').in('po_item_id', itemIds)
+  const sisaMap: Record<number, number> = {}
+  for (const pi of poItems) {
+    const taken = (prevBatches ?? []).filter((b: any) => b.po_item_id === pi.id)
+      .reduce((s: number, b: any) => s + (b.qty_diterima - (b.qty_lebih ?? 0)), 0)
+    sisaMap[pi.id] = pi.qty_po - taken
+  }
+
+  // Hitung qty_lebih per item
+  const itemRows = itemsInput.map(it => {
+    const sisa = sisaMap[it.po_item_id] ?? 0
+    const qtyLebih = Math.max(0, it.qty_diterima - sisa)
+    const pi = poItems.find((p: any) => p.id === it.po_item_id)!
+    return {
+      po_item_id: it.po_item_id,
+      produk_id: pi.produk_id,
+      produk_kode: pi.produk_kode,
+      produk_nama: pi.produk_nama,
+      qty_diterima: it.qty_diterima,
+      qty_lebih: qtyLebih,
+    }
+  })
 
   const nomorManual = (formData.get('nomor_batch') as string)?.trim()
-  const nomor = nomorManual || await genNomor(supabase, 'batch_penerimaan', 'BTH')
+  const nomor = nomorManual || await genNomorBulanan(supabase, 'batch_penerimaan', 'BATCH')
 
-  // Check duplicate nomor_batch
   const { data: dupBatch } = await supabase.from('po_batch_penerimaan').select('id').eq('nomor_batch', nomor).single()
   if (dupBatch) return { error: `Nomor batch "${nomor}" sudah digunakan` }
 
@@ -515,30 +558,56 @@ export async function createBatchPenerimaan(formData: FormData) {
   const fotosB64 = fotosRaw ? JSON.parse(fotosRaw) : []
   const fotoUrls = fotosB64.length > 0 ? await uploadFotos(supabase, fotosB64, nomor) : []
 
+  // Buat header batch — kolom produk_* di-set dari item pertama (legacy backward-compat, untuk single-item lihat batch lama)
+  const headerProduk = itemRows[0]
+  const totalDiterima = itemRows.reduce((s, r) => s + r.qty_diterima, 0)
+  const totalLebih    = itemRows.reduce((s, r) => s + r.qty_lebih, 0)
+
   const { data: batch, error } = await supabase.from('po_batch_penerimaan').insert({
     nomor_batch: nomor,
     po_id: poId,
-    po_item_id: poItemId,
+    po_item_id: itemRows.length === 1 ? headerProduk.po_item_id : null,
     po_nomor: po.nomor_po,
     vendor_id: po.vendor_id,
     vendor_nama: po.vendor_nama,
-    produk_id: item.produk_id,
-    produk_kode: item.produk_kode,
-    produk_nama: item.produk_nama,
+    produk_id: itemRows.length === 1 ? headerProduk.produk_id : null,
+    produk_kode: itemRows.length === 1 ? headerProduk.produk_kode : null,
+    produk_nama: itemRows.length === 1 ? headerProduk.produk_nama : null,
     tanggal_terima: tanggal,
-    qty_diterima: qtyDiterima,
-    qty_lebih: qtyLebih,
+    qty_diterima: totalDiterima,
+    qty_lebih: totalLebih,
     catatan: (formData.get('catatan') as string) || null,
     fotos: fotoUrls,
     created_by: user.id,
   }).select('id').single()
   if (error) return { error: error.message }
 
-  // Update qty_diterima on the item
-  const newItemQty = totalSudahDatang + qtyDiterima - qtyLebih
-  await supabase.from('po_packaging_items').update({ qty_diterima: newItemQty }).eq('id', poItemId)
+  // Insert child items
+  const childInsert = itemRows.map(r => ({
+    batch_id: batch.id,
+    po_item_id: r.po_item_id,
+    produk_id: r.produk_id,
+    produk_kode: r.produk_kode,
+    produk_nama: r.produk_nama,
+    qty_diterima: r.qty_diterima,
+    qty_lebih: r.qty_lebih,
+  }))
+  const { error: childErr } = await supabase.from('po_batch_items').insert(childInsert)
+  if (childErr) {
+    await supabase.from('po_batch_penerimaan').delete().eq('id', batch.id)
+    return { error: childErr.message }
+  }
 
-  // Update PO status based on all items
+  // Update qty_diterima di setiap po_packaging_items
+  for (const r of itemRows) {
+    const pi = poItems.find((p: any) => p.id === r.po_item_id)!
+    const taken = (prevBatches ?? []).filter((b: any) => b.po_item_id === r.po_item_id)
+      .reduce((s: number, b: any) => s + (b.qty_diterima - (b.qty_lebih ?? 0)), 0)
+    const newQty = taken + r.qty_diterima - r.qty_lebih
+    await supabase.from('po_packaging_items').update({ qty_diterima: newQty }).eq('id', r.po_item_id)
+  }
+
+  // Update PO status
   const { data: allItems } = await supabase.from('po_packaging_items')
     .select('qty_po, qty_diterima').eq('po_id', poId)
   const allDone = (allItems ?? []).every((i: any) => i.qty_diterima >= i.qty_po)
@@ -547,47 +616,59 @@ export async function createBatchPenerimaan(formData: FormData) {
   await supabase.from('po_packaging').update({ status: newStatus }).eq('id', poId)
 
   revalidatePath('/po-vendor-packaging')
-  return { success: true, nomor, batchId: batch.id, qtyLebih }
+  return { success: true, nomor, batchId: batch.id }
 }
 
 // ── BATCH PENGGANTI (dari SJ Retur) ────────────────────────────────────────────
 
+// Multi-item: items: [{ sj_item_id, qty_diterima }]
+// Batch pengganti boleh berisi beberapa item dari SJ yang sama.
 export async function createBatchPengganti(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
 
-  const sjId        = parseInt(formData.get('sj_retur_id') as string)
-  const sjItemId    = parseInt(formData.get('sj_item_id') as string)
-  const qtyDiterima = parseInt(formData.get('qty_diterima') as string)
-  const tanggal     = formData.get('tanggal_terima') as string
+  const sjId     = parseInt(formData.get('sj_retur_id') as string)
+  const tanggal  = formData.get('tanggal_terima') as string
+  const itemsRaw = formData.get('items') as string
 
-  if (!sjId)                            return { error: 'SJ Retur wajib dipilih' }
-  if (!sjItemId)                        return { error: 'Item SJ wajib dipilih' }
-  if (!qtyDiterima || qtyDiterima <= 0) return { error: 'Qty diterima wajib diisi' }
-  if (!tanggal)                         return { error: 'Tanggal terima wajib diisi' }
+  if (!sjId)     return { error: 'SJ Retur wajib dipilih' }
+  if (!tanggal)  return { error: 'Tanggal terima wajib diisi' }
+  if (!itemsRaw) return { error: 'Minimal satu produk harus dipilih' }
 
-  // Ambil info SJ + item snapshot
+  const itemsInput: { sj_item_id: number; qty_diterima: number }[] = JSON.parse(itemsRaw)
+  if (!itemsInput.length) return { error: 'Minimal satu produk harus dipilih' }
+  for (const it of itemsInput) {
+    if (!it.sj_item_id) return { error: 'SJ item wajib dipilih' }
+    if (!it.qty_diterima || it.qty_diterima <= 0) return { error: 'Qty diterima setiap produk wajib > 0' }
+  }
+
   const { data: sj } = await supabase.from('sj_retur_packaging')
     .select('id, vendor_id, vendor_nama, status').eq('id', sjId).single()
   if (!sj) return { error: 'SJ Retur tidak ditemukan' }
   if (sj.status === 'selesai_diganti') return { error: 'SJ ini sudah selesai diganti' }
 
-  const { data: sjItem } = await supabase.from('sj_retur_packaging_items')
-    .select('*').eq('id', sjItemId).single()
-  if (!sjItem) return { error: 'Item SJ tidak ditemukan' }
-  if (sjItem.sj_retur_id !== sjId) return { error: 'Item SJ tidak cocok dengan SJ Retur' }
+  const sjItemIds = itemsInput.map(i => i.sj_item_id)
+  const { data: sjItems } = await supabase.from('sj_retur_packaging_items')
+    .select('*').in('id', sjItemIds)
+  if (!sjItems || sjItems.length !== sjItemIds.length) return { error: 'Satu atau lebih item SJ tidak ditemukan' }
 
-  const sisaPerluGanti = (sjItem.qty_retur ?? 0) - (sjItem.qty_diganti ?? 0)
-  if (sisaPerluGanti <= 0) return { error: 'Item ini sudah sepenuhnya diganti' }
+  // Validasi tiap item: harus dari SJ yang sama + qty tidak melebihi sisa perlu ganti
+  for (const it of itemsInput) {
+    const si = sjItems.find((s: any) => s.id === it.sj_item_id)!
+    if (si.sj_retur_id !== sjId) return { error: 'Item SJ tidak cocok dengan SJ Retur' }
+    const sisa = (si.qty_retur ?? 0) - (si.qty_diganti ?? 0)
+    if (sisa <= 0) return { error: `${si.produk_nama} sudah sepenuhnya diganti` }
+    if (it.qty_diterima > sisa) return { error: `${si.produk_nama}: qty (${it.qty_diterima}) melebihi sisa (${sisa})` }
+  }
 
-  // Hitung siklus: cari batch pengganti sebelumnya untuk SJ item ini
+  // Siklus_ke: max(siklus) + 1 dari batch pengganti yang sudah ada untuk SJ ini
   const { data: prevBatches } = await supabase.from('po_batch_penerimaan')
-    .select('siklus_ke').eq('sj_item_id_origin', sjItemId).order('siklus_ke', { ascending: false }).limit(1)
+    .select('siklus_ke').eq('sj_retur_id_origin', sjId).order('siklus_ke', { ascending: false }).limit(1)
   const siklusKe = ((prevBatches?.[0]?.siklus_ke ?? 1)) + 1
 
   const nomorManual = (formData.get('nomor_batch') as string)?.trim()
-  const nomor = nomorManual || await genNomor(supabase, 'batch_penerimaan', 'BTH-G')
+  const nomor = nomorManual || await genNomorBulanan(supabase, 'sj_tbp', 'SJ.TBP')
 
   const { data: dupBatch } = await supabase.from('po_batch_penerimaan').select('id').eq('nomor_batch', nomor).single()
   if (dupBatch) return { error: `Nomor batch "${nomor}" sudah digunakan` }
@@ -596,29 +677,50 @@ export async function createBatchPengganti(formData: FormData) {
   const fotosB64 = fotosRaw ? JSON.parse(fotosRaw) : []
   const fotoUrls = fotosB64.length > 0 ? await uploadFotos(supabase, fotosB64, nomor) : []
 
-  // Batch pengganti = link ke PO awal & item awal (untuk konsistensi data)
+  const headerItem = sjItems.find((s: any) => s.id === itemsInput[0].sj_item_id)!
+  const totalDiterima = itemsInput.reduce((s, i) => s + i.qty_diterima, 0)
+
   const { data: batch, error } = await supabase.from('po_batch_penerimaan').insert({
     nomor_batch: nomor,
-    po_id: sjItem.po_id,
-    po_item_id: null,                  // tidak update qty_diterima item PO awal
-    po_nomor: sjItem.po_nomor,
+    po_id: headerItem.po_id,
+    po_item_id: null,
+    po_nomor: headerItem.po_nomor,
     vendor_id: sj.vendor_id,
     vendor_nama: sj.vendor_nama,
-    produk_id: sjItem.produk_id,
-    produk_kode: sjItem.produk_kode,
-    produk_nama: sjItem.produk_nama,
+    produk_id: itemsInput.length === 1 ? headerItem.produk_id : null,
+    produk_kode: itemsInput.length === 1 ? headerItem.produk_kode : null,
+    produk_nama: itemsInput.length === 1 ? headerItem.produk_nama : null,
     tanggal_terima: tanggal,
-    qty_diterima: qtyDiterima,
-    qty_lebih: 0,                       // batch pengganti tidak mengenal "lebihan PO"
+    qty_diterima: totalDiterima,
+    qty_lebih: 0,
     catatan: (formData.get('catatan') as string) || null,
     fotos: fotoUrls,
     is_pengganti: true,
     sj_retur_id_origin: sjId,
-    sj_item_id_origin: sjItemId,
+    sj_item_id_origin: itemsInput.length === 1 ? itemsInput[0].sj_item_id : null,
     siklus_ke: siklusKe,
     created_by: user.id,
   }).select('id').single()
   if (error) return { error: error.message }
+
+  // Insert po_batch_items child
+  const childInsert = itemsInput.map(it => {
+    const si = sjItems.find((s: any) => s.id === it.sj_item_id)!
+    return {
+      batch_id: batch.id,
+      po_item_id: null,
+      produk_id: si.produk_id,
+      produk_kode: si.produk_kode,
+      produk_nama: si.produk_nama,
+      qty_diterima: it.qty_diterima,
+      qty_lebih: 0,
+    }
+  })
+  const { error: childErr } = await supabase.from('po_batch_items').insert(childInsert)
+  if (childErr) {
+    await supabase.from('po_batch_penerimaan').delete().eq('id', batch.id)
+    return { error: childErr.message }
+  }
 
   revalidatePath('/po-vendor-packaging')
   return { success: true, nomor, batchId: batch.id }
@@ -635,24 +737,66 @@ export async function deleteBatch(id: number) {
   const { data: batch } = await supabase.from('po_batch_penerimaan').select('*').eq('id', id).single()
   if (!batch) return { error: 'Batch tidak ditemukan' }
 
-  // Reverse stok jika QC sudah selesai
-  if (batch.status_qc === 'selesai' && (batch.qty_acc ?? 0) > 0) {
-    const { data: stok } = await supabase.from('stok_packaging')
-      .select('stok_qty').eq('produk_id', batch.produk_id).single()
-    if (stok) {
-      await supabase.from('stok_packaging')
-        .update({ stok_qty: Math.max(0, (stok.stok_qty ?? 0) - batch.qty_acc) })
-        .eq('produk_id', batch.produk_id)
+  // Ambil child items (multi-produk per batch)
+  const { data: bItems } = await supabase.from('po_batch_items').select('*').eq('batch_id', id)
+  const items = bItems ?? []
+
+  // Reverse stok per produk (kalau QC selesai dan qty_acc > 0)
+  if (batch.status_qc === 'selesai') {
+    for (const bi of items) {
+      if ((bi.qty_acc ?? 0) > 0) {
+        const { data: stok } = await supabase.from('stok_packaging')
+          .select('stok_qty').eq('produk_id', bi.produk_id).single()
+        if (stok) {
+          await supabase.from('stok_packaging')
+            .update({ stok_qty: Math.max(0, (stok.stok_qty ?? 0) - bi.qty_acc) })
+            .eq('produk_id', bi.produk_id)
+        }
+      }
     }
   }
 
-  // Reverse qty_diterima pada po_packaging_items
-  if (batch.po_item_id && (batch.qty_diterima - (batch.qty_lebih ?? 0)) > 0) {
-    const { data: item } = await supabase.from('po_packaging_items')
-      .select('qty_diterima').eq('id', batch.po_item_id).single()
-    if (item) {
-      const newQty = Math.max(0, item.qty_diterima - (batch.qty_diterima - (batch.qty_lebih ?? 0)))
-      await supabase.from('po_packaging_items').update({ qty_diterima: newQty }).eq('id', batch.po_item_id)
+  // Reverse qty_diterima di po_packaging_items per child item (kecuali batch pengganti)
+  if (!batch.is_pengganti) {
+    for (const bi of items) {
+      if (!bi.po_item_id) continue
+      const net = bi.qty_diterima - (bi.qty_lebih ?? 0)
+      if (net <= 0) continue
+      const { data: poi } = await supabase.from('po_packaging_items')
+        .select('qty_diterima').eq('id', bi.po_item_id).single()
+      if (poi) {
+        const newQty = Math.max(0, poi.qty_diterima - net)
+        await supabase.from('po_packaging_items').update({ qty_diterima: newQty }).eq('id', bi.po_item_id)
+      }
+    }
+  }
+
+  // Batch pengganti: reverse qty_diganti di SJ items per item
+  if (batch.is_pengganti && batch.status_qc === 'selesai') {
+    const affectedSJ = new Set<number>()
+    // Strategi: cari sj_retur_packaging_items yang produk_id == bi.produk_id & sj_retur_id == batch.sj_retur_id_origin
+    // dan kurangi qty_diganti sebanyak bi.qty_acc. Distribusikan kalau ada beberapa item dengan produk sama.
+    for (const bi of items) {
+      if ((bi.qty_acc ?? 0) <= 0) continue
+      const { data: sjis } = await supabase.from('sj_retur_packaging_items')
+        .select('id, qty_retur, qty_diganti, sj_retur_id')
+        .eq('sj_retur_id', batch.sj_retur_id_origin)
+        .eq('produk_id', bi.produk_id)
+      let remaining = bi.qty_acc
+      for (const si of sjis ?? []) {
+        if (remaining <= 0) break
+        const ambil = Math.min(remaining, si.qty_diganti ?? 0)
+        if (ambil > 0) {
+          await supabase.from('sj_retur_packaging_items')
+            .update({ qty_diganti: (si.qty_diganti ?? 0) - ambil })
+            .eq('id', si.id)
+          remaining -= ambil
+          affectedSJ.add(si.sj_retur_id)
+        }
+      }
+    }
+    for (const sjId of affectedSJ) {
+      await recomputeSJStatus(supabase, sjId)
     }
   }
 
@@ -694,7 +838,8 @@ export async function deleteBatch(id: number) {
   return { success: true }
 }
 
-export async function editQCResult(batchId: number, newQtyAcc: number, newQtyReject: number, catatan?: string) {
+// Edit QC per-item. Format formData sama dengan submitQC.
+export async function editQCResult(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
@@ -702,87 +847,158 @@ export async function editQCResult(batchId: number, newQtyAcc: number, newQtyRej
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
   if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
 
+  const batchId  = parseInt(formData.get('batch_id') as string)
+  const itemsRaw = formData.get('items') as string
+  const catatan  = (formData.get('catatan_qc') as string) || null
+  if (!batchId)  return { error: 'Batch ID hilang' }
+  if (!itemsRaw) return { error: 'Data QC kosong' }
+
+  type RejectRow = { qty: number; kategori_id?: number; alasan_manual?: string; catatan?: string }
+  type ItemQC    = { batch_item_id: number; qty_acc: number; rejects: RejectRow[] }
+  const items: ItemQC[] = JSON.parse(itemsRaw)
+
   const { data: batch } = await supabase.from('po_batch_penerimaan').select('*').eq('id', batchId).single()
   if (!batch) return { error: 'Batch tidak ditemukan' }
   if (batch.status_qc !== 'selesai') return { error: 'QC belum selesai, gunakan form QC biasa' }
 
   // Guard: jangan edit kalau ada reject yang sudah diretur/dikirim SJ
-  const { data: nonPending } = await supabase.from('po_packaging_reject')
+  const { data: lockedReject } = await supabase.from('po_packaging_reject')
     .select('id').eq('batch_id', batchId).neq('jenis', 'lebihan')
     .not('sj_retur_id', 'is', null).limit(1)
-  if (nonPending && nonPending.length > 0) {
-    return { error: 'Tidak bisa edit QC: reject batch ini sudah masuk SJ Retur. Reset SJ Retur dulu.' }
+  if (lockedReject && lockedReject.length > 0) {
+    return { error: 'Tidak bisa edit QC: reject batch ini sudah masuk SJ Retur. Reset/hapus SJ Retur dulu.' }
   }
 
-  const maxCheck = batch.qty_diterima - (batch.qty_lebih ?? 0)
-  if (newQtyAcc + newQtyReject !== maxCheck)
-    return { error: `Total ACC+Reject harus ${maxCheck} pcs` }
+  const { data: batchItems } = await supabase.from('po_batch_items').select('*').eq('batch_id', batchId)
+  if (!batchItems || batchItems.length === 0) return { error: 'Batch tidak punya item' }
 
-  // Batch pengganti: validasi qty_acc baru tidak melebihi sisa yang perlu diganti
+  // Validasi per item
+  for (const bi of batchItems) {
+    const itemQC = items.find(i => i.batch_item_id === bi.id)
+    if (!itemQC) return { error: `Item ${bi.produk_nama} hilang di payload` }
+    const qtyReject = itemQC.rejects.reduce((s, r) => s + (r.qty || 0), 0)
+    const total = itemQC.qty_acc + qtyReject + (bi.qty_lebih ?? 0)
+    if (total !== bi.qty_diterima) {
+      return { error: `${bi.produk_nama}: total = ${total} ≠ qty diterima ${bi.qty_diterima}` }
+    }
+    for (const r of itemQC.rejects) {
+      if (!r.qty || r.qty <= 0) return { error: `Reject ${bi.produk_nama}: qty harus > 0` }
+      if (!r.kategori_id && !r.alasan_manual?.trim()) return { error: `Reject ${bi.produk_nama}: kategori atau alasan wajib` }
+    }
+  }
+
+  // Validasi sisa SJ untuk batch pengganti (memperhitungkan qty_acc lama)
   if (batch.is_pengganti && batch.sj_item_id_origin) {
     const { data: sjItem } = await supabase.from('sj_retur_packaging_items')
       .select('qty_retur, qty_diganti').eq('id', batch.sj_item_id_origin).single()
     if (sjItem) {
-      // qty_diganti saat ini sudah include kontribusi batch ini (qty_acc lama),
-      // jadi sisa "lain" = (qty_retur) - (qty_diganti - qty_acc lama)
-      const oldAccTemp  = batch.qty_acc ?? 0
-      const sisaLuar    = (sjItem.qty_retur ?? 0) - ((sjItem.qty_diganti ?? 0) - oldAccTemp)
-      if (newQtyAcc > sisaLuar) {
-        return { error: `Qty ACC (${newQtyAcc}) melebihi sisa yang perlu diganti (${sisaLuar} pcs)` }
+      const oldAccTotal = batch.qty_acc ?? 0
+      const newAccTotal = items.reduce((s, i) => s + (i.qty_acc || 0), 0)
+      const sisaLuar = (sjItem.qty_retur ?? 0) - ((sjItem.qty_diganti ?? 0) - oldAccTotal)
+      if (newAccTotal > sisaLuar) {
+        return { error: `Qty ACC total (${newAccTotal}) melebihi sisa perlu diganti (${sisaLuar})` }
       }
     }
   }
 
-  // Adjust stok: diff dari qty_acc lama vs baru
-  const oldAcc = batch.qty_acc ?? 0
-  const diff = newQtyAcc - oldAcc
-  if (diff !== 0) {
+  // Resolve kategori_nama snapshot
+  const allRejectRows = items.flatMap(i => i.rejects)
+  const katIds = allRejectRows.map(r => r.kategori_id).filter(Boolean) as number[]
+  let katMap: Record<number, string> = {}
+  if (katIds.length > 0) {
+    const { data: kats } = await supabase.from('reject_kategori_packaging')
+      .select('id, nama').in('id', katIds)
+    katMap = Object.fromEntries((kats ?? []).map((k: any) => [k.id, k.nama]))
+  }
+
+  // Hapus reject jenis='reject' lama (lebihan tetap dipertahankan)
+  await supabase.from('po_packaging_reject').delete().eq('batch_id', batchId).eq('jenis', 'reject')
+
+  let totalAccNew = 0
+  let totalRejectNew = 0
+  let diffPerProduk: Record<number, number> = {}
+
+  for (const itemQC of items) {
+    const bi = batchItems.find((b: any) => b.id === itemQC.batch_item_id)!
+    const oldAcc = bi.qty_acc ?? 0
+    const diff = itemQC.qty_acc - oldAcc
+    diffPerProduk[bi.produk_id] = (diffPerProduk[bi.produk_id] ?? 0) + diff
+
+    const qtyReject = itemQC.rejects.reduce((s, r) => s + (r.qty || 0), 0)
+    await supabase.from('po_batch_items').update({
+      qty_acc: itemQC.qty_acc, qty_reject: qtyReject,
+    }).eq('id', bi.id)
+
+    totalAccNew    += itemQC.qty_acc
+    totalRejectNew += qtyReject
+
+    // Insert reject baru per kategori
+    const rejectRecords: any[] = []
+    for (const r of itemQC.rejects) {
+      rejectRecords.push({
+        batch_id: batchId, batch_item_id: bi.id, nomor_batch: batch.nomor_batch,
+        po_id: batch.po_id, po_nomor: batch.po_nomor,
+        vendor_id: batch.vendor_id, vendor_nama: batch.vendor_nama,
+        produk_id: bi.produk_id, produk_kode: bi.produk_kode, produk_nama: bi.produk_nama,
+        tanggal_terima: batch.tanggal_terima,
+        jenis: 'reject', qty: r.qty,
+        kategori_id: r.kategori_id || null,
+        kategori_nama: r.kategori_id ? (katMap[r.kategori_id] ?? null) : null,
+        alasan_manual: r.alasan_manual?.trim() || null,
+        catatan: r.catatan?.trim() || null,
+      })
+    }
+    if (rejectRecords.length > 0) {
+      await supabase.from('po_packaging_reject').insert(rejectRecords)
+    }
+  }
+
+  // Adjust stok per produk berdasarkan diff
+  for (const [produkIdStr, diff] of Object.entries(diffPerProduk)) {
+    if (diff === 0) continue
+    const produkId = parseInt(produkIdStr)
     const { data: stok } = await supabase.from('stok_packaging')
-      .select('stok_qty').eq('produk_id', batch.produk_id).single()
+      .select('stok_qty').eq('produk_id', produkId).single()
     if (stok) {
       await supabase.from('stok_packaging')
-        .update({ stok_qty: Math.max(0, (stok.stok_qty ?? 0) + diff) })
-        .eq('produk_id', batch.produk_id)
+        .update({ stok_qty: Math.max(0, (stok.stok_qty ?? 0) + diff), updated_at: new Date().toISOString() })
+        .eq('produk_id', produkId)
     }
   }
 
-  // Batch pengganti: adjust qty_diganti SJ item dan recompute status
-  if (batch.is_pengganti && batch.sj_item_id_origin && diff !== 0) {
-    const { data: sjItem } = await supabase.from('sj_retur_packaging_items')
-      .select('qty_diganti, sj_retur_id').eq('id', batch.sj_item_id_origin).single()
-    if (sjItem) {
-      const newQtyDiganti = Math.max(0, (sjItem.qty_diganti ?? 0) + diff)
-      await supabase.from('sj_retur_packaging_items')
-        .update({ qty_diganti: newQtyDiganti })
-        .eq('id', batch.sj_item_id_origin)
-      await recomputeSJStatus(supabase, sjItem.sj_retur_id)
-    }
-  }
-
-  // Update reject records
-  await supabase.from('po_packaging_reject').delete().eq('batch_id', batchId).eq('jenis', 'reject')
-  if (newQtyReject > 0) {
-    await supabase.from('po_packaging_reject').insert({
-      batch_id: batchId, nomor_batch: batch.nomor_batch,
-      po_id: batch.po_id, po_nomor: batch.po_nomor,
-      vendor_id: batch.vendor_id, vendor_nama: batch.vendor_nama,
-      produk_id: batch.produk_id, produk_kode: batch.produk_kode, produk_nama: batch.produk_nama,
-      tanggal_terima: batch.tanggal_terima,
-      jenis: 'reject', qty: newQtyReject,
-    })
-  }
-
+  // Update batch header
   await supabase.from('po_batch_penerimaan').update({
-    qty_acc: newQtyAcc,
-    qty_reject: newQtyReject,
+    qty_acc: totalAccNew, qty_reject: totalRejectNew,
     catatan_qc: catatan ?? batch.catatan_qc,
   }).eq('id', batchId)
+
+  // Batch pengganti: sync qty_diganti SJ
+  if (batch.is_pengganti && batch.sj_item_id_origin) {
+    const oldTotalAcc = batch.qty_acc ?? 0
+    const diff = totalAccNew - oldTotalAcc
+    if (diff !== 0) {
+      const { data: sjItem } = await supabase.from('sj_retur_packaging_items')
+        .select('qty_diganti, sj_retur_id').eq('id', batch.sj_item_id_origin).single()
+      if (sjItem) {
+        const newQtyDiganti = Math.max(0, (sjItem.qty_diganti ?? 0) + diff)
+        await supabase.from('sj_retur_packaging_items')
+          .update({ qty_diganti: newQtyDiganti })
+          .eq('id', batch.sj_item_id_origin)
+        await recomputeSJStatus(supabase, sjItem.sj_retur_id)
+      }
+    }
+  }
 
   revalidatePath('/po-vendor-packaging')
   return { success: true }
 }
 
-// ── QC ────────────────────────────────────────────────────────────────────────
+// ── QC (per-item) ─────────────────────────────────────────────────────────────
+//
+// items: [{
+//   batch_item_id, qty_acc,
+//   rejects: [{ qty, kategori_id?, alasan_manual?, catatan? }]
+// }]
 
 export async function submitQC(formData: FormData) {
   const supabase = await createClient()
@@ -790,54 +1006,69 @@ export async function submitQC(formData: FormData) {
   if (!user) return { error: 'Unauthorized' }
 
   const batchId   = parseInt(formData.get('batch_id') as string)
-  const qtyAcc    = parseInt(formData.get('qty_acc') as string)
   const qcTanggal = formData.get('qc_tanggal') as string
-  const rejectItemsRaw = formData.get('reject_items') as string
-  // reject_items: [{ qty, kategori_id?, kategori_nama?, alasan_manual?, catatan? }]
-  const rejectRows: { qty: number; kategori_id?: number; kategori_nama?: string; alasan_manual?: string; catatan?: string }[]
-    = rejectItemsRaw ? JSON.parse(rejectItemsRaw) : []
-  const qtyReject = rejectRows.reduce((s, r) => s + (r.qty || 0), 0)
-
-  if (isNaN(qtyAcc) || qtyAcc < 0) return { error: 'Qty ACC tidak valid' }
-  if (qtyReject < 0) return { error: 'Qty reject tidak valid' }
+  const itemsRaw  = formData.get('items') as string
+  if (!batchId)   return { error: 'Batch ID hilang' }
   if (!qcTanggal) return { error: 'Tanggal QC wajib diisi' }
-  for (const r of rejectRows) {
-    if (!r.qty || r.qty <= 0) return { error: 'Qty reject per kategori harus > 0' }
-    if (!r.kategori_id && !r.alasan_manual?.trim()) return { error: 'Pilih kategori reject atau isi alasan manual' }
-  }
+  if (!itemsRaw)  return { error: 'Data QC kosong' }
 
-  const { data: batch } = await supabase.from('po_batch_penerimaan')
-    .select('*').eq('id', batchId).single()
+  type RejectRow = { qty: number; kategori_id?: number; alasan_manual?: string; catatan?: string }
+  type ItemQC    = { batch_item_id: number; qty_acc: number; rejects: RejectRow[] }
+  const items: ItemQC[] = JSON.parse(itemsRaw)
+  if (!items.length) return { error: 'Tidak ada item untuk QC' }
+
+  const { data: batch } = await supabase.from('po_batch_penerimaan').select('*').eq('id', batchId).single()
   if (!batch) return { error: 'Batch tidak ditemukan' }
   if (batch.status_qc === 'selesai') return { error: 'QC sudah diselesaikan' }
 
-  const total = qtyAcc + qtyReject + (batch.qty_lebih ?? 0)
-  if (total !== batch.qty_diterima)
-    return { error: `Total ACC (${qtyAcc}) + Reject (${qtyReject}) + Lebihan (${batch.qty_lebih ?? 0}) harus sama dengan qty diterima (${batch.qty_diterima})` }
+  // Ambil child items dari batch ini
+  const { data: batchItems } = await supabase.from('po_batch_items').select('*').eq('batch_id', batchId)
+  if (!batchItems || batchItems.length === 0) return { error: 'Batch tidak punya item' }
 
-  // Batch pengganti: qty_acc tidak boleh melebihi sisa yang perlu diganti
-  let sjItem: any = null
-  if (batch.is_pengganti && batch.sj_item_id_origin) {
-    const { data } = await supabase.from('sj_retur_packaging_items')
-      .select('qty_retur, qty_diganti, sj_retur_id').eq('id', batch.sj_item_id_origin).single()
-    sjItem = data
-    if (sjItem) {
-      const sisa = (sjItem.qty_retur ?? 0) - (sjItem.qty_diganti ?? 0)
-      if (qtyAcc > sisa) {
-        return { error: `Qty ACC (${qtyAcc}) melebihi sisa yang perlu diganti (${sisa} pcs)` }
-      }
+  // Validasi: tiap batch_item harus dapat record QC
+  for (const bi of batchItems) {
+    const itemQC = items.find(i => i.batch_item_id === bi.id)
+    if (!itemQC) return { error: `Item ${bi.produk_nama} belum di-QC` }
+    if (isNaN(itemQC.qty_acc) || itemQC.qty_acc < 0) return { error: `Qty ACC ${bi.produk_nama} tidak valid` }
+    const qtyReject = itemQC.rejects.reduce((s, r) => s + (r.qty || 0), 0)
+    const total = itemQC.qty_acc + qtyReject + (bi.qty_lebih ?? 0)
+    if (total !== bi.qty_diterima) {
+      return { error: `${bi.produk_nama}: ACC (${itemQC.qty_acc}) + Reject (${qtyReject}) + Lebihan (${bi.qty_lebih ?? 0}) = ${total} ≠ qty diterima ${bi.qty_diterima}` }
+    }
+    for (const r of itemQC.rejects) {
+      if (!r.qty || r.qty <= 0) return { error: `Reject ${bi.produk_nama}: qty harus > 0` }
+      if (!r.kategori_id && !r.alasan_manual?.trim()) return { error: `Reject ${bi.produk_nama}: pilih kategori atau isi alasan` }
     }
   }
 
+  // Batch pengganti: validasi qty_acc total tidak melebihi sisa SJ item
+  let sjItemSnap: any = null
+  if (batch.is_pengganti && batch.sj_item_id_origin) {
+    const { data } = await supabase.from('sj_retur_packaging_items')
+      .select('qty_retur, qty_diganti, sj_retur_id').eq('id', batch.sj_item_id_origin).single()
+    sjItemSnap = data
+    if (sjItemSnap) {
+      const sisa = (sjItemSnap.qty_retur ?? 0) - (sjItemSnap.qty_diganti ?? 0)
+      const totalAcc = items.reduce((s, i) => s + (i.qty_acc || 0), 0)
+      if (totalAcc > sisa) return { error: `Qty ACC total (${totalAcc}) melebihi sisa perlu diganti (${sisa})` }
+    }
+  }
+
+  // Upload TTD
   let ttdOpUrl: string | null = null
   let ttdAdminUrl: string | null = null
   const ttdOpB64    = formData.get('ttd_operator') as string
   const ttdAdminB64 = formData.get('ttd_admin') as string
-  if (ttdOpB64)    ttdOpUrl    = await uploadSignature(supabase, ttdOpB64, `${batch.nomor_batch}_op`)
-  if (ttdAdminB64) ttdAdminUrl = await uploadSignature(supabase, ttdAdminB64, `${batch.nomor_batch}_admin`)
+  if (ttdOpB64 && ttdOpB64.startsWith('data:'))     ttdOpUrl    = await uploadSignature(supabase, ttdOpB64, `${batch.nomor_batch}_op`)
+  if (ttdAdminB64 && ttdAdminB64.startsWith('data:')) ttdAdminUrl = await uploadSignature(supabase, ttdAdminB64, `${batch.nomor_batch}_admin`)
 
-  const { error } = await supabase.from('po_batch_penerimaan').update({
-    qty_acc: qtyAcc,
+  const totalAcc    = items.reduce((s, i) => s + (i.qty_acc || 0), 0)
+  const totalReject = items.reduce((s, i) => s + i.rejects.reduce((ss, r) => ss + (r.qty || 0), 0), 0)
+
+  // Update header batch
+  const { error: hdrErr } = await supabase.from('po_batch_penerimaan').update({
+    qty_acc: totalAcc,
+    qty_reject: totalReject,
     status_qc: 'selesai',
     status: 'selesai',
     qc_tanggal: qcTanggal,
@@ -847,25 +1078,11 @@ export async function submitQC(formData: FormData) {
     ttd_qc_admin_url: ttdAdminUrl,
     catatan_qc: (formData.get('catatan_qc') as string) || null,
   }).eq('id', batchId)
-  if (error) return { error: error.message }
+  if (hdrErr) return { error: hdrErr.message }
 
-  if (qtyAcc > 0) {
-    await supabase.rpc('increment_stok_packaging', { p_produk_id: batch.produk_id, p_qty: qtyAcc })
-      .then(async (res: any) => {
-        if (res.error) {
-          const { data: stok } = await supabase.from('stok_packaging')
-            .select('stok_qty').eq('produk_id', batch.produk_id).single()
-          if (stok) {
-            await supabase.from('stok_packaging')
-              .update({ stok_qty: (stok.stok_qty ?? 0) + qtyAcc, updated_at: new Date().toISOString() })
-              .eq('produk_id', batch.produk_id)
-          }
-        }
-      })
-  }
-
-  // Resolve kategori_nama snapshot dari master kalau hanya kategori_id yang dikirim
-  const katIds = rejectRows.map(r => r.kategori_id).filter(Boolean) as number[]
+  // Resolve kategori_nama snapshot
+  const allRejectRows = items.flatMap(i => i.rejects)
+  const katIds = allRejectRows.map(r => r.kategori_id).filter(Boolean) as number[]
   let katMap: Record<number, string> = {}
   if (katIds.length > 0) {
     const { data: kats } = await supabase.from('reject_kategori_packaging')
@@ -873,45 +1090,67 @@ export async function submitQC(formData: FormData) {
     katMap = Object.fromEntries((kats ?? []).map((k: any) => [k.id, k.nama]))
   }
 
-  const rejectItems: any[] = []
-  for (const r of rejectRows) {
-    rejectItems.push({
-      batch_id: batchId, nomor_batch: batch.nomor_batch,
-      po_id: batch.po_id, po_nomor: batch.po_nomor,
-      vendor_id: batch.vendor_id, vendor_nama: batch.vendor_nama,
-      produk_id: batch.produk_id, produk_kode: batch.produk_kode, produk_nama: batch.produk_nama,
-      tanggal_terima: batch.tanggal_terima,
-      jenis: 'reject', qty: r.qty,
-      kategori_id: r.kategori_id || null,
-      kategori_nama: r.kategori_id ? (katMap[r.kategori_id] ?? null) : null,
-      alasan_manual: r.alasan_manual?.trim() || null,
-      catatan: r.catatan?.trim() || null,
-    })
-  }
-  if ((batch.qty_lebih ?? 0) > 0) {
-    rejectItems.push({
-      batch_id: batchId, nomor_batch: batch.nomor_batch,
-      po_id: batch.po_id, po_nomor: batch.po_nomor,
-      vendor_id: batch.vendor_id, vendor_nama: batch.vendor_nama,
-      produk_id: batch.produk_id, produk_kode: batch.produk_kode, produk_nama: batch.produk_nama,
-      tanggal_terima: batch.tanggal_terima,
-      jenis: 'lebihan', qty: batch.qty_lebih,
-    })
-  }
-  if (rejectItems.length > 0) {
-    await supabase.from('po_packaging_reject').insert(rejectItems)
+  // Per item: update qty_acc/qty_reject child, increment stok, insert reject records
+  for (const itemQC of items) {
+    const bi = batchItems.find((b: any) => b.id === itemQC.batch_item_id)!
+    const qtyReject = itemQC.rejects.reduce((s, r) => s + (r.qty || 0), 0)
+
+    await supabase.from('po_batch_items').update({
+      qty_acc: itemQC.qty_acc, qty_reject: qtyReject,
+    }).eq('id', bi.id)
+
+    // Increment stok untuk produk ini
+    if (itemQC.qty_acc > 0) {
+      const { error: rpcErr } = await supabase.rpc('increment_stok_packaging', { p_produk_id: bi.produk_id, p_qty: itemQC.qty_acc })
+      if (rpcErr) {
+        const { data: stok } = await supabase.from('stok_packaging')
+          .select('stok_qty').eq('produk_id', bi.produk_id).single()
+        if (stok) {
+          await supabase.from('stok_packaging')
+            .update({ stok_qty: (stok.stok_qty ?? 0) + itemQC.qty_acc, updated_at: new Date().toISOString() })
+            .eq('produk_id', bi.produk_id)
+        }
+      }
+    }
+
+    // Insert reject records per kategori
+    const rejectRecords: any[] = []
+    for (const r of itemQC.rejects) {
+      rejectRecords.push({
+        batch_id: batchId, batch_item_id: bi.id, nomor_batch: batch.nomor_batch,
+        po_id: batch.po_id, po_nomor: batch.po_nomor,
+        vendor_id: batch.vendor_id, vendor_nama: batch.vendor_nama,
+        produk_id: bi.produk_id, produk_kode: bi.produk_kode, produk_nama: bi.produk_nama,
+        tanggal_terima: batch.tanggal_terima,
+        jenis: 'reject', qty: r.qty,
+        kategori_id: r.kategori_id || null,
+        kategori_nama: r.kategori_id ? (katMap[r.kategori_id] ?? null) : null,
+        alasan_manual: r.alasan_manual?.trim() || null,
+        catatan: r.catatan?.trim() || null,
+      })
+    }
+    if ((bi.qty_lebih ?? 0) > 0) {
+      rejectRecords.push({
+        batch_id: batchId, batch_item_id: bi.id, nomor_batch: batch.nomor_batch,
+        po_id: batch.po_id, po_nomor: batch.po_nomor,
+        vendor_id: batch.vendor_id, vendor_nama: batch.vendor_nama,
+        produk_id: bi.produk_id, produk_kode: bi.produk_kode, produk_nama: bi.produk_nama,
+        tanggal_terima: batch.tanggal_terima,
+        jenis: 'lebihan', qty: bi.qty_lebih,
+      })
+    }
+    if (rejectRecords.length > 0) {
+      await supabase.from('po_packaging_reject').insert(rejectRecords)
+    }
   }
 
-  // Update batch.qty_reject ringkasan (total semua kategori)
-  await supabase.from('po_batch_penerimaan').update({ qty_reject: qtyReject }).eq('id', batchId)
-
-  // Batch pengganti: update qty_diganti di SJ item & recompute status SJ
-  if (batch.is_pengganti && batch.sj_item_id_origin && sjItem) {
-    const newQtyDiganti = (sjItem.qty_diganti ?? 0) + qtyAcc
+  // Batch pengganti: update qty_diganti SJ item & recompute SJ status
+  if (batch.is_pengganti && batch.sj_item_id_origin && sjItemSnap) {
+    const newQtyDiganti = (sjItemSnap.qty_diganti ?? 0) + totalAcc
     await supabase.from('sj_retur_packaging_items')
       .update({ qty_diganti: newQtyDiganti })
       .eq('id', batch.sj_item_id_origin)
-    await recomputeSJStatus(supabase, sjItem.sj_retur_id)
+    await recomputeSJStatus(supabase, sjItemSnap.sj_retur_id)
   }
 
   revalidatePath('/po-vendor-packaging')
@@ -1061,7 +1300,15 @@ export async function createSJRetur(formData: FormData) {
   }
 
   const totalQty = items.reduce((s, i) => s + i.qty_retur, 0)
-  const nomor = await genNomor(supabase, 'sj_retur_packaging', 'SJ-RTR')
+  const nomorManual = (formData.get('nomor_sj') as string)?.trim()
+  let nomor: string
+  if (nomorManual) {
+    const { data: dup } = await supabase.from('sj_retur_packaging').select('id').eq('nomor_sj', nomorManual).single()
+    if (dup) return { error: `Nomor SJ "${nomorManual}" sudah digunakan` }
+    nomor = nomorManual
+  } else {
+    nomor = await genNomorBulanan(supabase, 'sj_retur_packaging', 'SJ.RTR')
+  }
 
   const { data: sj, error } = await supabase.from('sj_retur_packaging').insert({
     nomor_sj: nomor,
@@ -1166,23 +1413,26 @@ export async function deleteSJRetur(id: number) {
     tanggal_retur: null,
   }).eq('sj_retur_id', id)
 
-  // 2. Reverse stok + hapus batch pengganti yang link ke SJ ini
+  // 2. Reverse stok + hapus batch pengganti yang link ke SJ ini (pakai child items)
   const { data: pengBatches } = await supabase.from('po_batch_penerimaan')
-    .select('id, produk_id, qty_acc, status_qc')
+    .select('id, status_qc')
     .eq('is_pengganti', true).eq('sj_retur_id_origin', id)
-  for (const pb of pengBatches ?? []) {
-    if (pb.status_qc === 'selesai' && (pb.qty_acc ?? 0) > 0) {
-      const { data: stok } = await supabase.from('stok_packaging')
-        .select('stok_qty').eq('produk_id', pb.produk_id).single()
-      if (stok) {
-        await supabase.from('stok_packaging')
-          .update({ stok_qty: Math.max(0, (stok.stok_qty ?? 0) - pb.qty_acc) })
-          .eq('produk_id', pb.produk_id)
-      }
-    }
-  }
   const pengIds = (pengBatches ?? []).map((b: any) => b.id)
   if (pengIds.length > 0) {
+    const { data: pengChild } = await supabase.from('po_batch_items')
+      .select('batch_id, produk_id, qty_acc').in('batch_id', pengIds)
+    const pengQCMap: Record<number, string> = Object.fromEntries((pengBatches ?? []).map((b: any) => [b.id, b.status_qc]))
+    for (const ci of pengChild ?? []) {
+      if (pengQCMap[ci.batch_id] === 'selesai' && (ci.qty_acc ?? 0) > 0) {
+        const { data: stok } = await supabase.from('stok_packaging')
+          .select('stok_qty').eq('produk_id', ci.produk_id).single()
+        if (stok) {
+          await supabase.from('stok_packaging')
+            .update({ stok_qty: Math.max(0, (stok.stok_qty ?? 0) - ci.qty_acc) })
+            .eq('produk_id', ci.produk_id)
+        }
+      }
+    }
     await supabase.from('po_packaging_reject').delete().in('batch_id', pengIds)
     await supabase.from('po_batch_penerimaan').delete().in('id', pengIds)
   }

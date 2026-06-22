@@ -45,10 +45,13 @@ interface Props {
   poList: any[]
   poItems: any[]
   batchList: any[]
+  batchItemsList: any[]
   rejectList: any[]
   sjList: any[]
   stokList: any[]
   monitoring: any[]
+  timAnggotaList: any[]
+  adminInputList: any[]
   userRole: string
   userName: string
   canManage: boolean
@@ -163,55 +166,114 @@ function MonitoringCard({ po }: { po: any }) {
   )
 }
 
-function SignaturePad({ onSave, label }: { onSave: (b64: string) => void; label: string }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const drawing   = useRef(false)
+function SignaturePad({ onSave, label, initial }: { onSave: (b64: string) => void; label: string; initial?: string | null }) {
+  const canvasRef     = useRef<HTMLCanvasElement>(null)
+  const drawing       = useRef(false)
+  const [saved, setSaved] = useState<string | null>(initial ?? null)
+  const [empty, setEmpty] = useState(true)
 
-  const getPos = (e: React.MouseEvent | React.TouchEvent, canvas: HTMLCanvasElement) => {
+  // Setup high-DPI canvas + initial color
+  const initCanvas = (c: HTMLCanvasElement | null) => {
+    (canvasRef as any).current = c
+    if (!c) return
+    const rect = c.getBoundingClientRect()
+    const dpr  = window.devicePixelRatio || 1
+    // Set internal pixel size = CSS size × DPR (untuk crisp + akurat coord)
+    if (c.width !== Math.floor(rect.width * dpr) || c.height !== Math.floor(rect.height * dpr)) {
+      c.width  = Math.floor(rect.width * dpr)
+      c.height = Math.floor(rect.height * dpr)
+    }
+    const ctx = c.getContext('2d')!
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.strokeStyle = '#1e293b'
+    ctx.lineWidth   = 2
+    ctx.lineJoin    = 'round'
+    ctx.lineCap     = 'round'
+  }
+
+  // Hitung posisi mouse/touch dalam koordinat CSS (sebelum dpr-scale)
+  const getPos = (e: any, canvas: HTMLCanvasElement) => {
     const rect = canvas.getBoundingClientRect()
-    const src  = 'touches' in e ? e.touches[0] : e
+    const src  = e.touches?.[0] ?? e.changedTouches?.[0] ?? e
     return { x: src.clientX - rect.left, y: src.clientY - rect.top }
   }
-  const start = (e: any) => { drawing.current = true; draw(e) }
-  const end   = () => { drawing.current = false }
-  const draw  = (e: any) => {
+
+  const start = (e: any) => {
+    const c = canvasRef.current
+    if (!c) return
+    drawing.current = true
+    setEmpty(false)
+    const ctx = c.getContext('2d')!
+    const pos = getPos(e, c)
+    ctx.beginPath()
+    ctx.moveTo(pos.x, pos.y)
+  }
+  const move = (e: any) => {
     if (!drawing.current) return
-    const c = canvasRef.current!
+    const c = canvasRef.current
+    if (!c) return
     const ctx = c.getContext('2d')!
     const pos = getPos(e, c)
     ctx.lineTo(pos.x, pos.y)
     ctx.stroke()
-    ctx.beginPath()
-    ctx.moveTo(pos.x, pos.y)
   }
+  const end = () => { drawing.current = false }
+
   const clear = () => {
-    const c = canvasRef.current!
-    c.getContext('2d')!.clearRect(0, 0, c.width, c.height)
+    const c = canvasRef.current
+    if (!c) return
+    const ctx = c.getContext('2d')!
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.clearRect(0, 0, c.width, c.height)
+    initCanvas(c)
+    setEmpty(true)
+    setSaved(null)
   }
-  const save = () => { onSave(canvasRef.current!.toDataURL('image/png')) }
+
+  const save = () => {
+    const c = canvasRef.current
+    if (!c) return
+    const url = c.toDataURL('image/png')
+    setSaved(url)
+    onSave(url)
+  }
 
   return (
     <div className="space-y-1.5">
       <p className="text-[10px] font-semibold text-slate-500">{label}</p>
-      <div className="rounded-xl overflow-hidden border border-gray-200 bg-white">
-        <canvas width={260} height={90}
-          className="w-full touch-none block cursor-crosshair"
-          onMouseDown={start} onMouseMove={draw} onMouseUp={end} onMouseLeave={end}
-          onTouchStart={e => { e.preventDefault(); start(e) }}
-          onTouchMove={e => { e.preventDefault(); draw(e) }}
-          onTouchEnd={end}
-          ref={(c) => {
-            (canvasRef as any).current = c
-            if (c) { const ctx = c.getContext('2d')!; ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.lineCap = 'round' }
-          }}
-        />
-      </div>
-      <div className="flex gap-2">
-        <button type="button" onClick={clear}
-          className="flex-1 py-1.5 text-[10px] font-semibold rounded-lg border border-gray-200 text-gray-500">Hapus</button>
-        <button type="button" onClick={save}
-          className="flex-1 py-1.5 text-[10px] font-bold rounded-lg bg-violet-600 text-white">Simpan TTD</button>
-      </div>
+      {saved ? (
+        <div className="rounded-xl border border-emerald-200 bg-white p-2 space-y-1.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={saved} alt={label} className="w-full h-24 object-contain bg-slate-50 rounded-lg"/>
+          <button type="button" onClick={() => { setSaved(null); setEmpty(true); setTimeout(() => initCanvas(canvasRef.current), 0) }}
+            className="w-full py-1.5 text-[10px] font-semibold rounded-lg border border-violet-200 text-violet-600">
+            ✏️ Ulangi
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="rounded-xl overflow-hidden border border-gray-200 bg-white">
+            <canvas
+              ref={initCanvas}
+              className="w-full h-24 touch-none block cursor-crosshair"
+              style={{ touchAction: 'none' }}
+              onMouseDown={start}
+              onMouseMove={move}
+              onMouseUp={end}
+              onMouseLeave={end}
+              onTouchStart={e => { e.preventDefault(); start(e) }}
+              onTouchMove={e => { e.preventDefault(); move(e) }}
+              onTouchEnd={e => { e.preventDefault(); end() }}
+            />
+          </div>
+          <div className="flex gap-2">
+            <button type="button" onClick={clear}
+              className="flex-1 py-1.5 text-[10px] font-semibold rounded-lg border border-gray-200 text-gray-500">Hapus</button>
+            <button type="button" onClick={save} disabled={empty}
+              className="flex-1 py-1.5 text-[10px] font-bold rounded-lg bg-violet-600 text-white disabled:opacity-50">Simpan TTD</button>
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -219,7 +281,8 @@ function SignaturePad({ onSave, label }: { onSave: (b64: string) => void; label:
 const inp = 'w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all'
 
 export default function POVendorClient({
-  vendors, produkList, kategoriRejectList, poList, poItems, batchList, rejectList, sjList, stokList, monitoring, canManage,
+  vendors, produkList, kategoriRejectList, poList, poItems, batchList, batchItemsList, rejectList, sjList, stokList, monitoring,
+  timAnggotaList, adminInputList, canManage,
 }: Props) {
   const { toast, show: showToast } = useToast()
   const [tab, setTab] = useState<Tab>('monitoring')
@@ -248,10 +311,10 @@ export default function POVendorClient({
     { key: 'po',         label: 'PO',               icon: FileText },
     { key: 'batch',      label: 'Penerimaan',       icon: Truck },
     { key: 'reject',     label: 'Reject',           icon: AlertTriangle },
-    { key: 'dashboard',  label: 'Dashboard Reject', icon: BoxSelect },
     { key: 'sj_retur',   label: 'SJ Retur',         icon: Printer },
     { key: 'stok',       label: 'Stok',             icon: Package2 },
-    { key: 'master',     label: 'Master',           icon: BoxSelect },
+    { key: 'dashboard',  label: 'Dashboard Reject', icon: BoxSelect },
+    { key: 'master',     label: 'Master Data',      icon: BoxSelect },
     { key: 'vendor',     label: 'Vendor',           icon: Building2 },
   ]
 
@@ -438,23 +501,31 @@ export default function POVendorClient({
                         <p className="text-[12px] text-slate-400 py-2">Belum ada batch penerimaan</p>
                       ) : (
                         <div className="space-y-2">
-                          {batches.map((b: any) => (
-                            <div key={b.id} className="rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 bg-white border border-slate-100">
-                              <div>
-                                <p className="text-[12px] font-mono font-bold text-slate-700">{b.nomor_batch}</p>
-                                <p className="text-[10px] text-slate-400">
-                                  {b.produk_nama} · {fmtDate(b.tanggal_terima)} · {fmtNum(b.qty_diterima)} pcs
-                                  {b.status_qc === 'selesai' ? ` · ✅ ACC ${fmtNum(b.qty_acc ?? 0)} / Reject ${fmtNum(b.qty_reject ?? 0)}` : ' · ⏳ Pending QC'}
-                                </p>
+                          {batches.map((b: any) => {
+                            const bChild = batchItemsList.filter((bi: any) => bi.batch_id === b.id)
+                            const desc = bChild.length === 0
+                              ? `${b.produk_nama ?? '—'} · ${fmtNum(b.qty_diterima)} pcs`
+                              : bChild.length === 1
+                                ? `${bChild[0].produk_nama} · ${fmtNum(bChild[0].qty_diterima)} pcs`
+                                : `${bChild.length} produk · total ${fmtNum(b.qty_diterima)} pcs`
+                            return (
+                              <div key={b.id} className="rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 bg-white border border-slate-100">
+                                <div>
+                                  <p className="text-[12px] font-mono font-bold text-slate-700">{b.nomor_batch}</p>
+                                  <p className="text-[10px] text-slate-400">
+                                    {desc} · {fmtDate(b.tanggal_terima)}
+                                    {b.status_qc === 'selesai' ? ` · ✅ ACC ${fmtNum(b.qty_acc ?? 0)} / Reject ${fmtNum(b.qty_reject ?? 0)}` : ' · ⏳ Pending QC'}
+                                  </p>
+                                </div>
+                                {canManage && b.status_qc === 'pending' && (
+                                  <button onClick={() => setQcModal(b)}
+                                    className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-white rounded-lg bg-green-500 hover:bg-green-600">
+                                    <ClipboardCheck size={10}/> QC
+                                  </button>
+                                )}
                               </div>
-                              {canManage && b.status_qc === 'pending' && (
-                                <button onClick={() => setQcModal(b)}
-                                  className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-white rounded-lg bg-green-500 hover:bg-green-600">
-                                  <ClipboardCheck size={10}/> QC
-                                </button>
-                              )}
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       )}
                     </div>
@@ -487,13 +558,34 @@ export default function POVendorClient({
                     <p className="text-[11px] text-slate-500 mt-0.5">
                       PO: <span className="font-semibold text-violet-700">{b.po_nomor}</span> · {b.vendor_nama}
                     </p>
-                    <p className="text-[11px] text-slate-500">{b.produk_nama} · {fmtNum(b.qty_diterima)} pcs · {fmtDate(b.tanggal_terima)}</p>
+                    {(() => {
+                      const items = batchItemsList.filter((bi: any) => bi.batch_id === b.id)
+                      return (
+                        <div className="text-[11px] text-slate-500 mt-0.5">
+                          <span>{fmtDate(b.tanggal_terima)} · </span>
+                          {items.length === 0
+                            ? <span>{b.produk_nama} · {fmtNum(b.qty_diterima)} pcs</span>
+                            : items.length === 1
+                              ? <span>{items[0].produk_nama} · {fmtNum(items[0].qty_diterima)} pcs</span>
+                              : <span>{items.length} produk · total {fmtNum(b.qty_diterima)} pcs</span>}
+                        </div>
+                      )
+                    })()}
                     {b.status_qc === 'selesai' && (
-                      <div className="flex gap-3 mt-1.5">
-                        <span className="text-[10px] font-bold text-green-600">✅ ACC: {fmtNum(b.qty_acc ?? 0)}</span>
-                        <span className="text-[10px] font-bold text-red-500">❌ Reject: {fmtNum(b.qty_reject ?? 0)}</span>
-                        {(b.qty_lebih ?? 0) > 0 && <span className="text-[10px] font-bold text-orange-500">➕ Lebih: {fmtNum(b.qty_lebih)}</span>}
-                      </div>
+                      <>
+                        <div className="flex gap-3 mt-1.5 flex-wrap">
+                          <span className="text-[10px] font-bold text-green-600">✅ ACC: {fmtNum(b.qty_acc ?? 0)}</span>
+                          <span className="text-[10px] font-bold text-red-500">❌ Reject: {fmtNum(b.qty_reject ?? 0)}</span>
+                          {(b.qty_lebih ?? 0) > 0 && <span className="text-[10px] font-bold text-orange-500">➕ Lebih: {fmtNum(b.qty_lebih)}</span>}
+                        </div>
+                        {(b.qc_operator_nama || b.qc_admin_nama) && (
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            {b.qc_operator_nama && <>👤 Operator: <b className="text-slate-600">{b.qc_operator_nama}</b></>}
+                            {b.qc_operator_nama && b.qc_admin_nama && ' · '}
+                            {b.qc_admin_nama && <>📋 Admin: <b className="text-slate-600">{b.qc_admin_nama}</b></>}
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                   {canManage && (
@@ -978,7 +1070,11 @@ export default function POVendorClient({
       {qcModal !== null && (
         <QCModal
           batch={qcModal}
+          batchItems={batchItemsList.filter((bi: any) => bi.batch_id === qcModal.id)}
           kategoriList={kategoriRejectList}
+          timAnggotaList={timAnggotaList}
+          adminInputList={adminInputList}
+          mode="create"
           onClose={() => setQcModal(null)}
           onSave={async (fd) => {
             const r = await submitQC(fd)
@@ -990,11 +1086,16 @@ export default function POVendorClient({
       )}
 
       {editQcModal !== null && (
-        <EditQCModal
+        <QCModal
           batch={editQcModal}
+          batchItems={batchItemsList.filter((bi: any) => bi.batch_id === editQcModal.id)}
+          kategoriList={kategoriRejectList}
+          timAnggotaList={timAnggotaList}
+          adminInputList={adminInputList}
+          mode="edit"
           onClose={() => setEditQcModal(null)}
-          onSave={async (newAcc, newReject, catatan) => {
-            const r = await editQCResult(editQcModal.id, newAcc, newReject, catatan)
+          onSave={async (fd) => {
+            const r = await editQCResult(fd)
             if (r?.error) { showToast(r.error, false); return }
             showToast('✅ Hasil QC diperbarui — stok disesuaikan')
             setEditQcModal(null)
@@ -1266,56 +1367,90 @@ function BatchModal({ po, poItemsForPO, onClose, onSave }: {
   po: any; poItemsForPO: any[];
   onClose: () => void; onSave: (fd: FormData) => Promise<void>
 }) {
-  const [loading, setLoading]       = useState(false)
-  const [selectedItemId, setSelectedItemId] = useState<number>(poItemsForPO[0]?.id ?? 0)
+  const [loading, setLoading] = useState(false)
+  // selectedItems: { [po_item_id]: qty_diterima }
+  const [selected, setSelected] = useState<Record<number, number>>({})
 
-  const selectedItem = poItemsForPO.find(i => i.id === selectedItemId)
-  const sisaPO = selectedItem ? Math.max(0, selectedItem.qty_po - selectedItem.qty_diterima) : 0
+  const toggle = (it: any) => {
+    setSelected(p => {
+      const n = { ...p }
+      if (it.id in n) { delete n[it.id]; return n }
+      const sisa = Math.max(0, it.qty_po - (it.qty_diterima ?? 0))
+      return { ...n, [it.id]: sisa > 0 ? sisa : 1 }
+    })
+  }
+  const setQty = (id: number, v: number) => setSelected(p => ({ ...p, [id]: v }))
+
+  const selectedList = Object.entries(selected).map(([id, qty]) => ({ po_item_id: parseInt(id), qty_diterima: qty }))
+  const totalQty = selectedList.reduce((s, x) => s + x.qty_diterima, 0)
+  const valid = selectedList.length > 0 && selectedList.every(x => x.qty_diterima > 0)
 
   return (
     <ModalShell title="Input Penerimaan Barang" onClose={onClose}>
       <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700 mb-4">
         <p className="font-bold">{po.nomor_po}</p>
-        <p className="text-violet-600 mt-0.5">{po.vendor_nama} · {poItemsForPO.length} produk</p>
+        <p className="text-violet-600 mt-0.5">{po.vendor_nama} · {poItemsForPO.length} produk di PO</p>
+        <p className="text-violet-500 mt-0.5 text-[11px]">Centang produk yang diterima & isi qty. Bisa pilih lebih dari satu produk sekaligus.</p>
       </div>
       <form onSubmit={async e => {
         e.preventDefault()
+        if (!valid) return
         setLoading(true)
         const fd = new FormData(e.currentTarget)
         fd.set('po_id', String(po.id))
-        fd.set('po_item_id', String(selectedItemId))
+        fd.set('items', JSON.stringify(selectedList))
         await onSave(fd)
         setLoading(false)
       }} className="space-y-3">
-        {/* Item picker */}
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Produk yang Diterima *</label>
-          <select value={selectedItemId} onChange={e => setSelectedItemId(parseInt(e.target.value))} className={inp} required>
-            {poItemsForPO.map((it: any) => (
-              <option key={it.id} value={it.id}>
-                {it.produk_nama} · PO {fmtNum(it.qty_po)} pcs · Sisa {fmtNum(Math.max(0, it.qty_po - it.qty_diterima))} pcs
-              </option>
-            ))}
-          </select>
-          {selectedItem && (
-            <p className="text-[11px] text-slate-500 mt-1">
-              Sudah diterima: <b>{fmtNum(selectedItem.qty_diterima)} pcs</b> · Sisa PO: <b>{fmtNum(sisaPO)} pcs</b>
-              {sisaPO === 0 && <span className="text-green-600 font-bold"> · ✅ Sudah terpenuhi (input = kelebihan)</span>}
-            </p>
-          )}
+        <div className="grid grid-cols-2 gap-2">
+          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nomor Batch <span className="normal-case text-slate-400 font-normal">(kosongkan = auto)</span></label>
+            <input name="nomor_batch" placeholder="auto: BATCH/001/MM/YY" className={inp}/></div>
+          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Terima *</label>
+            <input name="tanggal_terima" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/></div>
         </div>
 
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nomor Batch <span className="normal-case text-slate-400 font-normal">(kosongkan = auto)</span></label>
-          <input name="nomor_batch" placeholder="mis. BTH-001 / 250622-A" className={inp}/></div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Terima *</label>
-          <input name="tanggal_terima" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/></div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Qty Diterima (pcs) *</label>
-          <input name="qty_diterima" type="number" min="1" required className={inp}
-            placeholder={`sisa PO: ${sisaPO} pcs`}/></div>
+        <div>
+          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Produk yang Diterima ({selectedList.length} dipilih · {fmtNum(totalQty)} pcs)</p>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {poItemsForPO.map((it: any) => {
+              const sisa = Math.max(0, it.qty_po - (it.qty_diterima ?? 0))
+              const checked = it.id in selected
+              return (
+                <div key={it.id}
+                  className={`rounded-xl border transition-all ${checked ? 'border-violet-400 bg-violet-50' : 'border-gray-200 bg-white'}`}>
+                  <button type="button" onClick={() => toggle(it)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left">
+                    <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${checked ? 'bg-violet-600' : 'border border-gray-300'}`}>
+                      {checked && <Check size={10} className="text-white"/>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-semibold text-slate-700">{it.produk_nama}</p>
+                      <p className="text-[10px] text-slate-400">
+                        PO {fmtNum(it.qty_po)} pcs · diterima {fmtNum(it.qty_diterima ?? 0)} · sisa <b>{fmtNum(sisa)}</b>
+                        {sisa === 0 && <span className="text-green-600 font-bold"> · sudah terpenuhi (input = lebihan)</span>}
+                      </p>
+                    </div>
+                  </button>
+                  {checked && (
+                    <div className="px-3 pb-2.5 flex items-center gap-2">
+                      <label className="text-[11px] text-slate-500 font-semibold whitespace-nowrap">Qty diterima:</label>
+                      <input type="number" min="1" value={selected[it.id]}
+                        onChange={e => setQty(it.id, Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-24 h-8 rounded-lg border border-violet-200 px-2 text-[13px] font-bold text-violet-700 bg-white focus:outline-none focus:ring-2 focus:ring-violet-300"/>
+                      <span className="text-[11px] text-slate-400">pcs (sisa: {fmtNum(sisa)})</span>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
           <textarea name="catatan" rows={2} className={inp}/></div>
-        <button type="submit" disabled={loading || !selectedItemId}
+        <button type="submit" disabled={loading || !valid}
           className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
-          {loading ? 'Menyimpan...' : 'Simpan Penerimaan'}
+          {loading ? 'Menyimpan...' : `Simpan Penerimaan${totalQty > 0 ? ` (${fmtNum(totalQty)} pcs)` : ''}`}
         </button>
       </form>
     </ModalShell>
@@ -1323,130 +1458,174 @@ function BatchModal({ po, poItemsForPO, onClose, onSave }: {
 }
 
 interface RejectRow { qty: number; kategori_id: number | null; alasan_manual: string; catatan: string }
+interface ItemQCState { batch_item_id: number; qty_acc: number; rejects: RejectRow[] }
 
-function QCModal({ batch, kategoriList, onClose, onSave }: { batch: any; kategoriList: any[]; onClose: () => void; onSave: (fd: FormData) => Promise<void> }) {
-  const [loading, setLoading]         = useState(false)
-  const [qtyAcc, setQtyAcc]           = useState(0)
-  const [rejectRows, setRejectRows]   = useState<RejectRow[]>([])
-  const [ttdOp, setTtdOp]             = useState<string | null>(null)
-  const [ttdAdmin, setTtdAdmin]       = useState<string | null>(null)
-  const [showTtd, setShowTtd]         = useState(false)
+function QCModal({ batch, batchItems, kategoriList, timAnggotaList, adminInputList, mode = 'create', onClose, onSave }: {
+  batch: any
+  batchItems: any[]
+  kategoriList: any[]
+  timAnggotaList: any[]
+  adminInputList: any[]
+  mode?: 'create' | 'edit'
+  onClose: () => void
+  onSave: (fd: FormData) => Promise<void>
+}) {
+  const [loading, setLoading]   = useState(false)
+  const [ttdOp, setTtdOp]       = useState<string | null>(mode === 'edit' ? (batch.ttd_qc_operator_url ?? null) : null)
+  const [ttdAdmin, setTtdAdmin] = useState<string | null>(mode === 'edit' ? (batch.ttd_qc_admin_url ?? null) : null)
+  const [showTtd, setShowTtd]   = useState(mode === 'edit')
 
-  const maxCheck  = batch.qty_diterima - (batch.qty_lebih ?? 0)
-  const qtyReject = rejectRows.reduce((s, r) => s + (r.qty || 0), 0)
-  const total     = qtyAcc + qtyReject
-  const ok        = total === maxCheck
-  const rejectValid = rejectRows.every(r => r.qty > 0 && (r.kategori_id !== null || r.alasan_manual.trim().length > 0))
+  const [items, setItems] = useState<ItemQCState[]>(() => batchItems.map(bi => ({
+    batch_item_id: bi.id,
+    qty_acc: mode === 'edit' ? (bi.qty_acc ?? 0) : 0,
+    rejects: [],  // editor reset rejects (akan diinput ulang)
+  })))
 
-  const addRow = () => setRejectRows(p => [...p, { qty: 0, kategori_id: null, alasan_manual: '', catatan: '' }])
-  const rmRow  = (idx: number) => setRejectRows(p => p.filter((_, i) => i !== idx))
-  const updRow = (idx: number, patch: Partial<RejectRow>) =>
-    setRejectRows(p => p.map((r, i) => i === idx ? { ...r, ...patch } : r))
+  // Tambah/kurangi reject row per batch_item
+  const addReject = (biId: number) => setItems(p => p.map(it => it.batch_item_id === biId
+    ? { ...it, rejects: [...it.rejects, { qty: 0, kategori_id: null, alasan_manual: '', catatan: '' }] }
+    : it))
+  const rmReject = (biId: number, idx: number) => setItems(p => p.map(it => it.batch_item_id === biId
+    ? { ...it, rejects: it.rejects.filter((_, i) => i !== idx) }
+    : it))
+  const updReject = (biId: number, idx: number, patch: Partial<RejectRow>) => setItems(p => p.map(it => it.batch_item_id === biId
+    ? { ...it, rejects: it.rejects.map((r, i) => i === idx ? { ...r, ...patch } : r) }
+    : it))
+  const setItemAcc = (biId: number, v: number) => setItems(p => p.map(it => it.batch_item_id === biId ? { ...it, qty_acc: v } : it))
+
+  // Validasi per item
+  const itemValidations = batchItems.map(bi => {
+    const itemQC  = items.find(i => i.batch_item_id === bi.id)!
+    const qtyR    = itemQC.rejects.reduce((s, r) => s + (r.qty || 0), 0)
+    const maxChk  = bi.qty_diterima - (bi.qty_lebih ?? 0)
+    const total   = itemQC.qty_acc + qtyR
+    const ok      = total === maxChk
+    const rejectsOk = itemQC.rejects.every(r => r.qty > 0 && (r.kategori_id !== null || r.alasan_manual.trim().length > 0))
+    return { bi, itemQC, qtyR, maxChk, total, ok, rejectsOk }
+  })
+  const allOk = itemValidations.every(v => v.ok && v.rejectsOk)
 
   return (
-    <ModalShell title="Input Hasil QC" onClose={onClose}>
+    <ModalShell title={mode === 'edit' ? `Edit QC ${batch.nomor_batch}` : 'Input Hasil QC'} onClose={onClose}>
       <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700 mb-4">
         <p className="font-bold">{batch.nomor_batch}</p>
-        <p className="text-violet-600 mt-0.5">{batch.produk_nama} · {batch.vendor_nama}</p>
-        <p className="text-violet-600 mt-0.5">
-          Diterima: <b>{batch.qty_diterima} pcs</b>
-          {(batch.qty_lebih ?? 0) > 0 && <> · Lebihan: <b className="text-amber-600">{batch.qty_lebih} pcs</b></>}
-          {' '}· Perlu QC: <b>{maxCheck} pcs</b>
-        </p>
+        <p className="text-violet-600 mt-0.5">{batch.vendor_nama} · {batchItems.length} produk</p>
+        <p className="text-violet-500 text-[11px] mt-0.5">Isi ACC + reject per produk. Qty ACC bisa 0.</p>
       </div>
       <form onSubmit={async e => {
         e.preventDefault()
-        if (!ok) return
-        if (!rejectValid) return
+        if (!allOk) return
         setLoading(true)
         const fd = new FormData(e.currentTarget)
         fd.set('batch_id', String(batch.id))
-        fd.set('qty_acc', String(qtyAcc))
-        fd.set('reject_items', JSON.stringify(rejectRows))
+        fd.set('items', JSON.stringify(items))
         if (ttdOp)    fd.set('ttd_operator', ttdOp)
         if (ttdAdmin) fd.set('ttd_admin', ttdAdmin)
         await onSave(fd)
         setLoading(false)
       }} className="space-y-3">
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal QC *</label>
-          <input name="qc_tanggal" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/></div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Qty ACC (Lolos QC) *</label>
-          <input type="number" min="0" max={maxCheck} value={qtyAcc} onChange={e => setQtyAcc(parseInt(e.target.value) || 0)} className={inp}/></div>
-
-        {/* Reject Items multi-row */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Reject Items ({fmtNum(qtyReject)} pcs)</label>
-            <button type="button" onClick={addRow}
-              className="text-[10px] font-bold text-violet-600 flex items-center gap-1">
-              <Plus size={12}/> Tambah
-            </button>
+        <div className="grid grid-cols-2 gap-2">
+          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal QC *</label>
+            <input name="qc_tanggal" type="date" required defaultValue={(batch.qc_tanggal ?? new Date().toISOString().split('T')[0])} className={inp}/></div>
+          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Operator QC</label>
+            <select name="operator_nama" defaultValue={batch.qc_operator_nama ?? ''} className={inp}>
+              <option value="">— Pilih operator —</option>
+              {timAnggotaList.map((t: any) => <option key={t.id} value={t.nama}>{t.nama}</option>)}
+            </select>
           </div>
-          {rejectRows.length === 0 ? (
-            <p className="text-[11px] text-slate-400 py-2 text-center rounded-xl bg-slate-50 border border-dashed border-slate-200">
-              Tidak ada reject — klik "Tambah" jika ada barang reject
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {rejectRows.map((r, idx) => (
-                <div key={idx} className="rounded-xl border border-red-200 bg-red-50/50 p-2.5 space-y-2">
-                  <div className="flex items-start gap-2">
-                    <input type="number" min="1" placeholder="Qty" value={r.qty || ''}
-                      onChange={e => updRow(idx, { qty: parseInt(e.target.value) || 0 })}
-                      className="w-20 h-8 rounded-lg border border-red-200 px-2 text-[12px] font-bold text-red-700 bg-white"/>
-                    <select value={r.kategori_id ?? ''}
-                      onChange={e => updRow(idx, { kategori_id: e.target.value ? parseInt(e.target.value) : null })}
-                      className="flex-1 h-8 rounded-lg border border-red-200 px-2 text-[12px] bg-white">
-                      <option value="">— Pilih Kategori —</option>
-                      {kategoriList.map((k: any) => (
-                        <option key={k.id} value={k.id}>{k.nama}</option>
-                      ))}
-                    </select>
-                    <button type="button" onClick={() => rmRow(idx)}
-                      className="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0">
-                      <Trash2 size={12}/>
-                    </button>
-                  </div>
-                  <input type="text" placeholder="Alasan manual (jika tidak ada di kategori)"
-                    value={r.alasan_manual} onChange={e => updRow(idx, { alasan_manual: e.target.value })}
-                    className="w-full h-7 rounded-lg border border-red-200 px-2 text-[11px] bg-white"/>
-                  <input type="text" placeholder="Catatan tambahan (opsional)"
-                    value={r.catatan} onChange={e => updRow(idx, { catatan: e.target.value })}
-                    className="w-full h-7 rounded-lg border border-red-100 px-2 text-[11px] bg-white"/>
-                </div>
-              ))}
+        </div>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Admin Input</label>
+          <select name="admin_nama" defaultValue={batch.qc_admin_nama ?? ''} className={inp}>
+            <option value="">— Pilih admin —</option>
+            {adminInputList.map((a: any) => <option key={a.id} value={a.nama}>{a.nama}</option>)}
+          </select>
+        </div>
+
+        {/* Per produk: ACC + rejects */}
+        {itemValidations.map(({ bi, itemQC, qtyR, maxChk, total, ok, rejectsOk }) => (
+          <div key={bi.id} className="rounded-2xl border border-slate-200 bg-white p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[13px] font-bold text-slate-800">{bi.produk_nama}</p>
+              <p className="text-[10px] text-slate-400">
+                Diterima {fmtNum(bi.qty_diterima)} · Lebihan {fmtNum(bi.qty_lebih ?? 0)} · Perlu QC <b>{fmtNum(maxChk)}</b>
+              </p>
             </div>
-          )}
-        </div>
+            <div className="flex items-center gap-2">
+              <label className="text-[11px] font-semibold text-slate-500 whitespace-nowrap">Qty ACC:</label>
+              <input type="number" min="0" max={maxChk} value={itemQC.qty_acc}
+                onChange={e => setItemAcc(bi.id, Math.max(0, parseInt(e.target.value) || 0))}
+                className="w-24 h-8 rounded-lg border border-green-300 px-2 text-[13px] font-bold text-green-700 bg-green-50"/>
+              <span className="text-[11px] text-slate-400">+ {fmtNum(qtyR)} reject = <b className={ok ? 'text-green-700' : 'text-red-600'}>{fmtNum(total)} / {fmtNum(maxChk)}</b></span>
+            </div>
 
-        <div className={`rounded-xl px-3 py-2 text-[12px] font-semibold flex items-center gap-2 ${ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
-          {ok ? <CheckCircle2 size={12}/> : <XCircle size={12}/>}
-          {ok ? `✅ Total sesuai (${maxCheck} pcs)` : `Total ACC+Reject = ${total} ≠ ${maxCheck}`}
-        </div>
-        {!rejectValid && rejectRows.length > 0 && (
-          <div className="rounded-xl px-3 py-2 text-[11px] bg-amber-50 text-amber-700 border border-amber-200">
-            ⚠️ Setiap reject harus punya qty &gt; 0 dan kategori (atau alasan manual)
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Reject ({fmtNum(qtyR)} pcs)</p>
+                <button type="button" onClick={() => addReject(bi.id)}
+                  className="text-[10px] font-bold text-violet-600 flex items-center gap-1">
+                  <Plus size={11}/> Tambah Reject
+                </button>
+              </div>
+              {itemQC.rejects.length === 0 ? (
+                <p className="text-[10px] text-slate-400 py-1 text-center rounded-lg bg-slate-50 border border-dashed border-slate-200">
+                  Tidak ada reject untuk produk ini
+                </p>
+              ) : (
+                <div className="space-y-1.5">
+                  {itemQC.rejects.map((r, idx) => (
+                    <div key={idx} className="rounded-lg border border-red-200 bg-red-50/50 p-2 space-y-1.5">
+                      <div className="flex items-start gap-2">
+                        <input type="number" min="1" placeholder="Qty" value={r.qty || ''}
+                          onChange={e => updReject(bi.id, idx, { qty: parseInt(e.target.value) || 0 })}
+                          className="w-16 h-7 rounded-lg border border-red-200 px-2 text-[11px] font-bold text-red-700 bg-white"/>
+                        <select value={r.kategori_id ?? ''}
+                          onChange={e => updReject(bi.id, idx, { kategori_id: e.target.value ? parseInt(e.target.value) : null })}
+                          className="flex-1 h-7 rounded-lg border border-red-200 px-2 text-[11px] bg-white">
+                          <option value="">— Kategori —</option>
+                          {kategoriList.map((k: any) => <option key={k.id} value={k.id}>{k.nama}</option>)}
+                        </select>
+                        <button type="button" onClick={() => rmReject(bi.id, idx)}
+                          className="w-7 h-7 rounded-lg bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0">
+                          <Trash2 size={11}/>
+                        </button>
+                      </div>
+                      <input type="text" placeholder="Alasan manual (jika tidak ada kategori)"
+                        value={r.alasan_manual} onChange={e => updReject(bi.id, idx, { alasan_manual: e.target.value })}
+                        className="w-full h-6 rounded border border-red-200 px-2 text-[10px] bg-white"/>
+                      <input type="text" placeholder="Catatan"
+                        value={r.catatan} onChange={e => updReject(bi.id, idx, { catatan: e.target.value })}
+                        className="w-full h-6 rounded border border-red-100 px-2 text-[10px] bg-white"/>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {(!ok || !rejectsOk) && (
+              <div className="rounded-lg px-2 py-1 text-[10px] bg-amber-50 text-amber-700 border border-amber-200">
+                {!ok && `⚠️ Total ACC+Reject = ${total} harus ${maxChk}`}
+                {!ok && !rejectsOk && ' · '}
+                {!rejectsOk && '⚠️ Kategori/alasan reject wajib'}
+              </div>
+            )}
           </div>
-        )}
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Operator QC</label>
-          <input name="operator_nama" className={inp}/></div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Admin/Manager</label>
-          <input name="admin_nama" className={inp}/></div>
+        ))}
+
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan QC</label>
-          <textarea name="catatan_qc" rows={2} className={inp}/></div>
+          <textarea name="catatan_qc" defaultValue={batch.catatan_qc ?? ''} rows={2} className={inp}/></div>
         <button type="button" onClick={() => setShowTtd(p => !p)}
           className="w-full py-2 text-[12px] font-semibold text-violet-600 rounded-xl border border-violet-200">
           {showTtd ? '▲ Sembunyikan TTD' : '✍️ Tambah TTD (Opsional)'}
         </button>
         {showTtd && (
           <div className="space-y-3 rounded-2xl p-3 bg-violet-50">
-            <SignaturePad label="TTD Operator" onSave={v => setTtdOp(v)}/>
-            <SignaturePad label="TTD Admin/Manager" onSave={v => setTtdAdmin(v)}/>
+            <SignaturePad label="TTD Operator" initial={ttdOp} onSave={v => setTtdOp(v)}/>
+            <SignaturePad label="TTD Admin" initial={ttdAdmin} onSave={v => setTtdAdmin(v)}/>
           </div>
         )}
-        <button type="submit" disabled={loading || !ok || !rejectValid}
+        <button type="submit" disabled={loading || !allOk}
           className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
-          {loading ? 'Menyimpan...' : 'Simpan Hasil QC'}
+          {loading ? 'Menyimpan...' : (mode === 'edit' ? 'Simpan Perubahan QC' : 'Simpan Hasil QC')}
         </button>
       </form>
     </ModalShell>
@@ -1455,6 +1634,7 @@ function QCModal({ batch, kategoriList, onClose, onSave }: { batch: any; kategor
 
 function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]; rejectList: any[]; onClose: () => void; onSave: (fd: FormData) => Promise<void> }) {
   const [vendorId, setVendorId] = useState<number | null>(null)
+  const [nomorSJ, setNomorSJ]   = useState('')
   const [tanggal, setTanggal]   = useState(new Date().toISOString().split('T')[0])
   const [tglJatuhTempo, setTglJatuhTempo] = useState('')
   const [catatan, setCatatan]   = useState('')
@@ -1483,6 +1663,8 @@ function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]
   return (
     <ModalShell title="Buat Surat Jalan Retur" onClose={onClose}>
       <div className="space-y-3">
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nomor SJ <span className="normal-case text-slate-400 font-normal">(kosongkan = auto: SJ.RTR/001/MM/YY)</span></label>
+          <input value={nomorSJ} onChange={e => setNomorSJ(e.target.value)} placeholder="auto-generate jika kosong" className={inp}/></div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Vendor *</label>
           <select value={vendorId ?? ''} onChange={e => { setVendorId(parseInt(e.target.value) || null); setSelectedQty({}) }} className={inp}>
             <option value="">— Pilih Vendor —</option>
@@ -1552,6 +1734,7 @@ function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]
           setLoading(true)
           const fd = new FormData()
           fd.set('vendor_id', String(vendorId))
+          if (nomorSJ.trim()) fd.set('nomor_sj', nomorSJ.trim())
           fd.set('tanggal_retur', tanggal)
           if (tglJatuhTempo) fd.set('tanggal_jatuh_tempo_ganti', tglJatuhTempo)
           fd.set('items', JSON.stringify(selectedItems))
@@ -1588,55 +1771,6 @@ function VoidModal({ title, onClose, onConfirm }: { title: string; onClose: () =
   )
 }
 
-function EditQCModal({ batch, onClose, onSave }: {
-  batch: any
-  onClose: () => void
-  onSave: (acc: number, reject: number, catatan: string) => Promise<void>
-}) {
-  const maxCheck = batch.qty_diterima - (batch.qty_lebih ?? 0)
-  const [qtyAcc, setQtyAcc]       = useState<number>(batch.qty_acc ?? 0)
-  const [qtyReject, setQtyReject] = useState<number>(batch.qty_reject ?? 0)
-  const [catatan, setCatatan]     = useState<string>(batch.catatan_qc ?? '')
-  const [loading, setLoading]     = useState(false)
-
-  const total = qtyAcc + qtyReject
-  const ok    = total === maxCheck
-
-  return (
-    <ModalShell title="Edit Hasil QC" onClose={onClose}>
-      <div className="rounded-lg px-3 py-2 text-[12px] bg-amber-50 border border-amber-100 text-amber-700 mb-4">
-        <p className="font-bold">{batch.nomor_batch} · {batch.produk_nama}</p>
-        <p className="mt-0.5">Diterima: <b>{batch.qty_diterima} pcs</b> · QC: <b>{maxCheck} pcs</b>
-          {(batch.qty_lebih ?? 0) > 0 && <> · Lebihan: <b>{batch.qty_lebih} pcs</b></>}
-        </p>
-        <p className="mt-0.5 text-amber-600">⚠️ Stok akan disesuaikan otomatis dengan selisih ACC baru vs lama.</p>
-      </div>
-      <div className="space-y-3">
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Qty ACC (Lolos QC) *</label>
-          <input type="number" min="0" max={maxCheck} value={qtyAcc}
-            onChange={e => setQtyAcc(parseInt(e.target.value) || 0)} className={inp}/></div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Qty Reject *</label>
-          <input type="number" min="0" max={maxCheck} value={qtyReject}
-            onChange={e => setQtyReject(parseInt(e.target.value) || 0)} className={inp}/></div>
-        <div className={`rounded-xl px-3 py-2 text-[12px] font-semibold flex items-center gap-2 ${ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
-          {ok ? <CheckCircle2 size={12}/> : <XCircle size={12}/>}
-          {ok ? `✅ Total sesuai (${maxCheck} pcs)` : `Total ${total} ≠ ${maxCheck}`}
-        </div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan QC</label>
-          <textarea value={catatan} onChange={e => setCatatan(e.target.value)} rows={2} className={inp}/></div>
-        <button onClick={async () => {
-          if (!ok) return
-          setLoading(true)
-          await onSave(qtyAcc, qtyReject, catatan)
-          setLoading(false)
-        }} disabled={loading || !ok}
-          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
-          {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
-        </button>
-      </div>
-    </ModalShell>
-  )
-}
 
 function ConfirmModal({ state, onClose }: { state: ConfirmState; onClose: () => void }) {
   const [loading, setLoading] = useState(false)
@@ -1904,77 +2038,110 @@ function Empty({ text, icon = '📦' }: { text: string; icon?: string }) {
 
 function PenggantiModal({ sj, onClose, onSave }: { sj: any; onClose: () => void; onSave: (fd: FormData) => Promise<void> }) {
   const [loading, setLoading] = useState(false)
-  const items = (sj.items ?? []).filter((i: any) => (i.qty_retur ?? 0) > (i.qty_diganti ?? 0))
-  const [selectedItemId, setSelectedItemId] = useState<number>(items[0]?.id ?? 0)
-  const [qtyDiterima, setQtyDiterima] = useState(0)
+  // Hanya item yang masih punya sisa perlu ganti (filter penuh diganti & tidak muncul lagi)
+  const availableItems = (sj.items ?? []).filter((i: any) => (i.qty_retur ?? 0) > (i.qty_diganti ?? 0))
+  // selectedQty: { [sj_item_id]: qty_diterima }
+  const [selectedQty, setSelectedQty] = useState<Record<number, number>>({})
 
-  const selectedItem = items.find((i: any) => i.id === selectedItemId)
-  const sisaPerluGanti = selectedItem ? (selectedItem.qty_retur - (selectedItem.qty_diganti ?? 0)) : 0
+  const isSelected = (id: number) => id in selectedQty
+  const toggle = (it: any) => {
+    setSelectedQty(p => {
+      const n = { ...p }
+      if (it.id in n) { delete n[it.id]; return n }
+      const sisa = (it.qty_retur ?? 0) - (it.qty_diganti ?? 0)
+      return { ...n, [it.id]: sisa }
+    })
+  }
+  const setQty = (id: number, v: number) => setSelectedQty(p => ({ ...p, [id]: v }))
+
+  const selectedList = Object.entries(selectedQty).map(([id, qty]) => ({ sj_item_id: parseInt(id), qty_diterima: qty }))
+  const totalQty = selectedList.reduce((s, x) => s + x.qty_diterima, 0)
+  const overQty = selectedList.some(s => {
+    const it = availableItems.find((i: any) => i.id === s.sj_item_id)
+    const sisa = it ? (it.qty_retur - (it.qty_diganti ?? 0)) : 0
+    return s.qty_diterima > sisa
+  })
+  const valid = selectedList.length > 0 && selectedList.every(s => s.qty_diterima > 0) && !overQty
 
   return (
     <ModalShell title="Terima Barang Pengganti dari Vendor" onClose={onClose}>
       <div className="rounded-lg px-3 py-2 text-[12px] bg-blue-50 border border-blue-100 text-blue-700 mb-4">
         <p className="font-bold">{sj.nomor_sj}</p>
-        <p className="text-blue-600 mt-0.5">{sj.vendor_nama} · {items.length} item perlu diganti</p>
+        <p className="text-blue-600 mt-0.5">{sj.vendor_nama} · {availableItems.length} produk masih perlu diganti</p>
+        <p className="text-blue-500 mt-0.5 text-[11px]">Bisa pilih lebih dari satu produk sekaligus. Produk yang sudah penuh diganti tidak muncul di daftar.</p>
       </div>
-      {items.length === 0 ? (
+      {availableItems.length === 0 ? (
         <Empty text="Semua item sudah sepenuhnya diganti" icon="✅"/>
       ) : (
         <form onSubmit={async e => {
           e.preventDefault()
-          if (!selectedItemId || qtyDiterima <= 0) return
+          if (!valid) return
           setLoading(true)
           const fd = new FormData(e.currentTarget)
           fd.set('sj_retur_id', String(sj.id))
-          fd.set('sj_item_id', String(selectedItemId))
-          fd.set('qty_diterima', String(qtyDiterima))
+          fd.set('items', JSON.stringify(selectedList))
           await onSave(fd)
           setLoading(false)
         }} className="space-y-3">
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Item yang Diganti *</label>
-            <select value={selectedItemId} onChange={e => setSelectedItemId(parseInt(e.target.value))} className={inp} required>
-              {items.map((it: any) => {
-                const sisa = it.qty_retur - (it.qty_diganti ?? 0)
-                return (
-                  <option key={it.id} value={it.id}>
-                    {it.produk_nama} · perlu ganti {fmtNum(sisa)} pcs (dari {fmtNum(it.qty_retur)})
-                  </option>
-                )
-              })}
-            </select>
-            {selectedItem && (
-              <p className="text-[11px] text-slate-500 mt-1">
-                {selectedItem.kategori_nama && <span className="text-red-500">🏷️ {selectedItem.kategori_nama} · </span>}
-                Sudah diganti: <b>{fmtNum(selectedItem.qty_diganti ?? 0)}</b> · Sisa perlu ganti: <b className="text-blue-600">{fmtNum(sisaPerluGanti)} pcs</b>
-              </p>
-            )}
+          <div className="grid grid-cols-2 gap-2">
+            <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nomor Batch <span className="normal-case text-slate-400 font-normal">(kosongkan = auto)</span></label>
+              <input name="nomor_batch" placeholder="auto: SJ.TBP/001/MM/YY" className={inp}/></div>
+            <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Terima *</label>
+              <input name="tanggal_terima" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/></div>
           </div>
 
-          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nomor Batch <span className="normal-case text-slate-400 font-normal">(kosongkan = auto)</span></label>
-            <input name="nomor_batch" placeholder="mis. BTH-G-001" className={inp}/></div>
-
-          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Terima *</label>
-            <input name="tanggal_terima" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/></div>
-
-          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Qty Diterima *</label>
-            <input type="number" min="1" value={qtyDiterima || ''} onChange={e => setQtyDiterima(parseInt(e.target.value) || 0)}
-              required className={inp} placeholder="0"/>
-            {qtyDiterima > sisaPerluGanti && (
-              <p className="text-[10px] text-red-500 mt-1">⚠️ Qty melebihi sisa perlu ganti ({fmtNum(sisaPerluGanti)})</p>
-            )}
+          <div>
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+              Produk yang Diterima ({selectedList.length} dipilih · {fmtNum(totalQty)} pcs)
+            </p>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {availableItems.map((it: any) => {
+                const sisa = it.qty_retur - (it.qty_diganti ?? 0)
+                const checked = isSelected(it.id)
+                return (
+                  <div key={it.id}
+                    className={`rounded-xl border transition-all ${checked ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white'}`}>
+                    <button type="button" onClick={() => toggle(it)}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-left">
+                      <div className={`w-4 h-4 rounded flex-shrink-0 flex items-center justify-center ${checked ? 'bg-blue-600' : 'border border-gray-300'}`}>
+                        {checked && <Check size={10} className="text-white"/>}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12px] font-semibold text-slate-700">{it.produk_nama}</p>
+                        <p className="text-[10px] text-slate-400">
+                          {it.kategori_nama && <span className="text-red-500">🏷️ {it.kategori_nama} · </span>}
+                          Sudah diganti {fmtNum(it.qty_diganti ?? 0)} · Sisa perlu ganti <b className="text-blue-600">{fmtNum(sisa)} pcs</b>
+                        </p>
+                      </div>
+                    </button>
+                    {checked && (
+                      <div className="px-3 pb-2.5 flex items-center gap-2">
+                        <label className="text-[11px] text-slate-500 font-semibold whitespace-nowrap">Qty diterima:</label>
+                        <input type="number" min="1" max={sisa} value={selectedQty[it.id]}
+                          onChange={e => setQty(it.id, Math.max(1, parseInt(e.target.value) || 1))}
+                          className="w-24 h-8 rounded-lg border border-blue-200 px-2 text-[13px] font-bold text-blue-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"/>
+                        <span className="text-[11px] text-slate-400">/ max {fmtNum(sisa)} pcs</span>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
 
           <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
             <textarea name="catatan" rows={2} className={inp}/></div>
 
+          {overQty && (
+            <p className="text-[10px] text-red-500 px-1">⚠️ Ada qty yang melebihi sisa perlu ganti</p>
+          )}
           <p className="text-[10px] text-amber-700 px-1">
-            ⚡ Setelah simpan, batch pengganti akan muncul di tab <b>Penerimaan</b> dan menunggu QC. Lanjutkan QC seperti biasa untuk masukkan ke stok.
+            ⚡ Setelah simpan, batch pengganti muncul di tab <b>Penerimaan</b> menunggu QC. Lanjutkan QC untuk masukkan ke stok.
           </p>
 
-          <button type="submit" disabled={loading || qtyDiterima <= 0 || qtyDiterima > sisaPerluGanti}
+          <button type="submit" disabled={loading || !valid}
             className="w-full h-9 rounded-lg bg-blue-600 hover:bg-blue-700 text-[13px] font-bold text-white disabled:opacity-50">
-            {loading ? 'Menyimpan...' : 'Simpan Penerimaan Pengganti'}
+            {loading ? 'Menyimpan...' : `Simpan Penerimaan Pengganti${totalQty > 0 ? ` (${fmtNum(totalQty)} pcs)` : ''}`}
           </button>
         </form>
       )}

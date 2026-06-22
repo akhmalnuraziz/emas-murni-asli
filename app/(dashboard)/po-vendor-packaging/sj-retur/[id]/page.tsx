@@ -125,19 +125,30 @@ export default async function SJReturPrintPage({ params }: { params: Promise<{ i
           </table>
         </div>
 
-        {/* Signature block */}
+        {/* Signature block: 3 kolom — Dikirim Oleh (perusahaan), Diterima Oleh (vendor), Mengetahui */}
         <div className="grid grid-cols-3 gap-6 mt-12">
-          {['Dibuat Oleh', 'Diterima Vendor', 'Mengetahui'].map(label => (
-            <div key={label} className="text-center">
-              <div className="h-16 border-b border-slate-300 mb-2"/>
-              <p className="text-xs font-semibold text-slate-500">{label}</p>
-              <p className="text-xs text-slate-400 mt-0.5">PT Emas Murni Asli</p>
-            </div>
-          ))}
+          <div className="text-center">
+            <p className="text-xs font-bold text-slate-500 mb-1">Dikirim Oleh</p>
+            <p className="text-[10px] text-slate-400 mb-2">PT Emas Murni Asli</p>
+            <div className="h-20 border-b border-slate-300 mb-2"/>
+            <p className="text-[10px] text-slate-500">(______________________)</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs font-bold text-slate-500 mb-1">Diterima Oleh</p>
+            <p className="text-[10px] text-slate-400 mb-2">{sj.vendor_nama}</p>
+            <div className="h-20 border-b border-slate-300 mb-2"/>
+            <p className="text-[10px] text-slate-500">(______________________)</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs font-bold text-slate-500 mb-1">Mengetahui</p>
+            <p className="text-[10px] text-slate-400 mb-2">PT Emas Murni Asli</p>
+            <div className="h-20 border-b border-slate-300 mb-2"/>
+            <p className="text-[10px] text-slate-500">(______________________)</p>
+          </div>
         </div>
 
-        <div className="mt-8 pt-4 border-t border-slate-100 text-center">
-          <p className="text-[10px] text-slate-300">Dokumen ini dicetak dari sistem ERP PT Emas Murni Asli · {sj.nomor_sj}</p>
+        <div className="mt-10 pt-4 border-t border-slate-100 text-center">
+          <p className="text-[10px] text-slate-300">Dokumen dicetak dari sistem ERP PT Emas Murni Asli · {sj.nomor_sj}</p>
         </div>
       </div>
     </>

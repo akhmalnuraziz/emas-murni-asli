@@ -18,10 +18,13 @@ export default async function POVendorPage() {
     { data: poList },
     { data: poItems },
     { data: batchList },
+    { data: batchItemsList },
     { data: rejectList },
     { data: sjList },
     { data: stokList },
     { data: monitoring },
+    { data: timAnggotaList },
+    { data: adminInputList },
   ] = await Promise.all([
     supabase.from('vendor_packaging').select('*').is('voided_at', null).order('nama'),
     supabase.from('produk_packaging').select('*').eq('aktif', true).order('nama'),
@@ -29,10 +32,13 @@ export default async function POVendorPage() {
     supabase.from('po_packaging').select('*').is('voided_at', null).order('created_at', { ascending: false }).limit(200),
     supabase.from('po_packaging_items').select('*').order('po_id').limit(2000),
     supabase.from('po_batch_penerimaan').select('*').order('created_at', { ascending: false }).limit(500),
+    supabase.from('po_batch_items').select('*').order('batch_id').limit(2000),
     supabase.from('po_packaging_reject').select('*').order('created_at', { ascending: false }).limit(500),
     supabase.from('sj_retur_packaging').select('*, items:sj_retur_packaging_items(id, produk_id, produk_nama, qty_retur, qty_diganti, jenis, kategori_nama, alasan_manual, po_nomor, nomor_batch)').order('created_at', { ascending: false }).limit(200),
     supabase.from('stok_packaging').select('*').order('produk_id'),
     supabase.from('po_packaging_monitoring').select('*').order('created_at', { ascending: false }),
+    supabase.from('tim_anggota').select('id, nama').eq('aktif', true).order('nama'),
+    supabase.from('admin_input').select('id, nama').eq('aktif', true).is('voided_at', null).order('nama'),
   ])
 
   const canManage = ['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')
@@ -45,10 +51,13 @@ export default async function POVendorPage() {
       poList={poList ?? []}
       poItems={poItems ?? []}
       batchList={batchList ?? []}
+      batchItemsList={batchItemsList ?? []}
       rejectList={rejectList ?? []}
       sjList={sjList ?? []}
       stokList={stokList ?? []}
       monitoring={monitoring ?? []}
+      timAnggotaList={timAnggotaList ?? []}
+      adminInputList={adminInputList ?? []}
       userRole={profile?.role ?? 'operator_produksi'}
       userName={profile?.name ?? ''}
       canManage={canManage}
