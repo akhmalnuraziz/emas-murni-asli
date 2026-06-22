@@ -86,6 +86,78 @@ export async function toggleProdukAktif(id: number, aktif: boolean) {
   return { success: true }
 }
 
+// ── MASTER KATEGORI REJECT ────────────────────────────────────────────────────
+
+export async function createKategoriReject(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const nama = (formData.get('nama') as string)?.trim()
+  if (!nama) return { error: 'Nama kategori wajib diisi' }
+
+  const { count } = await supabase.from('reject_kategori_packaging').select('*', { count: 'exact', head: true })
+  const kode = `RJK${String((count ?? 0) + 1).padStart(3, '0')}`
+  const urutan = parseInt(formData.get('urutan') as string) || ((count ?? 0) + 1)
+
+  const { error } = await supabase.from('reject_kategori_packaging').insert({
+    kode, nama, urutan, aktif: true,
+  })
+  if (error) return { error: error.message }
+  revalidatePath('/po-vendor-packaging')
+  return { success: true }
+}
+
+export async function updateKategoriReject(id: number, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const nama = (formData.get('nama') as string)?.trim()
+  if (!nama) return { error: 'Nama kategori wajib diisi' }
+
+  const { error } = await supabase.from('reject_kategori_packaging').update({
+    nama,
+    urutan: parseInt(formData.get('urutan') as string) || 0,
+  }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/po-vendor-packaging')
+  return { success: true }
+}
+
+export async function toggleKategoriRejectAktif(id: number, aktif: boolean) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { error } = await supabase.from('reject_kategori_packaging').update({ aktif }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/po-vendor-packaging')
+  return { success: true }
+}
+
+export async function deleteKategoriReject(id: number) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+
+  // Soft delete kalau sudah pernah dipakai, hard delete kalau belum
+  const { count } = await supabase.from('po_packaging_reject')
+    .select('*', { count: 'exact', head: true }).eq('kategori_id', id)
+  if ((count ?? 0) > 0) {
+    await supabase.from('reject_kategori_packaging').update({
+      voided_at: new Date().toISOString(), aktif: false,
+    }).eq('id', id)
+  } else {
+    await supabase.from('reject_kategori_packaging').delete().eq('id', id)
+  }
+  revalidatePath('/po-vendor-packaging')
+  return { success: true }
+}
+
 // ── VENDOR ────────────────────────────────────────────────────────────────────
 
 export async function createVendor(formData: FormData) {
@@ -475,6 +547,14 @@ export async function editQCResult(batchId: number, newQtyAcc: number, newQtyRej
   if (!batch) return { error: 'Batch tidak ditemukan' }
   if (batch.status_qc !== 'selesai') return { error: 'QC belum selesai, gunakan form QC biasa' }
 
+  // Guard: jangan edit kalau ada reject yang sudah diretur/dikirim SJ
+  const { data: nonPending } = await supabase.from('po_packaging_reject')
+    .select('id').eq('batch_id', batchId).neq('jenis', 'lebihan')
+    .not('sj_retur_id', 'is', null).limit(1)
+  if (nonPending && nonPending.length > 0) {
+    return { error: 'Tidak bisa edit QC: reject batch ini sudah masuk SJ Retur. Reset SJ Retur dulu.' }
+  }
+
   const maxCheck = batch.qty_diterima - (batch.qty_lebih ?? 0)
   if (newQtyAcc + newQtyReject !== maxCheck)
     return { error: `Total ACC+Reject harus ${maxCheck} pcs` }
@@ -524,12 +604,20 @@ export async function submitQC(formData: FormData) {
 
   const batchId   = parseInt(formData.get('batch_id') as string)
   const qtyAcc    = parseInt(formData.get('qty_acc') as string)
-  const qtyReject = parseInt(formData.get('qty_reject') as string)
   const qcTanggal = formData.get('qc_tanggal') as string
+  const rejectItemsRaw = formData.get('reject_items') as string
+  // reject_items: [{ qty, kategori_id?, kategori_nama?, alasan_manual?, catatan? }]
+  const rejectRows: { qty: number; kategori_id?: number; kategori_nama?: string; alasan_manual?: string; catatan?: string }[]
+    = rejectItemsRaw ? JSON.parse(rejectItemsRaw) : []
+  const qtyReject = rejectRows.reduce((s, r) => s + (r.qty || 0), 0)
 
-  if (isNaN(qtyAcc) || qtyAcc < 0)     return { error: 'Qty ACC tidak valid' }
-  if (isNaN(qtyReject) || qtyReject < 0) return { error: 'Qty reject tidak valid' }
+  if (isNaN(qtyAcc) || qtyAcc < 0) return { error: 'Qty ACC tidak valid' }
+  if (qtyReject < 0) return { error: 'Qty reject tidak valid' }
   if (!qcTanggal) return { error: 'Tanggal QC wajib diisi' }
+  for (const r of rejectRows) {
+    if (!r.qty || r.qty <= 0) return { error: 'Qty reject per kategori harus > 0' }
+    if (!r.kategori_id && !r.alasan_manual?.trim()) return { error: 'Pilih kategori reject atau isi alasan manual' }
+  }
 
   const { data: batch } = await supabase.from('po_batch_penerimaan')
     .select('*').eq('id', batchId).single()
@@ -549,7 +637,6 @@ export async function submitQC(formData: FormData) {
 
   const { error } = await supabase.from('po_batch_penerimaan').update({
     qty_acc: qtyAcc,
-    qty_reject: qtyReject,
     status_qc: 'selesai',
     status: 'selesai',
     qc_tanggal: qcTanggal,
@@ -576,15 +663,28 @@ export async function submitQC(formData: FormData) {
       })
   }
 
+  // Resolve kategori_nama snapshot dari master kalau hanya kategori_id yang dikirim
+  const katIds = rejectRows.map(r => r.kategori_id).filter(Boolean) as number[]
+  let katMap: Record<number, string> = {}
+  if (katIds.length > 0) {
+    const { data: kats } = await supabase.from('reject_kategori_packaging')
+      .select('id, nama').in('id', katIds)
+    katMap = Object.fromEntries((kats ?? []).map((k: any) => [k.id, k.nama]))
+  }
+
   const rejectItems: any[] = []
-  if (qtyReject > 0) {
+  for (const r of rejectRows) {
     rejectItems.push({
       batch_id: batchId, nomor_batch: batch.nomor_batch,
       po_id: batch.po_id, po_nomor: batch.po_nomor,
       vendor_id: batch.vendor_id, vendor_nama: batch.vendor_nama,
       produk_id: batch.produk_id, produk_kode: batch.produk_kode, produk_nama: batch.produk_nama,
       tanggal_terima: batch.tanggal_terima,
-      jenis: 'reject', qty: qtyReject,
+      jenis: 'reject', qty: r.qty,
+      kategori_id: r.kategori_id || null,
+      kategori_nama: r.kategori_id ? (katMap[r.kategori_id] ?? null) : null,
+      alasan_manual: r.alasan_manual?.trim() || null,
+      catatan: r.catatan?.trim() || null,
     })
   }
   if ((batch.qty_lebih ?? 0) > 0) {
@@ -600,6 +700,9 @@ export async function submitQC(formData: FormData) {
   if (rejectItems.length > 0) {
     await supabase.from('po_packaging_reject').insert(rejectItems)
   }
+
+  // Update batch.qty_reject ringkasan (total semua kategori)
+  await supabase.from('po_batch_penerimaan').update({ qty_reject: qtyReject }).eq('id', batchId)
 
   revalidatePath('/po-vendor-packaging')
   return { success: true }

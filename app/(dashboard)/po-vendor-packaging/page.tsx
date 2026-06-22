@@ -14,6 +14,7 @@ export default async function POVendorPage() {
   const [
     { data: vendors },
     { data: produkList },
+    { data: kategoriRejectList },
     { data: poList },
     { data: poItems },
     { data: batchList },
@@ -24,11 +25,12 @@ export default async function POVendorPage() {
   ] = await Promise.all([
     supabase.from('vendor_packaging').select('*').is('voided_at', null).order('nama'),
     supabase.from('produk_packaging').select('*').eq('aktif', true).order('nama'),
+    supabase.from('reject_kategori_packaging').select('*').is('voided_at', null).order('urutan').order('nama'),
     supabase.from('po_packaging').select('*').is('voided_at', null).order('created_at', { ascending: false }).limit(200),
     supabase.from('po_packaging_items').select('*').order('po_id').limit(2000),
     supabase.from('po_batch_penerimaan').select('*').order('created_at', { ascending: false }).limit(500),
     supabase.from('po_packaging_reject').select('*').order('created_at', { ascending: false }).limit(500),
-    supabase.from('sj_retur_packaging').select('*').order('created_at', { ascending: false }).limit(200),
+    supabase.from('sj_retur_packaging').select('*, items:po_packaging_reject(produk_nama, qty, jenis, kategori_nama, alasan_manual)').order('created_at', { ascending: false }).limit(200),
     supabase.from('stok_packaging').select('*').order('produk_id'),
     supabase.from('po_packaging_monitoring').select('*').order('created_at', { ascending: false }),
   ])
@@ -39,6 +41,7 @@ export default async function POVendorPage() {
     <POVendorClient
       vendors={vendors ?? []}
       produkList={produkList ?? []}
+      kategoriRejectList={kategoriRejectList ?? []}
       poList={poList ?? []}
       poItems={poItems ?? []}
       batchList={batchList ?? []}
