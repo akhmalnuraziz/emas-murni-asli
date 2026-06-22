@@ -302,7 +302,13 @@ export async function createBatchPenerimaan(formData: FormData) {
   const sisaPO = item.qty_po - totalSudahDatang
   const qtyLebih = Math.max(0, qtyDiterima - sisaPO)
 
-  const nomor = await genNomor(supabase, 'batch_penerimaan', 'BTH')
+  const nomorManual = (formData.get('nomor_batch') as string)?.trim()
+  const nomor = nomorManual || await genNomor(supabase, 'batch_penerimaan', 'BTH')
+
+  // Check duplicate nomor_batch
+  const { data: dupBatch } = await supabase.from('po_batch_penerimaan').select('id').eq('nomor_batch', nomor).single()
+  if (dupBatch) return { error: `Nomor batch "${nomor}" sudah digunakan` }
+
   const fotosRaw = formData.get('fotos_b64') as string
   const fotosB64 = fotosRaw ? JSON.parse(fotosRaw) : []
   const fotoUrls = fotosB64.length > 0 ? await uploadFotos(supabase, fotosB64, nomor) : []

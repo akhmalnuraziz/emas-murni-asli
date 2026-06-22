@@ -3,6 +3,22 @@ import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
+function PrintButtons() {
+  'use client'
+  return (
+    <div className="no-print fixed top-4 right-4 z-50 flex gap-2">
+      <button onClick={() => window.print()}
+        className="px-4 py-2 bg-orange-500 text-white rounded-xl text-sm font-bold shadow">
+        🖨️ Cetak / Simpan PDF
+      </button>
+      <button onClick={() => window.history.back()}
+        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl text-sm font-bold">
+        ← Kembali
+      </button>
+    </div>
+  )
+}
+
 export default async function SJReturPrintPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
@@ -19,34 +35,14 @@ export default async function SJReturPrintPage({ params }: { params: Promise<{ i
   const fmtDate = (d: string) => new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
   const fmtNum = (n: number) => n.toLocaleString('id-ID')
 
-  // Group by po_nomor
-  const grouped = (items ?? []).reduce((acc: any, item: any) => {
-    if (!acc[item.po_nomor]) acc[item.po_nomor] = []
-    acc[item.po_nomor].push(item)
-    return acc
-  }, {} as Record<string, any[]>)
-
   return (
     <>
       <style>{`
-        @media print {
-          .no-print { display: none !important; }
-          body { margin: 0; }
-          .page { box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; }
-        }
+        @media print { .no-print { display: none !important; } body { margin: 0; } .page { box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; } }
         body { background: #f8f9fa; font-family: 'Inter', sans-serif; }
       `}</style>
 
-      <div className="no-print fixed top-4 right-4 z-50 flex gap-2">
-        <button onClick={() => window.print()}
-          className="px-4 py-2 bg-orange-500 text-white rounded-xl text-sm font-bold shadow">
-          🖨️ Cetak / Simpan PDF
-        </button>
-        <button onClick={() => window.history.back()}
-          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl text-sm font-bold">
-          ← Kembali
-        </button>
-      </div>
+      <PrintButtons />
 
       <div className="page max-w-[700px] mx-auto my-8 bg-white rounded-2xl shadow-lg p-10">
         {/* Header */}
