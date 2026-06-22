@@ -258,7 +258,30 @@ export async function deletePO(id: number) {
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
   if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat yang bisa menghapus PO' }
 
-  // Delete cascade: batch → reject → items → po
+  // 1. Reverse stok untuk semua batch yang sudah QC selesai
+  const { data: batches } = await supabase.from('po_batch_penerimaan')
+    .select('produk_id, qty_acc').eq('po_id', id).eq('status_qc', 'selesai')
+  for (const b of batches ?? []) {
+    if ((b.qty_acc ?? 0) > 0) {
+      const { data: stok } = await supabase.from('stok_packaging')
+        .select('stok_qty').eq('produk_id', b.produk_id).single()
+      if (stok) {
+        await supabase.from('stok_packaging')
+          .update({ stok_qty: Math.max(0, (stok.stok_qty ?? 0) - b.qty_acc) })
+          .eq('produk_id', b.produk_id)
+      }
+    }
+  }
+
+  // 2. Hapus SJ Retur yang terkait dengan reject PO ini
+  const { data: rejects } = await supabase.from('po_packaging_reject')
+    .select('sj_retur_id').eq('po_id', id).not('sj_retur_id', 'is', null)
+  const sjIds = [...new Set((rejects ?? []).map((r: any) => r.sj_retur_id).filter(Boolean))]
+  if (sjIds.length > 0) {
+    await supabase.from('sj_retur_packaging').delete().in('id', sjIds)
+  }
+
+  // 3. Delete cascade: reject → batch → items → po
   await supabase.from('po_packaging_reject').delete().eq('po_id', id)
   await supabase.from('po_batch_penerimaan').delete().eq('po_id', id)
   await supabase.from('po_packaging_items').delete().eq('po_id', id)
