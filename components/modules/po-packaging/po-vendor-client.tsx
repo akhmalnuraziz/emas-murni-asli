@@ -537,15 +537,27 @@ export default function POVendorClient({
           ) : (
             <div className="space-y-2">
               {sjList.map((sj: any) => (
-                <div key={sj.id} className="rounded-2xl px-4 py-3 flex items-center justify-between bg-white border border-slate-200">
-                  <div>
-                    <p className="text-[12px] font-mono font-bold text-orange-600">{sj.nomor_sj}</p>
-                    <p className="text-[11px] text-slate-500">{sj.vendor_nama} · {fmtNum(sj.total_qty)} pcs · {fmtDate(sj.tanggal_retur)}</p>
+                <div key={sj.id} className="rounded-2xl px-4 py-3 bg-white border border-slate-200">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-mono font-bold text-orange-600">{sj.nomor_sj}</p>
+                      <p className="text-[11px] text-slate-500">{sj.vendor_nama} · {fmtDate(sj.tanggal_retur)}</p>
+                      {/* Detail produk */}
+                      <div className="mt-1.5 space-y-0.5">
+                        {(sj.items ?? []).map((it: any, i: number) => (
+                          <p key={i} className="text-[11px] text-slate-600">
+                            <span className="font-semibold">{it.produk_nama}</span>
+                            <span className="text-slate-400"> · {fmtNum(it.qty)} pcs · Diretur</span>
+                          </p>
+                        ))}
+                      </div>
+                      <p className="text-[11px] font-bold text-orange-600 mt-1">Total: {fmtNum(sj.total_qty)} pcs</p>
+                    </div>
+                    <a href={`/po-vendor-packaging/sj-retur/${sj.id}`} target="_blank"
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-orange-600 rounded-xl bg-orange-50 hover:bg-orange-100 flex-shrink-0">
+                      <Printer size={11}/> Cetak
+                    </a>
                   </div>
-                  <a href={`/po-vendor-packaging/sj-retur/${sj.id}`} target="_blank"
-                    className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-orange-600 rounded-xl bg-orange-50 hover:bg-orange-100">
-                    <Printer size={11}/> Cetak
-                  </a>
                 </div>
               ))}
             </div>
@@ -1117,68 +1129,99 @@ function RejectModal({ item, onClose, onSave }: { item: any; onClose: () => void
 
 function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]; rejectList: any[]; onClose: () => void; onSave: (fd: FormData) => Promise<void> }) {
   const [vendorId, setVendorId] = useState<number | null>(null)
-  const [selected, setSelected] = useState<number[]>([])
   const [tanggal, setTanggal]   = useState(new Date().toISOString().split('T')[0])
   const [catatan, setCatatan]   = useState('')
   const [loading, setLoading]   = useState(false)
+  // selectedItems: { [reject_id]: qty_retur }
+  const [selectedQty, setSelectedQty] = useState<Record<number, number>>({})
 
-  const vendorRejects  = vendorId ? rejectList.filter((r: any) => r.vendor_id === vendorId) : []
-  const totalSelected  = rejectList.filter((r: any) => selected.includes(r.id)).reduce((s: number, r: any) => s + r.qty, 0)
-  const toggle         = (id: number) => setSelected(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])
+  const vendorRejects = vendorId ? rejectList.filter((r: any) => r.vendor_id === vendorId) : []
+  const isSelected    = (id: number) => id in selectedQty
+  const toggle        = (r: any) => {
+    setSelectedQty(p => {
+      const n = { ...p }
+      if (r.id in n) { delete n[r.id]; return n }
+      return { ...n, [r.id]: r.qty }
+    })
+  }
+  const setQty        = (id: number, val: number) => setSelectedQty(p => ({ ...p, [id]: val }))
+  const selectAll     = () => setSelectedQty(Object.fromEntries(vendorRejects.map((r: any) => [r.id, r.qty])))
+
+  const selectedItems = Object.entries(selectedQty).map(([id, qty]) => ({ reject_id: parseInt(id), qty_retur: qty }))
+  const totalSelected = selectedItems.reduce((s, i) => s + i.qty_retur, 0)
+  const hasItems      = selectedItems.length > 0 && selectedItems.every(i => i.qty_retur > 0)
 
   return (
     <ModalShell title="Buat Surat Jalan Retur" onClose={onClose}>
       <div className="space-y-3">
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Vendor *</label>
-          <select value={vendorId ?? ''} onChange={e => { setVendorId(parseInt(e.target.value) || null); setSelected([]) }} className={inp}>
+          <select value={vendorId ?? ''} onChange={e => { setVendorId(parseInt(e.target.value) || null); setSelectedQty({}) }} className={inp}>
             <option value="">— Pilih Vendor —</option>
             {vendors.map((v: any) => <option key={v.id} value={v.id}>{v.nama}</option>)}
           </select>
         </div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Retur *</label>
           <input type="date" value={tanggal} onChange={e => setTanggal(e.target.value)} className={inp}/></div>
+
         {vendorId && (
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <p className="text-[12px] font-semibold text-slate-500">Pilih Item ({selected.length} · {totalSelected} pcs)</p>
+              <p className="text-[12px] font-semibold text-slate-500">
+                Pilih Item ({selectedItems.length} dipilih · {fmtNum(totalSelected)} pcs)
+              </p>
               {vendorRejects.length > 0 && (
-                <button type="button" onClick={() => setSelected(vendorRejects.map((r: any) => r.id))}
+                <button type="button" onClick={selectAll}
                   className="text-[10px] font-bold text-violet-600">Pilih Semua</button>
               )}
             </div>
-            <div className="space-y-1.5 max-h-48 overflow-y-auto">
+            <div className="space-y-2 max-h-64 overflow-y-auto">
               {vendorRejects.length === 0 ? (
-                <p className="text-[12px] text-slate-400 py-2 text-center">Tidak ada reject pending</p>
+                <p className="text-[12px] text-slate-400 py-2 text-center">Tidak ada reject pending dari vendor ini</p>
               ) : vendorRejects.map((r: any) => (
-                <button key={r.id} type="button" onClick={() => toggle(r.id)}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl border text-left transition-all ${selected.includes(r.id) ? 'border-violet-400 bg-violet-50' : 'border-gray-200 bg-white'}`}>
-                  <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${selected.includes(r.id) ? 'bg-violet-600' : 'border border-gray-300'}`}>
-                    {selected.includes(r.id) && <Check size={10} className="text-white"/>}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-semibold text-slate-700">{r.produk_nama} · {r.qty} pcs</p>
-                    <p className="text-[10px] text-slate-400">Batch {r.nomor_batch} · {fmtDate(r.tanggal_terima)}</p>
-                  </div>
-                </button>
+                <div key={r.id}
+                  className={`rounded-xl border transition-all ${isSelected(r.id) ? 'border-violet-400 bg-violet-50' : 'border-gray-200 bg-white'}`}>
+                  <button type="button" onClick={() => toggle(r)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left">
+                    <div className={`w-4 h-4 rounded flex-shrink-0 flex items-center justify-center ${isSelected(r.id) ? 'bg-violet-600' : 'border border-gray-300'}`}>
+                      {isSelected(r.id) && <Check size={10} className="text-white"/>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-semibold text-slate-700">{r.produk_nama}</p>
+                      <p className="text-[10px] text-slate-400">Batch {r.nomor_batch} · Total reject: <b>{fmtNum(r.qty)} pcs</b></p>
+                    </div>
+                  </button>
+                  {/* Qty input muncul saat dipilih */}
+                  {isSelected(r.id) && (
+                    <div className="px-3 pb-2.5 flex items-center gap-2">
+                      <label className="text-[11px] text-slate-500 font-semibold whitespace-nowrap">Qty diretur:</label>
+                      <input type="number" min="1" max={r.qty} value={selectedQty[r.id] ?? r.qty}
+                        onChange={e => setQty(r.id, Math.min(r.qty, Math.max(1, parseInt(e.target.value) || 1)))}
+                        className="w-24 h-8 rounded-lg border border-violet-200 px-2 text-[13px] font-bold text-violet-700 bg-white focus:outline-none focus:ring-2 focus:ring-violet-300"/>
+                      <span className="text-[11px] text-slate-400">/ {fmtNum(r.qty)} pcs</span>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           </div>
         )}
+
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan SJ</label>
           <textarea value={catatan} onChange={e => setCatatan(e.target.value)} rows={2} className={inp}/></div>
+
         <button onClick={async () => {
-          if (!vendorId || !selected.length) return
+          if (!vendorId || !hasItems) return
           setLoading(true)
           const fd = new FormData()
           fd.set('vendor_id', String(vendorId))
           fd.set('tanggal_retur', tanggal)
-          fd.set('reject_ids', JSON.stringify(selected))
+          fd.set('items', JSON.stringify(selectedItems))
           fd.set('catatan', catatan)
           await onSave(fd)
           setLoading(false)
-        }} disabled={loading || !vendorId || !selected.length}
+        }} disabled={loading || !vendorId || !hasItems}
           className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
-          {loading ? 'Membuat SJ...' : `Buat SJ Retur (${totalSelected} pcs)`}
+          {loading ? 'Membuat SJ...' : `Buat SJ Retur (${fmtNum(totalSelected)} pcs)`}
         </button>
       </div>
     </ModalShell>
