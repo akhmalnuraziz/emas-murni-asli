@@ -30,7 +30,7 @@ export default async function POVendorPage() {
     supabase.from('po_packaging_items').select('*').order('po_id').limit(2000),
     supabase.from('po_batch_penerimaan').select('*').order('created_at', { ascending: false }).limit(500),
     supabase.from('po_packaging_reject').select('*').order('created_at', { ascending: false }).limit(500),
-    supabase.from('sj_retur_packaging').select('*, items:po_packaging_reject(produk_nama, qty, jenis, kategori_nama, alasan_manual)').order('created_at', { ascending: false }).limit(200),
+    supabase.from('sj_retur_packaging').select('*, items:sj_retur_packaging_items(produk_nama, qty_retur, qty_diganti, jenis, kategori_nama, alasan_manual)').order('created_at', { ascending: false }).limit(200),
     supabase.from('stok_packaging').select('*').order('produk_id'),
     supabase.from('po_packaging_monitoring').select('*').order('created_at', { ascending: false }),
   ])

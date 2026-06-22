@@ -345,7 +345,7 @@ export async function deletePO(id: number) {
     }
   }
 
-  // 2. Hapus SJ Retur yang terkait dengan reject PO ini
+  // 2. Hapus SJ Retur yang terkait dengan reject PO ini (cascade hapus sj_retur_packaging_items)
   const { data: batchIds } = await supabase.from('po_batch_penerimaan')
     .select('id').eq('po_id', id)
   const bIds = (batchIds ?? []).map((b: any) => b.id)
@@ -501,15 +501,16 @@ export async function deleteBatch(id: number) {
     }
   }
 
-  // Hapus SJ Retur yang orphan setelah reject dihapus
+  // Catat SJ yang terkait reject batch ini sebelum reject dihapus
   const { data: rejectsForSJ } = await supabase.from('po_packaging_reject')
     .select('sj_retur_id').eq('batch_id', id).not('sj_retur_id', 'is', null)
   const sjIds = [...new Set((rejectsForSJ ?? []).map((r: any) => r.sj_retur_id).filter(Boolean))]
 
-  // Hapus reject records terkait batch ini
+  // Hapus reject records (akan SET NULL reject_id di sj_retur_packaging_items)
   await supabase.from('po_packaging_reject').delete().eq('batch_id', id)
 
-  // Hapus SJ Retur yang tidak lagi punya reject items
+  // Untuk tiap SJ terkait: cek apakah masih ada reject aktif yang merujuk.
+  // Jika tidak, hapus SJ-nya (cascade ke sj_retur_packaging_items).
   for (const sjId of sjIds) {
     const { count } = await supabase.from('po_packaging_reject')
       .select('*', { count: 'exact', head: true }).eq('sj_retur_id', sjId)
@@ -708,21 +709,7 @@ export async function submitQC(formData: FormData) {
   return { success: true }
 }
 
-// ── PENANGANAN REJECT/LEBIHAN ──────────────────────────────────────────────────
-
-export async function updatePenangananReject(id: number, status: string, keterangan?: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Unauthorized' }
-
-  const { error } = await supabase.from('po_packaging_reject').update({
-    status_penanganan: status,
-    penanganan_keterangan: keterangan || null,
-  }).eq('id', id)
-  if (error) return { error: error.message }
-  revalidatePath('/po-vendor-packaging')
-  return { success: true }
-}
+// ── REJECT ITEM ────────────────────────────────────────────────────────────────
 
 export async function deleteRejectItem(id: number) {
   const supabase = await createClient()
@@ -743,9 +730,13 @@ export async function resetRejectStatus(id: number) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
 
-  // Ambil sj_retur_id sebelum di-reset
   const { data: reject } = await supabase.from('po_packaging_reject')
     .select('sj_retur_id').eq('id', id).single()
+
+  // Hapus item SJ yang nge-reference reject ini
+  if (reject?.sj_retur_id) {
+    await supabase.from('sj_retur_packaging_items').delete().eq('reject_id', id)
+  }
 
   // Reset reject ke pending
   await supabase.from('po_packaging_reject').update({
@@ -755,13 +746,19 @@ export async function resetRejectStatus(id: number) {
     tanggal_retur: null,
   }).eq('id', id)
 
-  // Jika punya SJ, cek apakah SJ masih punya item lain — kalau tidak ada, hapus SJ-nya
+  // Jika SJ tidak punya item lain — hapus SJ + total_qty 0
   if (reject?.sj_retur_id) {
-    const { count } = await supabase.from('po_packaging_reject')
+    const { count } = await supabase.from('sj_retur_packaging_items')
       .select('*', { count: 'exact', head: true })
       .eq('sj_retur_id', reject.sj_retur_id)
     if ((count ?? 0) === 0) {
       await supabase.from('sj_retur_packaging').delete().eq('id', reject.sj_retur_id)
+    } else {
+      // Refresh total_qty
+      const { data: remaining } = await supabase.from('sj_retur_packaging_items')
+        .select('qty_retur').eq('sj_retur_id', reject.sj_retur_id)
+      const total = (remaining ?? []).reduce((s: number, r: any) => s + r.qty_retur, 0)
+      await supabase.from('sj_retur_packaging').update({ total_qty: total }).eq('id', reject.sj_retur_id)
     }
   }
 
@@ -779,7 +776,8 @@ export async function createSJRetur(formData: FormData) {
 
   const vendorId   = parseInt(formData.get('vendor_id') as string)
   const tanggal    = formData.get('tanggal_retur') as string
-  const itemsRaw   = formData.get('items') as string  // [{ reject_id, qty_retur }]
+  const tglJatuhTempo = (formData.get('tanggal_jatuh_tempo_ganti') as string) || null
+  const itemsRaw   = formData.get('items') as string
 
   if (!vendorId) return { error: 'Vendor wajib dipilih' }
   if (!tanggal)  return { error: 'Tanggal retur wajib diisi' }
@@ -803,7 +801,6 @@ export async function createSJRetur(formData: FormData) {
     if (r.status_penanganan === 'diretur') return { error: `${r.produk_nama} sudah diretur sebelumnya` }
   }
 
-  // Validate qty_retur tidak melebihi qty reject
   for (const it of items) {
     const r = rejects.find((x: any) => x.id === it.reject_id)
     if (r && it.qty_retur > r.qty) return { error: `Qty retur ${r.produk_nama} (${it.qty_retur}) melebihi qty reject (${r.qty})` }
@@ -815,19 +812,23 @@ export async function createSJRetur(formData: FormData) {
   const { data: sj, error } = await supabase.from('sj_retur_packaging').insert({
     nomor_sj: nomor,
     tanggal_retur: tanggal,
+    tanggal_jatuh_tempo_ganti: tglJatuhTempo,
     vendor_id: vendorId,
     vendor_nama: vendor.nama,
     total_qty: totalQty,
+    total_qty_diganti: 0,
+    status: 'menunggu_ganti',
     catatan: (formData.get('catatan') as string) || null,
     created_by: user.id,
   }).select('id').single()
   if (error) return { error: error.message }
 
-  // Proses setiap item — jika partial, split reject
+  // Per item: update reject + insert item snapshot
   for (const it of items) {
     const r = rejects.find((x: any) => x.id === it.reject_id)!
+    let finalRejectId = it.reject_id
+
     if (it.qty_retur === r.qty) {
-      // Full retur
       await supabase.from('po_packaging_reject').update({
         status_penanganan: 'diretur', sj_retur_id: sj.id, tanggal_retur: tanggal,
       }).eq('id', it.reject_id)
@@ -837,7 +838,6 @@ export async function createSJRetur(formData: FormData) {
         qty: it.qty_retur,
         status_penanganan: 'diretur', sj_retur_id: sj.id, tanggal_retur: tanggal,
       }).eq('id', it.reject_id)
-      // Sisa yang tidak diretur → buat reject baru pending
       await supabase.from('po_packaging_reject').insert({
         batch_id: r.batch_id, nomor_batch: r.nomor_batch,
         po_id: r.po_id, po_nomor: r.po_nomor,
@@ -845,9 +845,24 @@ export async function createSJRetur(formData: FormData) {
         produk_id: r.produk_id, produk_kode: r.produk_kode, produk_nama: r.produk_nama,
         tanggal_terima: r.tanggal_terima,
         jenis: r.jenis, qty: r.qty - it.qty_retur,
+        kategori_id: r.kategori_id, kategori_nama: r.kategori_nama,
+        alasan_manual: r.alasan_manual, catatan: r.catatan,
         status_penanganan: 'pending',
       })
     }
+
+    // Snapshot item ke sj_retur_packaging_items
+    await supabase.from('sj_retur_packaging_items').insert({
+      sj_retur_id: sj.id, reject_id: finalRejectId,
+      produk_id: r.produk_id, produk_kode: r.produk_kode, produk_nama: r.produk_nama,
+      po_id: r.po_id, po_nomor: r.po_nomor,
+      batch_id: r.batch_id, nomor_batch: r.nomor_batch,
+      tanggal_terima: r.tanggal_terima,
+      jenis: r.jenis || 'reject',
+      qty_retur: it.qty_retur, qty_diganti: 0,
+      kategori_id: r.kategori_id, kategori_nama: r.kategori_nama,
+      alasan_manual: r.alasan_manual, catatan: r.catatan,
+    })
   }
 
   revalidatePath('/po-vendor-packaging')

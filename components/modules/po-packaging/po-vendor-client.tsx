@@ -13,7 +13,7 @@ import {
   createKategoriReject, updateKategoriReject, toggleKategoriRejectAktif, deleteKategoriReject,
   createPO, updatePO, voidPO, deletePO,
   createBatchPenerimaan, submitQC, deleteBatch, editQCResult,
-  updatePenangananReject, deleteRejectItem, resetRejectStatus, createSJRetur,
+  deleteRejectItem, resetRejectStatus, createSJRetur,
 } from '@/app/(dashboard)/po-vendor-packaging/actions'
 
 const fmtRp = (n: number | null | undefined) => {
@@ -56,16 +56,18 @@ function useToast() {
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
-    open:        { label: 'Open',        cls: 'bg-blue-50 text-blue-600' },
-    menunggu:    { label: 'Menunggu',    cls: 'bg-blue-50 text-blue-600' },
-    partial:     { label: 'Partial',     cls: 'bg-amber-50 text-amber-600' },
-    selesai:     { label: 'Selesai',     cls: 'bg-green-50 text-green-700' },
-    void:        { label: 'Void',        cls: 'bg-red-50 text-red-500' },
-    pending_qc:  { label: 'Pending QC',  cls: 'bg-orange-50 text-orange-600' },
-    pending:     { label: 'Pending',     cls: 'bg-gray-50 text-gray-500' },
-    diretur:     { label: 'Diretur',     cls: 'bg-green-50 text-green-700' },
-    disimpan:    { label: 'Disimpan',    cls: 'bg-purple-50 text-purple-600' },
-    ditukar:     { label: 'Ditukar',     cls: 'bg-teal-50 text-teal-700' },
+    open:             { label: 'Open',             cls: 'bg-blue-50 text-blue-600' },
+    menunggu:         { label: 'Menunggu',         cls: 'bg-blue-50 text-blue-600' },
+    partial:          { label: 'Partial',          cls: 'bg-amber-50 text-amber-600' },
+    selesai:          { label: 'Selesai',          cls: 'bg-green-50 text-green-700' },
+    void:             { label: 'Void',             cls: 'bg-red-50 text-red-500' },
+    pending_qc:       { label: 'Pending QC',       cls: 'bg-orange-50 text-orange-600' },
+    pending:          { label: 'Pending',          cls: 'bg-gray-50 text-gray-500' },
+    diretur:          { label: 'Diretur',          cls: 'bg-orange-50 text-orange-600' },
+    menunggu_ganti:   { label: 'Menunggu Ganti',   cls: 'bg-amber-50 text-amber-700' },
+    sebagian_diganti: { label: 'Sebagian Diganti', cls: 'bg-blue-50 text-blue-600' },
+    selesai_diganti:  { label: 'Selesai Diganti',  cls: 'bg-green-50 text-green-700' },
+    overdue:          { label: 'Lewat Tempo',      cls: 'bg-red-50 text-red-600' },
   }
   const { label, cls } = map[status] ?? { label: status, cls: 'bg-gray-50 text-gray-500' }
   return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}`}>{label}</span>
@@ -221,7 +223,6 @@ export default function POVendorClient({
   const [batchModal, setBatchModal]   = useState<number | null>(null)  // po_id
   const [qcModal, setQcModal]         = useState<any | null>(null)
   const [editQcModal, setEditQcModal] = useState<any | null>(null)
-  const [rejectModal, setRejectModal] = useState<any | null>(null)
   const [sjModal, setSjModal]         = useState<number | null>(null)
   const [voidPoId, setVoidPoId]       = useState<number | null>(null)
   const [expandedPO, setExpandedPO]   = useState<number | null>(null)
@@ -519,19 +520,19 @@ export default function POVendorClient({
                     <p className="text-[13px] font-bold text-slate-800 mt-1">{fmtNum(r.qty)} pcs</p>
                     <p className="text-[11px] text-slate-500">{r.produk_nama} · PO {r.po_nomor} · {r.vendor_nama}</p>
                     <p className="text-[10px] text-slate-400">Batch {r.nomor_batch} · {fmtDate(r.tanggal_terima)}</p>
-                    {r.penanganan_keterangan && <p className="text-[10px] text-slate-400 mt-0.5">Ket: {r.penanganan_keterangan}</p>}
+                    {(r.kategori_nama || r.alasan_manual) && (
+                      <p className="text-[10px] mt-0.5">
+                        {r.kategori_nama && <span className="font-bold text-red-600">🏷️ {r.kategori_nama}</span>}
+                        {r.kategori_nama && r.alasan_manual && <span className="text-slate-400"> · </span>}
+                        {r.alasan_manual && <span className="text-slate-600">{r.alasan_manual}</span>}
+                      </p>
+                    )}
                   </div>
                   {canManage && (
                     <div className="flex items-center gap-1.5 flex-shrink-0">
-                      {r.status_penanganan === 'pending' && (
-                        <button onClick={() => setRejectModal(r)}
-                          className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-slate-600 rounded-xl bg-slate-100 hover:bg-slate-200">
-                          <ArrowRight size={11}/> Tangani
-                        </button>
-                      )}
                       {r.status_penanganan !== 'pending' && (
                         <button onClick={async () => {
-                          if (!confirm('Reset status ke pending?')) return
+                          if (!confirm('Reset status ke pending? SJ Retur terkait juga akan dibatalkan.')) return
                           const res = await resetRejectStatus(r.id)
                           if (res?.error) showToast(res.error, false)
                           else showToast('✅ Status direset ke pending')
@@ -576,22 +577,49 @@ export default function POVendorClient({
             <Empty text="Belum ada surat jalan retur" />
           ) : (
             <div className="space-y-2">
-              {sjList.map((sj: any) => (
+              {sjList.map((sj: any) => {
+                const totalRetur  = sj.total_qty ?? 0
+                const totalGanti  = sj.total_qty_diganti ?? 0
+                const progress    = totalRetur > 0 ? (totalGanti / totalRetur) * 100 : 0
+                const overdue     = sj.status === 'menunggu_ganti' && sj.tanggal_jatuh_tempo_ganti && new Date(sj.tanggal_jatuh_tempo_ganti) < new Date()
+                const displayStatus = overdue ? 'overdue' : (sj.status || 'menunggu_ganti')
+                return (
                 <div key={sj.id} className="rounded-2xl px-4 py-3 bg-white border border-slate-200">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-mono font-bold text-orange-600">{sj.nomor_sj}</p>
-                      <p className="text-[11px] text-slate-500">{sj.vendor_nama} · {fmtDate(sj.tanggal_retur)}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-[12px] font-mono font-bold text-orange-600">{sj.nomor_sj}</p>
+                        <StatusBadge status={displayStatus} />
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5">{sj.vendor_nama} · Dikirim {fmtDate(sj.tanggal_retur)}</p>
+                      {sj.tanggal_jatuh_tempo_ganti && (
+                        <p className={`text-[10px] ${overdue ? 'font-bold text-red-600' : 'text-amber-600'}`}>
+                          ⏰ Jatuh tempo ganti: {fmtDate(sj.tanggal_jatuh_tempo_ganti)}
+                          {overdue && ' · LEWAT TEMPO'}
+                        </p>
+                      )}
                       {/* Detail produk */}
                       <div className="mt-1.5 space-y-0.5">
                         {(sj.items ?? []).map((it: any, i: number) => (
                           <p key={i} className="text-[11px] text-slate-600">
                             <span className="font-semibold">{it.produk_nama}</span>
-                            <span className="text-slate-400"> · {fmtNum(it.qty)} pcs · Diretur</span>
+                            <span className="text-slate-400"> · {fmtNum(it.qty_retur)} pcs</span>
+                            {it.qty_diganti > 0 && <span className="text-green-600"> · {fmtNum(it.qty_diganti)} sudah diganti</span>}
+                            {it.kategori_nama && <span className="text-red-500"> · 🏷️ {it.kategori_nama}</span>}
                           </p>
                         ))}
                       </div>
-                      <p className="text-[11px] font-bold text-orange-600 mt-1">Total: {fmtNum(sj.total_qty)} pcs</p>
+                      {/* Progress bar */}
+                      <div className="mt-2">
+                        <div className="flex justify-between mb-0.5">
+                          <span className="text-[10px] font-semibold text-slate-500">{fmtNum(totalGanti)} / {fmtNum(totalRetur)} pcs diganti</span>
+                          <span className="text-[10px] font-bold text-orange-600">{progress.toFixed(0)}%</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                          <div className="h-full rounded-full bg-green-500 transition-all"
+                            style={{ width: `${Math.min(100, progress)}%` }}/>
+                        </div>
+                      </div>
                     </div>
                     <a href={`/po-vendor-packaging/sj-retur/${sj.id}`} target="_blank"
                       className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-orange-600 rounded-xl bg-orange-50 hover:bg-orange-100 flex-shrink-0">
@@ -599,7 +627,7 @@ export default function POVendorClient({
                     </a>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           )}
         </div>
@@ -846,18 +874,6 @@ export default function POVendorClient({
         />
       )}
 
-      {rejectModal !== null && (
-        <RejectModal
-          item={rejectModal}
-          onClose={() => setRejectModal(null)}
-          onSave={async (status, ket) => {
-            const r = await updatePenangananReject(rejectModal.id, status, ket)
-            if (r?.error) { showToast(r.error, false); return }
-            showToast('✅ Status reject diperbarui')
-            setRejectModal(null)
-          }}
-        />
-      )}
 
       {sjModal !== null && (
         <SJReturModal
@@ -1309,58 +1325,18 @@ function QCModal({ batch, kategoriList, onClose, onSave }: { batch: any; kategor
   )
 }
 
-function RejectModal({ item, onClose, onSave }: { item: any; onClose: () => void; onSave: (status: string, ket: string) => Promise<void> }) {
-  const [status, setStatus] = useState('disimpan')
-  const [ket, setKet]       = useState('')
-  const [loading, setLoading] = useState(false)
-  return (
-    <ModalShell title="Tangani Reject/Lebihan" onClose={onClose}>
-      <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 mb-4">
-        <p className="font-bold">{item.qty} pcs — {item.produk_nama}</p>
-        <p className="mt-0.5">PO {item.po_nomor} · Batch {item.nomor_batch}</p>
-        <p>{item.vendor_nama} · {fmtDate(item.tanggal_terima)}</p>
-      </div>
-      <div className="space-y-3">
-        <div>
-          <p className="text-[12px] font-semibold text-slate-500 mb-1.5">Status Penanganan</p>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { val: 'disimpan', label: '📦 Disimpan' },
-              { val: 'ditukar',  label: '🔄 Ditukar' },
-            ].map(({ val, label }) => (
-              <button key={val} type="button" onClick={() => setStatus(val)}
-                className={`py-2 text-[12px] font-bold rounded-xl border transition-all ${status === val ? 'border-violet-400 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500'}`}>
-                {label}
-              </button>
-            ))}
-          </div>
-          {item.jenis === 'reject' && (
-            <p className="text-[11px] text-amber-600 mt-2 px-1">
-              💡 Untuk retur ke vendor, gunakan tombol <b>Buat SJ Retur</b> di pojok kanan atas tab Reject.
-            </p>
-          )}
-        </div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan</label>
-          <textarea value={ket} onChange={e => setKet(e.target.value)} rows={2} className={inp}/></div>
-        <button onClick={async () => { setLoading(true); await onSave(status, ket); setLoading(false) }}
-          disabled={loading}
-          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
-          {loading ? 'Menyimpan...' : 'Simpan'}
-        </button>
-      </div>
-    </ModalShell>
-  )
-}
-
 function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]; rejectList: any[]; onClose: () => void; onSave: (fd: FormData) => Promise<void> }) {
   const [vendorId, setVendorId] = useState<number | null>(null)
   const [tanggal, setTanggal]   = useState(new Date().toISOString().split('T')[0])
+  const [tglJatuhTempo, setTglJatuhTempo] = useState('')
   const [catatan, setCatatan]   = useState('')
   const [loading, setLoading]   = useState(false)
-  // selectedItems: { [reject_id]: qty_retur }
   const [selectedQty, setSelectedQty] = useState<Record<number, number>>({})
 
-  const vendorRejects = vendorId ? rejectList.filter((r: any) => r.vendor_id === vendorId) : []
+  // Hanya tampilkan reject pending (yang belum di-SJ-kan)
+  const vendorRejects = vendorId
+    ? rejectList.filter((r: any) => r.vendor_id === vendorId && r.status_penanganan === 'pending' && r.jenis !== 'lebihan')
+    : []
   const isSelected    = (id: number) => id in selectedQty
   const toggle        = (r: any) => {
     setSelectedQty(p => {
@@ -1385,8 +1361,12 @@ function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]
             {vendors.map((v: any) => <option key={v.id} value={v.id}>{v.nama}</option>)}
           </select>
         </div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Retur *</label>
-          <input type="date" value={tanggal} onChange={e => setTanggal(e.target.value)} className={inp}/></div>
+        <div className="grid grid-cols-2 gap-2">
+          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tgl Retur *</label>
+            <input type="date" value={tanggal} onChange={e => setTanggal(e.target.value)} className={inp}/></div>
+          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jatuh Tempo Ganti</label>
+            <input type="date" value={tglJatuhTempo} onChange={e => setTglJatuhTempo(e.target.value)} className={inp}/></div>
+        </div>
 
         {vendorId && (
           <div>
@@ -1413,6 +1393,11 @@ function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]
                     <div className="flex-1 min-w-0">
                       <p className="text-[12px] font-semibold text-slate-700">{r.produk_nama}</p>
                       <p className="text-[10px] text-slate-400">Batch {r.nomor_batch} · Total reject: <b>{fmtNum(r.qty)} pcs</b></p>
+                      {(r.kategori_nama || r.alasan_manual) && (
+                        <p className="text-[10px] text-red-600 truncate">
+                          🏷️ {r.kategori_nama ?? r.alasan_manual}
+                        </p>
+                      )}
                     </div>
                   </button>
                   {/* Qty input muncul saat dipilih */}
@@ -1440,6 +1425,7 @@ function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]
           const fd = new FormData()
           fd.set('vendor_id', String(vendorId))
           fd.set('tanggal_retur', tanggal)
+          if (tglJatuhTempo) fd.set('tanggal_jatuh_tempo_ganti', tglJatuhTempo)
           fd.set('items', JSON.stringify(selectedItems))
           fd.set('catatan', catatan)
           await onSave(fd)

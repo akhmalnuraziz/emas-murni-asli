@@ -14,7 +14,7 @@ export default async function SJReturPrintPage({ params }: { params: Promise<{ i
   const { data: sj } = await supabase.from('sj_retur_packaging').select('*').eq('id', sjId).single()
   if (!sj) return <div className="p-8 text-center text-red-500">SJ Retur tidak ditemukan</div>
 
-  const { data: items } = await supabase.from('po_packaging_reject')
+  const { data: items } = await supabase.from('sj_retur_packaging_items')
     .select('*').eq('sj_retur_id', sjId).order('created_at')
 
   const fmtDate = (d: string) => new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -58,6 +58,12 @@ export default async function SJReturPrintPage({ params }: { params: Promise<{ i
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Qty Retur</p>
             <p className="font-bold text-slate-800">{fmtNum(sj.total_qty)} pcs</p>
           </div>
+          {sj.tanggal_jatuh_tempo_ganti && (
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Jatuh Tempo Penggantian</p>
+              <p className="font-bold text-amber-600">{fmtDate(sj.tanggal_jatuh_tempo_ganti)}</p>
+            </div>
+          )}
           {sj.catatan && (
             <div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Catatan</p>
@@ -103,7 +109,12 @@ export default async function SJReturPrintPage({ params }: { params: Promise<{ i
                     <p className="font-mono text-[10px] text-slate-500">{item.nomor_batch}</p>
                     <p className="text-[10px] text-slate-400">{fmtDate(item.tanggal_terima)}</p>
                   </td>
-                  <td className="p-2 border border-slate-100 font-bold text-right text-slate-800 text-[12px] align-top">{fmtNum(item.qty)}</td>
+                  <td className="p-2 border border-slate-100 font-bold text-right text-slate-800 text-[12px] align-top">
+                    {fmtNum(item.qty_retur)}
+                    {item.qty_diganti > 0 && (
+                      <p className="text-[9px] font-normal text-green-600 mt-0.5">{fmtNum(item.qty_diganti)} diganti</p>
+                    )}
+                  </td>
                 </tr>
               ))}
               <tr style={{ background: '#f8f4ff' }}>
