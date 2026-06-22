@@ -348,17 +348,17 @@ export default function POVendorClient({
                       {canManage && po.status !== 'void' && (
                         <>
                           <button onClick={() => setBatchModal(po.id)}
-                            className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50" title="Input Penerimaan">
-                            <Truck size={13}/>
+                            className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100">
+                            <Truck size={11}/> Terima
                           </button>
                           <button onClick={() => { setEditPoId(po.id); setPoModal(po.id) }}
-                            className="p-1.5 rounded-lg text-violet-500 hover:bg-violet-50" title="Edit PO">
-                            <Edit2 size={13}/>
+                            className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-bold text-violet-600 bg-violet-50 hover:bg-violet-100">
+                            <Edit2 size={11}/> Edit
                           </button>
                           {batches.length === 0 && (
                             <button onClick={() => setVoidPoId(po.id)}
-                              className="p-1.5 rounded-lg text-red-400 hover:bg-red-50" title="Void PO">
-                              <Trash2 size={13}/>
+                              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-bold text-red-500 bg-red-50 hover:bg-red-100">
+                              <Trash2 size={11}/> Hapus
                             </button>
                           )}
                         </>
