@@ -279,11 +279,11 @@ export default function POVendorClient({
       <div className="flex gap-1 overflow-x-auto pb-0.5 hide-scrollbar">
         {tabs.map(({ key, label, icon: Icon }) => (
           <button key={key} onClick={() => setTab(key)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-bold whitespace-nowrap transition-all flex-shrink-0 relative ${tab === key ? 'text-violet-700 bg-violet-50' : 'text-slate-500 bg-black/[0.03]'}`}>
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-bold whitespace-nowrap transition-all flex-shrink-0 ${tab === key ? 'text-violet-700 bg-violet-50' : 'text-slate-500 bg-black/[0.03]'}`}>
             <Icon size={12}/>
             {label}
             {key === 'reject' && pendingReject > 0 && (
-              <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 bg-red-500 text-white rounded-full text-[9px] flex items-center justify-center font-black">
+              <span className="min-w-[16px] h-4 px-1 bg-red-500 text-white rounded-full text-[9px] flex items-center justify-center font-black">
                 {pendingReject > 9 ? '9+' : pendingReject}
               </span>
             )}
