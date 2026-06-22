@@ -5,7 +5,7 @@ import {
   Plus, X, Check, Edit2, Trash2, ChevronDown, ChevronUp,
   Package2, Truck, ClipboardCheck, AlertTriangle, RotateCcw,
   FileText, Printer, Building2, Search, Filter, Eye,
-  ArrowRight, CheckCircle2, XCircle, Clock, BoxSelect,
+  ArrowRight, CheckCircle2, XCircle, Clock, BoxSelect, Copy,
 } from 'lucide-react'
 import {
   createVendor, updateVendor,
@@ -188,6 +188,7 @@ export default function POVendorClient({
   const [produkModal, setProdukModal] = useState<'create' | number | null>(null)
   const [poModal, setPoModal]         = useState<'create' | number | null>(null)
   const [editPoId, setEditPoId]       = useState<number | null>(null)
+  const [duplikatSrc, setDuplikatSrc] = useState<any | null>(null)
   const [batchModal, setBatchModal]   = useState<number | null>(null)  // po_id
   const [qcModal, setQcModal]         = useState<any | null>(null)     // batch object
   const [rejectModal, setRejectModal] = useState<any | null>(null)
@@ -321,6 +322,10 @@ export default function POVendorClient({
                         <button onClick={() => setBatchModal(po.id)}
                           className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50" title="Input Penerimaan">
                           <Truck size={13}/>
+                        </button>
+                        <button onClick={() => { setDuplikatSrc(po); setPoModal('create') }}
+                          className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100" title="Duplikat PO">
+                          <Copy size={13}/>
                         </button>
                         <button onClick={() => { setEditPoId(po.id); setPoModal(po.id) }}
                           className="p-1.5 rounded-lg text-violet-500 hover:bg-violet-50" title="Edit PO">
@@ -598,16 +603,17 @@ export default function POVendorClient({
         <POModal
           mode={poModal === 'create' ? 'create' : 'edit'}
           po={poModal !== 'create' ? poList.find(p => p.id === editPoId) : undefined}
+          duplikat={poModal === 'create' ? duplikatSrc : undefined}
           vendors={vendors}
           produkList={produkList}
-          onClose={() => { setPoModal(null); setEditPoId(null) }}
+          onClose={() => { setPoModal(null); setEditPoId(null); setDuplikatSrc(null) }}
           onSave={async (fd) => {
             const r = poModal === 'create'
               ? await createPO(fd)
               : await updatePO(editPoId!, fd)
             if (r?.error) { showToast(r.error, false); return }
             showToast(poModal === 'create' ? `✅ PO dibuat: ${(r as any).nomorPO}` : '✅ PO diperbarui')
-            setPoModal(null); setEditPoId(null)
+            setPoModal(null); setEditPoId(null); setDuplikatSrc(null)
           }}
         />
       )}
@@ -764,39 +770,47 @@ function VendorModal({ mode, vendor, onClose, onSave }: { mode: string; vendor?:
   )
 }
 
-function POModal({ mode, po, vendors, produkList, onClose, onSave }: { mode: string; po?: any; vendors: any[]; produkList: any[]; onClose: () => void; onSave: (fd: FormData) => Promise<void> }) {
+function POModal({ mode, po, duplikat, vendors, produkList, onClose, onSave }: { mode: string; po?: any; duplikat?: any; vendors: any[]; produkList: any[]; onClose: () => void; onSave: (fd: FormData) => Promise<void> }) {
   const [loading, setLoading] = useState(false)
+  const src = duplikat ?? po  // duplikat pre-fills create form; po pre-fills edit form
+  const isDuplikat = mode === 'create' && !!duplikat
   return (
-    <ModalShell title={mode === 'create' ? 'Buat PO Baru' : 'Edit PO'} onClose={onClose}>
+    <ModalShell title={mode === 'create' ? (isDuplikat ? `Duplikat PO — ${duplikat.produk_nama}` : 'Buat PO Baru') : 'Edit PO'} onClose={onClose}>
+      {isDuplikat && (
+        <div className="mb-3 px-3 py-2 rounded-lg bg-amber-50 border border-amber-100 text-[12px] text-amber-700">
+          Menyalin dari <span className="font-bold">{duplikat.nomor_po}</span> · Isi tanggal &amp; qty baru, nomor PO akan digenerate otomatis.
+        </div>
+      )}
       <form onSubmit={async e => { e.preventDefault(); setLoading(true); await onSave(new FormData(e.currentTarget)); setLoading(false) }}
         className="space-y-3">
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nomor PO (kosongkan untuk auto)</label>
-          <input name="nomor_po" defaultValue={po?.nomor_po} placeholder="PO/2406/0001"
-            className={inp}/></div>
+        {!isDuplikat && (
+          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nomor PO (kosongkan untuk auto)</label>
+            <input name="nomor_po" defaultValue={po?.nomor_po} placeholder="PO/2406/0001" className={inp}/></div>
+        )}
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Vendor *</label>
-          <select name="vendor_id" defaultValue={po?.vendor_id} required className={inp} disabled={mode === 'edit'}>
+          <select name="vendor_id" defaultValue={src?.vendor_id} required className={inp} disabled={mode === 'edit'}>
             <option value="">— Pilih Vendor —</option>
             {vendors.map((v: any) => <option key={v.id} value={v.id}>{v.nama}</option>)}
           </select>
           {mode === 'edit' && <input type="hidden" name="vendor_id" value={po?.vendor_id}/>}
         </div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Produk *</label>
-          <select name="produk_id" defaultValue={po?.produk_id} required className={inp} disabled={mode === 'edit'}>
+          <select name="produk_id" defaultValue={src?.produk_id} required className={inp} disabled={mode === 'edit'}>
             <option value="">— Pilih Produk —</option>
             {produkList.map((p: any) => <option key={p.id} value={p.id}>{p.nama}</option>)}
           </select>
           {mode === 'edit' && <input type="hidden" name="produk_id" value={po?.produk_id}/>}
         </div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Qty PO (pcs) *</label>
-          <input name="qty_po" type="number" min="1" defaultValue={po?.qty_po} required className={inp}/></div>
+          <input name="qty_po" type="number" min="1" defaultValue={isDuplikat ? undefined : src?.qty_po} required className={inp}/></div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal PO *</label>
-          <input name="tanggal_po" type="date" defaultValue={po?.tanggal_po} required className={inp}/></div>
+          <input name="tanggal_po" type="date" defaultValue={isDuplikat ? undefined : src?.tanggal_po} required className={inp}/></div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Jatuh Tempo</label>
-          <input name="tanggal_jatuh_tempo" type="date" defaultValue={po?.tanggal_jatuh_tempo} className={inp}/></div>
+          <input name="tanggal_jatuh_tempo" type="date" defaultValue={isDuplikat ? undefined : src?.tanggal_jatuh_tempo} className={inp}/></div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Harga Satuan (Rp)</label>
-          <input name="harga_satuan" type="number" min="0" defaultValue={po?.harga_satuan} className={inp}/></div>
+          <input name="harga_satuan" type="number" min="0" defaultValue={src?.harga_satuan} className={inp}/></div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
-          <textarea name="catatan" defaultValue={po?.catatan} rows={2} className={inp}/></div>
+          <textarea name="catatan" defaultValue={src?.catatan} rows={2} className={inp}/></div>
         <button type="submit" disabled={loading}
           className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
           {loading ? 'Menyimpan...' : mode === 'create' ? 'Buat PO' : 'Simpan Perubahan'}
