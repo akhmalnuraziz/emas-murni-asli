@@ -582,7 +582,7 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
           <div className="grid grid-cols-2 gap-3 items-end">
             <F label="Pilih Gramasi yang ingin di cetak" req>
               <select name="gramasi" value={f.gramasi} onChange={e => s('gramasi', e.target.value)} className={inp} required>
-                {GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} Gram</option>)}
+                {GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} gr</option>)}
               </select>
             </F>
             <F label="Jumlah PCS"><input name="pcs" type="number" min="1" value={f.pcs} onChange={e => s('pcs', e.target.value)} placeholder="50 — opsional" className={inp} /></F>
@@ -674,7 +674,7 @@ function TambahProduksiModal({ item, peleburanByBatch, tims, adminList, onClose,
           <div className="grid grid-cols-2 gap-3 items-end">
             <F label="Gramasi" req>
               <select name="gramasi" value={f.gramasi} onChange={e => { s('gramasi', e.target.value); s('nama_item', `LM REI ${e.target.value}GR`) }} className={inp} required>
-                {GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} Gram</option>)}
+                {GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} gr</option>)}
               </select>
             </F>
             <F label="Jumlah PCS"><input name="pcs" type="number" min="1" value={f.pcs} onChange={e => s('pcs', e.target.value)} placeholder="opsional" className={inp} /></F>
@@ -755,7 +755,7 @@ function EditModal({ item, tims, adminList, onClose, onSubmit, isPending, error 
         <form onSubmit={submit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           <F label="Nama / Label Batch"><input name="nama_item" value={f.nama_item} onChange={e => s('nama_item', e.target.value)} placeholder="cth: LM REI 10GR BATCH 26" className={inp} /></F>
           <div className="grid grid-cols-2 gap-3 items-end">
-            <F label="Pilih Gramasi" req><select name="gramasi" value={f.gramasi} onChange={e => { s('gramasi', e.target.value); s('nama_item', `LM REI ${e.target.value}GR`) }} className={inp}>{GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} Gram</option>)}</select></F>
+            <F label="Pilih Gramasi" req><select name="gramasi" value={f.gramasi} onChange={e => { s('gramasi', e.target.value); s('nama_item', `LM REI ${e.target.value}GR`) }} className={inp}>{GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} gr</option>)}</select></F>
             <F label="Jumlah PCS (opsional saat diserahkan)"><input name="pcs" type="number" min="1" value={f.pcs} onChange={e => s('pcs', e.target.value)} placeholder="Isi saat sudah diterima" className={inp} /></F>
           </div>
           <div className="grid grid-cols-2 gap-3">

@@ -1142,7 +1142,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input type="checkbox" checked={mentahChecked} onChange={e=>setMentahChecked(e.target.checked)} className="w-4 h-4 rounded accent-violet-600"/>
                   <span className="text-xs font-semibold text-gray-700">Sisa Bahan Mentah Belum Di Lebur</span>
-                  <span className="ml-auto text-[10px] text-gray-400">{formatGram(sisaMentahBelumLebur)} gr</span>
+                  <span className="ml-auto text-[10px] text-gray-400">{formatGram(sisaMentahBelumLebur)}</span>
                 </label>
                 {mentahChecked&&(
                   <div className="mt-2 pl-6">
@@ -1158,7 +1158,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input type="checkbox" checked={leburChecked} onChange={e=>setLeburChecked(e.target.checked)} className="w-4 h-4 rounded accent-violet-600"/>
                   <span className="text-xs font-semibold text-gray-700">Hasil Lebur Belum Dicetak</span>
-                  <span className="ml-auto text-[10px] text-violet-400 font-semibold">{formatGram(hasilLeburBelumCetak)} gr</span>
+                  <span className="ml-auto text-[10px] text-violet-400 font-semibold">{formatGram(hasilLeburBelumCetak)}</span>
                 </label>
                 {leburChecked&&(
                   <div className="mt-2 pl-6">
@@ -1189,7 +1189,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                           <span className="text-xs font-medium text-gray-700">{rej.kode??rej.nama_item}</span>
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">{prosesLabel}</span>
                           <span className="text-[10px] text-gray-400">({rej.gramasi}gr)</span>
-                          <span className="ml-auto text-[10px] text-red-400 font-semibold">{formatGram(rej.berat_reject)} gr{rej.pcs_reject?` · ${rej.pcs_reject} pcs`:''}</span>
+                          <span className="ml-auto text-[10px] text-red-400 font-semibold">{formatGram(rej.berat_reject)}{rej.pcs_reject?` · ${rej.pcs_reject} pcs`:''}</span>
                         </label>
                         {rejGram[rej.id]!==undefined&&(
                           <div className="mt-1 pl-6">
