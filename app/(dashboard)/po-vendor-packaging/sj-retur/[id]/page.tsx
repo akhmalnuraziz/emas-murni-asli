@@ -1,23 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import PrintButtons from './PrintButtons'
 
 export const dynamic = 'force-dynamic'
-
-function PrintButtons() {
-  'use client'
-  return (
-    <div className="no-print fixed top-4 right-4 z-50 flex gap-2">
-      <button onClick={() => window.print()}
-        className="px-4 py-2 bg-orange-500 text-white rounded-xl text-sm font-bold shadow">
-        🖨️ Cetak / Simpan PDF
-      </button>
-      <button onClick={() => window.history.back()}
-        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl text-sm font-bold">
-        ← Kembali
-      </button>
-    </div>
-  )
-}
 
 export default async function SJReturPrintPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

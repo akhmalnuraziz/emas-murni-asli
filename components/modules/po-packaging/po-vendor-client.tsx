@@ -10,7 +10,7 @@ import {
 import {
   createVendor, updateVendor,
   createProdukPackaging, updateProdukPackaging, toggleProdukAktif,
-  createPO, updatePO, voidPO,
+  createPO, updatePO, voidPO, deletePO,
   createBatchPenerimaan, submitQC,
   updatePenangananReject, deleteRejectItem, resetRejectStatus, createSJRetur,
 } from '@/app/(dashboard)/po-vendor-packaging/actions'
@@ -355,12 +355,17 @@ export default function POVendorClient({
                             className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-bold text-violet-600 bg-violet-50 hover:bg-violet-100">
                             <Edit2 size={11}/> Edit
                           </button>
-                          {batches.length === 0 && (
-                            <button onClick={() => setVoidPoId(po.id)}
-                              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-bold text-red-500 bg-red-50 hover:bg-red-100">
-                              <Trash2 size={11}/> Hapus
-                            </button>
-                          )}
+                          <button onClick={async () => {
+                            const label = batches.length > 0
+                              ? `PO ini sudah ada ${batches.length} batch penerimaan. Semua data batch & reject terkait akan IKUT TERHAPUS.\n\nYakin hapus permanen?`
+                              : `Hapus PO ${po.nomor_po} permanen? Tidak bisa dibatalkan.`
+                            if (!confirm(label)) return
+                            const r = await deletePO(po.id)
+                            if (r?.error) showToast(r.error, false)
+                            else showToast('✅ PO dihapus')
+                          }} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-bold text-red-500 bg-red-50 hover:bg-red-100">
+                            <Trash2 size={11}/> Hapus
+                          </button>
                         </>
                       )}
                     </div>

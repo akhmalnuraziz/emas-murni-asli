@@ -250,6 +250,25 @@ export async function updatePO(id: number, formData: FormData) {
   return { success: true }
 }
 
+export async function deletePO(id: number) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat yang bisa menghapus PO' }
+
+  // Delete cascade: batch → reject → items → po
+  await supabase.from('po_packaging_reject').delete().eq('po_id', id)
+  await supabase.from('po_batch_penerimaan').delete().eq('po_id', id)
+  await supabase.from('po_packaging_items').delete().eq('po_id', id)
+  const { error } = await supabase.from('po_packaging').delete().eq('id', id)
+  if (error) return { error: error.message }
+
+  revalidatePath('/po-vendor-packaging')
+  return { success: true }
+}
+
 export async function voidPO(id: number, reason: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
