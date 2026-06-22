@@ -448,6 +448,36 @@ export async function updatePenangananReject(id: number, status: string, keteran
   return { success: true }
 }
 
+export async function deleteRejectItem(id: number) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+
+  const { error } = await supabase.from('po_packaging_reject').delete().eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/po-vendor-packaging')
+  return { success: true }
+}
+
+export async function resetRejectStatus(id: number) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { error } = await supabase.from('po_packaging_reject').update({
+    status_penanganan: 'pending',
+    penanganan_keterangan: null,
+    sj_retur_id: null,
+    tanggal_retur: null,
+  }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/po-vendor-packaging')
+  return { success: true }
+}
+
 // ── SURAT JALAN RETUR ─────────────────────────────────────────────────────────
 
 export async function createSJRetur(formData: FormData) {

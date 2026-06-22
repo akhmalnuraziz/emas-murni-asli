@@ -12,7 +12,7 @@ import {
   createProdukPackaging, updateProdukPackaging, toggleProdukAktif,
   createPO, updatePO, voidPO,
   createBatchPenerimaan, submitQC,
-  updatePenangananReject, createSJRetur,
+  updatePenangananReject, deleteRejectItem, resetRejectStatus, createSJRetur,
 } from '@/app/(dashboard)/po-vendor-packaging/actions'
 
 const fmtNum = (n: number) => n.toLocaleString('id-ID')
@@ -457,11 +457,33 @@ export default function POVendorClient({
                     <p className="text-[10px] text-slate-400">Batch {r.nomor_batch} · {fmtDate(r.tanggal_terima)}</p>
                     {r.penanganan_keterangan && <p className="text-[10px] text-slate-400 mt-0.5">Ket: {r.penanganan_keterangan}</p>}
                   </div>
-                  {canManage && r.status_penanganan === 'pending' && (
-                    <button onClick={() => setRejectModal(r)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-slate-600 rounded-xl bg-slate-100 hover:bg-slate-200 flex-shrink-0">
-                      <ArrowRight size={11}/> Tangani
-                    </button>
+                  {canManage && (
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {r.status_penanganan === 'pending' && (
+                        <button onClick={() => setRejectModal(r)}
+                          className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-slate-600 rounded-xl bg-slate-100 hover:bg-slate-200">
+                          <ArrowRight size={11}/> Tangani
+                        </button>
+                      )}
+                      {r.status_penanganan !== 'pending' && (
+                        <button onClick={async () => {
+                          if (!confirm('Reset status ke pending?')) return
+                          const res = await resetRejectStatus(r.id)
+                          if (res?.error) showToast(res.error, false)
+                          else showToast('✅ Status direset ke pending')
+                        }} className="px-2 py-1 text-[10px] font-bold text-amber-600 rounded-lg bg-amber-50 hover:bg-amber-100">
+                          Reset
+                        </button>
+                      )}
+                      <button onClick={async () => {
+                        if (!confirm(`Hapus item reject ini (${r.qty} pcs)? Tidak bisa dibatalkan.`)) return
+                        const res = await deleteRejectItem(r.id)
+                        if (res?.error) showToast(res.error, false)
+                        else showToast('✅ Item reject dihapus')
+                      }} className="p-1.5 rounded-lg text-red-400 hover:bg-red-50">
+                        <Trash2 size={12}/>
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -1025,11 +1047,10 @@ function RejectModal({ item, onClose, onSave }: { item: any; onClose: () => void
       <div className="space-y-3">
         <div>
           <p className="text-[12px] font-semibold text-slate-500 mb-1.5">Status Penanganan</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {[
               { val: 'disimpan', label: '📦 Disimpan' },
               { val: 'ditukar',  label: '🔄 Ditukar' },
-              ...(item.jenis === 'reject' ? [{ val: 'diretur', label: '↩️ Retur via SJ' }] : []),
             ].map(({ val, label }) => (
               <button key={val} type="button" onClick={() => setStatus(val)}
                 className={`py-2 text-[12px] font-bold rounded-xl border transition-all ${status === val ? 'border-violet-400 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500'}`}>
@@ -1037,6 +1058,11 @@ function RejectModal({ item, onClose, onSave }: { item: any; onClose: () => void
               </button>
             ))}
           </div>
+          {item.jenis === 'reject' && (
+            <p className="text-[11px] text-amber-600 mt-2 px-1">
+              💡 Untuk retur ke vendor, gunakan tombol <b>Buat SJ Retur</b> di pojok kanan atas tab Reject.
+            </p>
+          )}
         </div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan</label>
           <textarea value={ket} onChange={e => setKet(e.target.value)} rows={2} className={inp}/></div>
