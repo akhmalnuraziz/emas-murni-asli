@@ -429,8 +429,22 @@ export async function deleteBatch(id: number) {
     }
   }
 
+  // Hapus SJ Retur yang orphan setelah reject dihapus
+  const { data: rejectsForSJ } = await supabase.from('po_packaging_reject')
+    .select('sj_retur_id').eq('batch_id', id).not('sj_retur_id', 'is', null)
+  const sjIds = [...new Set((rejectsForSJ ?? []).map((r: any) => r.sj_retur_id).filter(Boolean))]
+
   // Hapus reject records terkait batch ini
   await supabase.from('po_packaging_reject').delete().eq('batch_id', id)
+
+  // Hapus SJ Retur yang tidak lagi punya reject items
+  for (const sjId of sjIds) {
+    const { count } = await supabase.from('po_packaging_reject')
+      .select('*', { count: 'exact', head: true }).eq('sj_retur_id', sjId)
+    if ((count ?? 0) === 0) {
+      await supabase.from('sj_retur_packaging').delete().eq('id', sjId)
+    }
+  }
 
   const { error } = await supabase.from('po_batch_penerimaan').delete().eq('id', id)
   if (error) return { error: error.message }
