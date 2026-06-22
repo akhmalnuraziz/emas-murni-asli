@@ -1,11 +1,11 @@
-﻿'use client'
+'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef } from 'react'
 import {
   Plus, X, Check, Edit2, Trash2, ChevronDown, ChevronUp,
   Package2, Truck, ClipboardCheck, AlertTriangle, RotateCcw,
-  FileText, Printer, Building2, Search, Filter, Eye,
-  ArrowRight, CheckCircle2, XCircle, Clock, BoxSelect, Copy,
+  FileText, Printer, Building2, Search, Eye,
+  ArrowRight, CheckCircle2, XCircle, Clock, BoxSelect,
 } from 'lucide-react'
 import {
   createVendor, updateVendor,
@@ -14,8 +14,6 @@ import {
   createBatchPenerimaan, submitQC,
   updatePenangananReject, createSJRetur,
 } from '@/app/(dashboard)/po-vendor-packaging/actions'
-
-const cn = (...classes: (string | undefined | false)[]) => classes.filter(Boolean).join(' ')
 
 const fmtNum = (n: number) => n.toLocaleString('id-ID')
 const fmtDate = (d: string | null | undefined) => {
@@ -29,6 +27,7 @@ interface Props {
   vendors: any[]
   produkList: any[]
   poList: any[]
+  poItems: any[]
   batchList: any[]
   rejectList: any[]
   sjList: any[]
@@ -48,10 +47,10 @@ function useToast() {
   return { toast, show }
 }
 
-// ── Status badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
     open:        { label: 'Open',        cls: 'bg-blue-50 text-blue-600' },
+    menunggu:    { label: 'Menunggu',    cls: 'bg-blue-50 text-blue-600' },
     partial:     { label: 'Partial',     cls: 'bg-amber-50 text-amber-600' },
     selesai:     { label: 'Selesai',     cls: 'bg-green-50 text-green-700' },
     void:        { label: 'Void',        cls: 'bg-red-50 text-red-500' },
@@ -65,29 +64,47 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}`}>{label}</span>
 }
 
-// ── Monitoring card ───────────────────────────────────────────────────────────
-function MonitoringCard({ m }: { m: any }) {
+// Group per-item monitoring rows into per-PO groups
+function groupMonitoring(monitoring: any[]) {
+  const map = new Map<number, any>()
+  for (const row of monitoring) {
+    if (!map.has(row.id)) {
+      map.set(row.id, {
+        id: row.id, nomor_po: row.nomor_po, vendor_nama: row.vendor_nama,
+        status: row.status, tanggal_po: row.tanggal_po, tanggal_jatuh_tempo: row.tanggal_jatuh_tempo,
+        items: [],
+      })
+    }
+    map.get(row.id)!.items.push(row)
+  }
+  return Array.from(map.values())
+}
+
+function MonitoringCard({ po }: { po: any }) {
   const [open, setOpen] = useState(false)
-  const sisaRatio = m.qty_po > 0 ? ((m.qty_po - m.sisa_belum_datang) / m.qty_po) * 100 : 0
-  const accRatio  = m.total_datang > 0 ? (m.total_acc / m.total_datang) * 100 : 0
+  const totalPO     = po.items.reduce((s: number, i: any) => s + i.qty_po, 0)
+  const totalDatang = po.items.reduce((s: number, i: any) => s + i.total_datang, 0)
+  const totalAcc    = po.items.reduce((s: number, i: any) => s + i.total_acc, 0)
+  const totalReject = po.items.reduce((s: number, i: any) => s + i.total_reject, 0)
+  const totalSisa   = po.items.reduce((s: number, i: any) => s + Math.max(0, i.sisa_belum_datang), 0)
+  const sisaRatio   = totalPO > 0 ? ((totalPO - totalSisa) / totalPO) * 100 : 0
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(0,0,0,0.07)' }}>
-      <button className="w-full flex items-start justify-between px-4 py-3.5 text-left gap-3"
-        style={{ background: 'rgba(255,255,255,0.9)' }} onClick={() => setOpen(p => !p)}>
+    <div className="rounded-2xl overflow-hidden border border-slate-200">
+      <button className="w-full flex items-start justify-between px-4 py-3.5 text-left gap-3 bg-white"
+        onClick={() => setOpen(p => !p)}>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[12px] font-mono font-bold text-violet-700">{m.nomor_po}</span>
-            <StatusBadge status={m.status} />
+            <span className="text-[12px] font-mono font-bold text-violet-700">{po.nomor_po}</span>
+            <StatusBadge status={po.status} />
           </div>
-          <p className="text-[11px] text-slate-500 mt-0.5">{m.vendor_nama} · {m.produk_nama}</p>
-          {/* Progress bar */}
+          <p className="text-[11px] text-slate-500 mt-0.5">{po.vendor_nama} · {po.items.length} produk</p>
           <div className="mt-2 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-            <div className="h-full rounded-full transition-all"
-              style={{ width: `${Math.min(100, sisaRatio)}%`, background: 'linear-gradient(90deg,#7C3AED,#A78BFA)' }} />
+            <div className="h-full rounded-full bg-violet-500 transition-all"
+              style={{ width: `${Math.min(100, sisaRatio)}%` }} />
           </div>
           <p className="text-[10px] text-slate-400 mt-1">
-            {fmtNum(m.qty_po - m.sisa_belum_datang)}/{fmtNum(m.qty_po)} pcs datang · {sisaRatio.toFixed(0)}%
+            {fmtNum(totalDatang)}/{fmtNum(totalPO)} pcs datang · {sisaRatio.toFixed(0)}%
           </p>
         </div>
         <div className="flex-shrink-0 mt-0.5">
@@ -95,29 +112,39 @@ function MonitoringCard({ m }: { m: any }) {
         </div>
       </button>
       {open && (
-        <div className="px-4 pb-4 pt-2 grid grid-cols-3 sm:grid-cols-6 gap-2"
-          style={{ background: 'rgba(248,250,252,0.95)' }}>
-          {[
-            { label: 'PO', val: fmtNum(m.qty_po), color: '#64748B' },
-            { label: 'Datang', val: fmtNum(m.total_datang), color: '#3B82F6' },
-            { label: 'ACC', val: fmtNum(m.total_acc), color: '#16A34A' },
-            { label: 'Reject', val: fmtNum(m.total_reject), color: '#EF4444' },
-            { label: 'Retur', val: fmtNum(m.reject_sudah_retur), color: '#F97316' },
-            { label: 'Sisa PO', val: fmtNum(Math.max(0, m.sisa_belum_datang)), color: '#A855F7' },
-          ].map(({ label, val, color }) => (
-            <div key={label} className="rounded-xl px-2.5 py-2 text-center"
-              style={{ background: 'white', border: '1px solid rgba(0,0,0,0.05)' }}>
-              <p className="text-[13px] font-extrabold" style={{ color }}>{val}</p>
-              <p className="text-[9px] text-slate-400 font-semibold mt-0.5">{label}</p>
-            </div>
-          ))}
+        <div className="px-4 pb-4 pt-2 bg-slate-50 space-y-3">
+          {/* Per-item rows */}
+          {po.items.map((it: any) => {
+            const itemRatio = it.qty_po > 0 ? ((it.qty_po - Math.max(0, it.sisa_belum_datang)) / it.qty_po) * 100 : 0
+            return (
+              <div key={it.item_id} className="rounded-xl bg-white border border-slate-100 px-3 py-2.5">
+                <p className="text-[12px] font-bold text-slate-700">{it.produk_nama}</p>
+                <div className="mt-1.5 h-1 rounded-full bg-slate-100 overflow-hidden">
+                  <div className="h-full rounded-full bg-violet-400"
+                    style={{ width: `${Math.min(100, itemRatio)}%` }} />
+                </div>
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5">
+                  {[
+                    { label: 'PO', val: fmtNum(it.qty_po), color: '#64748B' },
+                    { label: 'Datang', val: fmtNum(it.total_datang), color: '#3B82F6' },
+                    { label: 'ACC', val: fmtNum(it.total_acc), color: '#16A34A' },
+                    { label: 'Reject', val: fmtNum(it.total_reject), color: '#EF4444' },
+                    { label: 'Sisa', val: fmtNum(Math.max(0, it.sisa_belum_datang)), color: '#A855F7' },
+                  ].map(({ label, val, color }) => (
+                    <span key={label} className="text-[10px]" style={{ color }}>
+                      <span className="font-bold">{val}</span> <span className="text-slate-400">{label}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
   )
 }
 
-// ── Signature pad ─────────────────────────────────────────────────────────────
 function SignaturePad({ onSave, label }: { onSave: (b64: string) => void; label: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawing   = useRef(false)
@@ -151,7 +178,6 @@ function SignaturePad({ onSave, label }: { onSave: (b64: string) => void; label:
       <div className="rounded-xl overflow-hidden border border-gray-200 bg-white">
         <canvas width={260} height={90}
           className="w-full touch-none block cursor-crosshair"
-          style={{ display: 'block' }}
           onMouseDown={start} onMouseMove={draw} onMouseUp={end} onMouseLeave={end}
           onTouchStart={e => { e.preventDefault(); start(e) }}
           onTouchMove={e => { e.preventDefault(); draw(e) }}
@@ -166,8 +192,7 @@ function SignaturePad({ onSave, label }: { onSave: (b64: string) => void; label:
         <button type="button" onClick={clear}
           className="flex-1 py-1.5 text-[10px] font-semibold rounded-lg border border-gray-200 text-gray-500">Hapus</button>
         <button type="button" onClick={save}
-          className="flex-1 py-1.5 text-[10px] font-bold rounded-lg text-white"
-          style={{ background: 'linear-gradient(135deg,#7C3AED,#6D28D9)' }}>Simpan TTD</button>
+          className="flex-1 py-1.5 text-[10px] font-bold rounded-lg bg-violet-600 text-white">Simpan TTD</button>
       </div>
     </div>
   )
@@ -175,44 +200,41 @@ function SignaturePad({ onSave, label }: { onSave: (b64: string) => void; label:
 
 const inp = 'w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all'
 
-// ── Main Component ─────────────────────────────────────────────────────────────
 export default function POVendorClient({
-  vendors, produkList, poList, batchList, rejectList, sjList, stokList, monitoring, canManage,
+  vendors, produkList, poList, poItems, batchList, rejectList, sjList, stokList, monitoring, canManage,
 }: Props) {
   const { toast, show: showToast } = useToast()
   const [tab, setTab] = useState<Tab>('monitoring')
   const [search, setSearch] = useState('')
 
-  // ── Modal states ──────────────────────────────────────────────────────────
   const [vendorModal, setVendorModal] = useState<'create' | number | null>(null)
   const [produkModal, setProdukModal] = useState<'create' | number | null>(null)
   const [poModal, setPoModal]         = useState<'create' | number | null>(null)
   const [editPoId, setEditPoId]       = useState<number | null>(null)
-  const [duplikatSrc, setDuplikatSrc] = useState<any | null>(null)
   const [batchModal, setBatchModal]   = useState<number | null>(null)  // po_id
-  const [qcModal, setQcModal]         = useState<any | null>(null)     // batch object
+  const [qcModal, setQcModal]         = useState<any | null>(null)
   const [rejectModal, setRejectModal] = useState<any | null>(null)
-  const [sjModal, setSjModal]         = useState<number | null>(null)  // vendor_id
+  const [sjModal, setSjModal]         = useState<number | null>(null)
   const [voidPoId, setVoidPoId]       = useState<number | null>(null)
   const [expandedPO, setExpandedPO]   = useState<number | null>(null)
 
   const tabs: { key: Tab; label: string; icon: any }[] = [
-    { key: 'monitoring', label: 'Monitoring',  icon: Eye },
-    { key: 'po',         label: 'PO',          icon: FileText },
-    { key: 'batch',      label: 'Penerimaan',  icon: Truck },
-    { key: 'reject',     label: 'Reject',      icon: AlertTriangle },
-    { key: 'stok',       label: 'Stok',        icon: Package2 },
+    { key: 'monitoring', label: 'Monitoring',    icon: Eye },
+    { key: 'po',         label: 'PO',            icon: FileText },
+    { key: 'batch',      label: 'Penerimaan',    icon: Truck },
+    { key: 'reject',     label: 'Reject',        icon: AlertTriangle },
+    { key: 'stok',       label: 'Stok',          icon: Package2 },
     { key: 'master',     label: 'Master Produk', icon: BoxSelect },
-    { key: 'vendor',     label: 'Vendor',      icon: Building2 },
+    { key: 'vendor',     label: 'Vendor',        icon: Building2 },
   ]
 
   const pendingReject = rejectList.filter((r: any) => r.status_penanganan === 'pending').length
+  const monGrouped    = groupMonitoring(monitoring)
 
   return (
     <div className="space-y-4 pb-20">
-      {/* Toast */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-2xl text-[13px] font-semibold shadow-xl flex items-center gap-2 transition-all ${toast.ok ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-2xl text-[13px] font-semibold shadow-xl flex items-center gap-2 ${toast.ok ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
           {toast.ok ? <CheckCircle2 size={15}/> : <XCircle size={15}/>}
           {toast.msg}
         </div>
@@ -227,29 +249,25 @@ export default function POVendorClient({
         <div className="flex gap-2 flex-wrap">
           {canManage && tab === 'po' && (
             <button onClick={() => setPoModal('create')}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-2xl"
-              style={{ background: 'linear-gradient(135deg,#7C3AED,#6D28D9)' }}>
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-2xl bg-violet-600 hover:bg-violet-700">
               <Plus size={13}/> Buat PO
             </button>
           )}
           {canManage && tab === 'vendor' && (
             <button onClick={() => setVendorModal('create')}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-2xl"
-              style={{ background: 'linear-gradient(135deg,#7C3AED,#6D28D9)' }}>
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-2xl bg-violet-600 hover:bg-violet-700">
               <Plus size={13}/> Tambah Vendor
             </button>
           )}
           {canManage && tab === 'master' && (
             <button onClick={() => setProdukModal('create')}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-2xl"
-              style={{ background: 'linear-gradient(135deg,#059669,#047857)' }}>
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-2xl bg-emerald-600 hover:bg-emerald-700">
               <Plus size={13}/> Tambah Produk
             </button>
           )}
           {canManage && tab === 'reject' && (
             <button onClick={() => setSjModal(-1)}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-2xl"
-              style={{ background: 'linear-gradient(135deg,#F97316,#EA580C)' }}>
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-2xl bg-orange-500 hover:bg-orange-600">
               <Printer size={13}/> Buat SJ Retur
             </button>
           )}
@@ -260,8 +278,7 @@ export default function POVendorClient({
       <div className="flex gap-1 overflow-x-auto pb-0.5 hide-scrollbar">
         {tabs.map(({ key, label, icon: Icon }) => (
           <button key={key} onClick={() => setTab(key)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-bold whitespace-nowrap transition-all flex-shrink-0 relative ${tab === key ? 'text-violet-700' : 'text-slate-500'}`}
-            style={tab === key ? { background: 'rgba(124,58,237,0.1)' } : { background: 'rgba(0,0,0,0.03)' }}>
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-bold whitespace-nowrap transition-all flex-shrink-0 relative ${tab === key ? 'text-violet-700 bg-violet-50' : 'text-slate-500 bg-black/[0.03]'}`}>
             <Icon size={12}/>
             {label}
             {key === 'reject' && pendingReject > 0 && (
@@ -283,97 +300,101 @@ export default function POVendorClient({
         </div>
       )}
 
-      {/* ── Tab: MONITORING ─────────────────────────────────────────────────── */}
+      {/* ── Tab: MONITORING ───────────────────────────────────────────────── */}
       {tab === 'monitoring' && (
         <div className="space-y-3">
-          {monitoring.length === 0 ? (
+          {monGrouped.length === 0 ? (
             <Empty text="Belum ada PO" />
           ) : (
-            monitoring
-              .filter((m: any) => !search || m.nomor_po.toLowerCase().includes(search.toLowerCase()) || m.vendor_nama.toLowerCase().includes(search.toLowerCase()))
-              .map((m: any) => <MonitoringCard key={m.id} m={m} />)
+            monGrouped
+              .filter(po => !search || po.nomor_po.toLowerCase().includes(search.toLowerCase()) || po.vendor_nama.toLowerCase().includes(search.toLowerCase()))
+              .map(po => <MonitoringCard key={po.id} po={po} />)
           )}
         </div>
       )}
 
-      {/* ── Tab: PO ─────────────────────────────────────────────────────────── */}
+      {/* ── Tab: PO ───────────────────────────────────────────────────────── */}
       {tab === 'po' && (
         <div className="space-y-2">
-          {poList.filter((p: any) => !search || p.nomor_po.toLowerCase().includes(search.toLowerCase()) || p.vendor_nama.toLowerCase().includes(search.toLowerCase())).map((po: any) => {
-            const mon = monitoring.find((m: any) => m.id === po.id)
-            const isOpen = expandedPO === po.id
-            const batches = batchList.filter((b: any) => b.po_id === po.id)
-            return (
-              <div key={po.id} className="rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(0,0,0,0.07)' }}>
-                <div className="px-4 py-3 flex items-center justify-between gap-3"
-                  style={{ background: 'rgba(255,255,255,0.9)' }}>
-                  <button className="flex-1 text-left" onClick={() => setExpandedPO(isOpen ? null : po.id)}>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[12px] font-mono font-bold text-violet-700">{po.nomor_po}</span>
-                      <StatusBadge status={po.status} />
-                    </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      {po.vendor_nama} · {po.produk_nama} · {fmtNum(po.qty_po)} pcs · {fmtDate(po.tanggal_po)}
-                      {po.tanggal_jatuh_tempo && <span className="text-amber-600 font-medium"> · Jatuh tempo {fmtDate(po.tanggal_jatuh_tempo)}</span>}
-                    </p>
-                  </button>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    {canManage && po.status !== 'void' && (
-                      <>
-                        <button onClick={() => setBatchModal(po.id)}
-                          className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50" title="Input Penerimaan">
-                          <Truck size={13}/>
-                        </button>
-                        <button onClick={() => { setDuplikatSrc(po); setPoModal('create') }}
-                          className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100" title="Duplikat PO">
-                          <Copy size={13}/>
-                        </button>
-                        <button onClick={() => { setEditPoId(po.id); setPoModal(po.id) }}
-                          className="p-1.5 rounded-lg text-violet-500 hover:bg-violet-50" title="Edit PO">
-                          <Edit2 size={13}/>
-                        </button>
-                        {batches.length === 0 && (
-                          <button onClick={() => setVoidPoId(po.id)}
-                            className="p-1.5 rounded-lg text-red-400 hover:bg-red-50" title="Void PO">
-                            <Trash2 size={13}/>
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-                {isOpen && (
-                  <div className="px-4 pb-3 pt-1" style={{ background: 'rgba(248,250,252,0.95)' }}>
-                    {batches.length === 0 ? (
-                      <p className="text-[12px] text-slate-400 py-2">Belum ada batch penerimaan</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {batches.map((b: any) => (
-                          <div key={b.id} className="rounded-xl px-3 py-2.5 flex items-center justify-between gap-2"
-                            style={{ background: 'white', border: '1px solid rgba(0,0,0,0.05)' }}>
-                            <div>
-                              <p className="text-[12px] font-mono font-bold text-slate-700">{b.nomor_batch}</p>
-                              <p className="text-[10px] text-slate-400">
-                                {fmtDate(b.tanggal_terima)} · {fmtNum(b.qty_diterima)} pcs
-                                {b.status_qc === 'selesai' ? ` · ✅ ACC ${fmtNum(b.qty_acc ?? 0)} / Reject ${fmtNum(b.qty_reject ?? 0)}` : ' · ⏳ Pending QC'}
-                              </p>
-                            </div>
-                            {canManage && b.status_qc === 'pending' && (
-                              <button onClick={() => setQcModal(b)}
-                                className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-white rounded-lg"
-                                style={{ background: 'linear-gradient(135deg,#22C55E,#16A34A)' }}>
-                                <ClipboardCheck size={10}/> QC
-                              </button>
-                            )}
-                          </div>
+          {poList
+            .filter((p: any) => !search || p.nomor_po.toLowerCase().includes(search.toLowerCase()) || p.vendor_nama.toLowerCase().includes(search.toLowerCase()))
+            .map((po: any) => {
+              const items   = poItems.filter((i: any) => i.po_id === po.id)
+              const batches = batchList.filter((b: any) => b.po_id === po.id)
+              const isOpen  = expandedPO === po.id
+              return (
+                <div key={po.id} className="rounded-2xl overflow-hidden border border-slate-200">
+                  <div className="px-4 py-3 flex items-center justify-between gap-3 bg-white">
+                    <button className="flex-1 text-left" onClick={() => setExpandedPO(isOpen ? null : po.id)}>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[12px] font-mono font-bold text-violet-700">{po.nomor_po}</span>
+                        <StatusBadge status={po.status} />
+                        {isOpen ? <ChevronUp size={12} className="text-slate-400"/> : <ChevronDown size={12} className="text-slate-400"/>}
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        {po.vendor_nama} · {items.length} produk · {fmtDate(po.tanggal_po)}
+                        {po.tanggal_jatuh_tempo && <span className="text-amber-600 font-medium"> · Jatuh tempo {fmtDate(po.tanggal_jatuh_tempo)}</span>}
+                      </p>
+                      {/* Items summary inline */}
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {items.map((it: any) => (
+                          <span key={it.id} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 text-violet-600">
+                            {it.produk_nama} · {fmtNum(it.qty_po)} pcs
+                          </span>
                         ))}
                       </div>
-                    )}
+                    </button>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {canManage && po.status !== 'void' && (
+                        <>
+                          <button onClick={() => setBatchModal(po.id)}
+                            className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50" title="Input Penerimaan">
+                            <Truck size={13}/>
+                          </button>
+                          <button onClick={() => { setEditPoId(po.id); setPoModal(po.id) }}
+                            className="p-1.5 rounded-lg text-violet-500 hover:bg-violet-50" title="Edit PO">
+                            <Edit2 size={13}/>
+                          </button>
+                          {batches.length === 0 && (
+                            <button onClick={() => setVoidPoId(po.id)}
+                              className="p-1.5 rounded-lg text-red-400 hover:bg-red-50" title="Void PO">
+                              <Trash2 size={13}/>
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-            )
-          })}
+                  {isOpen && (
+                    <div className="px-4 pb-3 pt-1 bg-slate-50">
+                      {batches.length === 0 ? (
+                        <p className="text-[12px] text-slate-400 py-2">Belum ada batch penerimaan</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {batches.map((b: any) => (
+                            <div key={b.id} className="rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 bg-white border border-slate-100">
+                              <div>
+                                <p className="text-[12px] font-mono font-bold text-slate-700">{b.nomor_batch}</p>
+                                <p className="text-[10px] text-slate-400">
+                                  {b.produk_nama} · {fmtDate(b.tanggal_terima)} · {fmtNum(b.qty_diterima)} pcs
+                                  {b.status_qc === 'selesai' ? ` · ✅ ACC ${fmtNum(b.qty_acc ?? 0)} / Reject ${fmtNum(b.qty_reject ?? 0)}` : ' · ⏳ Pending QC'}
+                                </p>
+                              </div>
+                              {canManage && b.status_qc === 'pending' && (
+                                <button onClick={() => setQcModal(b)}
+                                  className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-white rounded-lg bg-green-500 hover:bg-green-600">
+                                  <ClipboardCheck size={10}/> QC
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           {poList.length === 0 && <Empty text="Belum ada PO" />}
         </div>
       )}
@@ -384,36 +405,34 @@ export default function POVendorClient({
           {batchList
             .filter((b: any) => !search || b.nomor_batch.toLowerCase().includes(search.toLowerCase()) || b.po_nomor.toLowerCase().includes(search.toLowerCase()))
             .map((b: any) => (
-            <div key={b.id} className="rounded-2xl px-4 py-3"
-              style={{ background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(0,0,0,0.07)' }}>
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[12px] font-mono font-bold text-slate-700">{b.nomor_batch}</span>
-                    <StatusBadge status={b.status_qc === 'selesai' ? 'selesai' : 'pending_qc'} />
-                  </div>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    PO: <span className="font-semibold text-violet-700">{b.po_nomor}</span> · {b.vendor_nama}
-                  </p>
-                  <p className="text-[11px] text-slate-500">{b.produk_nama} · {fmtNum(b.qty_diterima)} pcs · {fmtDate(b.tanggal_terima)}</p>
-                  {b.status_qc === 'selesai' && (
-                    <div className="flex gap-3 mt-1.5">
-                      <span className="text-[10px] font-bold text-green-600">✅ ACC: {fmtNum(b.qty_acc ?? 0)}</span>
-                      <span className="text-[10px] font-bold text-red-500">❌ Reject: {fmtNum(b.qty_reject ?? 0)}</span>
-                      {(b.qty_lebih ?? 0) > 0 && <span className="text-[10px] font-bold text-orange-500">➕ Lebih: {fmtNum(b.qty_lebih)}</span>}
+              <div key={b.id} className="rounded-2xl px-4 py-3 bg-white border border-slate-200">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[12px] font-mono font-bold text-slate-700">{b.nomor_batch}</span>
+                      <StatusBadge status={b.status_qc === 'selesai' ? 'selesai' : 'pending_qc'} />
                     </div>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      PO: <span className="font-semibold text-violet-700">{b.po_nomor}</span> · {b.vendor_nama}
+                    </p>
+                    <p className="text-[11px] text-slate-500">{b.produk_nama} · {fmtNum(b.qty_diterima)} pcs · {fmtDate(b.tanggal_terima)}</p>
+                    {b.status_qc === 'selesai' && (
+                      <div className="flex gap-3 mt-1.5">
+                        <span className="text-[10px] font-bold text-green-600">✅ ACC: {fmtNum(b.qty_acc ?? 0)}</span>
+                        <span className="text-[10px] font-bold text-red-500">❌ Reject: {fmtNum(b.qty_reject ?? 0)}</span>
+                        {(b.qty_lebih ?? 0) > 0 && <span className="text-[10px] font-bold text-orange-500">➕ Lebih: {fmtNum(b.qty_lebih)}</span>}
+                      </div>
+                    )}
+                  </div>
+                  {canManage && b.status_qc === 'pending' && (
+                    <button onClick={() => setQcModal(b)}
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-white rounded-xl bg-green-500 hover:bg-green-600 flex-shrink-0">
+                      <ClipboardCheck size={11}/> Input QC
+                    </button>
                   )}
                 </div>
-                {canManage && b.status_qc === 'pending' && (
-                  <button onClick={() => setQcModal(b)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-white rounded-xl flex-shrink-0"
-                    style={{ background: 'linear-gradient(135deg,#22C55E,#16A34A)' }}>
-                    <ClipboardCheck size={11}/> Input QC
-                  </button>
-                )}
               </div>
-            </div>
-          ))}
+            ))}
           {batchList.length === 0 && <Empty text="Belum ada penerimaan" />}
         </div>
       )}
@@ -424,33 +443,29 @@ export default function POVendorClient({
           {rejectList
             .filter((r: any) => !search || r.po_nomor.toLowerCase().includes(search.toLowerCase()) || r.vendor_nama.toLowerCase().includes(search.toLowerCase()))
             .map((r: any) => (
-            <div key={r.id} className="rounded-2xl px-4 py-3"
-              style={{ background: 'rgba(255,255,255,0.9)', border: `1px solid ${r.jenis === 'lebihan' ? 'rgba(249,115,22,0.2)' : 'rgba(239,68,68,0.15)'}` }}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${r.jenis === 'lebihan' ? 'bg-orange-50 text-orange-600' : 'bg-red-50 text-red-600'}`}>
-                      {r.jenis === 'lebihan' ? '➕ Lebihan' : '❌ Reject'}
-                    </span>
-                    <StatusBadge status={r.status_penanganan} />
+              <div key={r.id} className="rounded-2xl px-4 py-3 bg-white border border-slate-200">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${r.jenis === 'lebihan' ? 'bg-orange-50 text-orange-600' : 'bg-red-50 text-red-600'}`}>
+                        {r.jenis === 'lebihan' ? '➕ Lebihan' : '❌ Reject'}
+                      </span>
+                      <StatusBadge status={r.status_penanganan} />
+                    </div>
+                    <p className="text-[13px] font-bold text-slate-800 mt-1">{fmtNum(r.qty)} pcs</p>
+                    <p className="text-[11px] text-slate-500">{r.produk_nama} · PO {r.po_nomor} · {r.vendor_nama}</p>
+                    <p className="text-[10px] text-slate-400">Batch {r.nomor_batch} · {fmtDate(r.tanggal_terima)}</p>
+                    {r.penanganan_keterangan && <p className="text-[10px] text-slate-400 mt-0.5">Ket: {r.penanganan_keterangan}</p>}
                   </div>
-                  <p className="text-[13px] font-bold text-slate-800 mt-1">{fmtNum(r.qty)} pcs</p>
-                  <p className="text-[11px] text-slate-500">{r.produk_nama} · PO {r.po_nomor} · {r.vendor_nama}</p>
-                  <p className="text-[10px] text-slate-400">Batch {r.nomor_batch} · {fmtDate(r.tanggal_terima)}</p>
-                  {r.penanganan_keterangan && (
-                    <p className="text-[10px] text-slate-400 mt-0.5">Ket: {r.penanganan_keterangan}</p>
+                  {canManage && r.status_penanganan === 'pending' && (
+                    <button onClick={() => setRejectModal(r)}
+                      className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-slate-600 rounded-xl bg-slate-100 hover:bg-slate-200 flex-shrink-0">
+                      <ArrowRight size={11}/> Tangani
+                    </button>
                   )}
                 </div>
-                {canManage && r.status_penanganan === 'pending' && (
-                  <button onClick={() => setRejectModal(r)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-slate-600 rounded-xl flex-shrink-0"
-                    style={{ background: 'rgba(0,0,0,0.05)' }}>
-                    <ArrowRight size={11}/> Tangani
-                  </button>
-                )}
               </div>
-            </div>
-          ))}
+            ))}
           {rejectList.length === 0 && <Empty text="Tidak ada reject" icon="✅" />}
         </div>
       )}
@@ -458,15 +473,13 @@ export default function POVendorClient({
       {/* ── Tab: STOK ──────────────────────────────────────────────────────── */}
       {tab === 'stok' && (
         <div className="space-y-3">
-          <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider">Stok Akrilik per Gramasi</p>
+          <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider">Stok Packaging</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {stokList.map((s: any) => (
-              <div key={s.id} className="rounded-2xl px-4 py-3.5 text-center"
-                style={{ background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(0,0,0,0.07)' }}>
+              <div key={s.id} className="rounded-2xl px-4 py-3.5 text-center bg-white border border-slate-200">
                 <p className="text-[20px] font-black text-slate-800">{fmtNum(s.stok_qty)}</p>
                 <p className="text-[12px] font-bold text-slate-500 mt-0.5">pcs</p>
-                <div className="w-6 h-0.5 rounded-full mx-auto my-2"
-                  style={{ background: s.stok_qty > 0 ? '#7C3AED' : '#e2e8f0' }}/>
+                <div className="w-6 h-0.5 rounded-full mx-auto my-2" style={{ background: s.stok_qty > 0 ? '#7C3AED' : '#e2e8f0' }}/>
                 <p className="text-[11px] font-semibold text-slate-600">{s.produk_nama}</p>
               </div>
             ))}
@@ -478,15 +491,13 @@ export default function POVendorClient({
           ) : (
             <div className="space-y-2">
               {sjList.map((sj: any) => (
-                <div key={sj.id} className="rounded-2xl px-4 py-3 flex items-center justify-between"
-                  style={{ background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(0,0,0,0.07)' }}>
+                <div key={sj.id} className="rounded-2xl px-4 py-3 flex items-center justify-between bg-white border border-slate-200">
                   <div>
                     <p className="text-[12px] font-mono font-bold text-orange-600">{sj.nomor_sj}</p>
                     <p className="text-[11px] text-slate-500">{sj.vendor_nama} · {fmtNum(sj.total_qty)} pcs · {fmtDate(sj.tanggal_retur)}</p>
                   </div>
                   <a href={`/po-vendor-packaging/sj-retur/${sj.id}`} target="_blank"
-                    className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-orange-600 rounded-xl"
-                    style={{ background: 'rgba(249,115,22,0.08)' }}>
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-orange-600 rounded-xl bg-orange-50 hover:bg-orange-100">
                     <Printer size={11}/> Cetak
                   </a>
                 </div>
@@ -501,8 +512,7 @@ export default function POVendorClient({
         <div className="space-y-2">
           <p className="text-[12px] text-slate-400 px-1">Daftar produk packaging yang bisa dipilih saat buat PO</p>
           {produkList.map((p: any) => (
-            <div key={p.id} className="rounded-2xl px-4 py-3 flex items-center justify-between gap-3"
-              style={{ background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(0,0,0,0.07)' }}>
+            <div key={p.id} className="rounded-2xl px-4 py-3 flex items-center justify-between gap-3 bg-white border border-slate-200">
               <div>
                 <div className="flex items-center gap-2">
                   <p className="text-[13px] font-bold text-slate-800">{p.nama}</p>
@@ -523,7 +533,7 @@ export default function POVendorClient({
                     if (r?.error) showToast(r.error, false)
                     else showToast(p.aktif ? 'Produk dinonaktifkan' : '✅ Produk diaktifkan')
                   }}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-colors ${p.aktif ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${p.aktif ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
                     {p.aktif ? 'Nonaktifkan' : 'Aktifkan'}
                   </button>
                 </div>
@@ -538,8 +548,7 @@ export default function POVendorClient({
       {tab === 'vendor' && (
         <div className="space-y-2">
           {vendors.map((v: any) => (
-            <div key={v.id} className="rounded-2xl px-4 py-3 flex items-center justify-between gap-3"
-              style={{ background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(0,0,0,0.07)' }}>
+            <div key={v.id} className="rounded-2xl px-4 py-3 flex items-center justify-between gap-3 bg-white border border-slate-200">
               <div>
                 <div className="flex items-center gap-2">
                   <p className="text-[13px] font-bold text-slate-800">{v.nama}</p>
@@ -550,8 +559,7 @@ export default function POVendorClient({
                 {v.telepon && <p className="text-[11px] text-slate-400">{v.telepon}</p>}
               </div>
               {canManage && (
-                <button onClick={() => setVendorModal(v.id)}
-                  className="p-1.5 rounded-lg text-violet-500 hover:bg-violet-50">
+                <button onClick={() => setVendorModal(v.id)} className="p-1.5 rounded-lg text-violet-500 hover:bg-violet-50">
                   <Edit2 size={13}/>
                 </button>
               )}
@@ -561,11 +569,8 @@ export default function POVendorClient({
         </div>
       )}
 
-      {/* ════════════════════════════════════════════════════════════════════ */}
-      {/* MODALS                                                               */}
-      {/* ════════════════════════════════════════════════════════════════════ */}
+      {/* ════════════ MODALS ════════════ */}
 
-      {/* ── Produk Modal ─────────────────────────────────────────────────── */}
       {produkModal !== null && (
         <ProdukModal
           mode={produkModal === 'create' ? 'create' : 'edit'}
@@ -582,7 +587,6 @@ export default function POVendorClient({
         />
       )}
 
-      {/* ── Vendor Modal ─────────────────────────────────────────────────── */}
       {vendorModal !== null && (
         <VendorModal
           mode={vendorModal === 'create' ? 'create' : 'edit'}
@@ -599,31 +603,29 @@ export default function POVendorClient({
         />
       )}
 
-      {/* ── PO Modal ─────────────────────────────────────────────────────── */}
       {poModal !== null && (
         <POModal
           mode={poModal === 'create' ? 'create' : 'edit'}
           po={poModal !== 'create' ? poList.find(p => p.id === editPoId) : undefined}
-          duplikat={poModal === 'create' ? duplikatSrc : undefined}
+          poItemsForEdit={poModal !== 'create' && editPoId ? poItems.filter(i => i.po_id === editPoId) : []}
           vendors={vendors}
           produkList={produkList}
-          onClose={() => { setPoModal(null); setEditPoId(null); setDuplikatSrc(null) }}
+          onClose={() => { setPoModal(null); setEditPoId(null) }}
           onSave={async (fd) => {
             const r = poModal === 'create'
               ? await createPO(fd)
               : await updatePO(editPoId!, fd)
             if (r?.error) { showToast(r.error, false); return }
             showToast(poModal === 'create' ? `✅ PO dibuat: ${(r as any).nomorPO}` : '✅ PO diperbarui')
-            setPoModal(null); setEditPoId(null); setDuplikatSrc(null)
+            setPoModal(null); setEditPoId(null)
           }}
         />
       )}
 
-      {/* ── Batch Penerimaan Modal ───────────────────────────────────────── */}
       {batchModal !== null && (
         <BatchModal
           po={poList.find(p => p.id === batchModal)!}
-          monitoring={monitoring.find(m => m.id === batchModal)}
+          poItemsForPO={poItems.filter(i => i.po_id === batchModal)}
           onClose={() => setBatchModal(null)}
           onSave={async (fd) => {
             const r = await createBatchPenerimaan(fd)
@@ -635,7 +637,6 @@ export default function POVendorClient({
         />
       )}
 
-      {/* ── QC Modal ─────────────────────────────────────────────────────── */}
       {qcModal !== null && (
         <QCModal
           batch={qcModal}
@@ -649,7 +650,6 @@ export default function POVendorClient({
         />
       )}
 
-      {/* ── Reject Penanganan Modal ──────────────────────────────────────── */}
       {rejectModal !== null && (
         <RejectModal
           item={rejectModal}
@@ -663,7 +663,6 @@ export default function POVendorClient({
         />
       )}
 
-      {/* ── SJ Retur Modal ──────────────────────────────────────────────── */}
       {sjModal !== null && (
         <SJReturModal
           vendors={vendors}
@@ -678,7 +677,6 @@ export default function POVendorClient({
         />
       )}
 
-      {/* ── Void PO Confirm ─────────────────────────────────────────────── */}
       {voidPoId !== null && (
         <VoidModal
           title={`Void PO ${poList.find(p => p.id === voidPoId)?.nomor_po ?? ''}`}
@@ -695,16 +693,16 @@ export default function POVendorClient({
   )
 }
 
-// ── Sub-modals ─────────────────────────────────────────────────────────────────
+// ── Modal Shell ───────────────────────────────────────────────────────────────
 function ModalShell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
-      <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+      <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
-          <div>
-            <h2 className="text-[15px] font-bold text-slate-900">{title}</h2>
-          </div>
-          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
+          <h2 className="text-[15px] font-bold text-slate-900">{title}</h2>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center">
+            <X size={14} className="text-slate-500"/>
+          </button>
         </div>
         <div className="overflow-y-auto flex-1 px-5 py-4">{children}</div>
       </div>
@@ -722,17 +720,13 @@ function ProdukModal({ mode, produk, onClose, onSave }: { mode: string; produk?:
           <input name="nama" defaultValue={produk?.nama} required placeholder="mis. Akrilik 2x3cm" className={inp}/></div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Satuan</label>
           <select name="satuan" defaultValue={produk?.satuan ?? 'pcs'} className={inp}>
-            <option value="pcs">pcs</option>
-            <option value="set">set</option>
-            <option value="lusin">lusin</option>
-            <option value="box">box</option>
-            <option value="meter">meter</option>
-          </select>
-        </div>
+            <option value="pcs">pcs</option><option value="set">set</option>
+            <option value="lusin">lusin</option><option value="box">box</option><option value="meter">meter</option>
+          </select></div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan</label>
-          <textarea name="keterangan" defaultValue={produk?.keterangan} rows={2} placeholder="Deskripsi singkat produk..." className={inp}/></div>
+          <textarea name="keterangan" defaultValue={produk?.keterangan} rows={2} className={inp}/></div>
         <button type="submit" disabled={loading}
-          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
           {loading ? 'Menyimpan...' : mode === 'create' ? 'Tambah Produk' : 'Simpan Perubahan'}
         </button>
       </form>
@@ -763,7 +757,7 @@ function VendorModal({ mode, vendor, onClose, onSave }: { mode: string; vendor?:
           </div>
         )}
         <button type="submit" disabled={loading}
-          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
           {loading ? 'Menyimpan...' : 'Simpan'}
         </button>
       </form>
@@ -771,49 +765,116 @@ function VendorModal({ mode, vendor, onClose, onSave }: { mode: string; vendor?:
   )
 }
 
-function POModal({ mode, po, duplikat, vendors, produkList, onClose, onSave }: { mode: string; po?: any; duplikat?: any; vendors: any[]; produkList: any[]; onClose: () => void; onSave: (fd: FormData) => Promise<void> }) {
+// ── PO Modal (multi-item) ─────────────────────────────────────────────────────
+interface ItemRow { produk_id: number; qty_po: number; harga_satuan: number }
+
+function POModal({ mode, po, poItemsForEdit, vendors, produkList, onClose, onSave }: {
+  mode: string; po?: any; poItemsForEdit: any[];
+  vendors: any[]; produkList: any[];
+  onClose: () => void; onSave: (fd: FormData) => Promise<void>
+}) {
   const [loading, setLoading] = useState(false)
-  const src = duplikat ?? po  // duplikat pre-fills create form; po pre-fills edit form
-  const isDuplikat = mode === 'create' && !!duplikat
+  const initItems: ItemRow[] = poItemsForEdit.length > 0
+    ? poItemsForEdit.map(i => ({ produk_id: i.produk_id, qty_po: i.qty_po, harga_satuan: i.harga_satuan ?? 0 }))
+    : [{ produk_id: 0, qty_po: 0, harga_satuan: 0 }]
+  const [items, setItems] = useState<ItemRow[]>(initItems)
+
+  const setItem = (idx: number, key: keyof ItemRow, val: number) =>
+    setItems(p => p.map((it, i) => i === idx ? { ...it, [key]: val } : it))
+  const addItem = () => setItems(p => [...p, { produk_id: 0, qty_po: 0, harga_satuan: 0 }])
+  const removeItem = (idx: number) => setItems(p => p.filter((_, i) => i !== idx))
+
+  const valid = items.every(it => it.produk_id > 0 && it.qty_po > 0)
+
   return (
-    <ModalShell title={mode === 'create' ? (isDuplikat ? `Duplikat PO — ${duplikat.produk_nama}` : 'Buat PO Baru') : 'Edit PO'} onClose={onClose}>
-      {isDuplikat && (
-        <div className="mb-3 px-3 py-2 rounded-lg bg-amber-50 border border-amber-100 text-[12px] text-amber-700">
-          Menyalin dari <span className="font-bold">{duplikat.nomor_po}</span> · Isi tanggal &amp; qty baru, nomor PO akan digenerate otomatis.
-        </div>
-      )}
-      <form onSubmit={async e => { e.preventDefault(); setLoading(true); await onSave(new FormData(e.currentTarget)); setLoading(false) }}
-        className="space-y-3">
-        {!isDuplikat && (
-          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nomor PO (kosongkan untuk auto)</label>
-            <input name="nomor_po" defaultValue={po?.nomor_po} placeholder="PO/2406/0001" className={inp}/></div>
+    <ModalShell title={mode === 'create' ? 'Buat PO Baru' : 'Edit PO'} onClose={onClose}>
+      <form onSubmit={async e => {
+        e.preventDefault()
+        if (!valid) return
+        const fd = new FormData(e.currentTarget)
+        fd.set('items', JSON.stringify(items.map(it => ({
+          produk_id: it.produk_id,
+          qty_po: it.qty_po,
+          harga_satuan: it.harga_satuan || undefined,
+        }))))
+        setLoading(true)
+        await onSave(fd)
+        setLoading(false)
+      }} className="space-y-3">
+        {/* Nomor PO */}
+        {mode === 'create' && (
+          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nomor PO (kosongkan = auto)</label>
+            <input name="nomor_po" placeholder="PO/2406/0001" className={inp}/></div>
         )}
+        {mode === 'edit' && (
+          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nomor PO *</label>
+            <input name="nomor_po" defaultValue={po?.nomor_po} required className={inp}/></div>
+        )}
+
+        {/* Vendor */}
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Vendor *</label>
-          <select name="vendor_id" defaultValue={src?.vendor_id} required className={inp} disabled={mode === 'edit'}>
+          <select name="vendor_id" defaultValue={po?.vendor_id} required className={inp}>
             <option value="">— Pilih Vendor —</option>
             {vendors.map((v: any) => <option key={v.id} value={v.id}>{v.nama}</option>)}
           </select>
-          {mode === 'edit' && <input type="hidden" name="vendor_id" value={po?.vendor_id}/>}
         </div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Produk *</label>
-          <select name="produk_id" defaultValue={src?.produk_id} required className={inp} disabled={mode === 'edit'}>
-            <option value="">— Pilih Produk —</option>
-            {produkList.map((p: any) => <option key={p.id} value={p.id}>{p.nama}</option>)}
-          </select>
-          {mode === 'edit' && <input type="hidden" name="produk_id" value={po?.produk_id}/>}
+
+        {/* Tanggal */}
+        <div className="grid grid-cols-2 gap-2">
+          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal PO *</label>
+            <input name="tanggal_po" type="date" defaultValue={po?.tanggal_po} required className={inp}/></div>
+          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jatuh Tempo</label>
+            <input name="tanggal_jatuh_tempo" type="date" defaultValue={po?.tanggal_jatuh_tempo} className={inp}/></div>
         </div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Qty PO (pcs) *</label>
-          <input name="qty_po" type="number" min="1" defaultValue={isDuplikat ? undefined : src?.qty_po} required className={inp}/></div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal PO *</label>
-          <input name="tanggal_po" type="date" defaultValue={src?.tanggal_po} required className={inp}/></div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Jatuh Tempo</label>
-          <input name="tanggal_jatuh_tempo" type="date" defaultValue={src?.tanggal_jatuh_tempo} className={inp}/></div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Harga Satuan (Rp)</label>
-          <input name="harga_satuan" type="number" min="0" defaultValue={src?.harga_satuan} className={inp}/></div>
+
+        {/* Item Rows */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Produk *</label>
+            <button type="button" onClick={addItem}
+              className="flex items-center gap-1 text-[11px] font-bold text-violet-600 hover:text-violet-700">
+              <Plus size={11}/> Tambah Produk
+            </button>
+          </div>
+          <div className="space-y-2">
+            {items.map((it, idx) => (
+              <div key={idx} className="rounded-xl border border-slate-200 p-3 space-y-2 bg-slate-50">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-500">Produk {idx + 1}</span>
+                  {items.length > 1 && (
+                    <button type="button" onClick={() => removeItem(idx)}
+                      className="text-red-400 hover:text-red-500">
+                      <X size={13}/>
+                    </button>
+                  )}
+                </div>
+                <select value={it.produk_id || ''} onChange={e => setItem(idx, 'produk_id', parseInt(e.target.value) || 0)}
+                  className={inp} required>
+                  <option value="">— Pilih Produk —</option>
+                  {produkList.map((p: any) => <option key={p.id} value={p.id}>{p.nama}</option>)}
+                </select>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-400 mb-1">Qty (pcs) *</label>
+                    <input type="number" min="1" value={it.qty_po || ''} onChange={e => setItem(idx, 'qty_po', parseInt(e.target.value) || 0)}
+                      required className={inp} placeholder="0"/>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-400 mb-1">Harga Satuan (Rp)</label>
+                    <input type="number" min="0" value={it.harga_satuan || ''} onChange={e => setItem(idx, 'harga_satuan', parseFloat(e.target.value) || 0)}
+                      className={inp} placeholder="0"/>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
-          <textarea name="catatan" defaultValue={src?.catatan} rows={2} className={inp}/></div>
-        <button type="submit" disabled={loading}
-          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+          <textarea name="catatan" defaultValue={po?.catatan} rows={2} className={inp}/></div>
+
+        <button type="submit" disabled={loading || !valid}
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
           {loading ? 'Menyimpan...' : mode === 'create' ? 'Buat PO' : 'Simpan Perubahan'}
         </button>
       </form>
@@ -821,36 +882,58 @@ function POModal({ mode, po, duplikat, vendors, produkList, onClose, onSave }: {
   )
 }
 
-function BatchModal({ po, monitoring, onClose, onSave }: { po: any; monitoring?: any; onClose: () => void; onSave: (fd: FormData) => Promise<void> }) {
-  const [loading, setLoading] = useState(false)
-  const sisaPO = monitoring ? Math.max(0, monitoring.sisa_belum_datang) : po.qty_po
+// ── Batch Penerimaan Modal ────────────────────────────────────────────────────
+function BatchModal({ po, poItemsForPO, onClose, onSave }: {
+  po: any; poItemsForPO: any[];
+  onClose: () => void; onSave: (fd: FormData) => Promise<void>
+}) {
+  const [loading, setLoading]       = useState(false)
+  const [selectedItemId, setSelectedItemId] = useState<number>(poItemsForPO[0]?.id ?? 0)
+
+  const selectedItem = poItemsForPO.find(i => i.id === selectedItemId)
+  const sisaPO = selectedItem ? Math.max(0, selectedItem.qty_po - selectedItem.qty_diterima) : 0
+
   return (
     <ModalShell title="Input Penerimaan Barang" onClose={onClose}>
       <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700 mb-4">
         <p className="font-bold">{po.nomor_po}</p>
-        <p className="text-violet-600 mt-0.5">{po.vendor_nama} · {po.produk_nama}</p>
-        <p className="text-violet-600 mt-0.5">
-          PO: <b>{po.qty_po?.toLocaleString('id-ID')} pcs</b> · Sisa belum datang: <b>{sisaPO?.toLocaleString('id-ID')} pcs</b>
-        </p>
-        {sisaPO === 0 && <p className="font-bold text-green-600 mt-1">✅ PO sudah terpenuhi — input ini akan dianggap sebagai kelebihan</p>}
+        <p className="text-violet-600 mt-0.5">{po.vendor_nama} · {poItemsForPO.length} produk</p>
       </div>
       <form onSubmit={async e => {
         e.preventDefault()
         setLoading(true)
         const fd = new FormData(e.currentTarget)
         fd.set('po_id', String(po.id))
+        fd.set('po_item_id', String(selectedItemId))
         await onSave(fd)
         setLoading(false)
       }} className="space-y-3">
+        {/* Item picker */}
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Produk yang Diterima *</label>
+          <select value={selectedItemId} onChange={e => setSelectedItemId(parseInt(e.target.value))} className={inp} required>
+            {poItemsForPO.map((it: any) => (
+              <option key={it.id} value={it.id}>
+                {it.produk_nama} · PO {fmtNum(it.qty_po)} pcs · Sisa {fmtNum(Math.max(0, it.qty_po - it.qty_diterima))} pcs
+              </option>
+            ))}
+          </select>
+          {selectedItem && (
+            <p className="text-[11px] text-slate-500 mt-1">
+              Sudah diterima: <b>{fmtNum(selectedItem.qty_diterima)} pcs</b> · Sisa PO: <b>{fmtNum(sisaPO)} pcs</b>
+              {sisaPO === 0 && <span className="text-green-600 font-bold"> · ✅ Sudah terpenuhi (input = kelebihan)</span>}
+            </p>
+          )}
+        </div>
+
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Terima *</label>
           <input name="tanggal_terima" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/></div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Qty Diterima (pcs) *</label>
           <input name="qty_diterima" type="number" min="1" required className={inp}
-            placeholder={`max sisa PO: ${sisaPO} pcs (lebih = kelebihan)`}/></div>
+            placeholder={`sisa PO: ${sisaPO} pcs`}/></div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
           <textarea name="catatan" rows={2} className={inp}/></div>
-        <button type="submit" disabled={loading}
-          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+        <button type="submit" disabled={loading || !selectedItemId}
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
           {loading ? 'Menyimpan...' : 'Simpan Penerimaan'}
         </button>
       </form>
@@ -859,12 +942,12 @@ function BatchModal({ po, monitoring, onClose, onSave }: { po: any; monitoring?:
 }
 
 function QCModal({ batch, onClose, onSave }: { batch: any; onClose: () => void; onSave: (fd: FormData) => Promise<void> }) {
-  const [loading, setLoading] = useState(false)
-  const [qtyAcc, setQtyAcc]     = useState(0)
-  const [qtyReject, setQtyReject] = useState(0)
-  const [ttdOp, setTtdOp]     = useState<string | null>(null)
-  const [ttdAdmin, setTtdAdmin] = useState<string | null>(null)
-  const [showTtd, setShowTtd]   = useState(false)
+  const [loading, setLoading]         = useState(false)
+  const [qtyAcc, setQtyAcc]           = useState(0)
+  const [qtyReject, setQtyReject]     = useState(0)
+  const [ttdOp, setTtdOp]             = useState<string | null>(null)
+  const [ttdAdmin, setTtdAdmin]       = useState<string | null>(null)
+  const [showTtd, setShowTtd]         = useState(false)
 
   const maxCheck = batch.qty_diterima - (batch.qty_lebih ?? 0)
   const total    = qtyAcc + qtyReject
@@ -899,7 +982,6 @@ function QCModal({ batch, onClose, onSave }: { batch: any; onClose: () => void; 
           <input type="number" min="0" max={maxCheck} value={qtyAcc} onChange={e => setQtyAcc(parseInt(e.target.value) || 0)} className={inp}/></div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Qty Reject *</label>
           <input type="number" min="0" max={maxCheck} value={qtyReject} onChange={e => setQtyReject(parseInt(e.target.value) || 0)} className={inp}/></div>
-        {/* Validation indicator */}
         <div className={`rounded-xl px-3 py-2 text-[12px] font-semibold flex items-center gap-2 ${ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
           {ok ? <CheckCircle2 size={12}/> : <XCircle size={12}/>}
           {ok ? `✅ Total sesuai (${maxCheck} pcs)` : `Total ACC+Reject = ${total} ≠ ${maxCheck}`}
@@ -910,7 +992,6 @@ function QCModal({ batch, onClose, onSave }: { batch: any; onClose: () => void; 
           <input name="admin_nama" className={inp}/></div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan QC</label>
           <textarea name="catatan_qc" rows={2} className={inp}/></div>
-        {/* Optional TTD */}
         <button type="button" onClick={() => setShowTtd(p => !p)}
           className="w-full py-2 text-[12px] font-semibold text-violet-600 rounded-xl border border-violet-200">
           {showTtd ? '▲ Sembunyikan TTD' : '✍️ Tambah TTD (Opsional)'}
@@ -922,7 +1003,7 @@ function QCModal({ batch, onClose, onSave }: { batch: any; onClose: () => void; 
           </div>
         )}
         <button type="submit" disabled={loading || !ok}
-          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
           {loading ? 'Menyimpan...' : 'Simpan Hasil QC'}
         </button>
       </form>
@@ -932,7 +1013,7 @@ function QCModal({ batch, onClose, onSave }: { batch: any; onClose: () => void; 
 
 function RejectModal({ item, onClose, onSave }: { item: any; onClose: () => void; onSave: (status: string, ket: string) => Promise<void> }) {
   const [status, setStatus] = useState('disimpan')
-  const [ket, setKet] = useState('')
+  const [ket, setKet]       = useState('')
   const [loading, setLoading] = useState(false)
   return (
     <ModalShell title="Tangani Reject/Lebihan" onClose={onClose}>
@@ -956,14 +1037,12 @@ function RejectModal({ item, onClose, onSave }: { item: any; onClose: () => void
               </button>
             ))}
           </div>
-          {status === 'diretur' && <p className="text-[10px] text-orange-500 mt-1">Untuk retur massal, gunakan fitur Buat SJ Retur</p>}
         </div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan</label>
-          <textarea value={ket} onChange={e => setKet(e.target.value)} rows={2} className={inp}
-            placeholder="Misal: ditukar dengan Akrilik 2gr, atau disimpan sebagai cadangan"/></div>
+          <textarea value={ket} onChange={e => setKet(e.target.value)} rows={2} className={inp}/></div>
         <button onClick={async () => { setLoading(true); await onSave(status, ket); setLoading(false) }}
           disabled={loading}
-          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
           {loading ? 'Menyimpan...' : 'Simpan'}
         </button>
       </div>
@@ -972,43 +1051,39 @@ function RejectModal({ item, onClose, onSave }: { item: any; onClose: () => void
 }
 
 function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]; rejectList: any[]; onClose: () => void; onSave: (fd: FormData) => Promise<void> }) {
-  const [vendorId, setVendorId]     = useState<number | null>(null)
-  const [selected, setSelected]     = useState<number[]>([])
-  const [tanggal, setTanggal]       = useState(new Date().toISOString().split('T')[0])
-  const [catatan, setCatatan]       = useState('')
-  const [loading, setLoading]       = useState(false)
+  const [vendorId, setVendorId] = useState<number | null>(null)
+  const [selected, setSelected] = useState<number[]>([])
+  const [tanggal, setTanggal]   = useState(new Date().toISOString().split('T')[0])
+  const [catatan, setCatatan]   = useState('')
+  const [loading, setLoading]   = useState(false)
 
-  const vendorRejects = vendorId ? rejectList.filter((r: any) => r.vendor_id === vendorId) : []
-  const totalSelected = rejectList.filter((r: any) => selected.includes(r.id)).reduce((s: number, r: any) => s + r.qty, 0)
-
-  const toggle = (id: number) => setSelected(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])
-  const selectAll = () => setSelected(vendorRejects.map((r: any) => r.id))
+  const vendorRejects  = vendorId ? rejectList.filter((r: any) => r.vendor_id === vendorId) : []
+  const totalSelected  = rejectList.filter((r: any) => selected.includes(r.id)).reduce((s: number, r: any) => s + r.qty, 0)
+  const toggle         = (id: number) => setSelected(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])
 
   return (
     <ModalShell title="Buat Surat Jalan Retur" onClose={onClose}>
       <div className="space-y-3">
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Vendor *</label>
-          <select value={vendorId ?? ''} onChange={e => { setVendorId(parseInt(e.target.value) || null); setSelected([]) }}
-            className={inp}>
+          <select value={vendorId ?? ''} onChange={e => { setVendorId(parseInt(e.target.value) || null); setSelected([]) }} className={inp}>
             <option value="">— Pilih Vendor —</option>
             {vendors.map((v: any) => <option key={v.id} value={v.id}>{v.nama}</option>)}
           </select>
         </div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Retur *</label>
           <input type="date" value={tanggal} onChange={e => setTanggal(e.target.value)} className={inp}/></div>
-
         {vendorId && (
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <p className="text-[12px] font-semibold text-slate-500">Pilih Item Reject ({selected.length} dipilih · {totalSelected} pcs)</p>
+              <p className="text-[12px] font-semibold text-slate-500">Pilih Item ({selected.length} · {totalSelected} pcs)</p>
               {vendorRejects.length > 0 && (
-                <button type="button" onClick={selectAll}
+                <button type="button" onClick={() => setSelected(vendorRejects.map((r: any) => r.id))}
                   className="text-[10px] font-bold text-violet-600">Pilih Semua</button>
               )}
             </div>
             <div className="space-y-1.5 max-h-48 overflow-y-auto">
               {vendorRejects.length === 0 ? (
-                <p className="text-[12px] text-slate-400 py-2 text-center">Tidak ada reject pending dari vendor ini</p>
+                <p className="text-[12px] text-slate-400 py-2 text-center">Tidak ada reject pending</p>
               ) : vendorRejects.map((r: any) => (
                 <button key={r.id} type="button" onClick={() => toggle(r.id)}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl border text-left transition-all ${selected.includes(r.id) ? 'border-violet-400 bg-violet-50' : 'border-gray-200 bg-white'}`}>
@@ -1024,10 +1099,8 @@ function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]
             </div>
           </div>
         )}
-
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan SJ</label>
           <textarea value={catatan} onChange={e => setCatatan(e.target.value)} rows={2} className={inp}/></div>
-
         <button onClick={async () => {
           if (!vendorId || !selected.length) return
           setLoading(true)
@@ -1039,7 +1112,7 @@ function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]
           await onSave(fd)
           setLoading(false)
         }} disabled={loading || !vendorId || !selected.length}
-          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
           {loading ? 'Membuat SJ...' : `Buat SJ Retur (${totalSelected} pcs)`}
         </button>
       </div>
@@ -1057,11 +1130,10 @@ function VoidModal({ title, onClose, onConfirm }: { title: string; onClose: () =
           <p className="font-semibold">⚠️ PO akan divoid dan tidak bisa diaktifkan kembali</p>
         </div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Alasan Void *</label>
-          <textarea value={reason} onChange={e => setReason(e.target.value)} rows={3} required className={inp}
-            placeholder="Alasan mengapa PO ini divoid..."/></div>
+          <textarea value={reason} onChange={e => setReason(e.target.value)} rows={3} required className={inp}/></div>
         <button onClick={async () => { setLoading(true); await onConfirm(reason); setLoading(false) }}
           disabled={loading || !reason.trim()}
-          className="w-full h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+          className="w-full h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white disabled:opacity-50">
           {loading ? 'Memproses...' : 'Void PO'}
         </button>
       </div>

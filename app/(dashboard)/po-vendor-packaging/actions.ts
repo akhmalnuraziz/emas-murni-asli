@@ -96,7 +96,6 @@ export async function createVendor(formData: FormData) {
   const nama = (formData.get('nama') as string)?.trim()
   if (!nama) return { error: 'Nama vendor wajib diisi' }
 
-  // auto kode: VDR001, VDR002, ...
   const { count } = await supabase.from('vendor_packaging').select('*', { count: 'exact', head: true })
   const kode = `VDR${String((count ?? 0) + 1).padStart(3, '0')}`
 
@@ -133,28 +132,36 @@ export async function updateVendor(id: number, formData: FormData) {
 
 // ── PO ────────────────────────────────────────────────────────────────────────
 
+// items JSON: [{ produk_id, qty_po, harga_satuan }]
 export async function createPO(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
 
-  const vendorId   = parseInt(formData.get('vendor_id') as string)
-  const produkId   = parseInt(formData.get('produk_id') as string)
-  const qtyPO      = parseInt(formData.get('qty_po') as string)
-  const tanggalPO  = formData.get('tanggal_po') as string
+  const vendorId    = parseInt(formData.get('vendor_id') as string)
+  const tanggalPO   = formData.get('tanggal_po') as string
   const nomorManual = (formData.get('nomor_po') as string)?.trim()
+  const itemsRaw    = formData.get('items') as string
 
-  if (!vendorId)  return { error: 'Vendor wajib dipilih' }
-  if (!produkId)  return { error: 'Produk wajib dipilih' }
-  if (!qtyPO || qtyPO <= 0) return { error: 'Qty PO wajib diisi' }
-  if (!tanggalPO) return { error: 'Tanggal PO wajib diisi' }
+  if (!vendorId)   return { error: 'Vendor wajib dipilih' }
+  if (!tanggalPO)  return { error: 'Tanggal PO wajib diisi' }
+  if (!itemsRaw)   return { error: 'Minimal satu produk harus diisi' }
 
-  const [{ data: vendor }, { data: produk }] = await Promise.all([
-    supabase.from('vendor_packaging').select('nama').eq('id', vendorId).single(),
-    supabase.from('produk_packaging').select('kode, nama').eq('id', produkId).single(),
-  ])
+  const items: { produk_id: number; qty_po: number; harga_satuan?: number }[] = JSON.parse(itemsRaw)
+  if (!items.length) return { error: 'Minimal satu produk harus diisi' }
+  for (const it of items) {
+    if (!it.produk_id) return { error: 'Produk wajib dipilih' }
+    if (!it.qty_po || it.qty_po <= 0) return { error: 'Qty PO setiap produk wajib diisi' }
+  }
+
+  const { data: vendor } = await supabase.from('vendor_packaging').select('nama').eq('id', vendorId).single()
   if (!vendor) return { error: 'Vendor tidak ditemukan' }
-  if (!produk) return { error: 'Produk tidak ditemukan' }
+
+  // Fetch all produk info at once
+  const produkIds = items.map(i => i.produk_id)
+  const { data: produkList } = await supabase.from('produk_packaging').select('id, kode, nama').in('id', produkIds)
+  if (!produkList || produkList.length !== produkIds.length) return { error: 'Satu atau lebih produk tidak ditemukan' }
+  const produkMap = Object.fromEntries(produkList.map((p: any) => [p.id, p]))
 
   let nomorPO = nomorManual
   if (!nomorPO) nomorPO = await genNomor(supabase, 'po_packaging', 'PO')
@@ -162,21 +169,31 @@ export async function createPO(formData: FormData) {
   const { data: existing } = await supabase.from('po_packaging').select('id').eq('nomor_po', nomorPO).single()
   if (existing) return { error: `Nomor PO "${nomorPO}" sudah digunakan` }
 
-  const { error } = await supabase.from('po_packaging').insert({
+  const { data: po, error: poErr } = await supabase.from('po_packaging').insert({
     nomor_po: nomorPO,
     vendor_id: vendorId,
     vendor_nama: vendor.nama,
     tanggal_po: tanggalPO,
     tanggal_jatuh_tempo: (formData.get('tanggal_jatuh_tempo') as string) || null,
-    produk_id: produkId,
-    produk_kode: produk.kode,
-    produk_nama: produk.nama,
-    qty_po: qtyPO,
-    harga_satuan: parseFloat(formData.get('harga_satuan') as string) || null,
     catatan: (formData.get('catatan') as string) || null,
     created_by: user.id,
-  })
-  if (error) return { error: error.message }
+  }).select('id').single()
+  if (poErr) return { error: poErr.message }
+
+  const itemRows = items.map(it => ({
+    po_id: po.id,
+    produk_id: it.produk_id,
+    produk_kode: produkMap[it.produk_id].kode,
+    produk_nama: produkMap[it.produk_id].nama,
+    qty_po: it.qty_po,
+    harga_satuan: it.harga_satuan || null,
+  }))
+  const { error: itemErr } = await supabase.from('po_packaging_items').insert(itemRows)
+  if (itemErr) {
+    await supabase.from('po_packaging').delete().eq('id', po.id)
+    return { error: itemErr.message }
+  }
+
   revalidatePath('/po-vendor-packaging')
   return { success: true, nomorPO }
 }
@@ -186,10 +203,11 @@ export async function updatePO(id: number, formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
 
-  const nomorPO = (formData.get('nomor_po') as string)?.trim()
+  const nomorPO  = (formData.get('nomor_po') as string)?.trim()
+  const itemsRaw = formData.get('items') as string
+
   if (!nomorPO) return { error: 'Nomor PO wajib diisi' }
 
-  // Check duplicate nomor (exclude self)
   const { data: dup } = await supabase.from('po_packaging').select('id').eq('nomor_po', nomorPO).neq('id', id).single()
   if (dup) return { error: `Nomor PO "${nomorPO}" sudah digunakan oleh PO lain` }
 
@@ -197,11 +215,37 @@ export async function updatePO(id: number, formData: FormData) {
     nomor_po: nomorPO,
     tanggal_po: formData.get('tanggal_po') as string,
     tanggal_jatuh_tempo: (formData.get('tanggal_jatuh_tempo') as string) || null,
-    qty_po: parseInt(formData.get('qty_po') as string),
-    harga_satuan: parseFloat(formData.get('harga_satuan') as string) || null,
     catatan: (formData.get('catatan') as string) || null,
   }).eq('id', id)
   if (error) return { error: error.message }
+
+  // Update items if provided
+  if (itemsRaw) {
+    const items: { id?: number; produk_id: number; qty_po: number; harga_satuan?: number }[] = JSON.parse(itemsRaw)
+
+    // Check none of the existing items have batches
+    const { count: batchCount } = await supabase.from('po_batch_penerimaan')
+      .select('*', { count: 'exact', head: true }).eq('po_id', id)
+    if ((batchCount ?? 0) > 0) return { error: 'Tidak bisa edit item PO yang sudah ada batch penerimaannya' }
+
+    // Fetch produk info
+    const produkIds = items.map(i => i.produk_id)
+    const { data: produkList } = await supabase.from('produk_packaging').select('id, kode, nama').in('id', produkIds)
+    const produkMap = Object.fromEntries((produkList ?? []).map((p: any) => [p.id, p]))
+
+    await supabase.from('po_packaging_items').delete().eq('po_id', id)
+    const itemRows = items.map(it => ({
+      po_id: id,
+      produk_id: it.produk_id,
+      produk_kode: produkMap[it.produk_id]?.kode ?? '',
+      produk_nama: produkMap[it.produk_id]?.nama ?? '',
+      qty_po: it.qty_po,
+      harga_satuan: it.harga_satuan || null,
+    }))
+    const { error: itemErr } = await supabase.from('po_packaging_items').insert(itemRows)
+    if (itemErr) return { error: itemErr.message }
+  }
+
   revalidatePath('/po-vendor-packaging')
   return { success: true }
 }
@@ -215,7 +259,6 @@ export async function voidPO(id: number, reason: string) {
   if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
   if (!reason) return { error: 'Alasan void wajib diisi' }
 
-  // Check if any batch already received
   const { count } = await supabase.from('po_batch_penerimaan').select('*', { count: 'exact', head: true }).eq('po_id', id)
   if ((count ?? 0) > 0) return { error: 'Tidak bisa void PO yang sudah ada batch penerimaannya' }
 
@@ -232,26 +275,31 @@ export async function createBatchPenerimaan(formData: FormData) {
   if (!user) return { error: 'Unauthorized' }
 
   const poId        = parseInt(formData.get('po_id') as string)
+  const poItemId    = parseInt(formData.get('po_item_id') as string)
   const qtyDiterima = parseInt(formData.get('qty_diterima') as string)
   const tanggal     = formData.get('tanggal_terima') as string
 
-  if (!poId)                         return { error: 'PO wajib dipilih' }
+  if (!poId)                           return { error: 'PO wajib dipilih' }
+  if (!poItemId)                       return { error: 'Item produk wajib dipilih' }
   if (!qtyDiterima || qtyDiterima <= 0) return { error: 'Qty diterima wajib diisi' }
-  if (!tanggal)                      return { error: 'Tanggal terima wajib diisi' }
+  if (!tanggal)                        return { error: 'Tanggal terima wajib diisi' }
 
   const { data: po } = await supabase.from('po_packaging')
-    .select('nomor_po, vendor_id, vendor_nama, produk_id, produk_kode, produk_nama, qty_po, status')
+    .select('nomor_po, vendor_id, vendor_nama, status')
     .eq('id', poId).single()
   if (!po) return { error: 'PO tidak ditemukan' }
   if (po.status === 'void') return { error: 'PO sudah divoid' }
 
-  // Compute total already received (excluding lebihan)
-  const { data: batches } = await supabase.from('po_batch_penerimaan')
-    .select('qty_diterima, qty_lebih').eq('po_id', poId)
-  const totalSudahDatang = (batches ?? []).reduce((s: number, b: any) => s + (b.qty_diterima - (b.qty_lebih ?? 0)), 0)
-  const sisaPO = po.qty_po - totalSudahDatang
+  const { data: item } = await supabase.from('po_packaging_items')
+    .select('produk_id, produk_kode, produk_nama, qty_po, qty_diterima')
+    .eq('id', poItemId).single()
+  if (!item) return { error: 'Item PO tidak ditemukan' }
 
-  // Compute lebihan jika qty_diterima > sisa PO
+  // Already received for this item
+  const { data: batches } = await supabase.from('po_batch_penerimaan')
+    .select('qty_diterima, qty_lebih').eq('po_item_id', poItemId)
+  const totalSudahDatang = (batches ?? []).reduce((s: number, b: any) => s + (b.qty_diterima - (b.qty_lebih ?? 0)), 0)
+  const sisaPO = item.qty_po - totalSudahDatang
   const qtyLebih = Math.max(0, qtyDiterima - sisaPO)
 
   const nomor = await genNomor(supabase, 'batch_penerimaan', 'BTH')
@@ -262,12 +310,13 @@ export async function createBatchPenerimaan(formData: FormData) {
   const { data: batch, error } = await supabase.from('po_batch_penerimaan').insert({
     nomor_batch: nomor,
     po_id: poId,
+    po_item_id: poItemId,
     po_nomor: po.nomor_po,
     vendor_id: po.vendor_id,
     vendor_nama: po.vendor_nama,
-    produk_id: po.produk_id,
-    produk_kode: po.produk_kode,
-    produk_nama: po.produk_nama,
+    produk_id: item.produk_id,
+    produk_kode: item.produk_kode,
+    produk_nama: item.produk_nama,
     tanggal_terima: tanggal,
     qty_diterima: qtyDiterima,
     qty_lebih: qtyLebih,
@@ -277,9 +326,16 @@ export async function createBatchPenerimaan(formData: FormData) {
   }).select('id').single()
   if (error) return { error: error.message }
 
-  // Update PO status
-  const newTotal = totalSudahDatang + qtyDiterima - qtyLebih
-  const newStatus = newTotal >= po.qty_po ? 'selesai' : 'partial'
+  // Update qty_diterima on the item
+  const newItemQty = totalSudahDatang + qtyDiterima - qtyLebih
+  await supabase.from('po_packaging_items').update({ qty_diterima: newItemQty }).eq('id', poItemId)
+
+  // Update PO status based on all items
+  const { data: allItems } = await supabase.from('po_packaging_items')
+    .select('qty_po, qty_diterima').eq('po_id', poId)
+  const allDone = (allItems ?? []).every((i: any) => i.qty_diterima >= i.qty_po)
+  const anyDone = (allItems ?? []).some((i: any) => i.qty_diterima > 0)
+  const newStatus = allDone ? 'selesai' : anyDone ? 'partial' : 'menunggu'
   await supabase.from('po_packaging').update({ status: newStatus }).eq('id', poId)
 
   revalidatePath('/po-vendor-packaging')
@@ -293,12 +349,12 @@ export async function submitQC(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
 
-  const batchId  = parseInt(formData.get('batch_id') as string)
-  const qtyAcc   = parseInt(formData.get('qty_acc') as string)
+  const batchId   = parseInt(formData.get('batch_id') as string)
+  const qtyAcc    = parseInt(formData.get('qty_acc') as string)
   const qtyReject = parseInt(formData.get('qty_reject') as string)
   const qcTanggal = formData.get('qc_tanggal') as string
 
-  if (isNaN(qtyAcc) || qtyAcc < 0)    return { error: 'Qty ACC tidak valid' }
+  if (isNaN(qtyAcc) || qtyAcc < 0)     return { error: 'Qty ACC tidak valid' }
   if (isNaN(qtyReject) || qtyReject < 0) return { error: 'Qty reject tidak valid' }
   if (!qcTanggal) return { error: 'Tanggal QC wajib diisi' }
 
@@ -311,7 +367,6 @@ export async function submitQC(formData: FormData) {
   if (total !== batch.qty_diterima)
     return { error: `Total ACC (${qtyAcc}) + Reject (${qtyReject}) + Lebihan (${batch.qty_lebih ?? 0}) harus sama dengan qty diterima (${batch.qty_diterima})` }
 
-  // Optional TTD
   let ttdOpUrl: string | null = null
   let ttdAdminUrl: string | null = null
   const ttdOpB64    = formData.get('ttd_operator') as string
@@ -333,15 +388,10 @@ export async function submitQC(formData: FormData) {
   }).eq('id', batchId)
   if (error) return { error: error.message }
 
-  // Tambah stok ACC
   if (qtyAcc > 0) {
-    await supabase.from('stok_packaging')
-      .update({ stok_qty: supabase.rpc('__noop'), updated_at: new Date().toISOString() })
-    // Use raw SQL via RPC or direct update with increment
     await supabase.rpc('increment_stok_packaging', { p_produk_id: batch.produk_id, p_qty: qtyAcc })
       .then(async (res: any) => {
         if (res.error) {
-          // Fallback: read then update
           const { data: stok } = await supabase.from('stok_packaging')
             .select('stok_qty').eq('produk_id', batch.produk_id).single()
           if (stok) {
@@ -353,7 +403,6 @@ export async function submitQC(formData: FormData) {
       })
   }
 
-  // Buat reject records
   const rejectItems: any[] = []
   if (qtyReject > 0) {
     rejectItems.push({
@@ -406,14 +455,14 @@ export async function createSJRetur(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
 
-  const vendorId    = parseInt(formData.get('vendor_id') as string)
-  const tanggal     = formData.get('tanggal_retur') as string
+  const vendorId     = parseInt(formData.get('vendor_id') as string)
+  const tanggal      = formData.get('tanggal_retur') as string
   const rejectIdsRaw = formData.get('reject_ids') as string
   const rejectIds: number[] = rejectIdsRaw ? JSON.parse(rejectIdsRaw) : []
 
-  if (!vendorId)          return { error: 'Vendor wajib dipilih' }
-  if (!tanggal)           return { error: 'Tanggal retur wajib diisi' }
-  if (!rejectIds.length)  return { error: 'Pilih minimal satu item reject' }
+  if (!vendorId)         return { error: 'Vendor wajib dipilih' }
+  if (!tanggal)          return { error: 'Tanggal retur wajib diisi' }
+  if (!rejectIds.length) return { error: 'Pilih minimal satu item reject' }
 
   const { data: vendor } = await supabase.from('vendor_packaging').select('nama').eq('id', vendorId).single()
   if (!vendor) return { error: 'Vendor tidak ditemukan' }
@@ -440,7 +489,6 @@ export async function createSJRetur(formData: FormData) {
   }).select('id').single()
   if (error) return { error: error.message }
 
-  // Mark rejects as diretur
   await supabase.from('po_packaging_reject').update({
     status_penanganan: 'diretur',
     sj_retur_id: sj.id,
