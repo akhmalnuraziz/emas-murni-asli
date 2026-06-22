@@ -346,37 +346,8 @@ export async function deletePO(id: number) {
     }
   }
 
-  // 3. Hapus SJ Retur yang terkait dengan reject PO ini (cascade ke sj_retur_packaging_items + batch pengganti via FK SET NULL)
-  if (bIds.length > 0) {
-    const { data: rejects } = await supabase.from('po_packaging_reject')
-      .select('sj_retur_id').in('batch_id', bIds).not('sj_retur_id', 'is', null)
-    const sjIds = [...new Set((rejects ?? []).map((r: any) => r.sj_retur_id).filter(Boolean))]
-
-    // Hapus juga batch pengganti yang link ke SJ-SJ ini (sebelum SJ dihapus agar tidak orphan)
-    if (sjIds.length > 0) {
-      const { data: pengBatches } = await supabase.from('po_batch_penerimaan')
-        .select('id, produk_id, qty_acc, status_qc')
-        .eq('is_pengganti', true).in('sj_retur_id_origin', sjIds)
-      for (const pb of pengBatches ?? []) {
-        if (pb.status_qc === 'selesai' && (pb.qty_acc ?? 0) > 0) {
-          const { data: stok } = await supabase.from('stok_packaging')
-            .select('stok_qty').eq('produk_id', pb.produk_id).single()
-          if (stok) {
-            await supabase.from('stok_packaging')
-              .update({ stok_qty: Math.max(0, (stok.stok_qty ?? 0) - pb.qty_acc) })
-              .eq('produk_id', pb.produk_id)
-          }
-        }
-      }
-      const pengIds = (pengBatches ?? []).map((b: any) => b.id)
-      if (pengIds.length > 0) {
-        await supabase.from('po_packaging_reject').delete().in('batch_id', pengIds)
-        await supabase.from('po_batch_penerimaan').delete().in('id', pengIds)
-      }
-
-      await supabase.from('sj_retur_packaging').delete().in('id', sjIds)
-    }
-  }
+  // 3. Cascade hapus SJ Retur via snapshot — robust meski reject sudah dihapus duluan
+  await cascadeDeleteSJForScope(supabase, 'po_id', id)
 
   // 4. Delete cascade: reject → batch → items → po
   if (bIds.length > 0) {
@@ -406,6 +377,80 @@ export async function voidPO(id: number, reason: string) {
   await supabase.from('po_packaging').update({ voided_at: new Date().toISOString(), void_reason: reason, status: 'void' }).eq('id', id)
   revalidatePath('/po-vendor-packaging')
   return { success: true }
+}
+
+// ── HELPER: Cascade delete SJ Retur via snapshot kolom di sj_retur_packaging_items ─
+
+/**
+ * Hapus SJ Retur yang scope-nya habis (semua item berasal dari scope yang sedang dihapus).
+ * Pakai snapshot `po_id` / `batch_id` di `sj_retur_packaging_items` — TIDAK bergantung pada
+ * `po_packaging_reject` yang mungkin sudah dihapus.
+ *
+ * scopeKey: kolom yang dipakai untuk cek scope (po_id atau batch_id).
+ * scopeVal: nilainya. Bisa array (mis. semua batch ID di sebuah PO).
+ *
+ * Untuk tiap SJ kandidat:
+ *  - Hitung items dengan scopeKey == scopeVal (in scope) dan items dengan scopeKey != scopeVal (out of scope).
+ *  - Kalau tidak ada out-of-scope → SJ otomatis kosong setelah delete → hapus SJ.
+ *  - Kalau ada out-of-scope → biarkan, tapi hapus items yang in-scope (cleanup parsial).
+ *
+ * Sebelum hapus SJ, juga reverse stok + hapus batch pengganti yang link ke SJ tsb.
+ */
+async function cascadeDeleteSJForScope(supabase: any, scopeKey: 'po_id' | 'batch_id', scopeVal: number | number[]) {
+  const vals = Array.isArray(scopeVal) ? scopeVal : [scopeVal]
+  if (vals.length === 0) return
+
+  // Cari SJ yang punya item di scope ini
+  const { data: hits } = await supabase.from('sj_retur_packaging_items')
+    .select('sj_retur_id').in(scopeKey, vals)
+  const sjIds = [...new Set((hits ?? []).map((h: any) => h.sj_retur_id).filter(Boolean))]
+  if (sjIds.length === 0) return
+
+  for (const sjId of sjIds) {
+    // Hitung items di SJ ini yang DI LUAR scope
+    const { data: outOfScope } = await supabase.from('sj_retur_packaging_items')
+      .select('id').eq('sj_retur_id', sjId).not(scopeKey, 'in', `(${vals.join(',')})`).limit(1)
+
+    if ((outOfScope?.length ?? 0) === 0) {
+      // SJ akan kosong → hapus SJ (cascade ke sj_retur_packaging_items)
+
+      // Reverse stok + hapus batch pengganti yang link ke SJ ini
+      const { data: pengBatches } = await supabase.from('po_batch_penerimaan')
+        .select('id, produk_id, qty_acc, status_qc')
+        .eq('is_pengganti', true).eq('sj_retur_id_origin', sjId)
+      for (const pb of pengBatches ?? []) {
+        if (pb.status_qc === 'selesai' && (pb.qty_acc ?? 0) > 0) {
+          const { data: stok } = await supabase.from('stok_packaging')
+            .select('stok_qty').eq('produk_id', pb.produk_id).single()
+          if (stok) {
+            await supabase.from('stok_packaging')
+              .update({ stok_qty: Math.max(0, (stok.stok_qty ?? 0) - pb.qty_acc) })
+              .eq('produk_id', pb.produk_id)
+          }
+        }
+      }
+      const pengIds = (pengBatches ?? []).map((b: any) => b.id)
+      if (pengIds.length > 0) {
+        await supabase.from('po_packaging_reject').delete().in('batch_id', pengIds)
+        await supabase.from('po_batch_penerimaan').delete().in('id', pengIds)
+      }
+
+      await supabase.from('sj_retur_packaging').delete().eq('id', sjId)
+    } else {
+      // SJ campuran dari scope lain → hapus items in-scope dan recompute total_qty
+      await supabase.from('sj_retur_packaging_items').delete().eq('sj_retur_id', sjId).in(scopeKey, vals)
+      const { data: remaining } = await supabase.from('sj_retur_packaging_items')
+        .select('qty_retur, qty_diganti').eq('sj_retur_id', sjId)
+      const newTotal  = (remaining ?? []).reduce((s: number, r: any) => s + (r.qty_retur || 0), 0)
+      const newGanti  = (remaining ?? []).reduce((s: number, r: any) => s + (r.qty_diganti || 0), 0)
+      let status = 'menunggu_ganti'
+      if (newGanti >= newTotal && newTotal > 0) status = 'selesai_diganti'
+      else if (newGanti > 0) status = 'sebagian_diganti'
+      await supabase.from('sj_retur_packaging').update({
+        total_qty: newTotal, total_qty_diganti: newGanti, status,
+      }).eq('id', sjId)
+    }
+  }
 }
 
 // ── HELPER: Recompute status SJ Retur ──────────────────────────────────────────
@@ -611,23 +656,11 @@ export async function deleteBatch(id: number) {
     }
   }
 
-  // Catat SJ yang terkait reject batch ini sebelum reject dihapus
-  const { data: rejectsForSJ } = await supabase.from('po_packaging_reject')
-    .select('sj_retur_id').eq('batch_id', id).not('sj_retur_id', 'is', null)
-  const sjIds = [...new Set((rejectsForSJ ?? []).map((r: any) => r.sj_retur_id).filter(Boolean))]
+  // Cascade SJ via snapshot batch_id (robust meski reject sudah dihapus)
+  await cascadeDeleteSJForScope(supabase, 'batch_id', id)
 
-  // Hapus reject records (akan SET NULL reject_id di sj_retur_packaging_items)
+  // Hapus reject records sisa
   await supabase.from('po_packaging_reject').delete().eq('batch_id', id)
-
-  // Untuk tiap SJ terkait: cek apakah masih ada reject aktif yang merujuk.
-  // Jika tidak, hapus SJ-nya (cascade ke sj_retur_packaging_items).
-  for (const sjId of sjIds) {
-    const { count } = await supabase.from('po_packaging_reject')
-      .select('*', { count: 'exact', head: true }).eq('sj_retur_id', sjId)
-    if ((count ?? 0) === 0) {
-      await supabase.from('sj_retur_packaging').delete().eq('id', sjId)
-    }
-  }
 
   // Batch pengganti: reverse qty_diganti dari SJ item & recompute status SJ
   if (batch.is_pengganti && batch.sj_item_id_origin && batch.status_qc === 'selesai' && (batch.qty_acc ?? 0) > 0) {
@@ -895,8 +928,53 @@ export async function deleteRejectItem(id: number) {
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
   if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
 
+  // Ambil sj_retur_id sebelum delete, biar bisa cleanup SJ items + SJ kosong setelahnya
+  const { data: reject } = await supabase.from('po_packaging_reject')
+    .select('sj_retur_id').eq('id', id).single()
+  const sjId: number | null = reject?.sj_retur_id ?? null
+
   const { error } = await supabase.from('po_packaging_reject').delete().eq('id', id)
   if (error) return { error: error.message }
+
+  // Hapus SJ item snapshot yang refer ke reject ini, lalu cleanup SJ kalau kosong
+  if (sjId) {
+    await supabase.from('sj_retur_packaging_items').delete().eq('reject_id', id)
+    const { data: remaining } = await supabase.from('sj_retur_packaging_items')
+      .select('qty_retur, qty_diganti').eq('sj_retur_id', sjId)
+    if (!remaining || remaining.length === 0) {
+      // Hapus batch pengganti yang link ke SJ ini juga (reverse stok)
+      const { data: pengBatches } = await supabase.from('po_batch_penerimaan')
+        .select('id, produk_id, qty_acc, status_qc')
+        .eq('is_pengganti', true).eq('sj_retur_id_origin', sjId)
+      for (const pb of pengBatches ?? []) {
+        if (pb.status_qc === 'selesai' && (pb.qty_acc ?? 0) > 0) {
+          const { data: stok } = await supabase.from('stok_packaging')
+            .select('stok_qty').eq('produk_id', pb.produk_id).single()
+          if (stok) {
+            await supabase.from('stok_packaging')
+              .update({ stok_qty: Math.max(0, (stok.stok_qty ?? 0) - pb.qty_acc) })
+              .eq('produk_id', pb.produk_id)
+          }
+        }
+      }
+      const pengIds = (pengBatches ?? []).map((b: any) => b.id)
+      if (pengIds.length > 0) {
+        await supabase.from('po_packaging_reject').delete().in('batch_id', pengIds)
+        await supabase.from('po_batch_penerimaan').delete().in('id', pengIds)
+      }
+      await supabase.from('sj_retur_packaging').delete().eq('id', sjId)
+    } else {
+      const newTotal = remaining.reduce((s: number, r: any) => s + (r.qty_retur || 0), 0)
+      const newGanti = remaining.reduce((s: number, r: any) => s + (r.qty_diganti || 0), 0)
+      let status = 'menunggu_ganti'
+      if (newGanti >= newTotal && newTotal > 0) status = 'selesai_diganti'
+      else if (newGanti > 0) status = 'sebagian_diganti'
+      await supabase.from('sj_retur_packaging').update({
+        total_qty: newTotal, total_qty_diganti: newGanti, status,
+      }).eq('id', sjId)
+    }
+  }
+
   revalidatePath('/po-vendor-packaging')
   return { success: true }
 }
@@ -1043,4 +1121,76 @@ export async function createSJRetur(formData: FormData) {
 
   revalidatePath('/po-vendor-packaging')
   return { success: true, nomor, sjId: sj.id }
+}
+
+// Edit metadata SJ Retur (tanggal, jatuh tempo, catatan). Items tidak bisa diedit.
+export async function updateSJRetur(id: number, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin/SPV' }
+
+  const tanggal = formData.get('tanggal_retur') as string
+  const tglJatuhTempo = (formData.get('tanggal_jatuh_tempo_ganti') as string) || null
+  const catatan = (formData.get('catatan') as string) || null
+
+  if (!tanggal) return { error: 'Tanggal retur wajib diisi' }
+
+  const { error } = await supabase.from('sj_retur_packaging').update({
+    tanggal_retur: tanggal,
+    tanggal_jatuh_tempo_ganti: tglJatuhTempo,
+    catatan,
+  }).eq('id', id)
+  if (error) return { error: error.message }
+
+  revalidatePath('/po-vendor-packaging')
+  return { success: true }
+}
+
+// Hapus SJ Retur: reset rejects yang terlibat ke pending, cleanup batch pengganti, hapus SJ.
+export async function deleteSJRetur(id: number) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+
+  // 1. Reset rejects yang masih hidup balik ke pending
+  await supabase.from('po_packaging_reject').update({
+    status_penanganan: 'pending',
+    penanganan_keterangan: null,
+    sj_retur_id: null,
+    tanggal_retur: null,
+  }).eq('sj_retur_id', id)
+
+  // 2. Reverse stok + hapus batch pengganti yang link ke SJ ini
+  const { data: pengBatches } = await supabase.from('po_batch_penerimaan')
+    .select('id, produk_id, qty_acc, status_qc')
+    .eq('is_pengganti', true).eq('sj_retur_id_origin', id)
+  for (const pb of pengBatches ?? []) {
+    if (pb.status_qc === 'selesai' && (pb.qty_acc ?? 0) > 0) {
+      const { data: stok } = await supabase.from('stok_packaging')
+        .select('stok_qty').eq('produk_id', pb.produk_id).single()
+      if (stok) {
+        await supabase.from('stok_packaging')
+          .update({ stok_qty: Math.max(0, (stok.stok_qty ?? 0) - pb.qty_acc) })
+          .eq('produk_id', pb.produk_id)
+      }
+    }
+  }
+  const pengIds = (pengBatches ?? []).map((b: any) => b.id)
+  if (pengIds.length > 0) {
+    await supabase.from('po_packaging_reject').delete().in('batch_id', pengIds)
+    await supabase.from('po_batch_penerimaan').delete().in('id', pengIds)
+  }
+
+  // 3. Hapus SJ (cascade ke sj_retur_packaging_items)
+  const { error } = await supabase.from('sj_retur_packaging').delete().eq('id', id)
+  if (error) return { error: error.message }
+
+  revalidatePath('/po-vendor-packaging')
+  return { success: true }
 }
