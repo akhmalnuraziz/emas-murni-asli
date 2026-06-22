@@ -97,8 +97,7 @@ export default function PrioritasProduksiClient({
 
       {/* Total rekomendasi */}
       {totalRekomendasi > 0 && (
-        <div className="rounded-3xl p-4 flex items-center gap-4"
-          style={{ background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.15)' }}>
+        <div className="rounded-3xl p-4 flex items-center gap-4 bg-violet-50/20 border border-violet-200/50">
           <div className="text-center">
             <p className="text-2xl font-black text-violet-700">{totalRekomendasi}</p>
             <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">pcs total</p>

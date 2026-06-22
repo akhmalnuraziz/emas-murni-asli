@@ -525,8 +525,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                       </span>
                       {/* FIX poin 2: hapus si.badge dari sini */}
                       <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full',
-                        status==='aktif'?'text-emerald-700':'text-amber-700')}
-                        style={{background:status==='aktif'?'rgba(34,197,94,0.1)':'rgba(245,158,11,0.1)'}}>
+                        status==='aktif'?'text-emerald-700 bg-emerald-50':'text-amber-700 bg-amber-50')}>
                         {status==='aktif'?'AKTIF':'TERKUNCI 🔒'}
                       </span>
                     </div>
@@ -570,7 +569,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                 {/* HPP bar */}
                 {canSeeHPP&&(
                   <div className="px-5 pb-2">
-                    <p className="text-xs font-semibold"style={{color:'#8B5CF6'}}>
+                    <p className="text-xs font-semibold text-violet-600">
                       HPP: {showHPP?`${formatRupiah(batch.hpp_gr??0)}/gr`:'•••/gr'}
                     </p>
                   </div>
@@ -579,17 +578,17 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                 {/* Progress bar */}
                 {sudahTerpakai&&(
                   <div className="px-5 pb-4">
-                    <div className="w-full h-1.5 rounded-full"style={{background:'rgba(139,92,246,0.1)'}}>
-                      <div className="h-1.5 rounded-full transition-all"
-                        style={{width:`${pct}%`,background:`linear-gradient(90deg,#8B5CF6,#A78BFA)`,boxShadow:'0 0 8px rgba(139,92,246,0.4)'}}/>
+                    <div className="w-full h-1.5 bg-violet-100 rounded-full">
+                      <div className="h-1.5 rounded-full bg-violet-500 transition-all"
+                        style={{width:`${pct}%`}}/>
                     </div>
-                    <p className="text-[11px] text-right mt-1 font-medium"style={{color:'#8B5CF6'}}>{pct.toFixed(1)}% tersisa</p>
+                    <p className="text-[11px] text-right mt-1 font-medium text-violet-600">{pct.toFixed(1)}% tersisa</p>
                   </div>
                 )}
 
                 {/* Expanded detail */}
                 {isExp&&(
-                  <div className="px-5 pb-5 border-t space-y-4"style={{borderColor:'rgba(139,92,246,0.1)',background:'rgba(139,92,246,0.02)'}}>
+                  <div className="px-5 pb-5 border-t border-slate-100 space-y-4 bg-violet-50/20">
 
                     {/* FIX poin 4: Foto Bukti di ATAS selisih description */}
                     {fotos.length>0&&(
@@ -613,7 +612,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                         {label:'Selisih Timbangan',val:batchPusat!==timbAkhir?formatGram(Math.abs(batchPusat-timbAkhir)):'✓ Sesuai'},
                         {label:'Catatan',val:batch.catatan||'—'},
                       ].map(item=>(
-                        <div key={item.label}className="rounded-2xl p-3"style={{background:'rgba(255,255,255,0.8)',border:'1px solid rgba(209,213,219,0.4)'}}>
+                        <div key={item.label}className="rounded-lg p-3 bg-slate-50 border border-slate-100">
                           <p className="text-[10px] text-gray-400 font-medium">{item.label}</p>
                           <p className="text-sm font-bold text-gray-700 mt-0.5 break-words">{item.val}</p>
                         </div>
@@ -622,7 +621,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
 
                     {/* Selisih description */}
                     {(si.warn || Math.abs((batchPusat)-(timbAkhir)) > 0) && (
-                      <div className="flex items-start gap-3 px-4 py-3 rounded-2xl"style={{background:si.bg,border:`1px solid ${si.dot}25`}}>
+                      <div className={cn('flex items-start gap-3 px-4 py-3 rounded-2xl border',si.warn?'bg-red-50 border-red-200':'bg-amber-50 border-amber-200')}>
                         <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0"style={{background:si.dot}}/>
                         <p className={cn('text-xs font-medium',si.color)}>{si.desc}</p>
                       </div>
@@ -632,8 +631,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                     {(()=>{
                       const rCount = rejectCountMap[batch.kode] ?? 0
                       return rCount > 0 ? (
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold"
-                          style={{background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',color:'#DC2626'}}>
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-red-50 border border-red-200 text-red-600">
                           <span>⚠️</span>
                           <span>{rCount} item reject belum dilebur</span>
                         </div>
@@ -675,8 +673,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                               </div>
                             ))}
                             {/* Poin 5+11: Kolom Sisa Fisik inline-edit */}
-                            <div className="rounded-2xl px-3.5 py-3 col-span-2 sm:col-span-3"
-                              style={{background:'rgba(34,197,94,0.06)',border:'1px solid rgba(34,197,94,0.2)'}}>
+                            <div className="rounded-2xl px-3.5 py-3 col-span-2 sm:col-span-3 bg-emerald-50 border border-emerald-200">
                               <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
                                 <div className="flex items-center gap-1.5">
                                   <span className="w-1.5 h-1.5 rounded-full bg-green-500"/>
@@ -773,7 +770,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                           // FIX poin 7: hitung durasi
                           const durasi = durasiText(plb.jam_mulai, plb.jam_selesai)
                           return (
-                          <div key={plb.id} className="px-4 py-3 border-t" style={{borderColor:'rgba(139,92,246,0.08)'}}>
+                          <div key={plb.id} className="px-4 py-3 border-t border-slate-100">
                             <div className="flex items-start justify-between gap-2 mb-2">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -907,19 +904,19 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                             })()}
                             {/* FIX poin 6: tampilkan keterangan_serahkan DAN keterangan_diterima */}
                             {plb.keterangan_serahkan&&(
-                              <div className="mt-2 px-3 py-1.5 rounded-lg text-xs text-gray-500 italic" style={{background:"rgba(139,92,246,0.05)"}}>
+                              <div className="mt-2 px-3 py-1.5 rounded-lg text-xs text-slate-500 italic bg-violet-50 border border-violet-100">
                                 📤 Diserahkan: {plb.keterangan_serahkan}
                               </div>
                             )}
                             {plb.keterangan_diterima&&(
-                              <div className="mt-1 px-3 py-1.5 rounded-lg text-xs text-green-700 italic" style={{background:"rgba(16,185,129,0.05)"}}>
+                              <div className="mt-1 px-3 py-1.5 rounded-lg text-xs text-emerald-700 italic bg-emerald-50 border border-emerald-100">
                                 📥 Diterima: {plb.keterangan_diterima}
                               </div>
                             )}
                             {/* TTD Loss — tampil kalau ada loss_approval */}
                             {plb.loss_approval&&(
                               <div className="mt-2 rounded-2xl overflow-hidden border border-red-100">
-                                <div className="px-3 py-2 flex items-center gap-2" style={{background:"rgba(239,68,68,0.06)"}}>
+                                <div className="px-3 py-2 flex items-center gap-2 bg-red-50">
                                   <span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss Peleburan</span>
                                   <span className="text-[10px] text-red-400 ml-auto">Loss disetujui</span>
                                 </div>

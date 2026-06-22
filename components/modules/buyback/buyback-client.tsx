@@ -99,7 +99,7 @@ export default function BuybackClient({ initialList, userRole, userName }: Props
           </button>
           <button onClick={() => setShowForm(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all"
-            style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', boxShadow: '0 4px 12px rgba(139,92,246,0.35)' }}>
+            style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
             <Plus size={14} /> Terima Buyback
           </button>
         </div>

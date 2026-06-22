@@ -317,8 +317,7 @@ function ExplorerPanel() {
     : []
 
   const InfoRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
-    <div className="flex items-start justify-between gap-4 py-2.5 border-b last:border-0"
-      style={{ borderColor: 'rgba(243,244,246,0.8)' }}>
+    <div className="flex items-start justify-between gap-4 py-2.5 border-b border-gray-100/80 last:border-0">
       <span className="text-[11px] font-bold text-gray-400 tracking-widest uppercase flex-shrink-0 mt-0.5">{label}</span>
       <span className="text-sm font-semibold text-gray-800 text-right">{value ?? '—'}</span>
     </div>
@@ -327,9 +326,7 @@ function ExplorerPanel() {
   return (
     <div className="space-y-5">
       {/* Search bar */}
-      <div className="rounded-3xl p-5"
-        style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(24px)',
-          border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 8px 40px rgba(139,92,246,0.08)' }}>
+      <div className="rounded-3xl p-5 bg-white border border-white/60">
         <p className="text-xs font-bold text-gray-400 tracking-widest uppercase mb-3">Cari Shieldtag by Kode</p>
         <div className="flex gap-3">
           <div className="relative flex-1">
@@ -340,23 +337,21 @@ function ExplorerPanel() {
               onChange={e => { setQuery(e.target.value.toUpperCase()); setNotFound(false) }}
               onKeyDown={e => e.key === 'Enter' && doSearch()}
               placeholder="Masukkan kode Shieldtag, contoh: 1H80AA"
-              className="w-full pl-10 pr-4 py-3 text-sm font-mono rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all uppercase"
-              style={{ background: 'rgba(249,250,251,0.8)', border: '1px solid rgba(209,213,219,0.5)' }}
+              className="w-full pl-10 pr-4 py-3 text-sm font-mono rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all uppercase bg-gray-50/80 border border-gray-300/50"
             />
           </div>
           <button
             onClick={() => doSearch()}
             disabled={isPending || !query.trim()}
             className="px-6 py-3 text-sm font-bold text-white rounded-2xl transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 flex items-center gap-2"
-            style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', boxShadow: '0 4px 20px rgba(139,92,246,0.35)' }}>
+            style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
             {isPending ? <Loader2 size={14} className="animate-spin"/> : <Search size={14}/>}
             Cari
           </button>
         </div>
 
         {notFound && (
-          <div className="mt-4 px-4 py-3 rounded-2xl text-sm font-medium text-red-600"
-            style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.12)' }}>
+          <div className="mt-4 px-4 py-3 rounded-2xl text-sm font-medium text-red-600 bg-red-50 border border-red-100/80">
             Shieldtag <span className="font-mono font-bold">{query}</span> tidak ditemukan.
           </div>
         )}
@@ -364,9 +359,7 @@ function ExplorerPanel() {
 
       {/* Result card */}
       {result && cfg && (
-        <div className="rounded-3xl overflow-hidden"
-          style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(24px)',
-            border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 8px 40px rgba(139,92,246,0.08)' }}>
+        <div className="rounded-3xl overflow-hidden bg-white border border-white/60">
 
           {/* Card header */}
           <div className="px-6 py-5 flex items-center justify-between gap-4"
@@ -378,7 +371,7 @@ function ExplorerPanel() {
                 <Tag size={22} style={{ color: cfg.dot }}/>
               </div>
               <div>
-                <p className="text-xl font-black font-mono tracking-wider" style={{ color: '#111827' }}>
+                <p className="text-xl font-black font-mono tracking-wider text-gray-900">
                   {result.kode}
                 </p>
                 <p className="text-xs text-gray-400 mt-0.5">
@@ -472,10 +465,8 @@ function ExplorerPanel() {
 
       {/* Empty state */}
       {!result && !notFound && !isPending && (
-        <div className="bg-white border border-slate-200 rounded-xl py-16 text-center"
-          style={{ background: 'rgba(255,255,255,0.4)', border: '1px dashed rgba(139,92,246,0.2)' }}>
-          <div className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4"
-            style={{ background: 'rgba(139,92,246,0.06)' }}>
+        <div className="rounded-xl py-16 text-center bg-white/40 border border-dashed border-violet-200/60">
+          <div className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4 bg-violet-50">
             <Search size={28} className="text-violet-300"/>
           </div>
           <p className="text-sm font-semibold text-gray-400">Masukkan kode Shieldtag untuk mulai cari</p>
@@ -636,8 +627,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
             <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Cari kode Shieldtag, batch..."
-              className="w-full pl-10 pr-4 py-2.5 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all"
-              style={{ background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(12px)', border: '1px solid rgba(209,213,219,0.5)' }}/>
+              className="w-full pl-10 pr-4 py-2.5 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all bg-white/80 border border-gray-300/50"/>
           </div>
           <div className="flex gap-2 flex-wrap">
             {tabs.map(t => {
@@ -659,13 +649,10 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
         </div>
 
         {/* Table */}
-        <div className="rounded-3xl overflow-auto"
-          style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(24px)',
-            border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 8px 40px rgba(139,92,246,0.08)' }}>
+        <div className="rounded-3xl overflow-auto bg-white border border-white/60">
           <table className="w-full min-w-[700px] text-sm">
             <thead>
-              <tr className="border-b"
-                style={{ borderColor: 'rgba(243,244,246,0.9)', background: 'rgba(249,250,251,0.6)' }}>
+              <tr className="border-b border-gray-100 bg-gray-50/60">
                 <th className="px-4 py-3.5 w-10">
                 <input type="checkbox" className="w-4 h-4 rounded cursor-pointer accent-violet-500"
                   checked={filtered.length > 0 && selected.size === filtered.length}
@@ -679,8 +666,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
             <tbody>
               {filtered.length === 0 ? (
                 <tr><td colSpan={7} className="text-center py-16">
-                  <div className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4"
-                    style={{ background: 'rgba(139,92,246,0.08)' }}>
+                  <div className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4 bg-violet-50">
                     <Tag size={28} className="text-violet-300"/>
                   </div>
                   <p className="text-sm font-medium text-gray-400">
@@ -697,8 +683,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
                 const cfg = STATUS_CFG[st.status] ?? STATUS_CFG['Aktif']
                 return (
                   <tr key={st.id}
-                    className={cn('border-t transition-colors hover:bg-violet-50/10', idx === 0 ? 'border-transparent' : '', selected.has(st.id) ? 'bg-violet-50/40' : '')}
-                    style={{ borderColor: 'rgba(243,244,246,0.7)' }}>
+                    className={cn('border-t border-gray-100/70 transition-colors hover:bg-violet-50/10', idx === 0 ? 'border-transparent' : '', selected.has(st.id) ? 'bg-violet-50/40' : '')}>
                     <td className="px-4 py-3" onClick={e => { e.stopPropagation(); toggleSelect(st.id) }}>
                       <input type="checkbox" className="w-4 h-4 rounded cursor-pointer accent-violet-500"
                         checked={selected.has(st.id)} onChange={() => {}}/>
@@ -707,12 +692,10 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
                       <span className="font-mono text-sm font-black tracking-wider text-gray-900">{st.kode}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full text-violet-700"
-                        style={{ background: 'rgba(139,92,246,0.1)' }}>{st.batch_kode}</span>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full text-violet-700 bg-violet-50/40">{st.batch_kode}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full text-amber-700"
-                        style={{ background: 'rgba(245,158,11,0.1)' }}>{st.gramasi} gr</span>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full text-amber-700 bg-amber-50/40">{st.gramasi} gr</span>
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-xs font-semibold px-2.5 py-1 rounded-full"

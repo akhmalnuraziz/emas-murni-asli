@@ -109,7 +109,7 @@ function TimSection({ tims, isPending, start, showToast }: any) {
         {!adding && (
           <button onClick={() => setAdding(true)}
             className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-bold text-white"
-            style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)', boxShadow: '0 4px 14px rgba(103,87,177,0.3)' }}>
+            style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>
             <Plus size={15} /> Tambah Tim
           </button>
         )}
@@ -550,7 +550,7 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
         <div className="flex justify-end">
           <button onClick={handleSave} disabled={isPending}
             className="flex items-center gap-2 px-6 py-2.5 rounded-2xl text-sm font-bold text-white disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)', boxShadow: '0 4px 14px rgba(103,87,177,0.3)' }}>
+            style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>
             {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
             <Check size={15} /> Simpan Pengaturan
           </button>
@@ -625,7 +625,7 @@ function BiayaPackagingSection({ pengaturan, isPending, start, showToast, canMan
         <div className="flex justify-end">
           <button onClick={handleSave} disabled={isPending}
             className="flex items-center gap-2 px-6 py-2.5 rounded-2xl text-sm font-bold text-white disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)', boxShadow: '0 4px 14px rgba(103,87,177,0.3)' }}>
+            style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>
             {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
             <Check size={15} /> Simpan Biaya Packaging
           </button>
@@ -674,7 +674,7 @@ function MasterProdukSection({ list, isPending, start, showToast, canManage }: a
         {canManage && !adding && (
           <button onClick={() => setAdding(true)}
             className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-bold text-white"
-            style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)', boxShadow: '0 4px 14px rgba(103,87,177,0.3)' }}>
+            style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>
             <Plus size={15} /> Tambah Produk
           </button>
         )}
@@ -733,8 +733,7 @@ function MasterProdukSection({ list, isPending, start, showToast, canManage }: a
               </div>
             ) : (
               <div className="flex items-center gap-3 px-4 py-3">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'rgba(139,92,246,0.08)' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-violet-50">
                   <Package size={15} className="text-violet-500" />
                 </div>
                 <div className="flex-1 min-w-0">

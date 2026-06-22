@@ -260,7 +260,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
         <button onClick={() => setShowDetail(showDetail === 'penjualan' ? null : 'penjualan')}
           className="rounded-3xl p-5 text-left hover:shadow-sm transition-shadow"
           >
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: 'rgba(22,163,74,0.08)' }}>
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-emerald-50">
             <ShoppingCart size={15} className="text-green-600" />
           </div>
           <p className="text-xl font-black text-slate-800">{formatRupiah(labaRugi.omzet)}</p>
@@ -270,7 +270,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
 
         <div className="rounded-3xl p-5"
           >
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: 'rgba(245,158,11,0.08)' }}>
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-amber-50">
             <Package size={15} className="text-amber-500" />
           </div>
           <p className="text-xl font-black text-slate-800">{formatRupiah(labaRugi.hpp)}</p>
@@ -285,7 +285,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
         <button onClick={() => setShowDetail(showDetail === 'pengeluaran' ? null : 'pengeluaran')}
           className="rounded-3xl p-5 text-left hover:shadow-sm transition-shadow"
           >
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: 'rgba(239,68,68,0.08)' }}>
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-red-50">
             <TrendingDown size={15} className="text-red-500" />
           </div>
           <p className="text-xl font-black text-slate-800">{formatRupiah(labaRugi.pengeluaran)}</p>
@@ -487,7 +487,7 @@ function PenjualanTab({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ background: 'rgba(139,92,246,0.04)', borderBottom: '1px solid rgba(139,92,246,0.08)' }}>
+              <tr className="bg-violet-50/20 border-b border-violet-500/10">
                 <th className="px-5 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Gramasi</th>
                 <th className="px-5 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Terjual</th>
                 {showHpp && <>
@@ -502,14 +502,14 @@ function PenjualanTab({
             </thead>
             <tbody>
               {displayRows.map((r, i) => (
-                <tr key={r.gramasi} style={{ borderTop: i === 0 ? 'none' : '1px solid rgba(0,0,0,0.04)' }} className="hover:bg-violet-50/10">
+                <tr key={r.gramasi} className={`hover:bg-violet-50/10 ${i > 0 ? 'border-t border-slate-100' : ''}`}>
                   <td className="px-5 py-3.5 font-black text-slate-800">{r.gramasi}gr</td>
                   <td className="px-5 py-3.5 font-semibold text-slate-700">{r.pcs} pcs</td>
                   {showHpp && <>
                     <td className="px-5 py-3.5 font-semibold text-green-600 whitespace-nowrap">{formatRupiah(r.omzet)}</td>
                     {view === 'periode' && <>
                       <td className="px-5 py-3.5 text-amber-700 whitespace-nowrap">{formatRupiah(r.hpp)}</td>
-                      <td className="px-5 py-3.5 font-semibold whitespace-nowrap" style={{ color: r.profit >= 0 ? '#16a34a' : '#dc2626' }}>{formatRupiah(r.profit)}</td>
+                      <td className={`px-5 py-3.5 font-semibold whitespace-nowrap ${r.profit >= 0 ? 'text-green-700' : 'text-red-600'}`}>{formatRupiah(r.profit)}</td>
                       <td className="px-5 py-3.5">
                         <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full', r.margin >= 10 ? 'bg-violet-50 text-violet-700' : r.margin >= 0 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-600')}>
                           {r.margin.toFixed(1)}%
@@ -522,12 +522,12 @@ function PenjualanTab({
             </tbody>
             {showHpp && (
               <tfoot>
-                <tr style={{ borderTop: '2px solid rgba(139,92,246,0.15)', background: 'rgba(139,92,246,0.04)' }}>
+                <tr className="border-t-2 border-violet-500/20 bg-violet-50/20">
                   <td className="px-5 py-3.5 font-bold text-slate-800" colSpan={2}>Total</td>
                   <td className="px-5 py-3.5 font-black text-green-700 whitespace-nowrap">{formatRupiah(totalOmzet)}</td>
                   {view === 'periode' && <>
                     <td className="px-5 py-3.5 font-bold text-amber-700 whitespace-nowrap">{formatRupiah(totalHpp)}</td>
-                    <td className="px-5 py-3.5 font-black whitespace-nowrap" style={{ color: totalProfit >= 0 ? '#16a34a' : '#dc2626' }}>{formatRupiah(totalProfit)}</td>
+                    <td className={`px-5 py-3.5 font-black whitespace-nowrap ${totalProfit >= 0 ? 'text-green-700' : 'text-red-600'}`}>{formatRupiah(totalProfit)}</td>
                     <td className="px-5 py-3.5 font-bold text-violet-700">{totalMargin.toFixed(1)}%</td>
                   </>}
                 </tr>
@@ -550,7 +550,7 @@ function BatchTab({ rows, showHpp }: { rows: Props['batchList']; showHpp: boolea
       <div className="overflow-x-auto">
         <table className="w-full min-w-[520px] text-sm">
           <thead>
-            <tr style={{ background: 'rgba(139,92,246,0.04)', borderBottom: '1px solid rgba(139,92,246,0.08)' }}>
+            <tr className="bg-violet-50/20 border-b border-violet-500/10">
               {['Kode Batch', 'Tanggal', 'Supplier', 'Berat Akhir', showHpp ? 'HPP/gr' : null, 'Status'].filter(Boolean).map(h => (
                 <th key={h!} className="px-4 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
               ))}
@@ -558,7 +558,7 @@ function BatchTab({ rows, showHpp }: { rows: Props['batchList']; showHpp: boolea
           </thead>
           <tbody>
             {rows.map((b, i) => (
-              <tr key={b.kode} style={{ borderTop: i === 0 ? 'none' : '1px solid rgba(0,0,0,0.04)' }} className="hover:bg-violet-50/10">
+              <tr key={b.kode} className={`hover:bg-violet-50/10 ${i > 0 ? 'border-t border-slate-100' : ''}`}>
                 <td className="px-4 py-3.5">
                   <Link href={`/laporan/batch/${encodeURIComponent(b.kode)}`}
                     className="font-mono font-bold text-violet-700 text-xs hover:underline flex items-center gap-1">
@@ -681,8 +681,7 @@ function NeracaTab({ neraca }: { neraca: Props['neraca'] }) {
         </div>
 
         {/* Masuk */}
-        <div className="rounded-2xl p-4 mb-4"
-          style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.12)' }}>
+        <div className="rounded-2xl p-4 mb-4 bg-violet-50/40 border border-violet-500/[0.12]">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Masuk</p>
           <p className="text-2xl font-black text-violet-700">{fmt(neraca.masukBatch)}</p>
           <p className="text-xs text-slate-400 mt-0.5">dari semua batch bahan baku</p>

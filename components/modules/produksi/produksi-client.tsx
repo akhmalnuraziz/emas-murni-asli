@@ -420,10 +420,9 @@ function EventHistory({ events, item, stageHandovers = [], lossApprovals = [] }:
         // Parse catatan for clean display
         const hasCatatanBreakdown = ev.catatan?.includes('Serah:')
         return (
-          <div key={ev.id ?? i} className="rounded-2xl overflow-hidden"
-            style={{background:'rgba(255,255,255,0.6)',border:'1px solid rgba(0,0,0,0.05)'}}>
+          <div key={ev.id ?? i} className="rounded-2xl overflow-hidden bg-white border border-slate-100">
             {/* Header row */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b" style={{borderColor:'rgba(0,0,0,0.04)',background:c.bg+'66'}}>
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-100" style={{background:c.bg+'66'}}>
               <div className="w-2 h-2 rounded-full flex-shrink-0" style={{background:c.dot}}/>
               <Sbadge s={ev.status} />
               <span className="text-[11px] text-gray-400 font-medium">{formatDate(ev.tanggal)}</span>
@@ -441,7 +440,7 @@ function EventHistory({ events, item, stageHandovers = [], lossApprovals = [] }:
               <div><span className="text-gray-400">Berat: </span><span className="font-bold text-gray-700">{ev.total_gram} gr</span></div>
               {Number(ev.sisa_serbuk) > 0 && <div><span className="text-gray-400">{serbukLabel}: </span><span className={`font-semibold ${serbukColor}`}>{fgr(Number(ev.sisa_serbuk))} gr</span></div>}
               {Number(ev.losses) > 0 && <div><span className="text-gray-400">losses: </span><span className="font-semibold text-orange-500">{fgr(Number(ev.losses))} gr</span></div>}
-              {ev.kategori_losses && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{background:'rgba(249,115,22,0.10)',color:'#EA580C'}}>⚠ {ev.kategori_losses}</span>}
+              {ev.kategori_losses && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">⚠ {ev.kategori_losses}</span>}
             </div>
             {/* Catatan — only show if it's not the auto-generated breakdown from selesaiCutting */}
             {ev.catatan && !hasCatatanBreakdown && (
@@ -472,7 +471,7 @@ function EventHistory({ events, item, stageHandovers = [], lossApprovals = [] }:
               if (!la) return null
               return (
                 <div className="mx-3 mb-2 rounded-xl overflow-hidden border border-red-100">
-                  <div className="px-3 py-1.5 flex items-center gap-2" style={{background:'rgba(239,68,68,0.06)'}}>
+                  <div className="px-3 py-1.5 flex items-center gap-2 bg-red-50">
                     <span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss {ev.status}</span>
                     <span className="text-[10px] text-red-400 ml-auto">{la.loss_gram ? `${Number(la.loss_gram).toFixed(3)} gr` : ''}</span>
                   </div>
@@ -893,8 +892,7 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
 
           {/* Loss indicator realtime */}
           {(terimaVal !== '') && (
-            <div className="px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between"
-              style={{ background: overTol ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)', color: overTol ? '#DC2626' : '#16A34A' }}>
+            <div className={cn('px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between', overTol ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700')}>
               <span>Loss: {lossNow.toFixed(3)} gr</span>
               <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
             </div>
@@ -1208,8 +1206,7 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
 
           {/* Loss indicator realtime */}
           {(terimaVal !== '') && (
-            <div className="px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between"
-              style={{ background: overTol ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)', color: overTol ? '#DC2626' : '#16A34A' }}>
+            <div className={cn('px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between', overTol ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700')}>
               <span>Loss: {lossNow.toFixed(3)} gr</span>
               <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
             </div>
@@ -1398,18 +1395,18 @@ function DelModal({ item, onClose, onConfirm, isPending, error }: { item: any; o
 
 // ─── Stat mini chip ────────────────────────────────────────────────────────────
 function StatChip({ label, value, accent }: { label: string; value: React.ReactNode; accent?: 'violet'|'orange'|'green'|'red'|'blue' }) {
-  const accentMap = {
-    violet: { bg: 'rgba(139,92,246,0.08)', text: '#7C3AED' },
-    orange: { bg: 'rgba(249,115,22,0.08)', text: '#EA580C' },
-    green:  { bg: 'rgba(34,197,94,0.08)',  text: '#16A34A' },
-    red:    { bg: 'rgba(239,68,68,0.08)',  text: '#DC2626' },
-    blue:   { bg: 'rgba(59,130,246,0.08)', text: '#2563EB' },
+  const accentMap: Record<string, string> = {
+    violet: 'bg-violet-50 text-violet-700',
+    orange: 'bg-orange-50 text-orange-700',
+    green:  'bg-emerald-50 text-emerald-700',
+    red:    'bg-red-50 text-red-600',
+    blue:   'bg-blue-50 text-blue-700',
   }
-  const style = accent ? accentMap[accent] : { bg: 'rgba(0,0,0,0.03)', text: '#374151' }
+  const cls = accent ? (accentMap[accent] ?? 'bg-slate-50 text-slate-700') : 'bg-slate-50 text-slate-700'
   return (
-    <div className="rounded-2xl px-3 py-2 overflow-hidden min-w-0" style={{ background: style.bg }}>
-      <p className="text-[9.5px] font-bold tracking-widest uppercase mb-0.5 truncate" style={{ color: style.text, opacity: 0.7 }}>{label}</p>
-      <div className="text-[13px] font-bold leading-tight min-w-0" style={{ color: style.text }}>{value}</div>
+    <div className={`rounded-2xl px-3 py-2 overflow-hidden min-w-0 ${cls}`}>
+      <p className="text-[9.5px] font-bold tracking-widest uppercase mb-0.5 truncate opacity-70">{label}</p>
+      <div className="text-[13px] font-bold leading-tight min-w-0">{value}</div>
     </div>
   )
 }
@@ -1555,8 +1552,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
               return (
                 <div key={gk} className="space-y-3">
                   {gk!=='__no_plb__' && (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-2xl mt-1"
-                      style={{background:'rgba(139,92,246,0.06)',border:'1px solid rgba(139,92,246,0.12)'}}>
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-2xl mt-1 bg-violet-50 border border-violet-100">
                       <span className="text-[11px] font-bold text-violet-700">🔥 {gk}</span>
                       <span className="text-[10px] text-violet-400 font-semibold">{gItems.length} produksi · {plbTotal.toFixed(2)} gr dipakai</span>
                     </div>
@@ -1586,14 +1582,8 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
 
             return (
               <div key={item.id}
-                className="rounded-3xl overflow-hidden transition-all"
-                style={{
-                  background:'rgba(255,255,255,0.75)',
-                  backdropFilter:'blur(20px)',
-                  border:`1px solid rgba(255,255,255,0.6)`,
-                  boxShadow:`0 4px 24px rgba(139,92,246,0.06),0 1px 8px rgba(0,0,0,0.04)`,
-                  borderLeft:`3px solid ${sc.dot}`,
-                }}>
+                className="bg-white border border-slate-200 rounded-xl overflow-hidden transition-all"
+                style={{borderLeft:`3px solid ${sc.dot}`}}>
 
                 {/* ── Card Header ─────────────────────────────────────────── */}
                 <div className="flex items-center gap-3 px-5 pt-4 pb-3">
@@ -1629,62 +1619,52 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                   {canEdit&&!isVoided&&(()=>{
                     if(s==='Cutting'&&item.status_cutting==='proses')
                       return <button onClick={()=>openModal('cuttingTerima',item)}
-                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all"
-                        style={{background:'rgba(34,197,94,0.12)',color:'#16A34A'}}>
+                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
                         <Check size={11}/> Diterima
                       </button>
                     if(s==='Cutting'&&item.status_cutting==='selesai'&&!pbH)
                       return <button onClick={()=>openSerahStage(item,'pas_berat')}
-                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all"
-                        style={{background:'rgba(249,115,22,0.12)',color:'#EA580C'}}>
+                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-amber-50 text-amber-700">
                         <Plus size={11}/> Pas Berat
                       </button>
                     if(s==='Pas Berat'&&pbH?.status==='proses')
                       return <button onClick={()=>openTerimaStage(item,'pas_berat',pbH.id)}
-                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all"
-                        style={{background:'rgba(34,197,94,0.12)',color:'#16A34A'}}>
+                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
                         <Check size={11}/> Diterima
                       </button>
                     if(s==='Pas Berat'&&!pbH)
                       return <button onClick={()=>openTerimaStage(item,'pas_berat',0)}
-                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all"
-                        style={{background:'rgba(34,197,94,0.12)',color:'#16A34A'}}>
+                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
                         <Check size={11}/> Terima
                       </button>
                     if(s==='Pas Berat'&&pbH?.status==='selesai'&&!annH)
                       return <button onClick={()=>openSerahStage(item,'annealing')}
-                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all"
-                        style={{background:'rgba(234,179,8,0.12)',color:'#CA8A04'}}>
+                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-amber-50 text-amber-700">
                         <Plus size={11}/> Annealing
                       </button>
                     if(s==='Annealing'&&annH?.status==='proses')
                       return <button onClick={()=>openTerimaStage(item,'annealing',annH.id)}
-                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all"
-                        style={{background:'rgba(34,197,94,0.12)',color:'#16A34A'}}>
+                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
                         <Check size={11}/> Diterima
                       </button>
                     if(s==='Annealing'&&!annH)
                       return <button onClick={()=>openTerimaStage(item,'annealing',0)}
-                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all"
-                        style={{background:'rgba(34,197,94,0.12)',color:'#16A34A'}}>
+                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
                         <Check size={11}/> Terima
                       </button>
                     if(s==='Annealing'&&annH?.status==='selesai'&&!spH)
                       return <button onClick={()=>openSerahStage(item,'siap_packing')}
-                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all"
-                        style={{background:'rgba(139,92,246,0.12)',color:'#7C3AED'}}>
+                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-violet-50 text-violet-700">
                         <Plus size={11}/> Siap Packing
                       </button>
                     if(s==='Siap Packing'&&spH?.status==='proses')
                       return <button onClick={()=>openTerimaStage(item,'siap_packing',spH.id)}
-                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all"
-                        style={{background:'rgba(34,197,94,0.12)',color:'#16A34A'}}>
+                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
                         <Check size={11}/> Diterima
                       </button>
                     if(s==='Siap Packing'&&!spH)
                       return <button onClick={()=>openTerimaStage(item,'siap_packing',0)}
-                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all"
-                        style={{background:'rgba(34,197,94,0.12)',color:'#16A34A'}}>
+                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
                         <Check size={11}/> Terima
                       </button>
                     return null
@@ -1709,15 +1689,12 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
 
                 {/* ── Expanded ────────────────────────────────────────────── */}
                 {isExp&&(
-                  <div className="px-4 pb-5 pt-4 border-t space-y-3"
-                    style={{borderColor:'rgba(139,92,246,0.08)',background:'rgba(248,246,255,0.6)'}}>
+                  <div className="px-4 pb-5 pt-4 border-t border-slate-100 space-y-3 bg-slate-50/40">
 
                     {/* ④ Stage handover + Cutting */}
                     {(item.serah_gram||item.terima_gram||handovers.length>0)&&(
-                      <div className="rounded-2xl overflow-hidden"
-                        style={{border:'1px solid rgba(139,92,246,0.15)',background:'rgba(255,255,255,0.8)'}}>
-                        <div className="px-4 py-2 text-[10px] font-bold text-violet-600 uppercase tracking-wide"
-                          style={{background:'rgba(139,92,246,0.05)'}}>
+                      <div className="rounded-2xl overflow-hidden border border-violet-100 bg-white">
+                        <div className="px-4 py-2 text-[10px] font-bold text-violet-600 uppercase tracking-wide bg-violet-50/50">
                           ⛓ Alur Serah-Terima
                         </div>
 
@@ -1727,10 +1704,10 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                           const terimaFotosC: string[] = Array.isArray(item.foto_diterima_cutting) ? item.foto_diterima_cutting : []
                           const durasiC = getDurasiJam(item.jam_mulai_cutting, item.jam_selesai)
                           return (
-                            <div className="px-4 py-3.5 border-t" style={{borderColor:'rgba(139,92,246,0.07)'}}>
+                            <div className="px-4 py-3.5 border-t border-slate-100">
                               {/* Badge row */}
                               <div className="flex items-center gap-2 mb-3 flex-wrap">
-                                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full text-white" style={{background:'#3B82F6'}}>Cutting</span>
+                                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full text-white bg-blue-500">Cutting</span>
                                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${item.status_cutting==='selesai'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>
                                   {item.status_cutting==='selesai'?'✓ Selesai':'⏳ Proses'}
                                 </span>
@@ -1758,8 +1735,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                               </div>
                               {/* Serah / Terima cards */}
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <div className="rounded-xl p-3 space-y-1"
-                                  style={{background:'rgba(59,130,246,0.04)',border:'1px solid rgba(59,130,246,0.1)'}}>
+                                <div className="rounded-xl p-3 space-y-1 bg-blue-50/50 border border-blue-100">
                                   <p className="text-[9px] font-bold text-blue-500 uppercase tracking-wide">📤 Diserahkan</p>
                                   <p className="font-bold text-gray-800">{item.serah_gram?`${parseFloat(item.serah_gram).toFixed(3)} gr`:'—'}</p>
                                   {(item.tanggal_mulai||item.tanggal_produksi||item.jam_mulai_cutting)&&<p className="text-[11px] text-gray-400">{new Date(item.tanggal_mulai||item.tanggal_produksi).toLocaleDateString('id-ID')}{item.jam_mulai_cutting?` · ${String(item.jam_mulai_cutting).slice(0,5)}`:''}</p>}
@@ -1767,8 +1743,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   {item.catatan&&<p className="text-[11px] text-gray-400 italic">{item.catatan}</p>}
                                   {serahFotosC.length>0&&<div className="flex gap-1.5 flex-wrap pt-1">{serahFotosC.map((u,fi)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-14 h-14 rounded-xl object-cover border-2 border-blue-100 hover:scale-110 transition-transform shadow-sm cursor-pointer"/></a>)}</div>}
                                 </div>
-                                <div className="rounded-xl p-3 space-y-1"
-                                  style={{background:item.terima_gram?'rgba(34,197,94,0.04)':'rgba(0,0,0,0.02)',border:`1px solid ${item.terima_gram?'rgba(34,197,94,0.15)':'rgba(0,0,0,0.06)'}`}}>
+                                <div className={`rounded-xl p-3 space-y-1 ${item.terima_gram ? 'bg-emerald-50/50 border border-emerald-100' : 'bg-slate-50 border border-slate-100'}`}>
                                   <p className="text-[9px] font-bold text-green-500 uppercase tracking-wide">📥 Diterima</p>
                                   {item.terima_gram?(<>
                                     <p className="font-bold text-gray-800">{parseFloat(item.terima_gram).toFixed(3)} gr{item.terima_pcs?` · ${item.terima_pcs} PCS`:''}</p>
@@ -1781,23 +1756,21 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   </>):<p className="text-[11px] text-gray-400 italic">Belum diterima</p>}
                                 </div>
                               </div>
-                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='produksi_item'&&l.ref_id===item.id&&l.proses==='cutting');if(!_la)return null;return(<div className="mt-2 rounded-2xl overflow-hidden" style={{border:'1px solid rgba(239,68,68,0.15)'}}><div className="px-3 py-2 flex items-center gap-2" style={{background:'rgba(239,68,68,0.06)'}}><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss Cutting</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-xs text-gray-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-xs text-gray-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
+                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='produksi_item'&&l.ref_id===item.id&&l.proses==='cutting');if(!_la)return null;return(<div className="mt-2 rounded-2xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss Cutting</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-xs text-gray-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-xs text-gray-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
                             </div>
                           )
                         })()}
                         {handovers.map((h:any)=>{
                           const tl:Record<string,string>={pas_berat:'Pas Berat',annealing:'Annealing',siap_packing:'Siap Packing'}
-                          const tc:Record<string,string>={pas_berat:'#F97316',annealing:'#EAB308',siap_packing:'#8B5CF6'}
+                          const tc:Record<string,string>={pas_berat:'bg-orange-400',annealing:'bg-yellow-500',siap_packing:'bg-violet-500'}
                           const serahFotos:string[]=Array.isArray(h.serah_fotos)?h.serah_fotos:[]
                           const terimaFotos:string[]=Array.isArray(h.terima_fotos)?h.terima_fotos:[]
                           const durasiH = getDurasiJam(h.serah_jam, h.terima_jam)
                           return (
-                            <div key={h.id} className="px-4 py-3.5 border-t"
-                              style={{borderColor:'rgba(139,92,246,0.07)'}}>
+                            <div key={h.id} className="px-4 py-3.5 border-t border-slate-100">
                               {/* Badge row */}
                               <div className="flex items-center gap-2 mb-3 flex-wrap">
-                                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full text-white"
-                                  style={{background:tc[h.tahap]}}>{tl[h.tahap]}</span>
+                                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full text-white ${tc[h.tahap]??'bg-slate-400'}`}>{tl[h.tahap]}</span>
                                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${h.status==='selesai'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>
                                   {h.status==='selesai'?'✓ Selesai':'⏳ Proses'}
                                 </span>
@@ -1825,8 +1798,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                               </div>
                               {/* Serah / Terima cards */}
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <div className="rounded-xl p-3 space-y-1"
-                                  style={{background:'rgba(59,130,246,0.04)',border:'1px solid rgba(59,130,246,0.1)'}}>
+                                <div className="rounded-xl p-3 space-y-1 bg-blue-50/50 border border-blue-100">
                                   <p className="text-[9px] font-bold text-blue-500 uppercase tracking-wide">📤 Diserahkan</p>
                                   <p className="font-bold text-gray-800">{h.serah_gram?`${parseFloat(h.serah_gram).toFixed(3)} gr`:'—'}{h.serah_pcs?` · ${h.serah_pcs} PCS`:''}</p>
                                   {h.serah_tanggal&&<p className="text-[11px] text-gray-400">{new Date(h.serah_tanggal).toLocaleDateString('id-ID')}{h.serah_jam?` · ${String(h.serah_jam).slice(0,5)}`:''}</p>}
@@ -1835,8 +1807,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   {h.serah_catatan&&<p className="text-[11px] text-gray-400 italic">{h.serah_catatan}</p>}
                                   {serahFotos.length>0&&<div className="flex gap-1.5 flex-wrap pt-1">{serahFotos.map((u:string,fi:number)=><img key={fi} src={u} className="w-14 h-14 rounded-xl object-cover border-2 border-blue-100 hover:scale-110 transition-transform shadow-sm cursor-pointer"/>)}</div>}
                                 </div>
-                                <div className="rounded-xl p-3 space-y-1"
-                                  style={{background:h.terima_gram?'rgba(34,197,94,0.04)':'rgba(0,0,0,0.02)',border:`1px solid ${h.terima_gram?'rgba(34,197,94,0.15)':'rgba(0,0,0,0.06)'}`}}>
+                                <div className={`rounded-xl p-3 space-y-1 ${h.terima_gram ? 'bg-emerald-50/50 border border-emerald-100' : 'bg-slate-50 border border-slate-100'}`}>
                                   <p className="text-[9px] font-bold text-green-500 uppercase tracking-wide">📥 Diterima</p>
                                   {h.terima_gram?(<>
                                     <p className="font-bold text-gray-800">{parseFloat(h.terima_gram).toFixed(3)} gr{h.terima_pcs?` · ${h.terima_pcs} PCS`:''}</p>
@@ -1850,7 +1821,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   </>):<p className="text-[11px] text-gray-400 italic">Belum diterima</p>}
                                 </div>
                               </div>
-                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='stage_handover'&&l.ref_id===h.id);if(!_la)return null;return(<div className="mt-2 rounded-2xl overflow-hidden" style={{border:'1px solid rgba(239,68,68,0.15)'}}><div className="px-3 py-2 flex items-center gap-2" style={{background:'rgba(239,68,68,0.06)'}}><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss {(h.tahap as string).replace(/_/g,' ')}</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-xs text-gray-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-xs text-gray-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
+                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='stage_handover'&&l.ref_id===h.id);if(!_la)return null;return(<div className="mt-2 rounded-2xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss {(h.tahap as string).replace(/_/g,' ')}</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-xs text-gray-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-xs text-gray-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
                             </div>
                           )
                         })}
@@ -1860,8 +1831,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                     {/* + Cetak Gramasi / Tambah Produksi — lanjut cetak dari batch ini */}
                     {canEdit&&!isVoided&&(
                       <button onClick={()=>openTambahProduksi(item)}
-                        className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-bold text-violet-600 border border-dashed transition-all hover:bg-violet-50"
-                        style={{borderColor:'rgba(139,92,246,0.35)'}}>
+                        className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-bold text-violet-600 border border-dashed border-violet-300 transition-all hover:bg-violet-50">
                         <Plus size={14}/> Cetak Gramasi / Tambah Produksi
                       </button>
                     )}

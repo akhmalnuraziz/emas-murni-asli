@@ -79,7 +79,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
         {canManage && (
           <button onClick={() => { setModal('create'); setErr('') }}
             className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-bold text-white rounded-2xl"
-            style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', boxShadow: '0 4px 20px rgba(139,92,246,0.4)' }}>
+            style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
             <Plus size={14}/> Tambah Scrap
           </button>
         )}
@@ -103,10 +103,10 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
       <div className="flex gap-2 flex-wrap items-center">
         {['semua','tersedia','terpakai','dilebur'].map(s => (
           <button key={s} onClick={() => setFilterStatus(s)}
-            className="px-3 py-1.5 rounded-full text-xs font-semibold capitalize transition-all"
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold capitalize transition-all ${filterStatus === s ? 'text-white' : 'bg-white text-gray-500 border border-gray-300/50'}`}
             style={filterStatus === s
-              ? { background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', color: '#fff' }
-              : { background: 'rgba(255,255,255,0.8)', color: '#6B7280', border: '1px solid rgba(209,213,219,0.5)' }}>
+              ? { background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }
+              : undefined}>
             {s === 'semua' ? 'Semua' : s.charAt(0).toUpperCase() + s.slice(1)}
           </button>
         ))}

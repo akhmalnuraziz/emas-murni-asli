@@ -214,8 +214,7 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
                   <>
                     {/* Achievement vs Target */}
                     {tim.targetSerah > 0 && tim.achievementPct !== null && (
-                      <div className="rounded-2xl p-4"
-                        style={{ background: 'rgba(148,163,184,0.05)', border: '1px solid rgba(148,163,184,0.1)' }}>
+                      <div className="rounded-2xl p-4 bg-slate-400/5 border border-slate-400/10">
                         <AchievementBar
                           pct={tim.achievementPct}
                           targetSerah={tim.targetSerah}
@@ -261,8 +260,7 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
                         { label: 'On-Time',      value: `${tim.stats.onTimeCount} / ${tim.stats.onTimeCount + tim.stats.lateCount}` },
                         { label: 'Total Proses', value: `${tim.stats.count}x` },
                       ].map(({ label, value }) => (
-                        <div key={label} className="rounded-2xl p-3 text-center"
-                          style={{ background: 'rgba(148,163,184,0.06)', border: '1px solid rgba(148,163,184,0.08)' }}>
+                        <div key={label} className="rounded-2xl p-3 text-center bg-slate-400/[0.06] border border-slate-400/[0.08]">
                           <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">{label}</p>
                           <p className="text-sm font-black text-slate-700 mt-0.5">{value}</p>
                         </div>

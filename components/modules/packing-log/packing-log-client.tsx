@@ -281,12 +281,12 @@ function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint,onShieldtagC
   const stCount=p.shieldtag_count??0
   const isPrinted=p.status_surat==='sudah_cetak'
   return(
-    <div className="rounded-2xl p-4 space-y-3"style={{background:'rgba(255,255,255,0.8)',backdropFilter:'blur(16px)',border:'1px solid rgba(255,255,255,0.5)',boxShadow:'0 2px 12px rgba(139,92,246,0.06)'}}>
+    <div className="rounded-2xl p-4 space-y-3 bg-white border border-slate-100">
       {lightbox&&<Lightbox url={lightbox} onClose={()=>setLightbox(null)}/>}
       <div className="flex items-center justify-between">
         <span className="text-xs font-mono font-bold text-violet-600">{p.kode}</span>
         <div className="flex items-center gap-1.5">
-          {isPrinted&&<span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-emerald-700"style={{background:'rgba(34,197,94,0.1)'}}>✓ Cetak</span>}
+          {isPrinted&&<span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-emerald-700 bg-emerald-50">✓ Cetak</span>}
           <button onClick={onPrint}className="w-7 h-7 rounded-xl bg-violet-50 text-violet-500 flex items-center justify-center hover:bg-violet-100"title="Print"><Printer size={12}/></button>
           {canManage&&<button onClick={onEdit}className="w-7 h-7 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-100"title="Edit"><Edit2 size={11}/></button>}
           {canDelete&&<button onClick={onDelete}className="w-7 h-7 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100"title="Hapus"><Trash2 size={11}/></button>}
@@ -466,13 +466,13 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
 
         <div className="grid grid-cols-3 gap-3">
           {[
-            {label:'Total Record',val:String(filteredByDate(filtered).length)+' record',color:'#8B5CF6',bg:'rgba(139,92,246,0.06)'},
-            {label:'Sisa Siap Packing',val:totalSiapPackingPcs+' PCS',color:'#22C55E',bg:'rgba(34,197,94,0.06)'},
-            {label:'Total Sudah Dipack',val:filteredByDate(packingList).reduce((s:number,p:any)=>s+(p.pcs_dipack||0),0)+' PCS',color:'#3B82F6',bg:'rgba(59,130,246,0.06)'},
+            {label:'Total Record',val:String(filteredByDate(filtered).length)+' record',cls:'text-violet-600'},
+            {label:'Sisa Siap Packing',val:totalSiapPackingPcs+' PCS',cls:'text-emerald-600'},
+            {label:'Total Sudah Dipack',val:filteredByDate(packingList).reduce((s:number,p:any)=>s+(p.pcs_dipack||0),0)+' PCS',cls:'text-blue-600'},
           ].map(c=>(
-            <div key={c.label}className="bg-white border border-slate-200 rounded-xl p-4 text-center"style={{background:c.bg,backdropFilter:'blur(12px)',border:'1px solid rgba(255,255,255,0.6)'}}>
+            <div key={c.label}className="rounded-xl p-4 text-center bg-slate-50 border border-slate-100">
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{c.label}</p>
-              <p className="text-base font-bold mt-0.5"style={{color:c.color,fontFamily:"'SF Pro Display','Inter',sans-serif"}}>{c.val}</p>
+              <p className={`text-base font-bold mt-0.5 ${c.cls}`}>{c.val}</p>
             </div>
           ))}
         </div>
@@ -480,7 +480,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
         {/* Mobile cards */}
         <div className="lg:hidden space-y-3">
           {filteredByDate(filtered).length===0?(
-            <div className="text-center py-12 rounded-3xl"style={{background:'rgba(255,255,255,0.7)',border:'1px solid rgba(255,255,255,0.5)'}}>
+            <div className="text-center py-12 rounded-3xl bg-white border border-slate-100">
               <Package size={32}className="mx-auto text-violet-200 mb-3"/>
               <p className="text-sm font-medium text-gray-400">Belum ada record packing</p>
             </div>
@@ -494,10 +494,10 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
         </div>
 
         {/* Desktop table */}
-        <div className="hidden lg:block rounded-3xl overflow-auto"style={{background:'rgba(255,255,255,0.72)',backdropFilter:'blur(24px)',border:'1px solid rgba(255,255,255,0.6)',boxShadow:'0 8px 40px rgba(139,92,246,0.08)'}}>
+        <div className="hidden lg:block rounded-3xl overflow-auto bg-white border border-slate-100">
           <table className="w-full min-w-[860px] text-sm">
             <thead>
-              <tr className="border-b"style={{borderColor:'rgba(243,244,246,0.9)',background:'rgba(249,250,251,0.6)'}}>
+              <tr className="border-b border-slate-100 bg-slate-50/60">
                 <th className="px-4 py-3 w-10">
                   {filteredByDate(filtered).length>0&&(
                     <input type="checkbox" className="rounded accent-violet-600 cursor-pointer"
@@ -522,8 +522,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
                 const isPrinted=p.status_surat==='sudah_cetak'
                 const pcsGood=p.produksi_item?.pcs_good??p.produksi_item?.pcs??'—'
                 return(
-                  <tr key={p.id}className={cn('border-t transition-colors hover:bg-violet-50/20 align-middle',idx===0?'border-transparent':'',selectedIds.has(p.id)?'bg-violet-50/40':'')}
-                    style={{borderColor:'rgba(243,244,246,0.7)'}}>
+                  <tr key={p.id}className={cn('border-t border-slate-100 transition-colors hover:bg-violet-50/20 align-middle',idx===0?'border-transparent':'',selectedIds.has(p.id)?'bg-violet-50/40':'')}>
                     <td className="px-4 py-3 w-10 align-middle">
                       <input type="checkbox" className="rounded accent-violet-600 cursor-pointer"
                         checked={selectedIds.has(p.id)}
@@ -531,8 +530,8 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
                     </td>
                     <td className="px-4 py-3 font-mono text-xs font-bold text-violet-600 whitespace-nowrap align-middle">{p.kode}</td>
                     <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap align-middle">{formatDate(p.tanggal)}</td>
-                    <td className="px-4 py-3 align-middle text-center"><span className="inline-block text-xs font-bold px-2 py-0.5 rounded-full text-violet-700 whitespace-nowrap"style={{background:'rgba(139,92,246,0.1)'}}>{p.batch_kode}</span></td>
-                    <td className="px-4 py-3 align-middle text-center"><span className="inline-block text-xs font-bold px-2 py-0.5 rounded-full text-amber-700 whitespace-nowrap"style={{background:'rgba(245,158,11,0.1)'}}>{p.gramasi} gr</span></td>
+                    <td className="px-4 py-3 align-middle text-center"><span className="inline-block text-xs font-bold px-2 py-0.5 rounded-full text-violet-700 whitespace-nowrap bg-violet-50">{p.batch_kode}</span></td>
+                    <td className="px-4 py-3 align-middle text-center"><span className="inline-block text-xs font-bold px-2 py-0.5 rounded-full text-amber-700 whitespace-nowrap bg-amber-50">{p.gramasi} gr</span></td>
                     <td className="px-4 py-3 text-sm font-semibold text-gray-600 whitespace-nowrap align-middle">{pcsGood}</td>
                     <td className="px-4 py-3 text-sm font-bold text-gray-800 whitespace-nowrap align-middle">{p.pcs_dipack} pcs</td>
                     <td className="px-4 py-3 text-sm font-semibold text-gray-700 whitespace-nowrap align-middle">{Number(p.total_gram_aktual).toFixed(3)} gr</td>
@@ -551,14 +550,12 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
                       <button type="button"
                         onClick={()=>{ const list=shieldtagByPacking[p.id]??[]; if(list.length>0) setStModal({kode:p.kode,list}) }}
                         disabled={stCount===0}
-                        className={cn('inline-block text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap transition-all',stCount>0?'text-emerald-700 hover:ring-2 hover:ring-emerald-300 cursor-pointer':'text-gray-400 cursor-default')}
-                        style={{background:stCount>0?'rgba(34,197,94,0.1)':'rgba(107,114,128,0.08)'}}>
+                        className={cn('inline-block text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap transition-all',stCount>0?'text-emerald-700 bg-emerald-50 hover:ring-2 hover:ring-emerald-300 cursor-pointer':'text-gray-400 bg-slate-100 cursor-default')}>
                         🏷 {stCount}/{p.pcs_dipack}
                       </button>
                     </td>
                     <td className="px-4 py-3 align-middle text-center">
-                      <span className={cn('inline-block text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap',isPrinted?'text-emerald-700':'text-gray-500')}
-                        style={{background:isPrinted?'rgba(34,197,94,0.1)':'rgba(107,114,128,0.1)'}}>
+                      <span className={cn('inline-block text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap',isPrinted?'text-emerald-700 bg-emerald-50':'text-gray-500 bg-slate-100')}>
                         {isPrinted?'✓ Cetak':'Belum Cetak'}
                       </span>
                     </td>

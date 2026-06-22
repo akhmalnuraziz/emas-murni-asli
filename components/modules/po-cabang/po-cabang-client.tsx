@@ -82,7 +82,7 @@ export default function PoCabangClient({
         </div>
         <button onClick={() => { setShowCreate(true); setErr('') }}
           className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold text-white"
-          style={{ background: 'linear-gradient(135deg,#0EA5E9,#0284C7)', boxShadow: '0 4px 12px rgba(14,165,233,0.3)' }}>
+          style={{ background: 'linear-gradient(135deg,#0EA5E9,#0284C7)' }}>
           <Plus size={15} /> Buat PO
         </button>
       </div>
