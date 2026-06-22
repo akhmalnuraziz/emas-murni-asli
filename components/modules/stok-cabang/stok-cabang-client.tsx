@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
@@ -74,17 +74,17 @@ export default function StokCabangClient({ stokData, canAdjust, isCabangView }: 
             <Store size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-900">Stok Cabang</h1>
-            <p className="text-xs text-slate-400">Ready stock + outstanding PO per cabang</p>
+            <h1 className="text-[16px] font-bold text-slate-900">Stok Cabang</h1>
+            <p className="text-[12px] text-slate-400">Ready stock + outstanding PO per cabang</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={handleExport} disabled={isPending}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors disabled:opacity-50">
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors disabled:opacity-50">
             <Download size={13} /> Export CSV
           </button>
           <button onClick={refresh}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-violet-600 bg-violet-50 hover:bg-violet-100 transition-colors">
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold text-violet-600 bg-violet-50 hover:bg-violet-100 transition-colors">
             <RefreshCw size={13} className={isPending ? 'animate-spin' : ''} /> Refresh
           </button>
         </div>
@@ -101,8 +101,8 @@ export default function StokCabangClient({ stokData, canAdjust, isCabangView }: 
       {stokData.length === 0 ? (
         <div className="rounded-3xl py-16 text-center border border-slate-100 bg-white/70">
           <Store size={32} className="mx-auto text-slate-200 mb-3" />
-          <p className="text-sm text-slate-400">Belum ada data cabang</p>
-          <p className="text-xs text-slate-300 mt-1">Tambah cabang dulu di Pengaturan</p>
+          <p className="text-[13px] text-slate-400">Belum ada data cabang</p>
+          <p className="text-[12px] text-slate-300 mt-1">Tambah cabang dulu di Pengaturan</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -165,7 +165,7 @@ function CabangCard({ cabang, expanded, onToggle, canAdjust, onAdjust, onHistory
           <Store size={15} className="text-violet-600" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-slate-800 text-sm truncate">{cabang.nama}</p>
+          <p className="font-bold text-slate-800 text-[13px] truncate">{cabang.nama}</p>
           <p className="text-[10px] text-slate-400 font-medium">{cabang.kode}</p>
         </div>
 
@@ -212,11 +212,11 @@ function CabangCard({ cabang, expanded, onToggle, canAdjust, onAdjust, onHistory
           {cabang.rows.length === 0 ? (
             <div className="py-8 text-center">
               <Package size={24} className="mx-auto text-slate-200 mb-2" />
-              <p className="text-xs text-slate-400">Belum ada stok di cabang ini</p>
+              <p className="text-[12px] text-slate-400">Belum ada stok di cabang ini</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-[13px]">
                 <thead>
                   <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-wide bg-slate-50/80">
                     <th className="text-left px-5 py-2.5">Gramasi</th>
@@ -233,8 +233,8 @@ function CabangCard({ cabang, expanded, onToggle, canAdjust, onAdjust, onHistory
                     <tr key={row.gramasi}
                       className={cn('border-t border-slate-50', i % 2 === 1 ? 'bg-slate-50/30' : '')}>
                       <td className="px-5 py-2.5 font-bold text-slate-800">{row.gramasi}gr</td>
-                      <td className="px-4 py-2.5 text-right text-slate-500 font-mono text-xs">{row.qty_shieldtag}</td>
-                      <td className="px-4 py-2.5 text-right font-mono text-xs">
+                      <td className="px-4 py-2.5 text-right text-slate-500 font-mono text-[12px]">{row.qty_shieldtag}</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-[12px]">
                         <span className={cn(
                           'font-bold',
                           row.net_adjustment > 0 ? 'text-green-600' :
@@ -251,7 +251,7 @@ function CabangCard({ cabang, expanded, onToggle, canAdjust, onAdjust, onHistory
                         {row.outstanding_po > 0 ? (
                           <span className="font-bold text-orange-600">{row.outstanding_po} pcs</span>
                         ) : (
-                          <span className="text-slate-200 text-xs">—</span>
+                          <span className="text-slate-200 text-[12px]">—</span>
                         )}
                       </td>
                       <td className="px-4 py-2.5 text-right">
@@ -271,7 +271,7 @@ function CabangCard({ cabang, expanded, onToggle, canAdjust, onAdjust, onHistory
                 </tbody>
                 <tfoot>
                   <tr className="border-t-2 border-slate-200 bg-slate-50/80">
-                    <td className="px-5 py-2.5 text-xs font-black text-slate-600">TOTAL</td>
+                    <td className="px-5 py-2.5 text-[12px] font-black text-slate-600">TOTAL</td>
                     <td className="px-4 py-2.5" />
                     <td className="px-4 py-2.5" />
                     <td className="px-4 py-2.5 text-right font-black text-green-700">{cabang.total_ready} pcs</td>
@@ -313,7 +313,7 @@ function KpiCard({ label, value, sub, color, bg, icon }: {
         <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
           style={{ background: bg, color }}>{icon}</div>
       </div>
-      <p className="text-2xl font-black" style={{ color }}>{value.toLocaleString('id-ID')}</p>
+      <p className="text-[20px] font-black" style={{ color }}>{value.toLocaleString('id-ID')}</p>
       <p className="text-[10px] text-slate-400 mt-0.5">{sub}</p>
     </div>
   )
@@ -363,7 +363,7 @@ function AdjustmentModal({ cabang, defaultGramasi, onClose, onSuccess }: {
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div>
             <h2 className="font-bold text-slate-800">Adjust Ready Stock</h2>
-            <p className="text-xs text-slate-400">{cabang.nama} ({cabang.kode})</p>
+            <p className="text-[12px] text-slate-400">{cabang.nama} ({cabang.kode})</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100">
             <X size={16} />
@@ -374,7 +374,7 @@ function AdjustmentModal({ cabang, defaultGramasi, onClose, onSuccess }: {
           {/* Warning */}
           <div className="flex items-start gap-2.5 rounded-2xl px-4 py-3 bg-amber-50 border border-amber-100">
             <AlertTriangle size={14} className="text-amber-500 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-700 leading-relaxed">
+            <p className="text-[12px] text-amber-700 leading-relaxed">
               Adjustment ini <strong>tidak mengubah data di Accurate</strong>. Hanya untuk koreksi tampilan stok di website.
               Pastikan sudah disesuaikan juga di Accurate.
             </p>
@@ -382,9 +382,9 @@ function AdjustmentModal({ cabang, defaultGramasi, onClose, onSuccess }: {
 
           {/* Gramasi */}
           <div>
-            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Gramasi</label>
+            <label className="text-[12px] font-semibold text-slate-600 mb-1.5 block">Gramasi</label>
             <select value={gramasi} onChange={e => setGramasi(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100">
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-[13px] text-slate-800 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100">
               <option value="">— pilih gramasi —</option>
               {GRAMASI_OPTIONS.map(g => (
                 <option key={g} value={g}>{g} gr</option>
@@ -397,7 +397,7 @@ function AdjustmentModal({ cabang, defaultGramasi, onClose, onSuccess }: {
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-2xl p-3 bg-slate-50 border border-slate-100">
                 <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Stok Sekarang</p>
-                <p className="text-2xl font-black text-slate-700">{currentReady}</p>
+                <p className="text-[20px] font-black text-slate-700">{currentReady}</p>
                 <p className="text-[10px] text-slate-400">pcs</p>
               </div>
               <div className="rounded-2xl p-3 bg-violet-50 border border-violet-100">
@@ -406,7 +406,7 @@ function AdjustmentModal({ cabang, defaultGramasi, onClose, onSuccess }: {
                   type="number" min="0" value={qtyAfter}
                   onChange={e => setQtyAfter(e.target.value)}
                   placeholder="0"
-                  className="w-full text-2xl font-black text-violet-700 bg-transparent border-none outline-none"
+                  className="w-full text-[20px] font-black text-violet-700 bg-transparent border-none outline-none"
                 />
                 {selisih !== null && (
                   <p className={cn('text-[10px] font-bold', selisih > 0 ? 'text-green-600' : selisih < 0 ? 'text-red-500' : 'text-slate-400')}>
@@ -419,28 +419,28 @@ function AdjustmentModal({ cabang, defaultGramasi, onClose, onSuccess }: {
 
           {/* Alasan */}
           <div>
-            <label className="text-xs font-semibold text-slate-600 mb-1.5 block">
+            <label className="text-[12px] font-semibold text-slate-600 mb-1.5 block">
               Alasan <span className="text-red-400">*</span>
             </label>
             <textarea
               value={alasan} onChange={e => setAlasan(e.target.value)}
               rows={3} placeholder="Contoh: Hasil stok opname ditemukan selisih 2 pcs"
-              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 resize-none focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-[13px] text-slate-700 resize-none focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
             />
           </div>
 
           {error && (
-            <p className="text-xs text-red-500 bg-red-50 rounded-xl px-3 py-2">{error}</p>
+            <p className="text-[12px] text-red-500 bg-red-50 rounded-xl px-3 py-2">{error}</p>
           )}
         </div>
 
         <div className="flex items-center gap-3 px-6 pb-5">
           <button onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+            className="flex-1 py-2.5 rounded-xl border border-slate-200 text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
             Batal
           </button>
           <button onClick={submit} disabled={loading}
-            className="flex-1 py-2.5 rounded-xl bg-violet-600 text-white text-sm font-bold hover:bg-violet-700 transition-colors disabled:opacity-50">
+            className="flex-1 py-2.5 rounded-xl bg-violet-600 text-white text-[13px] font-bold hover:bg-violet-700 transition-colors disabled:opacity-50">
             {loading ? 'Menyimpan...' : 'Simpan Adjustment'}
           </button>
         </div>
@@ -461,7 +461,7 @@ function HistoryModal({ cabang, data, loading, onClose }: {
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
           <div>
             <h2 className="font-bold text-slate-800">Riwayat Adjustment</h2>
-            <p className="text-xs text-slate-400">{cabang.nama}</p>
+            <p className="text-[12px] text-slate-400">{cabang.nama}</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100">
             <X size={16} />
@@ -470,11 +470,11 @@ function HistoryModal({ cabang, data, loading, onClose }: {
 
         <div className="overflow-y-auto flex-1 px-6 py-4">
           {loading ? (
-            <div className="py-8 text-center text-sm text-slate-400">Memuat riwayat...</div>
+            <div className="py-8 text-center text-[13px] text-slate-400">Memuat riwayat...</div>
           ) : data.length === 0 ? (
             <div className="py-8 text-center">
               <History size={24} className="mx-auto text-slate-200 mb-2" />
-              <p className="text-sm text-slate-400">Belum ada adjustment</p>
+              <p className="text-[13px] text-slate-400">Belum ada adjustment</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -482,7 +482,7 @@ function HistoryModal({ cabang, data, loading, onClose }: {
                 <div key={i} className="rounded-2xl border border-slate-100 px-4 py-3">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-700">{d.gramasi}gr</span>
+                      <span className="text-[12px] font-bold text-slate-700">{d.gramasi}gr</span>
                       <span className={cn(
                         'text-[10px] font-black px-2 py-0.5 rounded-full',
                         d.selisih > 0 ? 'bg-green-50 text-green-700' :

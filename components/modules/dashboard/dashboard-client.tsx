@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts'
 import {
@@ -310,7 +310,7 @@ export default function DashboardClient({
                     ? 'bg-blue-50 border-blue-100'
                     : 'bg-slate-50 border-slate-100'
                 )}>
-                <p className={cn('text-xl font-bold leading-none tabular-nums', s.stok_qty > 0 ? 'text-blue-700' : 'text-slate-300')}>
+                <p className={cn('text-[18px] font-bold leading-none tabular-nums', s.stok_qty > 0 ? 'text-blue-700' : 'text-slate-300')}>
                   {s.stok_qty.toLocaleString('id-ID')}
                 </p>
                 <p className="text-[10px] text-slate-400 mt-1 font-medium">{s.gramasi}gr</p>
@@ -559,7 +559,7 @@ function KpiCard({ label, value, sub, sub2, icon: Icon, iconColor, iconBg, alert
 function EmptyState({ text, icon = '—', success }: { text: string; icon?: string; success?: boolean }) {
   return (
     <div className="h-20 flex items-center gap-2.5 text-slate-400">
-      <span className={cn('text-lg', success ? 'text-green-400' : 'opacity-30')}>{icon}</span>
+      <span className={cn('text-[16px]', success ? 'text-green-400' : 'opacity-30')}>{icon}</span>
       <p className="text-[12px]">{text}</p>
     </div>
   )

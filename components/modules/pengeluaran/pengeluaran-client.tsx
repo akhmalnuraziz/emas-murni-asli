@@ -79,7 +79,7 @@ function PeriodSelector({ period, dateFrom, dateTo }: { period: string; dateFrom
         {PERIOD_OPTIONS.map(opt => (
           <button key={opt.value}
             onClick={() => { if (opt.value === 'custom') { setShowCustom(true); return } setShowCustom(false); navigate(opt.value) }}
-            className={cn('px-3 py-1.5 rounded-xl text-xs font-bold transition-all',
+            className={cn('px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all',
               (period === opt.value && opt.value !== 'custom') || (showCustom && opt.value === 'custom')
                 ? 'bg-violet-600 text-white shadow-sm'
                 : 'bg-white text-slate-500 border border-slate-200 hover:border-violet-200 hover:text-violet-600'
@@ -91,14 +91,14 @@ function PeriodSelector({ period, dateFrom, dateTo }: { period: string; dateFrom
       </div>
       {showCustom && (
         <div className="flex items-center gap-2 flex-wrap bg-white rounded-2xl px-3 py-2 border border-slate-200">
-          <span className="text-xs text-slate-400 font-medium">Dari</span>
+          <span className="text-[12px] text-slate-400 font-medium">Dari</span>
           <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
-            className="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-violet-400" />
-          <span className="text-xs text-slate-400 font-medium">s/d</span>
+            className="text-[12px] border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-violet-400" />
+          <span className="text-[12px] text-slate-400 font-medium">s/d</span>
           <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
-            className="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-violet-400" />
+            className="text-[12px] border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-violet-400" />
           <button onClick={() => navigate('custom', customFrom, customTo)}
-            className="px-3 py-1 rounded-xl bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 transition-colors">
+            className="px-3 py-1 rounded-xl bg-violet-600 text-white text-[12px] font-bold hover:bg-violet-700 transition-colors">
             Terapkan
           </button>
         </div>
@@ -202,7 +202,7 @@ function PengeluaranModal({
           <div>
             <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bukti</label>
             <input type="file" accept="image/*" onChange={handleFile}
-              className="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"/>
+              className="w-full text-[12px] text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[12px] file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"/>
             {fotoPreview && (
               <img src={fotoPreview} alt="preview" className="mt-2 w-24 h-24 object-cover rounded-xl border border-slate-200"/>
             )}
@@ -330,14 +330,14 @@ export default function PengeluaranClient({
         <div className="rounded-3xl p-5 col-span-1 sm:col-span-1 bg-red-600 text-white">
           <div className="flex items-center gap-2 mb-2">
             <TrendingDown size={16} className="opacity-80"/>
-            <p className="text-xs font-semibold opacity-80">Total Pengeluaran</p>
+            <p className="text-[12px] font-semibold opacity-80">Total Pengeluaran</p>
           </div>
-          <p className="text-2xl font-black">{formatRupiah(totalPengeluaran)}</p>
-          <p className="text-xs opacity-70 mt-1">{periodLabel}</p>
+          <p className="text-[20px] font-black">{formatRupiah(totalPengeluaran)}</p>
+          <p className="text-[12px] opacity-70 mt-1">{periodLabel}</p>
         </div>
         <div className="rounded-3xl p-5 sm:col-span-2"
           >
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Per Kategori</p>
+          <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-3">Per Kategori</p>
           {sorted.length > 0 ? (
             <div className="space-y-2">
               {sorted.slice(0, 5).map(([nama, total]) => {
@@ -348,8 +348,8 @@ export default function PengeluaranClient({
                     <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: kat?.warna ?? '#94A3B8' }} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-0.5">
-                        <p className="text-xs font-semibold text-slate-700 truncate">{nama}</p>
-                        <p className="text-xs text-slate-500 ml-2 flex-shrink-0">{formatRupiah(total)}</p>
+                        <p className="text-[12px] font-semibold text-slate-700 truncate">{nama}</p>
+                        <p className="text-[12px] text-slate-500 ml-2 flex-shrink-0">{formatRupiah(total)}</p>
                       </div>
                       <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: kat?.warna ?? '#94A3B8' }} />
@@ -360,7 +360,7 @@ export default function PengeluaranClient({
               })}
             </div>
           ) : (
-            <p className="text-xs text-slate-300 text-center py-4">Belum ada data pengeluaran</p>
+            <p className="text-[12px] text-slate-300 text-center py-4">Belum ada data pengeluaran</p>
           )}
         </div>
       </div>
@@ -371,7 +371,7 @@ export default function PengeluaranClient({
       <div className="flex gap-1 bg-slate-100 rounded-2xl p-1 w-fit">
         {(['pengeluaran', 'kategori'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={cn('px-4 py-1.5 rounded-xl text-xs font-bold transition-all capitalize',
+            className={cn('px-4 py-1.5 rounded-xl text-[12px] font-bold transition-all capitalize',
               tab === t ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'
             )}>
             {t === 'pengeluaran' ? 'Pengeluaran' : 'Kategori'}
@@ -387,11 +387,11 @@ export default function PengeluaranClient({
               <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Cari nama, lokasi, kategori..."
-                className="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-violet-400 bg-white"/>
+                className="w-full pl-8 pr-3 py-2 text-[12px] border border-slate-200 rounded-xl focus:outline-none focus:border-violet-400 bg-white"/>
             </div>
             {canManage && (
               <button onClick={() => setShowAdd(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 transition-colors">
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 text-white text-[12px] font-bold hover:bg-violet-700 transition-colors">
                 <Plus size={14}/> Tambah
               </button>
             )}
@@ -400,7 +400,7 @@ export default function PengeluaranClient({
           {filtered.length === 0 ? (
             <div className="rounded-3xl p-12 text-center bg-white border border-slate-100">
               <Wallet size={32} className="text-slate-200 mx-auto mb-3"/>
-              <p className="text-sm text-slate-400">Belum ada pengeluaran di periode ini</p>
+              <p className="text-[13px] text-slate-400">Belum ada pengeluaran di periode ini</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -411,7 +411,7 @@ export default function PengeluaranClient({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-800 truncate">{p.nama}</p>
+                        <p className="text-[13px] font-semibold text-slate-800 truncate">{p.nama}</p>
                         <div className="flex items-center gap-2 flex-wrap mt-0.5">
                           <span className="text-[10px] text-slate-400">{formatDate(p.tanggal)}</span>
                           <span className="text-[10px] text-slate-400">•</span>
@@ -429,7 +429,7 @@ export default function PengeluaranClient({
                         {p.keterangan && <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{p.keterangan}</p>}
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-sm font-black text-red-600">{formatRupiah(p.nominal)}</p>
+                        <p className="text-[13px] font-black text-red-600">{formatRupiah(p.nominal)}</p>
                       </div>
                     </div>
                   </div>
@@ -462,7 +462,7 @@ export default function PengeluaranClient({
         <div className="space-y-3">
           {canManage && (
             <button onClick={() => setShowAddKat(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 transition-colors">
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 text-white text-[12px] font-bold hover:bg-violet-700 transition-colors">
               <Plus size={14}/> Tambah Kategori
             </button>
           )}
@@ -474,7 +474,7 @@ export default function PengeluaranClient({
                   <Tag size={16} style={{ color: k.warna ?? '#94A3B8' }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={cn('text-sm font-bold truncate', k.aktif ? 'text-slate-800' : 'text-slate-400 line-through')}>{k.nama}</p>
+                  <p className={cn('text-[13px] font-bold truncate', k.aktif ? 'text-slate-800' : 'text-slate-400 line-through')}>{k.nama}</p>
                   <p className="text-[10px] text-slate-400 mt-0.5">
                     {byKategori[k.nama] != null ? formatRupiah(byKategori[k.nama]) : 'Rp 0'}
                   </p>

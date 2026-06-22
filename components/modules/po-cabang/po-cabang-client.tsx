@@ -62,7 +62,7 @@ export default function PoCabangClient({
   return (
     <div className="space-y-5">
       {toast && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-2xl text-sm font-semibold text-white shadow-lg bg-violet-700">{toast}</div>
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-2xl text-[13px] font-semibold text-white shadow-lg bg-violet-700">{toast}</div>
       )}
 
       {/* Header */}
@@ -72,14 +72,14 @@ export default function PoCabangClient({
             <ClipboardList size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-900">PO Cabang</h1>
-            <p className="text-xs text-slate-400">
+            <h1 className="text-[16px] font-bold text-slate-900">PO Cabang</h1>
+            <p className="text-[12px] text-slate-400">
               {counts.pending} pending · {counts.diproses} diproses · {counts.selesai} selesai
             </p>
           </div>
         </div>
         <button onClick={() => { setShowCreate(true); setErr('') }}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold text-white bg-sky-500 hover:bg-sky-600">
+          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[13px] font-bold text-white bg-sky-500 hover:bg-sky-600">
           <Plus size={15} /> Buat PO
         </button>
       </div>
@@ -90,7 +90,7 @@ export default function PoCabangClient({
           <div className="bg-white border border-slate-200 rounded-xl py-16 text-center"
             >
             <ClipboardList size={32} className="mx-auto text-slate-200 mb-2" />
-            <p className="text-slate-300 text-sm">Belum ada PO. Buat PO baru dari tombol di atas.</p>
+            <p className="text-slate-300 text-[13px]">Belum ada PO. Buat PO baru dari tombol di atas.</p>
           </div>
         )}
         {poList.map(po => {
@@ -105,12 +105,12 @@ export default function PoCabangClient({
                 className="w-full px-5 py-4 flex items-center gap-4 text-left hover:bg-slate-50/30 transition-colors">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono font-bold text-sm text-sky-700">{po.kode}</span>
-                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full"
+                    <span className="font-mono font-bold text-[13px] text-sky-700">{po.kode}</span>
+                    <span className="text-[12px] font-bold px-2.5 py-0.5 rounded-full"
                       style={{ background: cfg.bg, color: cfg.text }}>{cfg.label}</span>
                   </div>
-                  <p className="text-sm font-semibold text-slate-700 mt-0.5">{po.cabang_nama}</p>
-                  <p className="text-xs text-slate-400">{formatDate(po.tanggal)} · {po.items.length} item · {totalDiminta} pcs diminta</p>
+                  <p className="text-[13px] font-semibold text-slate-700 mt-0.5">{po.cabang_nama}</p>
+                  <p className="text-[12px] text-slate-400">{formatDate(po.tanggal)} · {po.items.length} item · {totalDiminta} pcs diminta</p>
                 </div>
                 {isOpen ? <ChevronUp size={16} className="text-slate-400 flex-shrink-0" /> : <ChevronDown size={16} className="text-slate-400 flex-shrink-0" />}
               </button>
@@ -119,7 +119,7 @@ export default function PoCabangClient({
                 <div className="px-5 pb-5 pt-1 border-t border-slate-50 space-y-4">
                   {/* Items table */}
                   <div className="rounded-2xl overflow-hidden border border-slate-100">
-                    <table className="w-full text-sm">
+                    <table className="w-full text-[13px]">
                       <thead>
                         <tr className="bg-slate-50">
                           {['Produk', 'Gramasi', 'Diminta', 'Dikirim', 'Diterima'].map(h => (
@@ -158,7 +158,7 @@ export default function PoCabangClient({
                                     onDone={() => showToast('✅ Penerimaan dicatat')}
                                   />
                                 ) : (
-                                  <span className="text-slate-300 text-xs">Belum dikirim</span>
+                                  <span className="text-slate-300 text-[12px]">Belum dikirim</span>
                                 )}
                               </td>
                             </tr>
@@ -167,7 +167,7 @@ export default function PoCabangClient({
                       </tbody>
                       <tfoot>
                         <tr className="border-t border-slate-100 bg-slate-50">
-                          <td className="px-3 py-2 font-bold text-slate-600 text-xs" colSpan={2}>Total</td>
+                          <td className="px-3 py-2 font-bold text-slate-600 text-[12px]" colSpan={2}>Total</td>
                           <td className="px-3 py-2 font-bold text-slate-800">{totalDiminta} pcs</td>
                           <td className="px-3 py-2 font-bold text-blue-600">{totalDikirim} pcs</td>
                           <td className="px-3 py-2 font-bold text-green-600">
@@ -180,12 +180,12 @@ export default function PoCabangClient({
 
                   {/* Notes */}
                   {po.catatan && (
-                    <p className="text-xs text-slate-500 bg-slate-50 rounded-2xl px-4 py-2">
+                    <p className="text-[12px] text-slate-500 bg-slate-50 rounded-2xl px-4 py-2">
                       <span className="font-semibold">Catatan: </span>{po.catatan}
                     </p>
                   )}
                   {po.catatan_admin && (
-                    <p className="text-xs text-sky-700 bg-sky-50 rounded-2xl px-4 py-2">
+                    <p className="text-[12px] text-sky-700 bg-sky-50 rounded-2xl px-4 py-2">
                       <span className="font-semibold">Catatan Admin: </span>{po.catatan_admin}
                     </p>
                   )}
@@ -196,24 +196,24 @@ export default function PoCabangClient({
                       {po.status === 'pending' && (
                         <>
                           <button onClick={() => handleUpdateStatus(po.id, 'diproses')} disabled={isPending}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-bold text-white bg-blue-500 hover:bg-blue-600">
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[12px] font-bold text-white bg-blue-500 hover:bg-blue-600">
                             <Check size={12} /> Proses
                           </button>
                           <button onClick={() => handleUpdateStatus(po.id, 'ditolak', 'Ditolak oleh admin')} disabled={isPending}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors">
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[12px] font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors">
                             <X size={12} /> Tolak
                           </button>
                         </>
                       )}
                       {po.status === 'diproses' && (
                         <button onClick={() => handleUpdateStatus(po.id, 'selesai')} disabled={isPending}
-                          className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-600">
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[12px] font-bold text-white bg-emerald-500 hover:bg-emerald-600">
                           <Check size={12} /> Tandai Selesai
                         </button>
                       )}
                       {canDelete && po.status !== 'selesai' && (
                         <button onClick={() => handleDelete(po.id)} disabled={isPending}
-                          className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors ml-auto">
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[12px] font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors ml-auto">
                           <Trash2 size={12} /> Hapus
                         </button>
                       )}
@@ -251,7 +251,7 @@ function QtyDikirimInput({ itemId, current, max }: { itemId: number; current: nu
     <div className="flex items-center gap-1">
       <input type="number" min="0" max={max} value={val} onChange={e => setVal(e.target.value)}
         onBlur={save} disabled={isPending}
-        className="w-16 h-7 px-2 text-xs rounded-xl border border-slate-200 text-center focus:outline-none focus:ring-1 focus:ring-sky-300" />
+        className="w-16 h-7 px-2 text-[12px] rounded-xl border border-slate-200 text-center focus:outline-none focus:ring-1 focus:ring-sky-300" />
       <span className="text-[10px] text-slate-400">/{max}</span>
     </div>
   )
@@ -274,7 +274,7 @@ function KonfirmasiTerimaInput({ itemId, poId, current, maxQty, onDone }: {
   return (
     <div className="flex items-center gap-1">
       <input type="number" min="0" max={maxQty} value={val} onChange={e => setVal(e.target.value)}
-        className="w-14 h-7 px-2 text-xs rounded-xl border border-slate-200 text-center focus:outline-none focus:ring-1 focus:ring-green-300" />
+        className="w-14 h-7 px-2 text-[12px] rounded-xl border border-slate-200 text-center focus:outline-none focus:ring-1 focus:ring-green-300" />
       <span className="text-[10px] text-slate-400">/{maxQty}</span>
       <button onClick={confirm} disabled={isPending}
         className="text-[10px] font-bold text-white bg-green-500 hover:bg-green-600 px-2 py-1 rounded-lg transition-colors disabled:opacity-50">
@@ -362,7 +362,7 @@ function CreatePoModal({ cabangList, onClose, onCreated }: {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Item Pesanan *</label>
-              <button onClick={addItem} className="flex items-center gap-1 text-xs text-sky-600 font-semibold hover:underline">
+              <button onClick={addItem} className="flex items-center gap-1 text-[12px] text-sky-600 font-semibold hover:underline">
                 <Plus size={12} /> Tambah item
               </button>
             </div>

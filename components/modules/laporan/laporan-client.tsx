@@ -139,7 +139,7 @@ function PeriodSelector({ period, dateFrom, dateTo }: { period: string; dateFrom
         {PERIOD_OPTIONS.map(opt => (
           <button key={opt.value}
             onClick={() => { if (opt.value === 'custom') { setShowCustom(true); return } setShowCustom(false); navigate(opt.value) }}
-            className={cn('px-3 py-1.5 rounded-xl text-xs font-bold transition-all',
+            className={cn('px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all',
               (period === opt.value && opt.value !== 'custom') || (showCustom && opt.value === 'custom')
                 ? 'bg-violet-600 text-white shadow-sm'
                 : 'bg-white text-slate-500 border border-slate-200 hover:border-violet-200 hover:text-violet-600'
@@ -151,14 +151,14 @@ function PeriodSelector({ period, dateFrom, dateTo }: { period: string; dateFrom
       </div>
       {showCustom && (
         <div className="flex items-center gap-2 flex-wrap bg-white rounded-2xl px-3 py-2 border border-slate-200">
-          <span className="text-xs text-slate-400 font-medium">Dari</span>
+          <span className="text-[12px] text-slate-400 font-medium">Dari</span>
           <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
-            className="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-violet-400" />
-          <span className="text-xs text-slate-400 font-medium">s/d</span>
+            className="text-[12px] border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-violet-400" />
+          <span className="text-[12px] text-slate-400 font-medium">s/d</span>
           <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
-            className="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-violet-400" />
+            className="text-[12px] border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-violet-400" />
           <button onClick={() => navigate('custom', customFrom, customTo)}
-            className="px-3 py-1 rounded-xl bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 transition-colors">
+            className="px-3 py-1 rounded-xl bg-violet-600 text-white text-[12px] font-bold hover:bg-violet-700 transition-colors">
             Terapkan
           </button>
         </div>
@@ -198,7 +198,7 @@ export default function LaporanClient({
       <div className="flex gap-1 flex-wrap bg-slate-100 rounded-2xl p-1 w-fit">
         {TABS.map(([key, label, Icon], i) => (
           <button key={i} onClick={() => setTab(key as any)}
-            className={cn('flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold transition-all',
+            className={cn('flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[12px] font-bold transition-all',
               tab === key ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'
             )}>
             {(Icon as any) && <Icon size={12} />} {label}
@@ -239,16 +239,16 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
     <div className="space-y-4">
       {/* P&L Summary Card */}
       <div className={`border-0 rounded-xl p-6 text-white ${profitPositif ? 'bg-gradient-to-br from-green-600 to-green-700' : 'bg-gradient-to-br from-red-600 to-red-700'}`}>
-        <p className="text-xs font-semibold opacity-80 mb-1">Laba Bersih — {periodLabel}</p>
+        <p className="text-[12px] font-semibold opacity-80 mb-1">Laba Bersih — {periodLabel}</p>
         <p className="text-4xl font-black">{formatRupiah(labaRugi.labaBersih)}</p>
-        <p className="text-sm opacity-70 mt-1">{profitPositif ? '▲ Profit' : '▼ Rugi'}</p>
+        <p className="text-[13px] opacity-70 mt-1">{profitPositif ? '▲ Profit' : '▼ Rugi'}</p>
       </div>
 
       {/* Export CSV */}
       <div className="flex justify-end">
         <button
           onClick={() => exportLaporan(penjualanList, pengeluaranList, labaRugi, periodLabel)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:border-violet-300 hover:text-violet-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white text-[12px] font-bold text-slate-600 hover:border-violet-300 hover:text-violet-700 transition-colors"
         >
           <Download size={13} /> Export CSV
         </button>
@@ -262,9 +262,9 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
           <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-emerald-50">
             <ShoppingCart size={15} className="text-green-600" />
           </div>
-          <p className="text-xl font-black text-slate-800">{formatRupiah(labaRugi.omzet)}</p>
+          <p className="text-[18px] font-black text-slate-800">{formatRupiah(labaRugi.omzet)}</p>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Omzet</p>
-          <p className="text-xs text-slate-400 mt-0.5">{labaRugi.penjualanCount} transaksi · tap detail</p>
+          <p className="text-[12px] text-slate-400 mt-0.5">{labaRugi.penjualanCount} transaksi · tap detail</p>
         </button>
 
         <div className="rounded-3xl p-5"
@@ -272,9 +272,9 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
           <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-amber-50">
             <Package size={15} className="text-amber-500" />
           </div>
-          <p className="text-xl font-black text-slate-800">{formatRupiah(labaRugi.hpp)}</p>
+          <p className="text-[18px] font-black text-slate-800">{formatRupiah(labaRugi.hpp)}</p>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">HPP</p>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-[12px] text-slate-400 mt-0.5">
             Laba Kotor: <span className={labaRugi.labaKotor >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
               {formatRupiah(labaRugi.labaKotor)}
             </span>
@@ -287,9 +287,9 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
           <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-red-50">
             <TrendingDown size={15} className="text-red-500" />
           </div>
-          <p className="text-xl font-black text-slate-800">{formatRupiah(labaRugi.pengeluaran)}</p>
+          <p className="text-[18px] font-black text-slate-800">{formatRupiah(labaRugi.pengeluaran)}</p>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Pengeluaran</p>
-          <p className="text-xs text-slate-400 mt-0.5">{pengeluaranList.length} item · tap detail</p>
+          <p className="text-[12px] text-slate-400 mt-0.5">{pengeluaranList.length} item · tap detail</p>
         </button>
       </div>
 
@@ -297,7 +297,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
       {channelBreakdown.length > 0 && (
         <div className="rounded-3xl p-5"
           >
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Omzet per Channel</p>
+          <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-4">Omzet per Channel</p>
           <div className="space-y-3">
             {channelBreakdown.map(ch => {
               const pct = labaRugi.omzet > 0 ? (ch.omzet / labaRugi.omzet * 100) : 0
@@ -305,9 +305,9 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
                 <div key={ch.channel} className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-semibold text-slate-700 capitalize truncate">{ch.channel}</p>
+                      <p className="text-[12px] font-semibold text-slate-700 capitalize truncate">{ch.channel}</p>
                       <div className="text-right ml-2 flex-shrink-0">
-                        <p className="text-xs font-bold text-slate-800">{formatRupiah(ch.omzet)}</p>
+                        <p className="text-[12px] font-bold text-slate-800">{formatRupiah(ch.omzet)}</p>
                         <p className="text-[10px] text-slate-400">{ch.pcs} pcs</p>
                       </div>
                     </div>
@@ -327,10 +327,10 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
         <div className="rounded-3xl overflow-hidden"
           >
           <div className="px-5 py-4 border-b border-slate-50">
-            <p className="text-sm font-bold text-slate-800">Detail Penjualan</p>
+            <p className="text-[13px] font-bold text-slate-800">Detail Penjualan</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-sm">
+            <table className="w-full min-w-[760px] text-[13px]">
               <thead>
                 <tr className="bg-slate-50">
                   {['Tanggal', 'Faktur', 'Customer', 'Channel', 'Pcs', 'Omzet', 'HPP', 'Profit', 'Margin'].map(h => (
@@ -346,32 +346,32 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
                   const margin = omzet > 0 ? (profit / omzet * 100) : 0
                   return (
                     <tr key={p.id} className="border-t border-slate-50 hover:bg-violet-50/10">
-                      <td className="px-4 py-2.5 text-xs text-slate-500 whitespace-nowrap">{formatDate(p.tanggal)}</td>
+                      <td className="px-4 py-2.5 text-[12px] text-slate-500 whitespace-nowrap">{formatDate(p.tanggal)}</td>
                       <td className="px-4 py-2.5">
                         <a href={`/penjualan/faktur/${p.id}`} target="_blank"
-                          className="text-xs font-mono text-violet-600 hover:underline flex items-center gap-1">
+                          className="text-[12px] font-mono text-violet-600 hover:underline flex items-center gap-1">
                           {p.no_faktur ?? p.nomor_invoice ?? `#${p.id}`}
                           <ExternalLink size={10} />
                         </a>
                       </td>
-                      <td className="px-4 py-2.5 text-xs text-slate-700 truncate max-w-[100px]">{p.nama_customer ?? '—'}</td>
-                      <td className="px-4 py-2.5 text-xs text-slate-500 capitalize">{p.channel ?? p.source ?? '—'}</td>
-                      <td className="px-4 py-2.5 text-xs font-semibold text-slate-700 text-center">{p.pcs}</td>
-                      <td className="px-4 py-2.5 text-xs font-bold text-green-700 whitespace-nowrap">{formatRupiah(omzet)}</td>
-                      <td className="px-4 py-2.5 text-xs text-amber-700 whitespace-nowrap">{formatRupiah(hpp)}</td>
-                      <td className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap ${profit >= 0 ? 'text-green-700' : 'text-red-600'}`}>{formatRupiah(profit)}</td>
-                      <td className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap ${margin >= 10 ? 'text-violet-700' : margin >= 0 ? 'text-amber-600' : 'text-red-600'}`}>{margin.toFixed(1)}%</td>
+                      <td className="px-4 py-2.5 text-[12px] text-slate-700 truncate max-w-[100px]">{p.nama_customer ?? '—'}</td>
+                      <td className="px-4 py-2.5 text-[12px] text-slate-500 capitalize">{p.channel ?? p.source ?? '—'}</td>
+                      <td className="px-4 py-2.5 text-[12px] font-semibold text-slate-700 text-center">{p.pcs}</td>
+                      <td className="px-4 py-2.5 text-[12px] font-bold text-green-700 whitespace-nowrap">{formatRupiah(omzet)}</td>
+                      <td className="px-4 py-2.5 text-[12px] text-amber-700 whitespace-nowrap">{formatRupiah(hpp)}</td>
+                      <td className={`px-4 py-2.5 text-[12px] font-semibold whitespace-nowrap ${profit >= 0 ? 'text-green-700' : 'text-red-600'}`}>{formatRupiah(profit)}</td>
+                      <td className={`px-4 py-2.5 text-[12px] font-semibold whitespace-nowrap ${margin >= 10 ? 'text-violet-700' : margin >= 0 ? 'text-amber-600' : 'text-red-600'}`}>{margin.toFixed(1)}%</td>
                     </tr>
                   )
                 })}
               </tbody>
               <tfoot>
                 <tr className="bg-slate-50 border-t-2 border-slate-200">
-                  <td className="px-4 py-3 text-xs font-bold text-slate-600" colSpan={5}>Total</td>
-                  <td className="px-4 py-3 text-xs font-black text-green-700 whitespace-nowrap">{formatRupiah(labaRugi.omzet)}</td>
-                  <td className="px-4 py-3 text-xs font-bold text-amber-700 whitespace-nowrap">{formatRupiah(labaRugi.hpp)}</td>
-                  <td className={`px-4 py-3 text-xs font-black whitespace-nowrap ${labaRugi.labaKotor >= 0 ? 'text-green-700' : 'text-red-600'}`}>{formatRupiah(labaRugi.labaKotor)}</td>
-                  <td className="px-4 py-3 text-xs font-bold text-violet-700">{labaRugi.omzet > 0 ? (labaRugi.labaKotor / labaRugi.omzet * 100).toFixed(1) : '0.0'}%</td>
+                  <td className="px-4 py-3 text-[12px] font-bold text-slate-600" colSpan={5}>Total</td>
+                  <td className="px-4 py-3 text-[12px] font-black text-green-700 whitespace-nowrap">{formatRupiah(labaRugi.omzet)}</td>
+                  <td className="px-4 py-3 text-[12px] font-bold text-amber-700 whitespace-nowrap">{formatRupiah(labaRugi.hpp)}</td>
+                  <td className={`px-4 py-3 text-[12px] font-black whitespace-nowrap ${labaRugi.labaKotor >= 0 ? 'text-green-700' : 'text-red-600'}`}>{formatRupiah(labaRugi.labaKotor)}</td>
+                  <td className="px-4 py-3 text-[12px] font-bold text-violet-700">{labaRugi.omzet > 0 ? (labaRugi.labaKotor / labaRugi.omzet * 100).toFixed(1) : '0.0'}%</td>
                 </tr>
               </tfoot>
             </table>
@@ -384,14 +384,14 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
         <div className="rounded-3xl overflow-hidden"
           >
           <div className="px-5 py-4 border-b border-slate-50 flex items-center justify-between">
-            <p className="text-sm font-bold text-slate-800">Detail Pengeluaran</p>
-            <a href="/pengeluaran" className="text-xs text-violet-500 font-semibold hover:underline">Kelola →</a>
+            <p className="text-[13px] font-bold text-slate-800">Detail Pengeluaran</p>
+            <a href="/pengeluaran" className="text-[12px] text-violet-500 font-semibold hover:underline">Kelola →</a>
           </div>
           <div className="divide-y divide-slate-50">
             {pengeluaranList.map((p: any) => (
               <div key={p.id} className="px-5 py-3 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-slate-800">{p.nama}</p>
+                  <p className="text-[13px] font-semibold text-slate-800">{p.nama}</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-[10px] text-slate-400">{formatDate(p.tanggal)}</span>
                     {p.kategori && (
@@ -402,7 +402,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
                     )}
                   </div>
                 </div>
-                <p className="text-sm font-bold text-red-600">{formatRupiah(Number(p.nominal))}</p>
+                <p className="text-[13px] font-bold text-red-600">{formatRupiah(Number(p.nominal))}</p>
               </div>
             ))}
           </div>
@@ -432,7 +432,7 @@ function RingkasanTab({ summary }: { summary: Props['summary'] }) {
             <c.icon size={16} style={{ color: c.color }} />
           </div>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{c.label}</p>
-          <p className="text-xl font-black text-slate-800 mt-0.5">{c.value}</p>
+          <p className="text-[18px] font-black text-slate-800 mt-0.5">{c.value}</p>
         </div>
       ))}
     </div>
@@ -456,8 +456,8 @@ function PenjualanTab({
     return (
       <div className="space-y-3">
         <div className="flex gap-2">
-          <button onClick={() => setView('periode')} className={cn('px-3 py-1.5 rounded-xl text-xs font-bold', view === 'periode' ? 'bg-violet-600 text-white' : 'bg-white border border-slate-200 text-slate-500')}>Periode</button>
-          <button onClick={() => setView('alltime')} className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-500">Semua Waktu</button>
+          <button onClick={() => setView('periode')} className={cn('px-3 py-1.5 rounded-xl text-[12px] font-bold', view === 'periode' ? 'bg-violet-600 text-white' : 'bg-white border border-slate-200 text-slate-500')}>Periode</button>
+          <button onClick={() => setView('alltime')} className="px-3 py-1.5 rounded-xl text-[12px] font-bold bg-white border border-slate-200 text-slate-500">Semua Waktu</button>
         </div>
         <Empty text={`Belum ada penjualan di periode ${periodLabel}.`} />
       </div>
@@ -473,10 +473,10 @@ function PenjualanTab({
   return (
     <div className="space-y-3">
       <div className="flex gap-2">
-        <button onClick={() => setView('periode')} className={cn('px-3 py-1.5 rounded-xl text-xs font-bold transition-all', view === 'periode' ? 'bg-violet-600 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-violet-200')}>
+        <button onClick={() => setView('periode')} className={cn('px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all', view === 'periode' ? 'bg-violet-600 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-violet-200')}>
           {periodLabel}
         </button>
-        <button onClick={() => setView('alltime')} className={cn('px-3 py-1.5 rounded-xl text-xs font-bold transition-all', view === 'alltime' ? 'bg-violet-600 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-violet-200')}>
+        <button onClick={() => setView('alltime')} className={cn('px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all', view === 'alltime' ? 'bg-violet-600 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-violet-200')}>
           Semua Waktu
         </button>
       </div>
@@ -484,7 +484,7 @@ function PenjualanTab({
       <div className="rounded-3xl overflow-hidden"
         >
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-[13px]">
             <thead>
               <tr className="bg-violet-50/20 border-b border-violet-500/10">
                 <th className="px-5 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider">Gramasi</th>
@@ -510,7 +510,7 @@ function PenjualanTab({
                       <td className="px-5 py-3.5 text-amber-700 whitespace-nowrap">{formatRupiah(r.hpp)}</td>
                       <td className={`px-5 py-3.5 font-semibold whitespace-nowrap ${r.profit >= 0 ? 'text-green-700' : 'text-red-600'}`}>{formatRupiah(r.profit)}</td>
                       <td className="px-5 py-3.5">
-                        <span className={cn('text-xs font-bold px-2 py-0.5 rounded-full', r.margin >= 10 ? 'bg-violet-50 text-violet-700' : r.margin >= 0 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-600')}>
+                        <span className={cn('text-[12px] font-bold px-2 py-0.5 rounded-full', r.margin >= 10 ? 'bg-violet-50 text-violet-700' : r.margin >= 0 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-600')}>
                           {r.margin.toFixed(1)}%
                         </span>
                       </td>
@@ -547,7 +547,7 @@ function BatchTab({ rows, showHpp }: { rows: Props['batchList']; showHpp: boolea
     <div className="rounded-3xl overflow-hidden"
       >
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[520px] text-sm">
+        <table className="w-full min-w-[520px] text-[13px]">
           <thead>
             <tr className="bg-violet-50/20 border-b border-violet-500/10">
               {['Kode Batch', 'Tanggal', 'Supplier', 'Berat Akhir', showHpp ? 'HPP/gr' : null, 'Status'].filter(Boolean).map(h => (
@@ -560,7 +560,7 @@ function BatchTab({ rows, showHpp }: { rows: Props['batchList']; showHpp: boolea
               <tr key={b.kode} className={`hover:bg-violet-50/10 ${i > 0 ? 'border-t border-slate-100' : ''}`}>
                 <td className="px-4 py-3.5">
                   <Link href={`/laporan/batch/${encodeURIComponent(b.kode)}`}
-                    className="font-mono font-bold text-violet-700 text-xs hover:underline flex items-center gap-1">
+                    className="font-mono font-bold text-violet-700 text-[12px] hover:underline flex items-center gap-1">
                     {b.kode} <ExternalLink size={9} />
                   </Link>
                 </td>
@@ -593,7 +593,7 @@ function Empty({ text }: { text: string }) {
     <div className="bg-white border border-slate-200 rounded-xl py-16 text-center"
       >
       <FileText size={28} className="text-slate-200 mx-auto mb-2" />
-      <p className="text-sm text-slate-400">{text}</p>
+      <p className="text-[13px] text-slate-400">{text}</p>
     </div>
   )
 }
@@ -653,14 +653,14 @@ function NeracaTab({ neraca }: { neraca: Props['neraca'] }) {
             : <AlertTriangle size={22} className="text-red-500" />}
         </div>
         <div>
-          <p className={`text-base font-black ${selisihOk ? 'text-green-700' : 'text-red-700'}`}>
+          <p className={`text-[14px] font-black ${selisihOk ? 'text-green-700' : 'text-red-700'}`}>
             {selisihOk ? 'Neraca Emas Seimbang ✅' : 'Ada Selisih Emas — Perlu Dicek! ⚠️'}
           </p>
-          <p className={`text-sm font-semibold mt-0.5 ${selisihOk ? 'text-green-600' : 'text-red-600'}`}>
+          <p className={`text-[13px] font-semibold mt-0.5 ${selisihOk ? 'text-green-600' : 'text-red-600'}`}>
             Selisih: {neraca.selisihGram >= 0 ? '+' : ''}{neraca.selisihGram.toFixed(3)} gr
             {!selisihOk && ' — Total masuk tidak sesuai dengan yang tertracking'}
           </p>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-[12px] text-slate-400 mt-1">
             Data real-time · reject sudah dilebur ({fmt(neraca.gramRejectSudahDilebur)} gr) tidak dihitung karena sudah kembali jadi bahan baku
           </p>
         </div>
@@ -671,14 +671,14 @@ function NeracaTab({ neraca }: { neraca: Props['neraca'] }) {
         >
         <div className="flex items-center gap-2 mb-5">
           <Scale size={15} className="text-violet-500" />
-          <h3 className="font-bold text-slate-800 text-sm">Alur Emas — All Time</h3>
+          <h3 className="font-bold text-slate-800 text-[13px]">Alur Emas — All Time</h3>
         </div>
 
         {/* Masuk */}
         <div className="rounded-2xl p-4 mb-4 bg-violet-50/40 border border-violet-500/[0.12]">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Masuk</p>
-          <p className="text-2xl font-black text-violet-700">{fmt(neraca.masukBatch)}</p>
-          <p className="text-xs text-slate-400 mt-0.5">dari semua batch bahan baku</p>
+          <p className="text-[20px] font-black text-violet-700">{fmt(neraca.masukBatch)}</p>
+          <p className="text-[12px] text-slate-400 mt-0.5">dari semua batch bahan baku</p>
         </div>
 
         <p className="text-[10px] font-bold text-slate-300 uppercase tracking-wider text-center mb-3">= Tersebar ke</p>
@@ -690,10 +690,10 @@ function NeracaTab({ neraca }: { neraca: Props['neraca'] }) {
               className="flex items-center justify-between p-3 rounded-2xl hover:opacity-80 transition-opacity"
               style={{ background: `${r.color}08`, border: `1px solid ${r.color}18` }}>
               <div>
-                <p className="text-sm font-bold" style={{ color: r.color }}>{r.label}</p>
+                <p className="text-[13px] font-bold" style={{ color: r.color }}>{r.label}</p>
                 <p className="text-[10px] text-slate-400">{r.desc}</p>
               </div>
-              <p className="text-sm font-black text-slate-700 flex-shrink-0 ml-3">{fmt(r.value)}</p>
+              <p className="text-[13px] font-black text-slate-700 flex-shrink-0 ml-3">{fmt(r.value)}</p>
             </a>
           ))}
         </div>
@@ -701,14 +701,14 @@ function NeracaTab({ neraca }: { neraca: Props['neraca'] }) {
         {/* Total tracked vs masuk */}
         <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
           <div>
-            <p className="text-xs font-bold text-slate-500">Total Tertracking</p>
+            <p className="text-[12px] font-bold text-slate-500">Total Tertracking</p>
             <p className="text-[10px] text-slate-400">stok aktif + transit + WIP + terjual + reject belum dilebur</p>
           </div>
-          <p className="text-base font-black text-slate-800">{fmt(neraca.totalTertracking)}</p>
+          <p className="text-[14px] font-black text-slate-800">{fmt(neraca.totalTertracking)}</p>
         </div>
         <div className="mt-2 flex items-center justify-between">
-          <p className="text-xs font-bold text-slate-500">Selisih (Masuk − Tertracking)</p>
-          <p className={`text-base font-black ${selisihOk ? 'text-green-600' : 'text-red-600'}`}>
+          <p className="text-[12px] font-bold text-slate-500">Selisih (Masuk − Tertracking)</p>
+          <p className={`text-[14px] font-black ${selisihOk ? 'text-green-600' : 'text-red-600'}`}>
             {neraca.selisihGram >= 0 ? '+' : ''}{neraca.selisihGram.toFixed(3)} gr
           </p>
         </div>

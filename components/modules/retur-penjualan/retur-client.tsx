@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useTransition } from 'react'
 import { Plus, X, Check, AlertTriangle, RotateCcw, Clock, CheckCircle2, XCircle, Search } from 'lucide-react'
@@ -79,7 +79,7 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
   return (
     <div className="space-y-5 pb-8">
       {toast && (
-        <div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-xl text-sm font-semibold text-white shadow-2xl',
+        <div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-xl text-[13px] font-semibold text-white shadow-2xl',
           toast.ok ? 'bg-emerald-600' : 'bg-red-600')}>
           {toast.ok ? <Check size={15}/> : <AlertTriangle size={15}/>} {toast.msg}
         </div>
@@ -129,7 +129,7 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
           {filtered.length === 0 ? (
             <div className="bg-white border border-slate-200 rounded-xl py-16 text-center">
               <RotateCcw size={28} className="text-slate-200 mx-auto mb-2"/>
-              <p className="text-sm text-slate-400">Belum ada retur{filterStatus !== 'Semua' ? ` berstatus ${filterStatus}` : ''}</p>
+              <p className="text-[13px] text-slate-400">Belum ada retur{filterStatus !== 'Semua' ? ` berstatus ${filterStatus}` : ''}</p>
             </div>
           ) : filtered.map(r => {
             const cfg = STATUS_CFG[r.status] ?? STATUS_CFG.pending
@@ -140,11 +140,11 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono font-bold text-violet-700 text-sm">{r.kode}</span>
-                      {r.no_faktur_asal && <span className="text-xs text-slate-400">← {r.no_faktur_asal}</span>}
+                      <span className="font-mono font-bold text-violet-700 text-[13px]">{r.kode}</span>
+                      {r.no_faktur_asal && <span className="text-[12px] text-slate-400">← {r.no_faktur_asal}</span>}
                     </div>
-                    <p className="text-sm font-semibold text-slate-800 mt-0.5">{r.nama_customer ?? 'Customer tidak diketahui'}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{KONDISI_LABEL[r.kondisi] ?? r.kondisi} · {r.alasan.slice(0, 80)}</p>
+                    <p className="text-[13px] font-semibold text-slate-800 mt-0.5">{r.nama_customer ?? 'Customer tidak diketahui'}</p>
+                    <p className="text-[12px] text-slate-500 mt-0.5">{KONDISI_LABEL[r.kondisi] ?? r.kondisi} · {r.alasan.slice(0, 80)}</p>
                     <div className="flex items-center gap-3 mt-2">
                       <span className="text-[10px] text-slate-400">{formatDate(r.tanggal)}</span>
                       {r.shieldtag_kodes?.length > 0 && (
@@ -155,7 +155,7 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
                       )}
                     </div>
                   </div>
-                  <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold flex-shrink-0"
+                  <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-bold flex-shrink-0"
                     style={{ background: cfg.bg, color: cfg.text }}>
                     <Icon size={11}/> {cfg.label}
                   </span>
@@ -257,7 +257,7 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
               </button>
             </div>
             <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
-              <div className="space-y-3 text-sm">
+              <div className="space-y-3 text-[13px]">
                 <Row label="Customer"    value={active.nama_customer ?? '—'} />
                 <Row label="Faktur Asal" value={active.no_faktur_asal ?? '—'} />
                 <Row label="Kondisi"     value={KONDISI_LABEL[active.kondisi] ?? active.kondisi} />
@@ -310,7 +310,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-3">
       <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider w-24 flex-shrink-0 mt-0.5">{label}</span>
-      <span className="text-sm text-slate-700 flex-1">{value}</span>
+      <span className="text-[13px] text-slate-700 flex-1">{value}</span>
     </div>
   )
 }

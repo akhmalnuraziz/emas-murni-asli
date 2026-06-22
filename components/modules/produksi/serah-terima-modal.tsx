@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { X, Camera, AlertTriangle } from 'lucide-react'
@@ -71,7 +71,7 @@ export function TimPickerStd({ tims, prefix, initialTimId, initialAnggota }: { t
           <div className="flex flex-wrap gap-1.5 mb-2">
             {anggotaAktif.length === 0 && <span className="text-[11px] text-slate-300 italic">Tidak ada anggota</span>}
             {anggotaAktif.map(n => (
-              <span key={n} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-slate-700 bg-white border border-violet-100">
+              <span key={n} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-medium text-slate-700 bg-white border border-violet-100">
                 {n}
                 <button type="button" onClick={() => hapus(n)} className="text-slate-400 hover:text-red-500"><X size={11} /></button>
               </span>
@@ -81,8 +81,8 @@ export function TimPickerStd({ tims, prefix, initialTimId, initialAnggota }: { t
             <input value={tambah} onChange={e => setTambah(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
               placeholder="Tambah anggota (cth: Pak Nendi)"
-              className="flex-1 h-8 px-2.5 bg-white rounded-lg text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-300 border border-slate-200" />
-            <button type="button" onClick={add} className="px-2.5 h-8 rounded-lg text-xs font-bold text-violet-600 bg-white border border-violet-200">+ Tambah</button>
+              className="flex-1 h-8 px-2.5 bg-white rounded-lg text-[12px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-300 border border-slate-200" />
+            <button type="button" onClick={add} className="px-2.5 h-8 rounded-lg text-[12px] font-bold text-violet-600 bg-white border border-violet-200">+ Tambah</button>
           </div>
         </div>
       )}
@@ -136,7 +136,7 @@ function FotoPickerStd({ fotos, setFotos, accent }: { fotos: File[]; setFotos: (
             <div key={i} className="relative">
               <img src={URL.createObjectURL(f)} alt="" className={`w-14 h-14 rounded-lg object-cover border ${border}`} />
               <button type="button" onClick={() => setFotos(fotos.filter((_, j) => j !== i))}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">×</button>
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[12px] flex items-center justify-center">×</button>
             </div>
           ))}
         </div>
@@ -373,7 +373,7 @@ export function TerimaModalStd({
                       <div key={i} className="relative">
                         <img src={u} alt="" className="w-14 h-14 rounded-lg object-cover border-2 border-green-100" />
                         <button type="button" onClick={() => setExistingFotos(existingFotos.filter((_, j) => j !== i))}
-                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">×</button>
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[12px] flex items-center justify-center">×</button>
                       </div>
                     ))}
                   </div>

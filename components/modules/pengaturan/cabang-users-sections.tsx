@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useTransition } from 'react'
 import { Plus, Edit2, X, Check, ShieldCheck, Mail } from 'lucide-react'
@@ -32,10 +32,10 @@ export function CabangSection({ list, showToast, canManage }: {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-bold text-slate-700">{list.length} cabang terdaftar</p>
+        <p className="text-[13px] font-bold text-slate-700">{list.length} cabang terdaftar</p>
         {canManage && (
           <button onClick={() => { setModal('create'); setErr('') }}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white rounded-2xl"
+            className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-2xl"
             style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>
             <Plus size={13} /> Tambah Cabang
           </button>
@@ -46,7 +46,7 @@ export function CabangSection({ list, showToast, canManage }: {
           <div key={c.id} className="rounded-2xl px-4 py-3 flex items-center justify-between gap-3 bg-white border border-slate-100">
             <div>
               <div className="flex items-center gap-2">
-                <p className="text-sm font-bold text-slate-800">{c.nama}</p>
+                <p className="text-[13px] font-bold text-slate-800">{c.nama}</p>
                 <span className="text-[10px] font-mono text-slate-400">{c.kode}</span>
                 {!c.aktif && <span className="text-[10px] font-bold text-red-400 bg-red-50 px-1.5 py-0.5 rounded-full">Nonaktif</span>}
               </div>
@@ -68,7 +68,7 @@ export function CabangSection({ list, showToast, canManage }: {
             )}
           </div>
         ))}
-        {list.length === 0 && <p className="text-sm text-slate-400 text-center py-8">Belum ada cabang — klik Tambah Cabang</p>}
+        {list.length === 0 && <p className="text-[13px] text-slate-400 text-center py-8">Belum ada cabang — klik Tambah Cabang</p>}
       </div>
 
       {modal !== null && (
@@ -87,7 +87,7 @@ export function CabangSection({ list, showToast, canManage }: {
                 <input name="telp" defaultValue={item?.telp} placeholder="08xx-xxxx-xxxx" className={inp}/></div>
               <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Alamat</label>
                 <input name="alamat" defaultValue={item?.alamat} placeholder="Alamat lengkap" className={inp}/></div>
-              {err && <p className="text-xs text-red-500 font-semibold">{err}</p>}
+              {err && <p className="text-[12px] text-red-500 font-semibold">{err}</p>}
             </form>
             <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
               <button type="button" onClick={() => setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
@@ -126,10 +126,10 @@ export function UsersSection({ list, currentUserId, showToast, canManage }: {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-bold text-slate-700">{list.length} user terdaftar</p>
+        <p className="text-[13px] font-bold text-slate-700">{list.length} user terdaftar</p>
         {canManage && (
           <button onClick={() => { setInviteModal(true); setErr('') }}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white rounded-2xl"
+            className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-2xl"
             style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>
             <Mail size={13} /> Undang User
           </button>
@@ -141,7 +141,7 @@ export function UsersSection({ list, currentUserId, showToast, canManage }: {
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-sm font-bold text-slate-800">{u.name}</p>
+                  <p className="text-[13px] font-bold text-slate-800">{u.name}</p>
                   {u.id === currentUserId && <span className="text-[10px] font-bold bg-violet-50 text-violet-600 px-1.5 py-0.5 rounded-full">Anda</span>}
                   {!u.aktif && <span className="text-[10px] font-bold text-red-400 bg-red-50 px-1.5 py-0.5 rounded-full">Nonaktif</span>}
                 </div>
@@ -168,20 +168,20 @@ export function UsersSection({ list, currentUserId, showToast, canManage }: {
             </div>
             {editRoleId === u.id && (
               <div className="mt-2 pt-2 border-t border-slate-100">
-                <label className="text-xs font-semibold text-slate-500 mb-1 block">Ubah Role</label>
+                <label className="text-[12px] font-semibold text-slate-500 mb-1 block">Ubah Role</label>
                 <select defaultValue={u.role}
                   onChange={async e => {
                     const r = await updateUserRole(u.id, e.target.value)
                     if (r?.error) showToast(r.error); else { showToast('✅ Role diperbarui'); setEditRoleId(null) }
                   }}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-violet-200 bg-violet-50 text-violet-700 font-bold focus:outline-none">
+                  className="w-full px-3 py-2 text-[12px] rounded-xl border border-violet-200 bg-violet-50 text-violet-700 font-bold focus:outline-none">
                   {ROLES.map(r => <option key={r} value={r}>{ROLE_LABEL[r] ?? r}</option>)}
                 </select>
               </div>
             )}
           </div>
         ))}
-        {list.length === 0 && <p className="text-sm text-slate-400 text-center py-8">Belum ada user</p>}
+        {list.length === 0 && <p className="text-[13px] text-slate-400 text-center py-8">Belum ada user</p>}
       </div>
 
       {inviteModal && (
@@ -212,7 +212,7 @@ export function UsersSection({ list, currentUserId, showToast, canManage }: {
                   {ROLES.map(r => <option key={r} value={r}>{ROLE_LABEL[r] ?? r}</option>)}
                 </select>
               </div>
-              {err && <p className="text-xs text-red-500 font-semibold">{err}</p>}
+              {err && <p className="text-[12px] text-red-500 font-semibold">{err}</p>}
             </form>
             <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
               <button type="button" onClick={() => setInviteModal(false)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>

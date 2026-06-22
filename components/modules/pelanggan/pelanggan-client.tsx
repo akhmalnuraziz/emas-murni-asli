@@ -88,7 +88,7 @@ export default function PelangganClient({ pelangganList, canSeeRp }: Props) {
           <div className="flex rounded-2xl overflow-hidden border border-slate-200">
             {(['belanja', 'transaksi', 'terakhir'] as const).map(s => (
               <button key={s} onClick={() => setSort(s)}
-                className={cn('px-3 py-2 text-xs font-bold transition-colors',
+                className={cn('px-3 py-2 text-[12px] font-bold transition-colors',
                   sort === s ? 'bg-violet-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50')}>
                 {s === 'belanja' ? 'Omzet' : s === 'transaksi' ? 'Transaksi' : 'Terbaru'}
               </button>
@@ -102,18 +102,18 @@ export default function PelangganClient({ pelangganList, canSeeRp }: Props) {
             <div className="bg-white border border-slate-200 rounded-xl py-16 text-center"
               >
               <Users size={28} className="text-slate-200 mx-auto mb-2" />
-              <p className="text-sm text-slate-400">Tidak ada pelanggan ditemukan</p>
+              <p className="text-[13px] text-slate-400">Tidak ada pelanggan ditemukan</p>
             </div>
           ) : filtered.map((p, i) => (
             <div key={p.key} className="bg-white border border-slate-200 rounded-xl overflow-hidden">
               <div className="p-4 flex items-center justify-between gap-3 cursor-pointer"
                 onClick={() => setExpanded(expanded === p.key ? null : p.key)}>
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 font-black text-sm text-violet-700 bg-violet-50">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 font-black text-[13px] text-violet-700 bg-violet-50">
                     {i + 1}
                   </div>
                   <div className="min-w-0">
-                    <p className="font-bold text-slate-800 text-sm truncate">{p.nama}</p>
+                    <p className="font-bold text-slate-800 text-[13px] truncate">{p.nama}</p>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       {p.hp && <span className="text-[11px] text-slate-400 flex items-center gap-1"><Phone size={9}/>{p.hp}</span>}
                       {p.ktp && <span className="text-[11px] text-slate-400 flex items-center gap-1"><CreditCard size={9}/>{p.ktp}</span>}
@@ -125,7 +125,7 @@ export default function PelangganClient({ pelangganList, canSeeRp }: Props) {
                 </div>
                 <div className="flex items-center gap-4 flex-shrink-0">
                   <div className="text-right">
-                    <p className="text-sm font-black text-slate-800">{p.txCount}x beli · {p.totalPcs} pcs</p>
+                    <p className="text-[13px] font-black text-slate-800">{p.txCount}x beli · {p.totalPcs} pcs</p>
                     {canSeeRp && <p className="text-[11px] text-violet-600 font-semibold">{formatRupiah(p.totalBelanja)}</p>}
                     <p className="text-[10px] text-slate-400">Terakhir {formatDate(p.lastTanggal)}</p>
                   </div>
@@ -140,10 +140,10 @@ export default function PelangganClient({ pelangganList, canSeeRp }: Props) {
                     {p.transactions.sort((a: any, b: any) => b.tanggal.localeCompare(a.tanggal)).map((tx: any) => (
                       <div key={tx.id} className="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0">
                         <div>
-                          <p className="text-xs font-mono font-bold text-violet-700">{tx.no_faktur}</p>
+                          <p className="text-[12px] font-mono font-bold text-violet-700">{tx.no_faktur}</p>
                           <p className="text-[10px] text-slate-400">{formatDate(tx.tanggal)} · {tx.pcs} pcs {tx.gramasi}gr via {CHANNEL_LABEL[tx.channel] ?? tx.channel}</p>
                         </div>
-                        {canSeeRp && <p className="text-xs font-bold text-slate-700">{formatRupiah(Number(tx.total_harga_jual ?? 0))}</p>}
+                        {canSeeRp && <p className="text-[12px] font-bold text-slate-700">{formatRupiah(Number(tx.total_harga_jual ?? 0))}</p>}
                       </div>
                     ))}
                   </div>

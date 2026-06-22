@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useTransition } from 'react'
 import {
@@ -16,7 +16,7 @@ import {
 } from '@/app/(dashboard)/pengaturan/actions'
 import { CabangSection, UsersSection } from './cabang-users-sections'
 
-const inp = 'w-full h-11 px-4 bg-gray-50 rounded-2xl text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-200 border border-gray-200'
+const inp = 'w-full h-11 px-4 bg-gray-50 rounded-2xl text-[13px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-200 border border-gray-200'
 const WARNA = ['#8B5CF6','#3B82F6','#22C55E','#F59E0B','#EF4444','#EC4899','#14B8A6','#6366F1']
 
 export default function PengaturanClient({
@@ -54,13 +54,13 @@ export default function PengaturanClient({
   return (
     <div className="space-y-5 max-w-4xl">
       {toast && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-2xl text-sm font-semibold text-white shadow-lg bg-violet-600">{toast}</div>
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-2xl text-[13px] font-semibold text-white shadow-lg bg-violet-600">{toast}</div>
       )}
 
       <div className="flex gap-2 flex-wrap">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setTab(id)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all ${tab === id ? 'bg-violet-600 text-white shadow-md shadow-violet-200' : 'bg-white/90 text-gray-500 border border-gray-200'}`}>
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[13px] font-semibold transition-all ${tab === id ? 'bg-violet-600 text-white shadow-md shadow-violet-200' : 'bg-white/90 text-gray-500 border border-gray-200'}`}>
             <Icon size={15} /> {label}
           </button>
         ))}
@@ -99,12 +99,12 @@ function TimSection({ tims, isPending, start, showToast }: any) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-base font-bold text-gray-900">Master Tim Produksi</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Tim yang mengerjakan — dinilai bintang KPI. Berbeda dari Admin Input.</p>
+          <h2 className="text-[14px] font-bold text-gray-900">Master Tim Produksi</h2>
+          <p className="text-[12px] text-gray-400 mt-0.5">Tim yang mengerjakan — dinilai bintang KPI. Berbeda dari Admin Input.</p>
         </div>
         {!adding && (
           <button onClick={() => setAdding(true)}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-bold text-white bg-violet-600 hover:bg-violet-700">
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-[13px] font-bold text-white bg-violet-600 hover:bg-violet-700">
             <Plus size={15} /> Tambah Tim
           </button>
         )}
@@ -116,16 +116,16 @@ function TimSection({ tims, isPending, start, showToast }: any) {
             placeholder="Nama tim (cth: Tim A)" className={inp}
             onKeyDown={e => e.key === 'Enter' && handleCreate()} />
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-400 font-medium">Warna:</span>
+            <span className="text-[12px] text-gray-400 font-medium">Warna:</span>
             {WARNA.map(w => (
               <button key={w} onClick={() => setNewWarna(w)} className="w-7 h-7 rounded-full transition-transform hover:scale-110"
                 style={{ background: w, outline: newWarna === w ? '2px solid #1F2937' : 'none', outlineOffset: '2px' }} />
             ))}
           </div>
           <div className="flex gap-2 justify-end">
-            <button onClick={() => { setAdding(false); setNewNama('') }} className="px-4 py-2 rounded-xl text-sm font-semibold bg-gray-100 text-gray-600">Batal</button>
+            <button onClick={() => { setAdding(false); setNewNama('') }} className="px-4 py-2 rounded-xl text-[13px] font-semibold bg-gray-100 text-gray-600">Batal</button>
             <button onClick={handleCreate} disabled={isPending || !newNama.trim()}
-              className="px-5 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">Simpan</button>
+              className="px-5 py-2 rounded-xl text-[13px] font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">Simpan</button>
           </div>
         </div>
       )}
@@ -133,7 +133,7 @@ function TimSection({ tims, isPending, start, showToast }: any) {
       {tims.length === 0 && !adding && (
         <div className="rounded-3xl py-14 text-center bg-white border border-slate-100">
           <Users size={28} className="mx-auto text-slate-200 mb-3" />
-          <p className="text-sm text-gray-400">Belum ada tim. Tambahkan tim pertama.</p>
+          <p className="text-[13px] text-gray-400">Belum ada tim. Tambahkan tim pertama.</p>
         </div>
       )}
 
@@ -159,14 +159,14 @@ function TimCard({ tim, isPending, start, showToast, editing, onEdit, onCancelEd
         <div className="space-y-3">
           <input value={nama} onChange={e => setNama(e.target.value)} className={inp} />
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-400 font-medium">Warna:</span>
+            <span className="text-[12px] text-gray-400 font-medium">Warna:</span>
             {WARNA.map(w => (
               <button key={w} onClick={() => setWarna(w)} className="w-6 h-6 rounded-full"
                 style={{ background: w, outline: warna === w ? '2px solid #1F2937' : 'none', outlineOffset: '2px' }} />
             ))}
           </div>
           <div className="flex gap-2 justify-end">
-            <button onClick={onCancelEdit} className="px-4 py-2 rounded-xl text-sm font-semibold bg-gray-100 text-gray-600">Batal</button>
+            <button onClick={onCancelEdit} className="px-4 py-2 rounded-xl text-[13px] font-semibold bg-gray-100 text-gray-600">Batal</button>
             <button onClick={() => {
               const fd = new FormData(); fd.set('nama', nama); fd.set('warna', warna)
               start(async () => {
@@ -175,16 +175,16 @@ function TimCard({ tim, isPending, start, showToast, editing, onEdit, onCancelEd
                 showToast('✅ Tim diperbarui'); onCancelEdit()
               })
             }} disabled={isPending}
-              className="px-5 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">Simpan</button>
+              className="px-5 py-2 rounded-xl text-[13px] font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">Simpan</button>
           </div>
         </div>
       ) : (
         <>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center font-extrabold text-white text-sm flex-shrink-0"
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center font-extrabold text-white text-[13px] flex-shrink-0"
               style={{ background: tim.warna || WARNA[0] }}>{tim.nama?.slice(-2).toUpperCase()}</div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-gray-900 text-sm">{tim.nama}{!tim.aktif && <span className="ml-2 text-[10px] text-gray-400">(nonaktif)</span>}</p>
+              <p className="font-bold text-gray-900 text-[13px]">{tim.nama}{!tim.aktif && <span className="ml-2 text-[10px] text-gray-400">(nonaktif)</span>}</p>
               <p className="text-[11px] text-gray-400">{tim.anggota?.length ?? 0} anggota</p>
             </div>
             <button
@@ -202,7 +202,7 @@ function TimCard({ tim, isPending, start, showToast, editing, onEdit, onCancelEd
           <div className="mt-3 pt-3 border-t border-gray-100">
             <div className="flex flex-wrap gap-1.5 mb-2">
               {tim.anggota?.map((a: any) => (
-                <span key={a.id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-gray-600 bg-violet-50">
+                <span key={a.id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-medium text-gray-600 bg-violet-50">
                   {a.nama}
                   <button onClick={() => start(async () => {
                     const r = await deleteAnggota(a.id)
@@ -225,7 +225,7 @@ function TimCard({ tim, isPending, start, showToast, editing, onEdit, onCancelEd
                     })
                   }
                 }}
-                className="flex-1 h-9 px-3 bg-gray-50 rounded-xl text-xs border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200" />
+                className="flex-1 h-9 px-3 bg-gray-50 rounded-xl text-[12px] border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200" />
               <button
                 onClick={() => {
                   if (!newAnggota.trim()) return
@@ -236,7 +236,7 @@ function TimCard({ tim, isPending, start, showToast, editing, onEdit, onCancelEd
                   })
                 }}
                 disabled={isPending || !newAnggota.trim()}
-                className="flex items-center gap-1 px-3 h-9 rounded-xl text-xs font-bold text-violet-600 bg-violet-50 disabled:opacity-50">
+                className="flex items-center gap-1 px-3 h-9 rounded-xl text-[12px] font-bold text-violet-600 bg-violet-50 disabled:opacity-50">
                 <UserPlus size={13} /> Tambah
               </button>
             </div>
@@ -245,8 +245,8 @@ function TimCard({ tim, isPending, start, showToast, editing, onEdit, onCancelEd
           {confirmDel && (
             <div className="mt-3 p-3 rounded-2xl flex items-center gap-3 bg-red-50 border border-red-100">
               <AlertTriangle size={16} className="text-red-500 flex-shrink-0" />
-              <p className="text-xs text-red-600 flex-1">Hapus tim <b>{tim.nama}</b>? Jika sudah dipakai, hanya dinonaktifkan.</p>
-              <button onClick={() => setConfirmDel(false)} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-gray-600">Batal</button>
+              <p className="text-[12px] text-red-600 flex-1">Hapus tim <b>{tim.nama}</b>? Jika sudah dipakai, hanya dinonaktifkan.</p>
+              <button onClick={() => setConfirmDel(false)} className="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-white text-gray-600">Batal</button>
               <button
                 onClick={() => start(async () => {
                   const r = await deleteTim(tim.id)
@@ -255,7 +255,7 @@ function TimCard({ tim, isPending, start, showToast, editing, onEdit, onCancelEd
                   setConfirmDel(false)
                 })}
                 disabled={isPending}
-                className="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-red-500 disabled:opacity-50">Hapus</button>
+                className="px-3 py-1.5 rounded-lg text-[12px] font-bold text-white bg-red-500 disabled:opacity-50">Hapus</button>
             </div>
           )}
         </>
@@ -292,8 +292,8 @@ function AdminInputSection({ list, isPending, start, showToast, canManage }: any
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-base font-bold text-gray-900">Master Admin Yang Input</h2>
-        <p className="text-xs text-gray-400 mt-0.5">
+        <h2 className="text-[14px] font-bold text-gray-900">Master Admin Yang Input</h2>
+        <p className="text-[12px] text-gray-400 mt-0.5">
           Daftar admin yang bisa dipilih saat mencatat serah-terima. Berbeda dari Tim
           (tim = yang mengerjakan, admin = yang input ke sistem).
         </p>
@@ -306,7 +306,7 @@ function AdminInputSection({ list, isPending, start, showToast, canManage }: any
             className={inp + ' flex-1'}
             onKeyDown={e => e.key === 'Enter' && handleCreate()} />
           <button onClick={handleCreate} disabled={isPending || !newNama.trim()}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-bold text-white flex-shrink-0 disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-[13px] font-bold text-white flex-shrink-0 disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
             <Plus size={15} /> Tambah
           </button>
         </div>
@@ -315,8 +315,8 @@ function AdminInputSection({ list, isPending, start, showToast, canManage }: any
       {list.length === 0 && (
         <div className="rounded-3xl py-14 text-center bg-white border border-slate-100">
           <UserCheck size={28} className="mx-auto text-slate-200 mb-3" />
-          <p className="text-sm text-gray-400">Belum ada admin input. Tambahkan dulu.</p>
-          <p className="text-xs text-gray-300 mt-1">Dipakai sebagai dropdown "Admin Yang Input" di form produksi, packing, dll.</p>
+          <p className="text-[13px] text-gray-400">Belum ada admin input. Tambahkan dulu.</p>
+          <p className="text-[12px] text-gray-300 mt-1">Dipakai sebagai dropdown "Admin Yang Input" di form produksi, packing, dll.</p>
         </div>
       )}
 
@@ -327,17 +327,17 @@ function AdminInputSection({ list, isPending, start, showToast, canManage }: any
               <>
                 <input value={editNama} onChange={e => setEditNama(e.target.value)}
                   autoFocus
-                  className="flex-1 h-9 px-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200"
+                  className="flex-1 h-9 px-3 bg-gray-50 rounded-xl text-[13px] border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200"
                   onKeyDown={e => e.key === 'Enter' && handleUpdate(a.id)} />
                 <button onClick={() => handleUpdate(a.id)} className="w-8 h-8 rounded-xl bg-green-50 text-green-600 flex items-center justify-center"><Check size={13} /></button>
                 <button onClick={() => setEditId(null)} className="w-8 h-8 rounded-xl bg-gray-100 text-gray-500 flex items-center justify-center"><X size={13} /></button>
               </>
             ) : (
               <>
-                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0 font-bold text-xs">
+                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0 font-bold text-[12px]">
                   {a.nama?.charAt(0)?.toUpperCase()}
                 </div>
-                <span className="flex-1 text-sm font-semibold text-gray-800">{a.nama}</span>
+                <span className="flex-1 text-[13px] font-semibold text-gray-800">{a.nama}</span>
                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${a.aktif ? 'text-emerald-700 bg-emerald-50' : 'text-gray-400 bg-gray-100'}`}>
                   {a.aktif ? 'Aktif' : 'Nonaktif'}
                 </span>
@@ -362,8 +362,8 @@ function AdminInputSection({ list, isPending, start, showToast, canManage }: any
                             showToast('✅ Dihapus'); setConfirmDelId(null)
                           })}
                           disabled={isPending}
-                          className="px-2 py-1 rounded-lg text-xs font-bold text-white bg-red-500 disabled:opacity-50">Hapus</button>
-                        <button onClick={() => setConfirmDelId(null)} className="px-2 py-1 rounded-lg text-xs text-gray-500 bg-gray-100">Batal</button>
+                          className="px-2 py-1 rounded-lg text-[12px] font-bold text-white bg-red-500 disabled:opacity-50">Hapus</button>
+                        <button onClick={() => setConfirmDelId(null)} className="px-2 py-1 rounded-lg text-[12px] text-gray-500 bg-gray-100">Batal</button>
                       </>
                     ) : (
                       <button onClick={() => setConfirmDelId(a.id)} className="w-8 h-8 rounded-xl bg-red-50 text-red-400 flex items-center justify-center"><Trash2 size={13} /></button>
@@ -410,8 +410,8 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
     <div className="space-y-6">
       <div className="space-y-3">
         <div>
-          <h2 className="text-base font-bold text-gray-900">Toleransi Loss per Proses</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Batas loss yang diizinkan (gram). Jika melebihi, sistem minta tanda tangan.</p>
+          <h2 className="text-[14px] font-bold text-gray-900">Toleransi Loss per Proses</h2>
+          <p className="text-[12px] text-gray-400 mt-0.5">Batas loss yang diizinkan (gram). Jika melebihi, sistem minta tanda tangan.</p>
         </div>
         <div className="rounded-3xl p-4 space-y-3 bg-white border border-slate-100 shadow-sm">
           {([
@@ -422,13 +422,13 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
             ['toleransi_loss_siap_packing', 'Siap Packing', '📦'],
           ] as const).map(([key, label, icon]) => (
             <div key={key} className="flex items-center gap-3">
-              <span className="text-lg w-8 text-center">{icon}</span>
-              <span className="flex-1 text-sm font-semibold text-gray-700">{label}</span>
+              <span className="text-[16px] w-8 text-center">{icon}</span>
+              <span className="flex-1 text-[13px] font-semibold text-gray-700">{label}</span>
               <div className="flex items-center gap-2">
                 <input type="number" step="0.001" disabled={!canManage}
                   value={vals[key]} onChange={e => set(key, e.target.value)}
-                  className="w-28 h-10 px-3 bg-gray-50 rounded-xl text-sm text-gray-700 text-right border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60" />
-                <span className="text-xs text-gray-400 w-6">gr</span>
+                  className="w-28 h-10 px-3 bg-gray-50 rounded-xl text-[13px] text-gray-700 text-right border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60" />
+                <span className="text-[12px] text-gray-400 w-6">gr</span>
               </div>
             </div>
           ))}
@@ -437,8 +437,8 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
 
       <div className="space-y-3">
         <div>
-          <h2 className="text-base font-bold text-gray-900">Ambang Batas Sistem</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Nilai batas untuk trigger notif dan penentuan gain wajar.</p>
+          <h2 className="text-[14px] font-bold text-gray-900">Ambang Batas Sistem</h2>
+          <p className="text-[12px] text-gray-400 mt-0.5">Nilai batas untuk trigger notif dan penentuan gain wajar.</p>
         </div>
         <div className="rounded-3xl p-4 space-y-4 bg-white border border-slate-100 shadow-sm">
           {([
@@ -447,13 +447,13 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
           ] as const).map(([key, label, icon, desc]) => (
             <div key={key}>
               <div className="flex items-center gap-3 mb-1">
-                <span className="text-lg w-8 text-center">{icon}</span>
-                <span className="flex-1 text-sm font-semibold text-gray-700">{label}</span>
+                <span className="text-[16px] w-8 text-center">{icon}</span>
+                <span className="flex-1 text-[13px] font-semibold text-gray-700">{label}</span>
                 <div className="flex items-center gap-2">
                   <input type="number" step="0.001" disabled={!canManage}
                     value={vals[key]} onChange={e => set(key, e.target.value)}
-                    className="w-28 h-10 px-3 bg-gray-50 rounded-xl text-sm text-gray-700 text-right border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60" />
-                  <span className="text-xs text-gray-400 w-6">gr</span>
+                    className="w-28 h-10 px-3 bg-gray-50 rounded-xl text-[13px] text-gray-700 text-right border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60" />
+                  <span className="text-[12px] text-gray-400 w-6">gr</span>
                 </div>
               </div>
               <p className="text-[11px] text-gray-400 pl-12">{desc}</p>
@@ -464,18 +464,18 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
 
       <div className="space-y-3">
         <div>
-          <h2 className="text-base font-bold text-gray-900">Target Produksi Harian</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Target packing per hari. Ditampilkan sebagai progress bar di dashboard.</p>
+          <h2 className="text-[14px] font-bold text-gray-900">Target Produksi Harian</h2>
+          <p className="text-[12px] text-gray-400 mt-0.5">Target packing per hari. Ditampilkan sebagai progress bar di dashboard.</p>
         </div>
         <div className="rounded-3xl p-4 bg-white border border-slate-100 shadow-sm">
           <div className="flex items-center gap-3">
-            <span className="text-lg w-8 text-center">🎯</span>
-            <span className="flex-1 text-sm font-semibold text-gray-700">Target Packing Harian</span>
+            <span className="text-[16px] w-8 text-center">🎯</span>
+            <span className="flex-1 text-[13px] font-semibold text-gray-700">Target Packing Harian</span>
             <div className="flex items-center gap-2">
               <input type="number" min="0" step="1" disabled={!canManage}
                 value={targetPacking} onChange={e => setTargetPacking(e.target.value)}
-                className="w-28 h-10 px-3 bg-gray-50 rounded-xl text-sm text-gray-700 text-right border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60" />
-              <span className="text-xs text-gray-400 w-6">pcs</span>
+                className="w-28 h-10 px-3 bg-gray-50 rounded-xl text-[13px] text-gray-700 text-right border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60" />
+              <span className="text-[12px] text-gray-400 w-6">pcs</span>
             </div>
           </div>
         </div>
@@ -484,18 +484,18 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
       {/* Safety Stock */}
       <div className="space-y-3">
         <div>
-          <h2 className="text-base font-bold text-gray-900">Safety Stock Stok Minimum</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Batas stok minimum per gramasi. Jika di bawah ini, item masuk Prioritas Produksi P2.</p>
+          <h2 className="text-[14px] font-bold text-gray-900">Safety Stock Stok Minimum</h2>
+          <p className="text-[12px] text-gray-400 mt-0.5">Batas stok minimum per gramasi. Jika di bawah ini, item masuk Prioritas Produksi P2.</p>
         </div>
         <div className="rounded-3xl p-4 bg-white border border-slate-100 shadow-sm">
           <div className="flex items-center gap-3">
-            <span className="text-lg w-8 text-center">🛡️</span>
-            <span className="flex-1 text-sm font-semibold text-gray-700">Safety Stock Default (semua gramasi)</span>
+            <span className="text-[16px] w-8 text-center">🛡️</span>
+            <span className="flex-1 text-[13px] font-semibold text-gray-700">Safety Stock Default (semua gramasi)</span>
             <div className="flex items-center gap-2">
               <input type="number" min="0" step="1" disabled={!canManage}
                 value={safetyStockGlobal} onChange={e => setSafetyStockGlobal(e.target.value)}
-                className="w-28 h-10 px-3 bg-gray-50 rounded-xl text-sm text-gray-700 text-right border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60" />
-              <span className="text-xs text-gray-400 w-6">pcs</span>
+                className="w-28 h-10 px-3 bg-gray-50 rounded-xl text-[13px] text-gray-700 text-right border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60" />
+              <span className="text-[12px] text-gray-400 w-6">pcs</span>
             </div>
           </div>
         </div>
@@ -505,8 +505,8 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
       {tims && tims.length > 0 && (
         <div className="space-y-3">
           <div>
-            <h2 className="text-base font-bold text-gray-900">Target KPI per Tim</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Target gram serah per bulan per tim. Digunakan untuk menghitung achievement rate di KPI Tim.</p>
+            <h2 className="text-[14px] font-bold text-gray-900">Target KPI per Tim</h2>
+            <p className="text-[12px] text-gray-400 mt-0.5">Target gram serah per bulan per tim. Digunakan untuk menghitung achievement rate di KPI Tim.</p>
           </div>
           <div className="rounded-3xl p-4 space-y-3 bg-white border border-slate-100 shadow-sm">
             {tims.filter((t: any) => t.aktif).map((tim: any) => {
@@ -514,7 +514,7 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
               return (
                 <div key={tim.id} className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: tim.warna ?? '#7F6DC6' }} />
-                  <span className="flex-1 text-sm font-semibold text-gray-700">{tim.nama}</span>
+                  <span className="flex-1 text-[13px] font-semibold text-gray-700">{tim.nama}</span>
                   <div className="flex items-center gap-2">
                     <input type="number" min="0" step="10" disabled={!canManage}
                       defaultValue={pengaturan[key] ?? '0'}
@@ -526,8 +526,8 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
                           showToast(`✅ Target ${tim.nama} disimpan`)
                         })
                       }}
-                      className="w-28 h-10 px-3 bg-gray-50 rounded-xl text-sm text-gray-700 text-right border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60" />
-                    <span className="text-xs text-gray-400 w-10">gr/bln</span>
+                      className="w-28 h-10 px-3 bg-gray-50 rounded-xl text-[13px] text-gray-700 text-right border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60" />
+                    <span className="text-[12px] text-gray-400 w-10">gr/bln</span>
                   </div>
                 </div>
               )
@@ -539,7 +539,7 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
       {canManage && (
         <div className="flex justify-end">
           <button onClick={handleSave} disabled={isPending}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-2xl text-sm font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
+            className="flex items-center gap-2 px-6 py-2.5 rounded-2xl text-[13px] font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
             {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
             <Check size={15} /> Simpan Pengaturan
           </button>
@@ -571,8 +571,8 @@ function BiayaPackagingSection({ pengaturan, isPending, start, showToast, canMan
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-base font-bold text-gray-900">Biaya Packaging per Gramasi</h2>
-        <p className="text-xs text-gray-400 mt-0.5">
+        <h2 className="text-[14px] font-bold text-gray-900">Biaya Packaging per Gramasi</h2>
+        <p className="text-[12px] text-gray-400 mt-0.5">
           Digunakan untuk menghitung HPP per pcs saat registrasi Shieldtag.<br/>
           <span className="font-semibold text-violet-600">HPP/pcs = (HPP/gr × gramasi) + biaya packaging</span>
         </p>
@@ -586,15 +586,15 @@ function BiayaPackagingSection({ pengaturan, isPending, start, showToast, canMan
         <div className="divide-y divide-slate-50">
           {GRAMASI_LIST.map(g => (
             <div key={g} className="px-5 py-3 flex items-center gap-3">
-              <span className="flex-1 text-sm font-semibold text-slate-700">{g} gr</span>
+              <span className="flex-1 text-[13px] font-semibold text-slate-700">{g} gr</span>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400">Rp</span>
+                <span className="text-[12px] text-slate-400">Rp</span>
                 <input
                   type="number" min="0" step="500"
                   disabled={!canManage}
                   value={vals[g]}
                   onChange={e => set(g, e.target.value)}
-                  className="w-32 h-10 px-3 bg-gray-50 rounded-xl text-sm text-gray-700 text-right border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60"
+                  className="w-32 h-10 px-3 bg-gray-50 rounded-xl text-[13px] text-gray-700 text-right border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60"
                 />
               </div>
             </div>
@@ -603,8 +603,8 @@ function BiayaPackagingSection({ pengaturan, isPending, start, showToast, canMan
       </div>
 
       <div className="rounded-3xl p-4 bg-violet-50 border border-violet-100">
-        <p className="text-xs text-violet-700 font-semibold mb-1">Contoh perhitungan HPP</p>
-        <p className="text-xs text-violet-600">
+        <p className="text-[12px] text-violet-700 font-semibold mb-1">Contoh perhitungan HPP</p>
+        <p className="text-[12px] text-violet-600">
           Batch HPP/gr: <span className="font-mono">Rp 950.000</span> · Gramasi: <span className="font-mono">1 gr</span> · Biaya packaging: <span className="font-mono">Rp {Number(vals['1'] || 10000).toLocaleString('id-ID')}</span><br/>
           <span className="font-bold">HPP/pcs = Rp 950.000 × 1 + Rp {Number(vals['1'] || 10000).toLocaleString('id-ID')} = Rp {(950000 + Number(vals['1'] || 10000)).toLocaleString('id-ID')}</span>
         </p>
@@ -613,7 +613,7 @@ function BiayaPackagingSection({ pengaturan, isPending, start, showToast, canMan
       {canManage && (
         <div className="flex justify-end">
           <button onClick={handleSave} disabled={isPending}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-2xl text-sm font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
+            className="flex items-center gap-2 px-6 py-2.5 rounded-2xl text-[13px] font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
             {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
             <Check size={15} /> Simpan Biaya Packaging
           </button>
@@ -656,12 +656,12 @@ function MasterProdukSection({ list, isPending, start, showToast, canManage }: a
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-base font-bold text-gray-900">Master Produk Packaging</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Produk yang bisa dipilih saat buat PO Vendor Packaging.</p>
+          <h2 className="text-[14px] font-bold text-gray-900">Master Produk Packaging</h2>
+          <p className="text-[12px] text-gray-400 mt-0.5">Produk yang bisa dipilih saat buat PO Vendor Packaging.</p>
         </div>
         {canManage && !adding && (
           <button onClick={() => setAdding(true)}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-bold text-white bg-violet-600 hover:bg-violet-700">
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-[13px] font-bold text-white bg-violet-600 hover:bg-violet-700">
             <Plus size={15} /> Tambah Produk
           </button>
         )}
@@ -681,9 +681,9 @@ function MasterProdukSection({ list, isPending, start, showToast, canManage }: a
           </div>
           <div className="flex gap-2 justify-end">
             <button onClick={() => { setAdding(false); setForm({ nama: '', satuan: 'pcs', keterangan: '' }) }}
-              className="px-4 py-2 rounded-xl text-sm font-semibold bg-gray-100 text-gray-600">Batal</button>
+              className="px-4 py-2 rounded-xl text-[13px] font-semibold bg-gray-100 text-gray-600">Batal</button>
             <button onClick={handleCreate} disabled={isPending || !form.nama.trim()}
-              className="px-5 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">Simpan</button>
+              className="px-5 py-2 rounded-xl text-[13px] font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">Simpan</button>
           </div>
         </div>
       )}
@@ -691,7 +691,7 @@ function MasterProdukSection({ list, isPending, start, showToast, canManage }: a
       {list.length === 0 && !adding && (
         <div className="rounded-3xl py-14 text-center bg-white border border-slate-100">
           <Package size={28} className="mx-auto text-slate-200 mb-3" />
-          <p className="text-sm text-gray-400">Belum ada produk. Tambahkan produk packaging pertama.</p>
+          <p className="text-[13px] text-gray-400">Belum ada produk. Tambahkan produk packaging pertama.</p>
         </div>
       )}
 
@@ -711,9 +711,9 @@ function MasterProdukSection({ list, isPending, start, showToast, canManage }: a
                     placeholder="Keterangan" className={inp + ' flex-1'} />
                 </div>
                 <div className="flex gap-2 justify-end">
-                  <button onClick={() => setEditId(null)} className="px-4 py-2 rounded-xl text-sm font-semibold bg-gray-100 text-gray-600">Batal</button>
+                  <button onClick={() => setEditId(null)} className="px-4 py-2 rounded-xl text-[13px] font-semibold bg-gray-100 text-gray-600">Batal</button>
                   <button onClick={() => handleUpdate(p.id)} disabled={isPending}
-                    className="px-5 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">Simpan</button>
+                    className="px-5 py-2 rounded-xl text-[13px] font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">Simpan</button>
                 </div>
               </div>
             ) : (
@@ -722,7 +722,7 @@ function MasterProdukSection({ list, isPending, start, showToast, canManage }: a
                   <Package size={15} className="text-violet-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-gray-800">{p.nama}</p>
+                  <p className="text-[13px] font-bold text-gray-800">{p.nama}</p>
                   <p className="text-[11px] text-gray-400">{p.kode} · {p.satuan}{p.keterangan ? ` · ${p.keterangan}` : ''}</p>
                 </div>
                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${p.aktif ? 'text-emerald-700 bg-emerald-50' : 'text-gray-400 bg-gray-100'}`}>
@@ -776,8 +776,8 @@ function MasterGramasiSection({ list, isPending, start, showToast, canManage }: 
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-base font-bold text-gray-900">Master Gramasi</h2>
-        <p className="text-xs text-gray-400 mt-0.5">
+        <h2 className="text-[14px] font-bold text-gray-900">Master Gramasi</h2>
+        <p className="text-[12px] text-gray-400 mt-0.5">
           Daftar pilihan gramasi emas — dipakai di form produksi, packing, shieldtag, dan PO.
         </p>
       </div>
@@ -789,9 +789,9 @@ function MasterGramasiSection({ list, isPending, start, showToast, canManage }: 
             type="number" step="any" min="0"
             className={inp + ' flex-1'}
             onKeyDown={e => e.key === 'Enter' && handleCreate()} />
-          <div className="flex-shrink-0 flex items-center px-3 bg-gray-50 rounded-2xl border border-gray-200 text-sm text-gray-500 font-medium">gr</div>
+          <div className="flex-shrink-0 flex items-center px-3 bg-gray-50 rounded-2xl border border-gray-200 text-[13px] text-gray-500 font-medium">gr</div>
           <button onClick={handleCreate} disabled={isPending || !newVal.trim()}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-bold text-white flex-shrink-0 disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-[13px] font-bold text-white flex-shrink-0 disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
             <Plus size={15} /> Tambah
           </button>
         </div>
@@ -804,7 +804,7 @@ function MasterGramasiSection({ list, isPending, start, showToast, canManage }: 
           {canManage && <span className="w-36 text-right">Aksi</span>}
         </div>
         {list.length === 0 && (
-          <div className="py-12 text-center text-sm text-gray-400">Belum ada data gramasi.</div>
+          <div className="py-12 text-center text-[13px] text-gray-400">Belum ada data gramasi.</div>
         )}
         <div className="divide-y divide-slate-50">
           {list.map((g: any) => (
@@ -813,16 +813,16 @@ function MasterGramasiSection({ list, isPending, start, showToast, canManage }: 
                 <>
                   <input value={editVal} onChange={e => setEditVal(e.target.value)}
                     autoFocus type="number" step="any"
-                    className="flex-1 h-9 px-3 bg-gray-50 rounded-xl text-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200"
+                    className="flex-1 h-9 px-3 bg-gray-50 rounded-xl text-[13px] border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-200"
                     onKeyDown={e => { if (e.key === 'Enter') handleUpdate(g.id) }} />
-                  <span className="text-xs text-gray-400">gr</span>
+                  <span className="text-[12px] text-gray-400">gr</span>
                   <button onClick={() => handleUpdate(g.id)}
                     className="w-8 h-8 rounded-xl bg-green-50 text-green-600 flex items-center justify-center"><Check size={13} /></button>
                   <button onClick={() => setEditId(null)} className="w-8 h-8 rounded-xl bg-gray-100 text-gray-500 flex items-center justify-center"><X size={13} /></button>
                 </>
               ) : (
                 <>
-                  <span className="flex-1 text-sm font-bold text-gray-800">{g.nilai} gr</span>
+                  <span className="flex-1 text-[13px] font-bold text-gray-800">{g.nilai} gr</span>
                   <span className={`w-24 text-center text-[10px] font-semibold ${g.aktif ? 'text-emerald-600' : 'text-gray-400'}`}>
                     {g.aktif ? 'Aktif' : 'Nonaktif'}
                   </span>
@@ -860,8 +860,8 @@ function MasterGramasiSection({ list, isPending, start, showToast, canManage }: 
       </div>
 
       <div className="rounded-2xl p-4 bg-amber-50 border border-amber-100">
-        <p className="text-xs font-semibold text-amber-700">Perhatian</p>
-        <p className="text-xs text-amber-600 mt-0.5">
+        <p className="text-[12px] font-semibold text-amber-700">Perhatian</p>
+        <p className="text-[12px] text-amber-600 mt-0.5">
           Menghapus gramasi yang sudah dipakai di transaksi akan menyebabkan inkonsistensi data.
           Lebih aman gunakan <b>Nonaktifkan</b> agar tidak muncul di dropdown, tapi data lama tetap valid.
         </p>

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useMemo, useState } from 'react'
 import {
@@ -76,11 +76,11 @@ function JsonBlock({ label, data, color }: { label: string; data: Record<string,
     <div className="rounded-lg px-3 py-2 bg-slate-50 border border-slate-100">
       <p className="text-[10px] font-bold tracking-widest uppercase mb-2" style={{ color }}>{label}</p>
       {entries.length === 0 ? (
-        <p className="text-xs text-gray-400 italic">Tidak ada data</p>
+        <p className="text-[12px] text-gray-400 italic">Tidak ada data</p>
       ) : (
         <div className="space-y-1.5">
           {entries.map(([k, v]) => (
-            <div key={k} className="flex items-start justify-between gap-3 text-xs">
+            <div key={k} className="flex items-start justify-between gap-3 text-[12px]">
               <span className="text-gray-400 font-medium flex-shrink-0">{k}</span>
               <span className="font-mono text-gray-700 text-right break-all">
                 {typeof v === 'object' ? JSON.stringify(v) : String(v ?? '—')}
@@ -226,18 +226,18 @@ export default function AuditLogClient({ logs }: Props) {
             <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Cari record, user, alasan, aksi..."
-              className="w-full pl-10 pr-4 py-2.5 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 text-[13px] rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all"
               style={{ background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(12px)', border: '1px solid rgba(209,213,219,0.5)' }}/>
           </div>
           <select value={filterAction} onChange={e => setFilterAction(e.target.value)} className={cn(inp, 'w-auto min-w-[140px]')}>
             {actions.map(a => <option key={a} value={a}>{a === 'Semua' ? 'Semua Aksi' : a}</option>)}
           </select>
           <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className={cn(inp, 'w-auto')}/>
-          <span className="text-gray-400 text-xs">s/d</span>
+          <span className="text-gray-400 text-[12px]">s/d</span>
           <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className={cn(inp, 'w-auto')}/>
           {(search || filterAction !== 'Semua' || dateFrom || dateTo || filterModule !== 'Semua') && (
             <button onClick={() => { setSearch(''); setFilterAction('Semua'); setDateFrom(''); setDateTo(''); setFilterModule('Semua') }}
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-500 hover:text-red-500 rounded-xl transition-colors">
+              className="flex items-center gap-1.5 px-3 py-2 text-[12px] font-semibold text-gray-500 hover:text-red-500 rounded-xl transition-colors">
               <X size={12}/> Reset
             </button>
           )}
@@ -252,7 +252,7 @@ export default function AuditLogClient({ logs }: Props) {
             const cnt = m === 'Semua' ? logs.length : (counts[m] ?? 0)
             return (
               <button key={m} onClick={() => setFilterModule(m)}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-semibold transition-all"
                 style={isAct
                   ? { background: mcfg?.dot ?? 'linear-gradient(135deg,#8B5CF6,#7C3AED)', color: '#fff', boxShadow: `0 4px 12px ${mcfg?.dot ?? '#8B5CF6'}40` }
                   : { background: 'rgba(255,255,255,0.8)', color: '#6B7280', border: '1px solid rgba(209,213,219,0.5)' }}>
@@ -267,7 +267,7 @@ export default function AuditLogClient({ logs }: Props) {
         <div className="rounded-3xl overflow-auto"
           style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(24px)',
             border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 8px 40px rgba(139,92,246,0.08)' }}>
-          <table className="w-full min-w-[760px] text-sm">
+          <table className="w-full min-w-[760px] text-[13px]">
             <thead>
               <tr className="border-b" style={{ borderColor: 'rgba(243,244,246,0.9)', background: 'rgba(249,250,251,0.6)' }}>
                 {['WAKTU', 'MODUL', 'AKSI', 'RECORD', 'USER', 'ALASAN', ''].map(h => (
@@ -282,7 +282,7 @@ export default function AuditLogClient({ logs }: Props) {
                     style={{ background: 'rgba(139,92,246,0.08)' }}>
                     <ScrollText size={28} className="text-violet-300"/>
                   </div>
-                  <p className="text-sm font-medium text-gray-400">Tidak ada aktivitas yang cocok</p>
+                  <p className="text-[13px] font-medium text-gray-400">Tidak ada aktivitas yang cocok</p>
                 </td></tr>
               ) : filtered.map((l, idx) => {
                 const mod = normModule(l.module)
@@ -293,22 +293,22 @@ export default function AuditLogClient({ logs }: Props) {
                     className={cn('border-t transition-colors hover:bg-violet-50/20 cursor-pointer', idx === 0 ? 'border-transparent' : '')}
                     style={{ borderColor: 'rgba(243,244,246,0.7)' }}
                     onClick={() => setDetailItem(l)}>
-                    <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+                    <td className="px-4 py-3 text-[12px] text-gray-500 whitespace-nowrap">
                       <div className="flex items-center gap-1.5"><Clock size={11} className="text-gray-300"/>{formatDateTime(l.timestamp)}</div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: mcfg.bg, color: mcfg.text }}>{mod}</span>
+                      <span className="text-[12px] font-bold px-2 py-0.5 rounded-full" style={{ background: mcfg.bg, color: mcfg.text }}>{mod}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: acfg.bg, color: acfg.text }}>{normAction(l.action)}</span>
+                      <span className="text-[12px] font-semibold px-2.5 py-1 rounded-full" style={{ background: acfg.bg, color: acfg.text }}>{normAction(l.action)}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="font-mono text-xs font-bold text-gray-900">{l.record_key || l.record_id || '—'}</span>
+                      <span className="font-mono text-[12px] font-bold text-gray-900">{l.record_key || l.record_id || '—'}</span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-600">
+                    <td className="px-4 py-3 text-[12px] text-gray-600">
                       <div className="flex items-center gap-1.5"><User size={11} className="text-gray-300"/>{l.user_name || '—'}</div>
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-400 max-w-[200px] truncate">{l.reason || '—'}</td>
+                    <td className="px-4 py-3 text-[12px] text-gray-400 max-w-[200px] truncate">{l.reason || '—'}</td>
                     <td className="px-4 py-3"><ChevronRight size={14} className="text-gray-300"/></td>
                   </tr>
                 )

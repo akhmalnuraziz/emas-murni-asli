@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import { Warehouse, ShieldCheck, ShieldAlert, RefreshCw, Package } from 'lucide-react'
@@ -62,7 +62,7 @@ export default function InventoryClient() {
 
       {/* Error */}
       {err && (
-        <div className="rounded-2xl px-4 py-3 text-xs text-red-600 bg-red-50 border border-red-100">{err}</div>
+        <div className="rounded-2xl px-4 py-3 text-[12px] text-red-600 bg-red-50 border border-red-100">{err}</div>
       )}
 
       {/* Table */}
@@ -79,7 +79,7 @@ export default function InventoryClient() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-[13px]">
               <thead>
                 <tr className="text-[10.5px] font-semibold text-slate-400 uppercase tracking-wide bg-slate-50 border-b border-slate-100">
                   <th className="text-left px-4 py-3">Gramasi</th>

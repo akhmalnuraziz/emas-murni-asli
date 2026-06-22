@@ -353,7 +353,7 @@ function PenjualanRow({ pj, canSeeRp, isOwner }: { pj: Penjualan; canSeeRp: bool
         onClick={() => setOpen(o => !o)}>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-mono font-black text-sm text-slate-800">{pj.no_faktur}</span>
+            <span className="font-mono font-black text-[13px] text-slate-800">{pj.no_faktur}</span>
             <StatusBadge status={pj.status} />
             <ChannelBadge channel={pj.channel} />
           </div>
@@ -366,7 +366,7 @@ function PenjualanRow({ pj, canSeeRp, isOwner }: { pj: Penjualan; canSeeRp: bool
         <div className="text-right flex-shrink-0">
           {canSeeRp && (
             <>
-              <p className="text-sm font-black text-slate-800">{fmtRp(pj.total_harga_jual ?? 0)}</p>
+              <p className="text-[13px] font-black text-slate-800">{fmtRp(pj.total_harga_jual ?? 0)}</p>
               <p className={`text-[11px] font-semibold ${(pj.total_profit ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 profit {fmtRp(pj.total_profit ?? 0)}
               </p>
@@ -385,7 +385,7 @@ function PenjualanRow({ pj, canSeeRp, isOwner }: { pj: Penjualan; canSeeRp: bool
             <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Item</p>
             <div className="space-y-1">
               {pj.items.map(it => (
-                <div key={it.id} className="flex justify-between items-center text-xs text-slate-600">
+                <div key={it.id} className="flex justify-between items-center text-[12px] text-slate-600">
                   <span className="font-mono font-semibold">{it.shieldtag_kode}</span>
                   <span>{it.gramasi} gr</span>
                   {canSeeRp && <span className="font-bold">{fmtRp(it.harga_jual)}</span>}
@@ -401,7 +401,7 @@ function PenjualanRow({ pj, canSeeRp, isOwner }: { pj: Penjualan; canSeeRp: bool
               <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Pembayaran</p>
               <div className="space-y-1">
                 {pj.payments.map(p => (
-                  <div key={p.id} className="flex justify-between text-xs text-slate-600">
+                  <div key={p.id} className="flex justify-between text-[12px] text-slate-600">
                     <span>{p.metode}</span>
                     {canSeeRp && <span className="font-bold">{fmtRp(p.jumlah)}</span>}
                   </div>
@@ -412,7 +412,7 @@ function PenjualanRow({ pj, canSeeRp, isOwner }: { pj: Penjualan; canSeeRp: bool
 
           {/* Cetak Faktur */}
           <a href={`/penjualan/faktur/${pj.id}`} target="_blank"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-600 hover:text-violet-800 hover:bg-violet-50 rounded-xl px-3 py-1.5 transition-colors border border-violet-200">
+            className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-violet-600 hover:text-violet-800 hover:bg-violet-50 rounded-xl px-3 py-1.5 transition-colors border border-violet-200">
             <Printer size={12} /> Cetak Faktur
           </a>
 

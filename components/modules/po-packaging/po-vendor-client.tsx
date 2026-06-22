@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useRef, useCallback } from 'react'
 import {
@@ -77,7 +77,7 @@ function MonitoringCard({ m }: { m: any }) {
         style={{ background: 'rgba(255,255,255,0.9)' }} onClick={() => setOpen(p => !p)}>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-mono font-bold text-violet-700">{m.nomor_po}</span>
+            <span className="text-[12px] font-mono font-bold text-violet-700">{m.nomor_po}</span>
             <StatusBadge status={m.status} />
           </div>
           <p className="text-[11px] text-slate-500 mt-0.5">{m.vendor_nama} · {m.produk_nama}</p>
@@ -107,7 +107,7 @@ function MonitoringCard({ m }: { m: any }) {
           ].map(({ label, val, color }) => (
             <div key={label} className="rounded-xl px-2.5 py-2 text-center"
               style={{ background: 'white', border: '1px solid rgba(0,0,0,0.05)' }}>
-              <p className="text-sm font-extrabold" style={{ color }}>{val}</p>
+              <p className="text-[13px] font-extrabold" style={{ color }}>{val}</p>
               <p className="text-[9px] text-slate-400 font-semibold mt-0.5">{label}</p>
             </div>
           ))}
@@ -211,7 +211,7 @@ export default function POVendorClient({
     <div className="space-y-4 pb-20">
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-2xl text-sm font-semibold shadow-xl flex items-center gap-2 transition-all ${toast.ok ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-2xl text-[13px] font-semibold shadow-xl flex items-center gap-2 transition-all ${toast.ok ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
           {toast.ok ? <CheckCircle2 size={15}/> : <XCircle size={15}/>}
           {toast.msg}
         </div>
@@ -220,34 +220,34 @@ export default function POVendorClient({
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-xl font-black text-slate-800">PO Vendor Packaging</h1>
-          <p className="text-xs text-slate-400 mt-0.5">{poList.length} PO aktif · {pendingReject > 0 ? `${pendingReject} reject pending` : 'semua reject tertangani'}</p>
+          <h1 className="text-[18px] font-black text-slate-800">PO Vendor Packaging</h1>
+          <p className="text-[12px] text-slate-400 mt-0.5">{poList.length} PO aktif · {pendingReject > 0 ? `${pendingReject} reject pending` : 'semua reject tertangani'}</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           {canManage && tab === 'po' && (
             <button onClick={() => setPoModal('create')}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white rounded-2xl"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-2xl"
               style={{ background: 'linear-gradient(135deg,#7C3AED,#6D28D9)' }}>
               <Plus size={13}/> Buat PO
             </button>
           )}
           {canManage && tab === 'vendor' && (
             <button onClick={() => setVendorModal('create')}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white rounded-2xl"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-2xl"
               style={{ background: 'linear-gradient(135deg,#7C3AED,#6D28D9)' }}>
               <Plus size={13}/> Tambah Vendor
             </button>
           )}
           {canManage && tab === 'master' && (
             <button onClick={() => setProdukModal('create')}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white rounded-2xl"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-2xl"
               style={{ background: 'linear-gradient(135deg,#059669,#047857)' }}>
               <Plus size={13}/> Tambah Produk
             </button>
           )}
           {canManage && tab === 'reject' && (
             <button onClick={() => setSjModal(-1)}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white rounded-2xl"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-2xl"
               style={{ background: 'linear-gradient(135deg,#F97316,#EA580C)' }}>
               <Printer size={13}/> Buat SJ Retur
             </button>
@@ -259,7 +259,7 @@ export default function POVendorClient({
       <div className="flex gap-1 overflow-x-auto pb-0.5 hide-scrollbar">
         {tabs.map(({ key, label, icon: Icon }) => (
           <button key={key} onClick={() => setTab(key)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 relative ${tab === key ? 'text-violet-700' : 'text-slate-500'}`}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-bold whitespace-nowrap transition-all flex-shrink-0 relative ${tab === key ? 'text-violet-700' : 'text-slate-500'}`}
             style={tab === key ? { background: 'rgba(124,58,237,0.1)' } : { background: 'rgba(0,0,0,0.03)' }}>
             <Icon size={12}/>
             {label}
@@ -278,7 +278,7 @@ export default function POVendorClient({
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Cari nomor PO, vendor, produk..."
-            className="w-full pl-8 pr-3 py-2 text-sm rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30"/>
+            className="w-full pl-8 pr-3 py-2 text-[13px] rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30"/>
         </div>
       )}
 
@@ -308,7 +308,7 @@ export default function POVendorClient({
                   style={{ background: 'rgba(255,255,255,0.9)' }}>
                   <button className="flex-1 text-left" onClick={() => setExpandedPO(isOpen ? null : po.id)}>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-mono font-bold text-violet-700">{po.nomor_po}</span>
+                      <span className="text-[12px] font-mono font-bold text-violet-700">{po.nomor_po}</span>
                       <StatusBadge status={po.status} />
                     </div>
                     <p className="text-[11px] text-slate-500 mt-0.5">
@@ -339,14 +339,14 @@ export default function POVendorClient({
                 {isOpen && (
                   <div className="px-4 pb-3 pt-1" style={{ background: 'rgba(248,250,252,0.95)' }}>
                     {batches.length === 0 ? (
-                      <p className="text-xs text-slate-400 py-2">Belum ada batch penerimaan</p>
+                      <p className="text-[12px] text-slate-400 py-2">Belum ada batch penerimaan</p>
                     ) : (
                       <div className="space-y-2">
                         {batches.map((b: any) => (
                           <div key={b.id} className="rounded-xl px-3 py-2.5 flex items-center justify-between gap-2"
                             style={{ background: 'white', border: '1px solid rgba(0,0,0,0.05)' }}>
                             <div>
-                              <p className="text-xs font-mono font-bold text-slate-700">{b.nomor_batch}</p>
+                              <p className="text-[12px] font-mono font-bold text-slate-700">{b.nomor_batch}</p>
                               <p className="text-[10px] text-slate-400">
                                 {fmtDate(b.tanggal_terima)} · {fmtNum(b.qty_diterima)} pcs
                                 {b.status_qc === 'selesai' ? ` · ✅ ACC ${fmtNum(b.qty_acc ?? 0)} / Reject ${fmtNum(b.qty_reject ?? 0)}` : ' · ⏳ Pending QC'}
@@ -383,7 +383,7 @@ export default function POVendorClient({
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-mono font-bold text-slate-700">{b.nomor_batch}</span>
+                    <span className="text-[12px] font-mono font-bold text-slate-700">{b.nomor_batch}</span>
                     <StatusBadge status={b.status_qc === 'selesai' ? 'selesai' : 'pending_qc'} />
                   </div>
                   <p className="text-[11px] text-slate-500 mt-0.5">
@@ -400,7 +400,7 @@ export default function POVendorClient({
                 </div>
                 {canManage && b.status_qc === 'pending' && (
                   <button onClick={() => setQcModal(b)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-white rounded-xl flex-shrink-0"
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-white rounded-xl flex-shrink-0"
                     style={{ background: 'linear-gradient(135deg,#22C55E,#16A34A)' }}>
                     <ClipboardCheck size={11}/> Input QC
                   </button>
@@ -428,7 +428,7 @@ export default function POVendorClient({
                     </span>
                     <StatusBadge status={r.status_penanganan} />
                   </div>
-                  <p className="text-sm font-bold text-slate-800 mt-1">{fmtNum(r.qty)} pcs</p>
+                  <p className="text-[13px] font-bold text-slate-800 mt-1">{fmtNum(r.qty)} pcs</p>
                   <p className="text-[11px] text-slate-500">{r.produk_nama} · PO {r.po_nomor} · {r.vendor_nama}</p>
                   <p className="text-[10px] text-slate-400">Batch {r.nomor_batch} · {fmtDate(r.tanggal_terima)}</p>
                   {r.penanganan_keterangan && (
@@ -437,7 +437,7 @@ export default function POVendorClient({
                 </div>
                 {canManage && r.status_penanganan === 'pending' && (
                   <button onClick={() => setRejectModal(r)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-slate-600 rounded-xl flex-shrink-0"
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-slate-600 rounded-xl flex-shrink-0"
                     style={{ background: 'rgba(0,0,0,0.05)' }}>
                     <ArrowRight size={11}/> Tangani
                   </button>
@@ -452,13 +452,13 @@ export default function POVendorClient({
       {/* ── Tab: STOK ──────────────────────────────────────────────────────── */}
       {tab === 'stok' && (
         <div className="space-y-3">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Stok Akrilik per Gramasi</p>
+          <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider">Stok Akrilik per Gramasi</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {stokList.map((s: any) => (
               <div key={s.id} className="rounded-2xl px-4 py-3.5 text-center"
                 style={{ background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(0,0,0,0.07)' }}>
-                <p className="text-2xl font-black text-slate-800">{fmtNum(s.stok_qty)}</p>
-                <p className="text-xs font-bold text-slate-500 mt-0.5">pcs</p>
+                <p className="text-[20px] font-black text-slate-800">{fmtNum(s.stok_qty)}</p>
+                <p className="text-[12px] font-bold text-slate-500 mt-0.5">pcs</p>
                 <div className="w-6 h-0.5 rounded-full mx-auto my-2"
                   style={{ background: s.stok_qty > 0 ? '#7C3AED' : '#e2e8f0' }}/>
                 <p className="text-[11px] font-semibold text-slate-600">{s.produk_nama}</p>
@@ -466,7 +466,7 @@ export default function POVendorClient({
             ))}
           </div>
 
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-4">Riwayat SJ Retur</p>
+          <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mt-4">Riwayat SJ Retur</p>
           {sjList.length === 0 ? (
             <Empty text="Belum ada surat jalan retur" />
           ) : (
@@ -475,11 +475,11 @@ export default function POVendorClient({
                 <div key={sj.id} className="rounded-2xl px-4 py-3 flex items-center justify-between"
                   style={{ background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(0,0,0,0.07)' }}>
                   <div>
-                    <p className="text-xs font-mono font-bold text-orange-600">{sj.nomor_sj}</p>
+                    <p className="text-[12px] font-mono font-bold text-orange-600">{sj.nomor_sj}</p>
                     <p className="text-[11px] text-slate-500">{sj.vendor_nama} · {fmtNum(sj.total_qty)} pcs · {fmtDate(sj.tanggal_retur)}</p>
                   </div>
                   <a href={`/po-vendor-packaging/sj-retur/${sj.id}`} target="_blank"
-                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-orange-600 rounded-xl"
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-orange-600 rounded-xl"
                     style={{ background: 'rgba(249,115,22,0.08)' }}>
                     <Printer size={11}/> Cetak
                   </a>
@@ -493,13 +493,13 @@ export default function POVendorClient({
       {/* ── Tab: MASTER PRODUK ─────────────────────────────────────────────── */}
       {tab === 'master' && (
         <div className="space-y-2">
-          <p className="text-xs text-slate-400 px-1">Daftar produk packaging yang bisa dipilih saat buat PO</p>
+          <p className="text-[12px] text-slate-400 px-1">Daftar produk packaging yang bisa dipilih saat buat PO</p>
           {produkList.map((p: any) => (
             <div key={p.id} className="rounded-2xl px-4 py-3 flex items-center justify-between gap-3"
               style={{ background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(0,0,0,0.07)' }}>
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-bold text-slate-800">{p.nama}</p>
+                  <p className="text-[13px] font-bold text-slate-800">{p.nama}</p>
                   <span className="text-[10px] font-mono text-slate-400">{p.kode}</span>
                   <span className="text-[10px] text-slate-400">· {p.satuan ?? 'pcs'}</span>
                   {!p.aktif && <span className="text-[10px] font-bold text-red-400 bg-red-50 px-1.5 py-0.5 rounded-full">Nonaktif</span>}
@@ -536,7 +536,7 @@ export default function POVendorClient({
               style={{ background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(0,0,0,0.07)' }}>
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-bold text-slate-800">{v.nama}</p>
+                  <p className="text-[13px] font-bold text-slate-800">{v.nama}</p>
                   <span className="text-[10px] font-mono text-slate-400">{v.kode}</span>
                   {!v.aktif && <span className="text-[10px] font-bold text-red-400 bg-red-50 px-1.5 py-0.5 rounded-full">Nonaktif</span>}
                 </div>
@@ -752,7 +752,7 @@ function VendorModal({ mode, vendor, onClose, onSave }: { mode: string; vendor?:
         {mode === 'edit' && (
           <div className="flex items-center gap-2">
             <input type="checkbox" name="aktif" id="aktif" defaultChecked={vendor?.aktif !== false} value="true"/>
-            <label htmlFor="aktif" className="text-sm text-slate-600">Aktif</label>
+            <label htmlFor="aktif" className="text-[13px] text-slate-600">Aktif</label>
           </div>
         )}
         <button type="submit" disabled={loading}
@@ -885,7 +885,7 @@ function QCModal({ batch, onClose, onSave }: { batch: any; onClose: () => void; 
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Qty Reject *</label>
           <input type="number" min="0" max={maxCheck} value={qtyReject} onChange={e => setQtyReject(parseInt(e.target.value) || 0)} className={inp}/></div>
         {/* Validation indicator */}
-        <div className={`rounded-xl px-3 py-2 text-xs font-semibold flex items-center gap-2 ${ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+        <div className={`rounded-xl px-3 py-2 text-[12px] font-semibold flex items-center gap-2 ${ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
           {ok ? <CheckCircle2 size={12}/> : <XCircle size={12}/>}
           {ok ? `✅ Total sesuai (${maxCheck} pcs)` : `Total ACC+Reject = ${total} ≠ ${maxCheck}`}
         </div>
@@ -897,7 +897,7 @@ function QCModal({ batch, onClose, onSave }: { batch: any; onClose: () => void; 
           <textarea name="catatan_qc" rows={2} className={inp}/></div>
         {/* Optional TTD */}
         <button type="button" onClick={() => setShowTtd(p => !p)}
-          className="w-full py-2 text-xs font-semibold text-violet-600 rounded-xl border border-violet-200">
+          className="w-full py-2 text-[12px] font-semibold text-violet-600 rounded-xl border border-violet-200">
           {showTtd ? '▲ Sembunyikan TTD' : '✍️ Tambah TTD (Opsional)'}
         </button>
         {showTtd && (
@@ -928,7 +928,7 @@ function RejectModal({ item, onClose, onSave }: { item: any; onClose: () => void
       </div>
       <div className="space-y-3">
         <div>
-          <p className="text-xs font-semibold text-slate-500 mb-1.5">Status Penanganan</p>
+          <p className="text-[12px] font-semibold text-slate-500 mb-1.5">Status Penanganan</p>
           <div className="grid grid-cols-3 gap-2">
             {[
               { val: 'disimpan', label: '📦 Disimpan' },
@@ -936,7 +936,7 @@ function RejectModal({ item, onClose, onSave }: { item: any; onClose: () => void
               ...(item.jenis === 'reject' ? [{ val: 'diretur', label: '↩️ Retur via SJ' }] : []),
             ].map(({ val, label }) => (
               <button key={val} type="button" onClick={() => setStatus(val)}
-                className={`py-2 text-xs font-bold rounded-xl border transition-all ${status === val ? 'border-violet-400 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500'}`}>
+                className={`py-2 text-[12px] font-bold rounded-xl border transition-all ${status === val ? 'border-violet-400 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500'}`}>
                 {label}
               </button>
             ))}
@@ -985,7 +985,7 @@ function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]
         {vendorId && (
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <p className="text-xs font-semibold text-slate-500">Pilih Item Reject ({selected.length} dipilih · {totalSelected} pcs)</p>
+              <p className="text-[12px] font-semibold text-slate-500">Pilih Item Reject ({selected.length} dipilih · {totalSelected} pcs)</p>
               {vendorRejects.length > 0 && (
                 <button type="button" onClick={selectAll}
                   className="text-[10px] font-bold text-violet-600">Pilih Semua</button>
@@ -993,7 +993,7 @@ function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]
             </div>
             <div className="space-y-1.5 max-h-48 overflow-y-auto">
               {vendorRejects.length === 0 ? (
-                <p className="text-xs text-slate-400 py-2 text-center">Tidak ada reject pending dari vendor ini</p>
+                <p className="text-[12px] text-slate-400 py-2 text-center">Tidak ada reject pending dari vendor ini</p>
               ) : vendorRejects.map((r: any) => (
                 <button key={r.id} type="button" onClick={() => toggle(r.id)}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl border text-left transition-all ${selected.includes(r.id) ? 'border-violet-400 bg-violet-50' : 'border-gray-200 bg-white'}`}>
@@ -1001,7 +1001,7 @@ function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]
                     {selected.includes(r.id) && <Check size={10} className="text-white"/>}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-slate-700">{r.produk_nama} · {r.qty} pcs</p>
+                    <p className="text-[12px] font-semibold text-slate-700">{r.produk_nama} · {r.qty} pcs</p>
                     <p className="text-[10px] text-slate-400">Batch {r.nomor_batch} · {fmtDate(r.tanggal_terima)}</p>
                   </div>
                 </button>
@@ -1057,8 +1057,8 @@ function VoidModal({ title, onClose, onConfirm }: { title: string; onClose: () =
 function Empty({ text, icon = '📦' }: { text: string; icon?: string }) {
   return (
     <div className="py-10 flex flex-col items-center gap-2 opacity-40">
-      <span className="text-3xl">{icon}</span>
-      <p className="text-sm text-slate-400">{text}</p>
+      <span className="text-[24px]">{icon}</span>
+      <p className="text-[13px] text-slate-400">{text}</p>
     </div>
   )
 }

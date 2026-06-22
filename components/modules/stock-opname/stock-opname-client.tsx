@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useTransition } from 'react'
 import { ClipboardList, Plus, Check, X, RefreshCw, ChevronDown, ChevronUp, AlertTriangle, CheckCircle2 } from 'lucide-react'
@@ -25,7 +25,7 @@ const STATUS_CFG: Record<string, { bg: string; text: string; label: string }> = 
   selesai:          { bg: 'rgba(139,92,246,0.1)', text: '#7C3AED', label: 'Selesai' },
 }
 
-const inp = "w-full px-4 py-3 text-sm rounded-2xl border border-gray-200/70 bg-white/80 focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all"
+const inp = "w-full px-4 py-3 text-[13px] rounded-2xl border border-gray-200/70 bg-white/80 focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all"
 const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div className="flex flex-col gap-1.5">
     <label className="text-[11px] font-bold text-gray-400 tracking-widest uppercase">{label}</label>
@@ -55,17 +55,17 @@ export default function StockOpnameClient({ initialList, cabangList, userRole, u
             <ClipboardList size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-900">Stock Opname</h1>
-            <p className="text-xs text-slate-400">Verifikasi stok fisik vs stok sistem</p>
+            <h1 className="text-[16px] font-bold text-slate-900">Stock Opname</h1>
+            <p className="text-[12px] text-slate-400">Verifikasi stok fisik vs stok sistem</p>
           </div>
         </div>
         <div className="flex gap-2">
           <button onClick={reloadList}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-violet-600 bg-violet-50 hover:bg-violet-100 transition-colors">
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold text-violet-600 bg-violet-50 hover:bg-violet-100 transition-colors">
             <RefreshCw size={13} className={isPending ? 'animate-spin' : ''} /> Muat Ulang
           </button>
           <button onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all bg-violet-600 hover:bg-violet-700">
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-bold text-white transition-all bg-violet-600 hover:bg-violet-700">
             <Plus size={14} /> Buat Stock Opname
           </button>
         </div>
@@ -84,7 +84,7 @@ export default function StockOpnameClient({ initialList, cabangList, userRole, u
       {/* Riwayat */}
       <div className="space-y-3">
         {list.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-slate-100 py-16 text-center text-slate-300 text-sm">
+          <div className="bg-white rounded-3xl border border-slate-100 py-16 text-center text-slate-300 text-[13px]">
             Belum ada stock opname
           </div>
         ) : list.map(so => (
@@ -173,13 +173,13 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
         <div className="text-center py-8 space-y-3">
           <CheckCircle2 size={40} className="mx-auto text-emerald-500" />
           <p className="font-bold text-slate-800">Stock Opname Tersimpan</p>
-          <p className="text-sm text-slate-500 font-mono">{savedKode}</p>
+          <p className="text-[13px] text-slate-500 font-mono">{savedKode}</p>
           {rows.some(r => r.selisih_pcs !== 0) && (
-            <p className="text-xs text-amber-600 bg-amber-50 rounded-2xl px-4 py-2">
+            <p className="text-[12px] text-amber-600 bg-amber-50 rounded-2xl px-4 py-2">
               Ada selisih — menunggu approval
             </p>
           )}
-          <button onClick={onSaved} className="mt-2 px-6 py-2 rounded-xl text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700">
+          <button onClick={onSaved} className="mt-2 px-6 py-2 rounded-xl text-[13px] font-semibold text-white bg-violet-600 hover:bg-violet-700">
             Selesai
           </button>
         </div>
@@ -194,26 +194,26 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
             </select>
           </F>
           <button onClick={loadStok} disabled={loadingRows}
-            className="w-full py-3 rounded-2xl text-sm font-bold text-white transition-all bg-violet-600 hover:bg-violet-700 disabled:opacity-50">
+            className="w-full py-3 rounded-2xl text-[13px] font-bold text-white transition-all bg-violet-600 hover:bg-violet-700 disabled:opacity-50">
             {loadingRows ? 'Memuat stok sistem…' : `Ambil Stok ${lokasiLabel}`}
           </button>
         </div>
       ) : (
         <div className="space-y-4">
-          <p className="text-sm font-semibold text-slate-600">
+          <p className="text-[13px] font-semibold text-slate-600">
             Lokasi: <span className="text-violet-700">{lokasiLabel}</span>
           </p>
-          <p className="text-xs text-slate-400">Masukkan jumlah fisik yang dihitung langsung. Sistem akan otomatis menghitung selisih.</p>
+          <p className="text-[12px] text-slate-400">Masukkan jumlah fisik yang dihitung langsung. Sistem akan otomatis menghitung selisih.</p>
 
           {/* Tabel input */}
           <div className="rounded-2xl overflow-hidden border border-slate-100">
-            <table className="w-full text-sm">
+            <table className="w-full text-[13px]">
               <thead className="bg-slate-50">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400">Gramasi</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400">Sistem (pcs)</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400">Fisik (pcs)</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-slate-400">Selisih</th>
+                  <th className="text-left px-4 py-3 text-[12px] font-semibold text-slate-400">Gramasi</th>
+                  <th className="text-right px-4 py-3 text-[12px] font-semibold text-slate-400">Sistem (pcs)</th>
+                  <th className="text-right px-4 py-3 text-[12px] font-semibold text-slate-400">Fisik (pcs)</th>
+                  <th className="text-right px-4 py-3 text-[12px] font-semibold text-slate-400">Selisih</th>
                 </tr>
               </thead>
               <tbody>
@@ -227,10 +227,10 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
                         min={0}
                         value={r.pcs_fisik}
                         onChange={e => setFisik(r.gramasi, parseInt(e.target.value))}
-                        className="w-24 text-right px-3 py-1.5 text-sm rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40"
+                        className="w-24 text-right px-3 py-1.5 text-[13px] rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40"
                       />
                     </td>
-                    <td className={cn('px-4 py-2.5 text-right font-semibold text-sm',
+                    <td className={cn('px-4 py-2.5 text-right font-semibold text-[13px]',
                       r.selisih_pcs > 0 ? 'text-emerald-600' : r.selisih_pcs < 0 ? 'text-red-600' : 'text-slate-400'
                     )}>
                       {r.selisih_pcs > 0 ? '+' : ''}{r.selisih_pcs}
@@ -244,7 +244,7 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
           {rows.some(r => r.selisih_pcs !== 0) && (
             <div className="flex items-start gap-2.5 px-4 py-3 rounded-2xl bg-amber-50 border border-amber-100">
               <AlertTriangle size={15} className="text-amber-500 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-700">Ada selisih stok — akan membutuhkan approval setelah disimpan.</p>
+              <p className="text-[12px] text-amber-700">Ada selisih stok — akan membutuhkan approval setelah disimpan.</p>
             </div>
           )}
 
@@ -253,15 +253,15 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
               className={cn(inp, 'resize-none')} rows={2} placeholder="Keterangan tambahan (opsional)" />
           </F>
 
-          {err && <p className="text-xs text-red-600 bg-red-50 rounded-2xl px-4 py-2">{err}</p>}
+          {err && <p className="text-[12px] text-red-600 bg-red-50 rounded-2xl px-4 py-2">{err}</p>}
 
           <div className="flex gap-2 pt-1">
             <button onClick={() => setStep('pilih')}
-              className="flex-1 py-3 rounded-2xl text-sm font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors">
+              className="flex-1 py-3 rounded-2xl text-[13px] font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors">
               Kembali
             </button>
             <button onClick={handleSave} disabled={saving || rows.length === 0}
-              className="flex-1 py-3 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
+              className="flex-1 py-3 rounded-2xl text-[13px] font-bold text-white transition-all disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
               {saving ? 'Menyimpan…' : 'Simpan Stock Opname'}
             </button>
           </div>
@@ -295,8 +295,8 @@ function SOCard({ so, expanded, onToggle, canApprove, userName, onApproved }: {
         onClick={onToggle}>
         <div className="flex items-center gap-3">
           <div>
-            <p className="font-mono text-sm font-bold text-slate-800">{so.kode}</p>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="font-mono text-[13px] font-bold text-slate-800">{so.kode}</p>
+            <p className="text-[12px] text-slate-400 mt-0.5">
               {formatDate(so.tanggal)} • {so.lokasi === 'gudang_pusat' ? 'Gudang Pusat' : so.lokasi}
             </p>
           </div>
@@ -315,13 +315,13 @@ function SOCard({ so, expanded, onToggle, canApprove, userName, onApproved }: {
           {/* Detail tabel */}
           {(so.data_sistem ?? []).length > 0 && (
             <div className="rounded-2xl overflow-hidden border border-slate-100">
-              <table className="w-full text-sm">
+              <table className="w-full text-[13px]">
                 <thead className="bg-slate-50">
                   <tr>
-                    <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-400">Gramasi</th>
-                    <th className="text-right px-4 py-2.5 text-xs font-semibold text-slate-400">Sistem</th>
-                    <th className="text-right px-4 py-2.5 text-xs font-semibold text-slate-400">Fisik</th>
-                    <th className="text-right px-4 py-2.5 text-xs font-semibold text-slate-400">Selisih</th>
+                    <th className="text-left px-4 py-2.5 text-[12px] font-semibold text-slate-400">Gramasi</th>
+                    <th className="text-right px-4 py-2.5 text-[12px] font-semibold text-slate-400">Sistem</th>
+                    <th className="text-right px-4 py-2.5 text-[12px] font-semibold text-slate-400">Fisik</th>
+                    <th className="text-right px-4 py-2.5 text-[12px] font-semibold text-slate-400">Selisih</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -348,13 +348,13 @@ function SOCard({ so, expanded, onToggle, canApprove, userName, onApproved }: {
           )}
 
           {so.catatan && (
-            <p className="text-xs text-slate-500 bg-slate-50 rounded-2xl px-4 py-3">
+            <p className="text-[12px] text-slate-500 bg-slate-50 rounded-2xl px-4 py-3">
               <span className="font-semibold">Catatan:</span> {so.catatan}
             </p>
           )}
 
           {so.approved_by && (
-            <p className="text-xs text-slate-400">
+            <p className="text-[12px] text-slate-400">
               {so.status === 'disetujui' ? 'Disetujui' : 'Ditolak'} oleh <span className="font-semibold">{so.approved_by}</span>
             </p>
           )}
@@ -362,19 +362,19 @@ function SOCard({ so, expanded, onToggle, canApprove, userName, onApproved }: {
           {/* Approval panel */}
           {so.status === 'pending_approval' && canApprove && (
             <div className="bg-amber-50 rounded-2xl border border-amber-100 p-4 space-y-3">
-              <p className="text-xs font-semibold text-amber-700 flex items-center gap-1.5">
+              <p className="text-[12px] font-semibold text-amber-700 flex items-center gap-1.5">
                 <AlertTriangle size={13} /> Menunggu Approval
               </p>
               <textarea value={catatan} onChange={e => setCatatan(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-300 resize-none"
+                className="w-full px-3 py-2 text-[12px] rounded-xl border border-amber-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-300 resize-none"
                 rows={2} placeholder="Keterangan approval (opsional)" />
               <div className="flex gap-2">
                 <button onClick={() => doApprove(false)} disabled={approving}
-                  className="flex-1 py-2 rounded-xl text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5">
+                  className="flex-1 py-2 rounded-xl text-[12px] font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5">
                   <X size={13} /> Tolak
                 </button>
                 <button onClick={() => doApprove(true)} disabled={approving}
-                  className="flex-1 py-2 rounded-xl text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600">
+                  className="flex-1 py-2 rounded-xl text-[12px] font-bold text-white transition-all flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600">
                   <Check size={13} /> Setujui
                 </button>
               </div>

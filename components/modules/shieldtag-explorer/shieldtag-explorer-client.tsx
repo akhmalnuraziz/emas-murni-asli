@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
@@ -57,30 +57,30 @@ export default function ShieldtagExplorerClient() {
           <Search size={20} className="text-white" />
         </div>
         <div>
-          <h1 className="text-lg font-bold text-slate-900">Shieldtag Explorer</h1>
-          <p className="text-xs text-slate-400">Lacak riwayat lengkap satu emas dari kode shieldtag-nya</p>
+          <h1 className="text-[16px] font-bold text-slate-900">Shieldtag Explorer</h1>
+          <p className="text-[12px] text-slate-400">Lacak riwayat lengkap satu emas dari kode shieldtag-nya</p>
         </div>
       </div>
 
       {/* Search box */}
       <div className="bg-white rounded-3xl border border-slate-100 p-5 space-y-3">
-        <p className="text-xs text-slate-400">Masukkan kode shieldtag (contoh: <span className="font-mono font-semibold">1H80AA</span>)</p>
+        <p className="text-[12px] text-slate-400">Masukkan kode shieldtag (contoh: <span className="font-mono font-semibold">1H80AA</span>)</p>
         <div className="flex gap-2">
           <input
             value={query}
             onChange={e => setQuery(e.target.value.toUpperCase())}
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
-            className="flex-1 px-4 py-3 text-sm font-mono rounded-2xl border border-gray-200 bg-white/80 focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all tracking-wider"
+            className="flex-1 px-4 py-3 text-[13px] font-mono rounded-2xl border border-gray-200 bg-white/80 focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all tracking-wider"
             placeholder="Kode Shieldtag…"
           />
           <button onClick={handleSearch} disabled={loading}
-            className="px-6 py-3 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-50 flex items-center gap-2"
+            className="px-6 py-3 rounded-2xl text-[13px] font-bold text-white transition-all disabled:opacity-50 flex items-center gap-2"
             style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', boxShadow: '0 4px 12px rgba(139,92,246,0.35)' }}>
             <Search size={15} /> {loading ? 'Mencari…' : 'Cari'}
           </button>
         </div>
         {err && (
-          <p className="text-xs text-red-600 bg-red-50 rounded-2xl px-4 py-2 flex items-center gap-1.5">
+          <p className="text-[12px] text-red-600 bg-red-50 rounded-2xl px-4 py-2 flex items-center gap-1.5">
             <XCircle size={13} /> {err}
           </p>
         )}
@@ -93,7 +93,7 @@ export default function ShieldtagExplorerClient() {
       {!result && !err && !loading && (
         <div className="bg-white rounded-3xl border border-slate-100 py-20 text-center space-y-2">
           <Tag size={36} className="mx-auto text-slate-200" />
-          <p className="text-slate-300 text-sm">Ketik kode shieldtag dan tekan Cari</p>
+          <p className="text-slate-300 text-[13px]">Ketik kode shieldtag dan tekan Cari</p>
         </div>
       )}
     </div>
@@ -116,14 +116,14 @@ function ShieldtagResult({ data }: { data: ShieldtagDetail }) {
               <Tag size={24} className="text-white" />
             </div>
             <div>
-              <p className="text-2xl font-black font-mono tracking-wider text-slate-900">{tag.kode}</p>
-              <p className="text-sm text-slate-400 mt-0.5">
+              <p className="text-[20px] font-black font-mono tracking-wider text-slate-900">{tag.kode}</p>
+              <p className="text-[13px] text-slate-400 mt-0.5">
                 {tag.gramasi ? `${tag.gramasi} gram` : '—'}
                 {tag.batch_kode && <> · Batch <span className="font-mono font-semibold text-slate-600">{tag.batch_kode}</span></>}
               </p>
             </div>
           </div>
-          <span className="text-sm font-bold px-3 py-1.5 rounded-full flex-shrink-0"
+          <span className="text-[13px] font-bold px-3 py-1.5 rounded-full flex-shrink-0"
             style={{ background: statusCfg.bg, color: statusCfg.text }}>
             {tag.status}
           </span>
@@ -138,13 +138,13 @@ function ShieldtagResult({ data }: { data: ShieldtagDetail }) {
         </div>
 
         {tag.replaced_by_kode && (
-          <div className="mt-4 text-xs text-amber-700 bg-amber-50 rounded-2xl px-4 py-2.5 flex items-center gap-1.5">
+          <div className="mt-4 text-[12px] text-amber-700 bg-amber-50 rounded-2xl px-4 py-2.5 flex items-center gap-1.5">
             <AlertTriangle size={13} />
             Digantikan oleh: <span className="font-mono font-bold">{tag.replaced_by_kode}</span>
           </div>
         )}
         {tag.replaces_kode && (
-          <div className="mt-4 text-xs text-blue-700 bg-blue-50 rounded-2xl px-4 py-2.5 flex items-center gap-1.5">
+          <div className="mt-4 text-[12px] text-blue-700 bg-blue-50 rounded-2xl px-4 py-2.5 flex items-center gap-1.5">
             <AlertTriangle size={13} />
             Menggantikan: <span className="font-mono font-bold">{tag.replaces_kode}</span>
           </div>
@@ -153,7 +153,7 @@ function ShieldtagResult({ data }: { data: ShieldtagDetail }) {
 
       {/* Timeline */}
       <div className="bg-white rounded-3xl border border-slate-100 p-5">
-        <h3 className="font-bold text-slate-800 text-sm mb-4">Timeline Perjalanan</h3>
+        <h3 className="font-bold text-slate-800 text-[13px] mb-4">Timeline Perjalanan</h3>
         <div className="space-y-1">
           {/* Batch */}
           {batch && <TimelineItem icon={Layers} color="#8B5CF6" label="Batch" sub={batch.kode} detail={`${Number(batch.timbangan_akhir ?? 0).toFixed(2)} gr · HPP Rp${Number(batch.hpp_gr ?? 0).toLocaleString('id-ID')}/gr`} date={formatDate(batch.tanggal)} />}
@@ -193,10 +193,10 @@ function ShieldtagResult({ data }: { data: ShieldtagDetail }) {
       {/* Audit Log */}
       {auditLogs.length > 0 && (
         <div className="bg-white rounded-3xl border border-slate-100 p-5">
-          <h3 className="font-bold text-slate-800 text-sm mb-4">Riwayat Perubahan</h3>
+          <h3 className="font-bold text-slate-800 text-[13px] mb-4">Riwayat Perubahan</h3>
           <div className="space-y-2">
             {auditLogs.map((log, i) => (
-              <div key={i} className="flex items-start gap-3 text-xs py-2 border-b border-slate-50 last:border-0">
+              <div key={i} className="flex items-start gap-3 text-[12px] py-2 border-b border-slate-50 last:border-0">
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-slate-50 flex-shrink-0 mt-0.5">
                   <ScrollText size={12} className="text-slate-400" />
                 </div>
@@ -221,7 +221,7 @@ function InfoCell({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-0.5">{label}</p>
-      <p className="text-sm font-semibold text-slate-700">{value}</p>
+      <p className="text-[13px] font-semibold text-slate-700">{value}</p>
     </div>
   )
 }
@@ -236,9 +236,9 @@ function TimelineItem({ icon: Icon, color, label, sub, detail, date, indent }: {
         <Icon size={13} style={{ color }} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-slate-800">{label}</p>
-        {sub && <p className="text-xs text-slate-400 font-mono">{sub}</p>}
-        {detail && <p className="text-xs text-slate-400">{detail}</p>}
+        <p className="text-[13px] font-semibold text-slate-800">{label}</p>
+        {sub && <p className="text-[12px] text-slate-400 font-mono">{sub}</p>}
+        {detail && <p className="text-[12px] text-slate-400">{detail}</p>}
       </div>
       <p className="text-[11px] text-slate-300 flex-shrink-0">{date}</p>
     </div>

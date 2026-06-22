@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useTransition } from 'react'
 import { Plus, X, Trash2, Check, AlertTriangle, Search, Package } from 'lucide-react'
@@ -64,7 +64,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
   return (
     <div className="space-y-5 pb-20">
       {toast && (
-        <div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-2xl text-sm font-semibold text-white shadow-2xl',
+        <div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-2xl text-[13px] font-semibold text-white shadow-2xl',
           toast.ok ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 'bg-gradient-to-r from-red-500 to-rose-600')}>
           {toast.ok ? <Check size={15}/> : <AlertTriangle size={15}/>}{toast.msg}
         </div>
@@ -73,12 +73,12 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-xl font-black text-slate-800">Scrap Inventory</h1>
-          <p className="text-xs text-slate-400 mt-0.5">Sisa lebihan proses produksi</p>
+          <h1 className="text-[18px] font-black text-slate-800">Scrap Inventory</h1>
+          <p className="text-[12px] text-slate-400 mt-0.5">Sisa lebihan proses produksi</p>
         </div>
         {canManage && (
           <button onClick={() => { setModal('create'); setErr('') }}
-            className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-bold text-white rounded-2xl bg-violet-600 hover:bg-violet-700 transition-colors">
+            className="flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-bold text-white rounded-2xl bg-violet-600 hover:bg-violet-700 transition-colors">
             <Plus size={14}/> Tambah Scrap
           </button>
         )}
@@ -93,7 +93,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
         ].map(c => (
           <div key={c.label} className="rounded-2xl px-4 py-3 bg-white border border-slate-100">
             <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">{c.label}</p>
-            <p className="text-lg font-extrabold mt-0.5" style={{ color: c.color }}>{c.val}</p>
+            <p className="text-[16px] font-extrabold mt-0.5" style={{ color: c.color }}>{c.val}</p>
           </div>
         ))}
       </div>
@@ -102,7 +102,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
       <div className="flex gap-2 flex-wrap items-center">
         {['semua','tersedia','terpakai','dilebur'].map(s => (
           <button key={s} onClick={() => setFilterStatus(s)}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold capitalize transition-all ${filterStatus === s ? 'text-white' : 'bg-white text-gray-500 border border-gray-300/50'}`}
+            className={`px-3 py-1.5 rounded-full text-[12px] font-semibold capitalize transition-all ${filterStatus === s ? 'text-white' : 'bg-white text-gray-500 border border-gray-300/50'}`}
             style={filterStatus === s
               ? { background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }
               : undefined}>
@@ -113,14 +113,14 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Cari kode, batch, sumber..."
-            className="pl-8 pr-3 h-9 w-52 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-200"/>
+            className="pl-8 pr-3 h-9 w-52 bg-white border border-slate-200 rounded-xl text-[12px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-200"/>
         </div>
       </div>
 
       {/* Table */}
       <div className="rounded-3xl overflow-hidden bg-white border border-slate-100">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-[13px]">
             <thead>
               <tr className="bg-slate-50">
                 {['KODE','BATCH','SUMBER','BERAT','SISA','STATUS','TGL','AKSI'].map(h => (
@@ -132,24 +132,24 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
               {filtered.length === 0 ? (
                 <tr><td colSpan={8} className="text-center py-12">
                   <Package size={28} className="text-slate-200 mx-auto mb-2"/>
-                  <p className="text-sm text-slate-400">Belum ada data scrap</p>
+                  <p className="text-[13px] text-slate-400">Belum ada data scrap</p>
                 </td></tr>
               ) : filtered.map((s, i) => {
                 const cfg = STATUS_CFG[s.status] ?? STATUS_CFG['tersedia']
                 return (
                   <tr key={s.id} className={cn('border-t border-slate-50 hover:bg-slate-50/50', i === 0 ? 'border-transparent' : '')}>
-                    <td className="px-4 py-3"><span className="font-mono text-xs font-bold text-slate-700">{s.kode}</span></td>
-                    <td className="px-4 py-3 text-xs text-slate-500">{s.batch_kode || '—'}</td>
-                    <td className="px-4 py-3 text-xs text-slate-500 capitalize">{s.sumber_proses}</td>
-                    <td className="px-4 py-3 text-xs font-bold text-slate-700">{fmtGram(s.berat_gram)}</td>
-                    <td className="px-4 py-3 text-xs font-bold" style={{ color: Number(s.berat_sisa) > 0 ? '#16A34A' : '#94A3B8' }}>
+                    <td className="px-4 py-3"><span className="font-mono text-[12px] font-bold text-slate-700">{s.kode}</span></td>
+                    <td className="px-4 py-3 text-[12px] text-slate-500">{s.batch_kode || '—'}</td>
+                    <td className="px-4 py-3 text-[12px] text-slate-500 capitalize">{s.sumber_proses}</td>
+                    <td className="px-4 py-3 text-[12px] font-bold text-slate-700">{fmtGram(s.berat_gram)}</td>
+                    <td className="px-4 py-3 text-[12px] font-bold" style={{ color: Number(s.berat_sisa) > 0 ? '#16A34A' : '#94A3B8' }}>
                       {fmtGram(s.berat_sisa ?? 0)}
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full capitalize"
                         style={{ background: cfg.bg, color: cfg.text }}>{s.status}</span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">{formatDate(s.tanggal)}</td>
+                    <td className="px-4 py-3 text-[12px] text-slate-400 whitespace-nowrap">{formatDate(s.tanggal)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
                         {canManage && s.status === 'tersedia' && (
@@ -204,7 +204,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
               </div>
               <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
                 <input name="catatan" placeholder="opsional" className={inp}/></div>
-              {err && <p className="text-xs text-red-500 font-semibold">{err}</p>}
+              {err && <p className="text-[12px] text-red-500 font-semibold">{err}</p>}
             </form>
             <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
               <button type="button" onClick={() => setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>

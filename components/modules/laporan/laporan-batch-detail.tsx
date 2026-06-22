@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { Download, ArrowLeft, Package, Layers, Tag, Hammer } from 'lucide-react'
 import Link from 'next/link'
@@ -141,7 +141,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
   }) => (
     <div className="rounded-2xl p-4" style={{ background: bg, border: `1px solid ${accent}22` }}>
       <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: accent }}>{label}</p>
-      <p className="text-xl font-black text-slate-800 mt-0.5">{value}</p>
+      <p className="text-[18px] font-black text-slate-800 mt-0.5">{value}</p>
       {sub && <p className="text-[11px] text-slate-400 mt-0.5">{sub}</p>}
     </div>
   )
@@ -152,11 +152,11 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <Link href="/laporan?tab=batch" className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-violet-600 mb-3 transition-colors">
+          <Link href="/laporan?tab=batch" className="inline-flex items-center gap-1.5 text-[12px] text-slate-400 hover:text-violet-600 mb-3 transition-colors">
             <ArrowLeft size={12} /> Kembali ke Laporan
           </Link>
-          <h1 className="text-2xl font-black text-slate-800 font-mono">{batch.kode}</h1>
-          <p className="text-sm text-slate-400 mt-0.5">
+          <h1 className="text-[20px] font-black text-slate-800 font-mono">{batch.kode}</h1>
+          <p className="text-[13px] text-slate-400 mt-0.5">
             {formatDate(batch.tanggal)}
             {batch.supplier && <> · {batch.supplier}</>}
             {batch.status && (
@@ -167,7 +167,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
           </p>
         </div>
         <button onClick={exportCSV}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:border-violet-300 hover:text-violet-700 transition-colors">
+          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-slate-200 bg-white text-[12px] font-bold text-slate-600 hover:border-violet-300 hover:text-violet-700 transition-colors">
           <Download size={13} /> Export CSV
         </button>
       </div>
@@ -186,7 +186,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
 
       {/* Alur gram */}
       <div className="rounded-3xl p-5 bg-white border border-slate-100 space-y-4">
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Alur Gram — Batch {batch.kode}</p>
+        <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">Alur Gram — Batch {batch.kode}</p>
 
         <div className="space-y-2">
           {[
@@ -201,11 +201,11 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
             const barPct = bahanMasuk > 0 ? Math.min(100, row.gram / bahanMasuk * 100) : 0
             return (
               <div key={row.label} className="flex items-center gap-3">
-                <p className="text-xs text-slate-600 w-52 flex-shrink-0">{row.label}</p>
+                <p className="text-[12px] text-slate-600 w-52 flex-shrink-0">{row.label}</p>
                 <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                   <div className="h-full rounded-full transition-all" style={{ width: `${barPct}%`, background: row.color }} />
                 </div>
-                <p className="text-xs font-bold text-slate-700 w-24 text-right">{fg(row.gram)} gr</p>
+                <p className="text-[12px] font-bold text-slate-700 w-24 text-right">{fg(row.gram)} gr</p>
                 {row.pctOf !== null && (
                   <p className="text-[10px] text-slate-400 w-14 text-right">{pct(row.gram, row.pctOf)}</p>
                 )}
@@ -220,10 +220,10 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
         <div className="rounded-3xl overflow-hidden bg-white border border-slate-100">
           <div className="px-5 py-4 border-b border-slate-50 flex items-center gap-2">
             <Layers size={14} className="text-cyan-500" />
-            <p className="text-sm font-bold text-slate-800">Peleburan ({peleburans.length})</p>
+            <p className="text-[13px] font-bold text-slate-800">Peleburan ({peleburans.length})</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[600px] text-sm">
+            <table className="w-full min-w-[600px] text-[13px]">
               <thead>
                 <tr className="bg-slate-50">
                   {['Kode', 'Tanggal', 'Tim', 'Dikasih (gr)', 'Diterima (gr)', 'Loss (gr)', '%', 'Status'].map(h => (
@@ -236,14 +236,14 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
                   const loss = Number(p.dikasih_gram) - Number(p.diterima_gram ?? 0)
                   return (
                     <tr key={p.id} className={cn('border-t border-slate-50 hover:bg-cyan-50/20', i % 2 === 1 && 'bg-slate-50/30')}>
-                      <td className="px-4 py-3 font-mono text-xs font-bold text-cyan-700">{p.kode}</td>
-                      <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{formatDate(p.tanggal)}</td>
-                      <td className="px-4 py-3 text-xs text-slate-700">{p.tim_nama ?? '—'}</td>
-                      <td className="px-4 py-3 text-xs font-semibold text-slate-800">{fg(p.dikasih_gram)}</td>
-                      <td className="px-4 py-3 text-xs font-semibold text-green-700">
+                      <td className="px-4 py-3 font-mono text-[12px] font-bold text-cyan-700">{p.kode}</td>
+                      <td className="px-4 py-3 text-[12px] text-slate-500 whitespace-nowrap">{formatDate(p.tanggal)}</td>
+                      <td className="px-4 py-3 text-[12px] text-slate-700">{p.tim_nama ?? '—'}</td>
+                      <td className="px-4 py-3 text-[12px] font-semibold text-slate-800">{fg(p.dikasih_gram)}</td>
+                      <td className="px-4 py-3 text-[12px] font-semibold text-green-700">
                         {p.diterima_gram != null ? fg(p.diterima_gram) : <span className="text-slate-400">—</span>}
                       </td>
-                      <td className="px-4 py-3 text-xs font-semibold text-red-500">{p.diterima_gram != null ? fg(loss) : '—'}</td>
+                      <td className="px-4 py-3 text-[12px] font-semibold text-red-500">{p.diterima_gram != null ? fg(loss) : '—'}</td>
                       <td className="px-4 py-3 text-[11px] text-slate-400">{p.diterima_gram != null ? pct(loss, Number(p.dikasih_gram)) : '—'}</td>
                       <td className="px-4 py-3">
                         <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full',
@@ -258,10 +258,10 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
               </tbody>
               <tfoot>
                 <tr className="bg-slate-50 border-t-2 border-slate-200">
-                  <td className="px-4 py-3 text-xs font-bold text-slate-800" colSpan={3}>Total</td>
-                  <td className="px-4 py-3 text-xs font-black text-slate-800">{fg(totalDikasih)}</td>
-                  <td className="px-4 py-3 text-xs font-black text-green-700">{fg(totalDiterima)}</td>
-                  <td className="px-4 py-3 text-xs font-black text-red-500">{fg(lossLebur)}</td>
+                  <td className="px-4 py-3 text-[12px] font-bold text-slate-800" colSpan={3}>Total</td>
+                  <td className="px-4 py-3 text-[12px] font-black text-slate-800">{fg(totalDikasih)}</td>
+                  <td className="px-4 py-3 text-[12px] font-black text-green-700">{fg(totalDiterima)}</td>
+                  <td className="px-4 py-3 text-[12px] font-black text-red-500">{fg(lossLebur)}</td>
                   <td className="px-4 py-3 text-[11px] font-bold text-red-500">{pct(lossLebur, totalDikasih)}</td>
                   <td />
                 </tr>
@@ -276,10 +276,10 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
         <div className="rounded-3xl overflow-hidden bg-white border border-slate-100">
           <div className="px-5 py-4 border-b border-slate-50 flex items-center gap-2">
             <Hammer size={14} className="text-violet-500" />
-            <p className="text-sm font-bold text-slate-800">Produksi per Gramasi</p>
+            <p className="text-[13px] font-bold text-slate-800">Produksi per Gramasi</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[480px] text-sm">
+            <table className="w-full min-w-[480px] text-[13px]">
               <thead>
                 <tr className="bg-slate-50">
                   {['Gramasi', 'PCS', 'Total Gram', 'Sisa Serbuk', 'Status Terkini'].map(h => (
@@ -298,9 +298,9 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
                   return (
                     <tr key={r.gramasi} className={cn('border-t border-slate-50 hover:bg-violet-50/10', i % 2 === 1 && 'bg-slate-50/30')}>
                       <td className="px-4 py-3 font-bold text-slate-800">{r.gramasi}gr</td>
-                      <td className="px-4 py-3 text-xs font-semibold text-slate-700">{r.pcs} pcs</td>
-                      <td className="px-4 py-3 text-xs font-semibold text-green-700">{fg(r.total_gram)} gr</td>
-                      <td className="px-4 py-3 text-xs font-semibold text-amber-600">{fg(r.sisa_serbuk)} gr</td>
+                      <td className="px-4 py-3 text-[12px] font-semibold text-slate-700">{r.pcs} pcs</td>
+                      <td className="px-4 py-3 text-[12px] font-semibold text-green-700">{fg(r.total_gram)} gr</td>
+                      <td className="px-4 py-3 text-[12px] font-semibold text-amber-600">{fg(r.sisa_serbuk)} gr</td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-1">
                           {uniqueStatuses.map(s => (
@@ -314,10 +314,10 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
               </tbody>
               <tfoot>
                 <tr className="bg-slate-50 border-t-2 border-slate-200">
-                  <td className="px-4 py-3 text-xs font-bold text-slate-800">Total</td>
-                  <td className="px-4 py-3 text-xs font-black text-slate-800">{totalPcs} pcs</td>
-                  <td className="px-4 py-3 text-xs font-black text-green-700">{fg(totalGramProduksi)} gr</td>
-                  <td className="px-4 py-3 text-xs font-black text-amber-600">{fg(totalSerbuk)} gr</td>
+                  <td className="px-4 py-3 text-[12px] font-bold text-slate-800">Total</td>
+                  <td className="px-4 py-3 text-[12px] font-black text-slate-800">{totalPcs} pcs</td>
+                  <td className="px-4 py-3 text-[12px] font-black text-green-700">{fg(totalGramProduksi)} gr</td>
+                  <td className="px-4 py-3 text-[12px] font-black text-amber-600">{fg(totalSerbuk)} gr</td>
                   <td />
                 </tr>
               </tfoot>
@@ -331,10 +331,10 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
         <div className="rounded-3xl overflow-hidden bg-white border border-slate-100">
           <div className="px-5 py-4 border-b border-slate-50 flex items-center gap-2">
             <Package size={14} className="text-blue-500" />
-            <p className="text-sm font-bold text-slate-800">Packing ({packings.length} entry · {packings.reduce((s, p) => s + p.pcs, 0)} pcs)</p>
+            <p className="text-[13px] font-bold text-slate-800">Packing ({packings.length} entry · {packings.reduce((s, p) => s + p.pcs, 0)} pcs)</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[400px] text-sm">
+            <table className="w-full min-w-[400px] text-[13px]">
               <thead>
                 <tr className="bg-slate-50">
                   {['Kode', 'Tanggal', 'Gramasi', 'PCS', 'Total Gram', 'PIC'].map(h => (
@@ -345,12 +345,12 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
               <tbody>
                 {packings.map((p, i) => (
                   <tr key={p.id} className={cn('border-t border-slate-50 hover:bg-blue-50/10', i % 2 === 1 && 'bg-slate-50/30')}>
-                    <td className="px-4 py-3 font-mono text-xs font-bold text-blue-700">{p.kode}</td>
-                    <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{formatDate(p.tanggal)}</td>
-                    <td className="px-4 py-3 text-xs font-semibold text-slate-800">{p.gramasi ?? '—'}gr</td>
-                    <td className="px-4 py-3 text-xs font-semibold text-slate-700">{p.pcs}</td>
-                    <td className="px-4 py-3 text-xs font-semibold text-green-700">{fg(p.total_gram)} gr</td>
-                    <td className="px-4 py-3 text-xs text-slate-500">{p.pic ?? '—'}</td>
+                    <td className="px-4 py-3 font-mono text-[12px] font-bold text-blue-700">{p.kode}</td>
+                    <td className="px-4 py-3 text-[12px] text-slate-500 whitespace-nowrap">{formatDate(p.tanggal)}</td>
+                    <td className="px-4 py-3 text-[12px] font-semibold text-slate-800">{p.gramasi ?? '—'}gr</td>
+                    <td className="px-4 py-3 text-[12px] font-semibold text-slate-700">{p.pcs}</td>
+                    <td className="px-4 py-3 text-[12px] font-semibold text-green-700">{fg(p.total_gram)} gr</td>
+                    <td className="px-4 py-3 text-[12px] text-slate-500">{p.pic ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -364,7 +364,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
         <div className="rounded-3xl p-5 bg-white border border-slate-100">
           <div className="flex items-center gap-2 mb-4">
             <Tag size={14} className="text-green-500" />
-            <p className="text-sm font-bold text-slate-800">Shieldtag — {stTotal} total</p>
+            <p className="text-[13px] font-bold text-slate-800">Shieldtag — {stTotal} total</p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
@@ -375,7 +375,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
             ].map(s => (
               <div key={s.label} className="rounded-xl p-3 text-center"
                 style={{ background: `${s.color}10`, border: `1px solid ${s.color}20` }}>
-                <p className="text-2xl font-black" style={{ color: s.color }}>{s.val}</p>
+                <p className="text-[20px] font-black" style={{ color: s.color }}>{s.val}</p>
                 <p className="text-[10px] font-bold text-slate-500 mt-0.5">{s.label}</p>
               </div>
             ))}
@@ -387,11 +387,11 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
       {showHpp && batch.hpp_gr != null && (
         <div className="rounded-2xl p-4 bg-amber-50 border border-amber-100">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-bold text-amber-700">HPP / Gram</p>
-            <p className="text-lg font-black text-amber-800">{formatRupiah(batch.hpp_gr)}</p>
+            <p className="text-[12px] font-bold text-amber-700">HPP / Gram</p>
+            <p className="text-[16px] font-black text-amber-800">{formatRupiah(batch.hpp_gr)}</p>
           </div>
           {batch.harga_beli != null && (
-            <p className="text-xs text-amber-600 mt-1">Harga Beli: {formatRupiah(batch.harga_beli)}</p>
+            <p className="text-[12px] text-amber-600 mt-1">Harga Beli: {formatRupiah(batch.harga_beli)}</p>
           )}
         </div>
       )}
@@ -399,8 +399,8 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
       {/* Catatan */}
       {batch.catatan && (
         <div className="rounded-2xl p-4 bg-slate-50 border border-slate-100">
-          <p className="text-xs font-bold text-slate-400 mb-1">Catatan</p>
-          <p className="text-sm text-slate-700">{batch.catatan}</p>
+          <p className="text-[12px] font-bold text-slate-400 mb-1">Catatan</p>
+          <p className="text-[13px] text-slate-700">{batch.catatan}</p>
         </div>
       )}
     </div>

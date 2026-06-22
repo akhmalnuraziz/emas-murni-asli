@@ -62,14 +62,14 @@ export default function PrioritasProduksiClient({
             <ArrowUp size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-slate-900">Prioritas Produksi</h1>
-            <p className="text-xs text-slate-400">
+            <h1 className="text-[16px] font-bold text-slate-900">Prioritas Produksi</h1>
+            <p className="text-[12px] text-slate-400">
               Auto-ranking · Safety stock default: {safetyStockGlobal} pcs · {p1.length} urgent · {p2.length} perlu produksi
             </p>
           </div>
         </div>
         {(userRole === 'admin' || userRole === 'superadmin') && (
-          <a href="/pengaturan" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-500 border border-slate-200 hover:border-slate-300 hover:text-slate-700 transition-colors bg-white">
+          <a href="/pengaturan" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold text-slate-500 border border-slate-200 hover:border-slate-300 hover:text-slate-700 transition-colors bg-white">
             <Settings size={12} /> Atur Safety Stock
           </a>
         )}
@@ -86,7 +86,7 @@ export default function PrioritasProduksiClient({
               style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}>
               <Icon size={18} style={{ color: cfg.text }} className="flex-shrink-0" />
               <div>
-                <p className="text-sm font-black" style={{ color: cfg.text }}>{count} gramasi</p>
+                <p className="text-[13px] font-black" style={{ color: cfg.text }}>{count} gramasi</p>
                 <p className="text-[10px] font-semibold text-slate-500">{cfg.desc}</p>
               </div>
             </div>
@@ -98,12 +98,12 @@ export default function PrioritasProduksiClient({
       {totalRekomendasi > 0 && (
         <div className="rounded-3xl p-4 flex items-center gap-4 bg-violet-50/20 border border-violet-200/50">
           <div className="text-center">
-            <p className="text-2xl font-black text-violet-700">{totalRekomendasi}</p>
+            <p className="text-[20px] font-black text-violet-700">{totalRekomendasi}</p>
             <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">pcs total</p>
           </div>
           <div>
-            <p className="text-sm font-bold text-violet-800">Total Rekomendasi Produksi</p>
-            <p className="text-xs text-violet-500">
+            <p className="text-[13px] font-bold text-violet-800">Total Rekomendasi Produksi</p>
+            <p className="text-[12px] text-violet-500">
               Jumlah item yang perlu diproduksi untuk memenuhi safety stock + semua PO aktif
             </p>
           </div>
@@ -114,7 +114,7 @@ export default function PrioritasProduksiClient({
         <div className="bg-white border border-slate-200 rounded-xl py-16 text-center"
           >
           <CheckCircle2 size={32} className="mx-auto text-slate-200 mb-2" />
-          <p className="text-slate-300 text-sm">Belum ada data stok atau PO untuk dianalisa.</p>
+          <p className="text-slate-300 text-[13px]">Belum ada data stok atau PO untuk dianalisa.</p>
         </div>
       )}
 
@@ -128,14 +128,14 @@ export default function PrioritasProduksiClient({
           <div key={p}>
             <div className="flex items-center gap-2 mb-2">
               <Icon size={14} style={{ color: cfg.text }} />
-              <p className="text-xs font-bold uppercase tracking-wider" style={{ color: cfg.text }}>
+              <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: cfg.text }}>
                 {cfg.label}
               </p>
             </div>
             <div className="rounded-3xl overflow-hidden"
               >
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-[13px]">
                   <thead>
                     <tr style={{ background: cfg.bg, borderBottom: `1px solid ${cfg.border}` }}>
                       {['Gramasi', 'Stok Gudang', 'Transit', 'WIP Produksi', 'Safety Stock', 'PO Demand', 'Rekomendasi', 'PO Aktif'].map(h => (
@@ -148,7 +148,7 @@ export default function PrioritasProduksiClient({
                       <tr key={item.gramasi} className={`hover:bg-slate-50/30 ${i !== 0 ? 'border-t border-black/[0.04]' : ''}`}>
                         <td className="px-4 py-3 font-black text-slate-800">{item.gramasi} gr</td>
                         <td className="px-4 py-3">
-                          <span className={`font-bold text-sm ${item.stok < item.safetyStock ? 'text-red-600' : 'text-slate-800'}`}>
+                          <span className={`font-bold text-[13px] ${item.stok < item.safetyStock ? 'text-red-600' : 'text-slate-800'}`}>
                             {item.stok} pcs
                           </span>
                         </td>
@@ -160,7 +160,7 @@ export default function PrioritasProduksiClient({
                             <span className="font-semibold text-violet-600">{item.wip} pcs</span>
                           ) : '—'}
                         </td>
-                        <td className="px-4 py-3 text-slate-500 font-medium text-xs">
+                        <td className="px-4 py-3 text-slate-500 font-medium text-[12px]">
                           {item.safetyStock} pcs
                         </td>
                         <td className="px-4 py-3">
@@ -170,12 +170,12 @@ export default function PrioritasProduksiClient({
                         </td>
                         <td className="px-4 py-3">
                           {item.rekomendasi > 0 ? (
-                            <span className="inline-flex items-center gap-1 font-black text-white text-xs px-2.5 py-1 rounded-full"
+                            <span className="inline-flex items-center gap-1 font-black text-white text-[12px] px-2.5 py-1 rounded-full"
                               style={{ background: cfg.text }}>
                               +{item.rekomendasi} pcs
                             </span>
                           ) : (
-                            <span className="text-xs text-green-600 font-semibold">Cukup</span>
+                            <span className="text-[12px] text-green-600 font-semibold">Cukup</span>
                           )}
                         </td>
                         <td className="px-4 py-3">

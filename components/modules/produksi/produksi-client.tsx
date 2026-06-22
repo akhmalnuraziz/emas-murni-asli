@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useTransition, useRef } from 'react'
 import { createPortal } from 'react-dom'
@@ -141,7 +141,7 @@ function OfflineIndicator() {
   }, [])
   if (!offline) return null
   return (
-    <div className="fixed top-0 inset-x-0 z-[200] flex items-center justify-center gap-2 py-2 px-4 text-xs font-bold text-white"
+    <div className="fixed top-0 inset-x-0 z-[200] flex items-center justify-center gap-2 py-2 px-4 text-[12px] font-bold text-white"
       style={{ background: 'linear-gradient(90deg,#F97316,#EF4444)' }}>
       <WifiOff size={13} /> Tidak ada koneksi — data belum tersimpan
     </div>
@@ -176,7 +176,7 @@ function FotoPicker({ files, onAdd, onRemove, label='Tambah foto', small=false }
       )}
       <label className="flex items-center gap-2 px-3.5 py-2.5 border border-dashed border-violet-200 rounded-xl cursor-pointer hover:border-violet-400 hover:bg-violet-50/50 bg-white/40 transition-all">
         <Camera size={13} className="text-violet-400 flex-shrink-0" />
-        <span className={`text-gray-400 ${small ? 'text-[11px]' : 'text-xs'}`}>{files.length > 0 ? `${files.length} foto — klik tambah` : label}</span>
+        <span className={`text-gray-400 ${small ? 'text-[11px]' : 'text-[12px]'}`}>{files.length > 0 ? `${files.length} foto — klik tambah` : label}</span>
         <input type="file" accept="image/*" multiple className="hidden" onChange={e => { onAdd(Array.from(e.target.files ?? [])); e.currentTarget.value = '' }} />
       </label>
       {files.length > 0 && <button type="button" onClick={() => onRemove(-1)} className="text-[11px] text-red-400 hover:underline">Hapus semua foto</button>}
@@ -313,7 +313,7 @@ function TLine({ events }: { events: any[] }) {
           <div className="rounded-2xl p-3" style={{ background: 'rgba(22,22,26,0.94)', backdropFilter: 'blur(24px) saturate(180%)', boxShadow: '0 8px 32px rgba(0,0,0,0.28), 0 0 0 0.5px rgba(255,255,255,0.08)' }}>
             <div className="flex items-center gap-1.5 mb-1.5">
               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hover.dot }} />
-              <span className="text-xs font-semibold text-white tracking-tight">{hover.ev.status}</span>
+              <span className="text-[12px] font-semibold text-white tracking-tight">{hover.ev.status}</span>
             </div>
             <div className="space-y-0.5 text-[11px]">
               <p className="text-gray-400">{formatDate(hover.ev.tanggal)}</p>
@@ -408,7 +408,7 @@ function EventHistory({ events, item, stageHandovers = [], lossApprovals = [] }:
   return (
     <div className="space-y-2">
       {lightbox && <Lightbox url={lightbox} onClose={() => setLightbox(null)} />}
-      {filtered.length === 0 && <p className="text-xs text-gray-400 italic">Belum ada riwayat proses</p>}
+      {filtered.length === 0 && <p className="text-[12px] text-gray-400 italic">Belum ada riwayat proses</p>}
       {filtered.map((ev: any, i: number) => {
         const c = STATUS_CFG[ev.status] ?? { dot: '#94A3B8', bg: 'rgba(148,163,184,0.1)', text: '#64748B' }
         const fotos  = Array.isArray(ev.fotos) ? ev.fotos : []
@@ -436,7 +436,7 @@ function EventHistory({ events, item, stageHandovers = [], lossApprovals = [] }:
               {ev.user_name && <span className="text-[10px] text-gray-400 ml-auto bg-white/80 px-2 py-0.5 rounded-full border border-gray-100">👤 {ev.user_name}</span>}
             </div>
             {/* Data row */}
-            <div className="px-3 py-2 flex flex-wrap gap-3 items-center text-xs">
+            <div className="px-3 py-2 flex flex-wrap gap-3 items-center text-[12px]">
               <div><span className="text-gray-400">Berat: </span><span className="font-bold text-gray-700">{ev.total_gram} gr</span></div>
               {Number(ev.sisa_serbuk) > 0 && <div><span className="text-gray-400">{serbukLabel}: </span><span className={`font-semibold ${serbukColor}`}>{fgr(Number(ev.sisa_serbuk))} gr</span></div>}
               {Number(ev.losses) > 0 && <div><span className="text-gray-400">losses: </span><span className="font-semibold text-orange-500">{fgr(Number(ev.losses))} gr</span></div>}
@@ -892,7 +892,7 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
 
           {/* Loss indicator realtime */}
           {(terimaVal !== '') && (
-            <div className={cn('px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between', overTol ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700')}>
+            <div className={cn('px-3 py-2 rounded-xl text-[12px] font-semibold flex items-center justify-between', overTol ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700')}>
               <span>Loss: {lossNow.toFixed(3)} gr</span>
               <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
             </div>
@@ -941,7 +941,7 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
             )}
             <label className="flex items-center gap-2 h-11 px-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-violet-50 transition-colors border border-gray-200">
               <Camera size={14} className="text-gray-400 flex-shrink-0" />
-              <span className="text-xs text-gray-400">{fotos.length > 0 ? `${fotos.length} foto baru` : (existingFotos.length > 0 ? 'Tambah foto lagi' : 'Tambah foto (opsional)')}</span>
+              <span className="text-[12px] text-gray-400">{fotos.length > 0 ? `${fotos.length} foto baru` : (existingFotos.length > 0 ? 'Tambah foto lagi' : 'Tambah foto (opsional)')}</span>
               <input type="file" accept="image/*" multiple className="hidden"
                 onChange={e => setFotos(p => [...p, ...Array.from(e.target.files ?? [])].slice(0, 10))} />
             </label>
@@ -1188,7 +1188,7 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
           <div>
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input type="checkbox" checked={adaReject} onChange={e=>setAdaReject(e.target.checked)} className="w-4 h-4 rounded accent-red-500"/>
-              <span className="text-xs font-semibold text-gray-600">Ada Reject</span>
+              <span className="text-[12px] font-semibold text-gray-600">Ada Reject</span>
             </label>
             {adaReject && (
               <div className="grid grid-cols-2 gap-3 mt-2">
@@ -1206,7 +1206,7 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
 
           {/* Loss indicator realtime */}
           {(terimaVal !== '') && (
-            <div className={cn('px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between', overTol ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700')}>
+            <div className={cn('px-3 py-2 rounded-xl text-[12px] font-semibold flex items-center justify-between', overTol ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700')}>
               <span>Loss: {lossNow.toFixed(3)} gr</span>
               <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
             </div>
@@ -1235,7 +1235,7 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
             <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bukti</label>
             <label className="flex items-center gap-2 h-11 px-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-violet-50 transition-colors border border-gray-200">
               <Camera size={14} className="text-gray-400 flex-shrink-0"/>
-              <span className="text-xs text-gray-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto (opsional, max 5)'}</span>
+              <span className="text-[12px] text-gray-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto (opsional, max 5)'}</span>
               <input type="file" accept="image/*" multiple className="hidden" onChange={e=>setFotos(p=>[...p,...Array.from(e.target.files??[])].slice(0,10))}/>
             </label>
             {fotos.length > 0 && (
@@ -1365,8 +1365,8 @@ function DelModal({ item, onClose, onConfirm, isPending, error }: { item: any; o
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="w-full max-w-sm bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden p-6">
         <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><Trash2 size={24} className="text-red-500" /></div>
-        <h2 className="text-lg font-bold text-slate-900 text-center">Hapus Batch Produksi?</h2>
-        <p className="text-sm text-slate-500 mt-2 text-center"><span className="font-semibold text-slate-700">{item.kode}</span> akan dihapus permanen beserta semua event-nya.</p>
+        <h2 className="text-[16px] font-bold text-slate-900 text-center">Hapus Batch Produksi?</h2>
+        <p className="text-[13px] text-slate-500 mt-2 text-center"><span className="font-semibold text-slate-700">{item.kode}</span> akan dihapus permanen beserta semua event-nya.</p>
         {error && (
           <div className="mt-4 rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-start gap-2">
             <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" /><span>{error}</span>
@@ -1485,7 +1485,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
 
       {/* Toast */}
       {toast&&(
-        <div className={`fixed top-4 right-4 z-[200] flex items-center gap-2.5 px-5 py-3.5 rounded-xl text-sm font-semibold text-white shadow-2xl transition-all ${toast.ok?'bg-emerald-600':'bg-red-600'}`}>
+        <div className={`fixed top-4 right-4 z-[200] flex items-center gap-2.5 px-5 py-3.5 rounded-xl text-[13px] font-semibold text-white shadow-2xl transition-all ${toast.ok?'bg-emerald-600':'bg-red-600'}`}>
           {toast.ok?<Check size={15}/>:<AlertTriangle size={15}/>}{toast.msg}
         </div>
       )}
@@ -1588,7 +1588,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                 {/* ── Card Header ─────────────────────────────────────────── */}
                 <div className="flex items-center gap-3 px-5 pt-4 pb-3">
                   {/* Avatar */}
-                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center font-extrabold text-xs flex-shrink-0"
+                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center font-extrabold text-[12px] flex-shrink-0"
                     style={{background:`linear-gradient(135deg,${sc.dot}22,${sc.dot}10)`,color:sc.dot}}>
                     {item.gramasi ? `${item.gramasi}gr` : '?'}
                   </div>
@@ -1596,7 +1596,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                   {/* Main info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-sm font-bold text-gray-900 truncate">{item.nama_item ?? item.kode}</span>
+                      <span className="text-[13px] font-bold text-gray-900 truncate">{item.nama_item ?? item.kode}</span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
                         style={{background:sc.bg,color:sc.text}}>
                         {statusLabel}
@@ -1606,7 +1606,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                     <p className="text-[11px] text-gray-400 mt-0.5 font-medium">
                       {item.kode} · {item.batch_kode}
                     </p>
-                    <p className="text-xs text-gray-600 mt-0.5">
+                    <p className="text-[12px] text-gray-600 mt-0.5">
                       <span className="font-bold">{item.gramasi}gr</span>
                       <span className="text-gray-300 mx-1">×</span>
                       <span className="font-semibold">{item.pcs_good??item.pcs??'?'} pcs</span>
@@ -1756,7 +1756,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   </>):<p className="text-[11px] text-gray-400 italic">Belum diterima</p>}
                                 </div>
                               </div>
-                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='produksi_item'&&l.ref_id===item.id&&l.proses==='cutting');if(!_la)return null;return(<div className="mt-2 rounded-2xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss Cutting</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-xs text-gray-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-xs text-gray-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
+                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='produksi_item'&&l.ref_id===item.id&&l.proses==='cutting');if(!_la)return null;return(<div className="mt-2 rounded-2xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss Cutting</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-gray-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-gray-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
                             </div>
                           )
                         })()}
@@ -1821,7 +1821,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   </>):<p className="text-[11px] text-gray-400 italic">Belum diterima</p>}
                                 </div>
                               </div>
-                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='stage_handover'&&l.ref_id===h.id);if(!_la)return null;return(<div className="mt-2 rounded-2xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss {(h.tahap as string).replace(/_/g,' ')}</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-xs text-gray-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-xs text-gray-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
+                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='stage_handover'&&l.ref_id===h.id);if(!_la)return null;return(<div className="mt-2 rounded-2xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss {(h.tahap as string).replace(/_/g,' ')}</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-gray-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-gray-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
                             </div>
                           )
                         })}
@@ -1831,7 +1831,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                     {/* + Cetak Gramasi / Tambah Produksi — lanjut cetak dari batch ini */}
                     {canEdit&&!isVoided&&(
                       <button onClick={()=>openTambahProduksi(item)}
-                        className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-bold text-violet-600 border border-dashed border-violet-300 transition-all hover:bg-violet-50">
+                        className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-[12px] font-bold text-violet-600 border border-dashed border-violet-300 transition-all hover:bg-violet-50">
                         <Plus size={14}/> Cetak Gramasi / Tambah Produksi
                       </button>
                     )}
@@ -1898,9 +1898,9 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
             <div className="w-full max-w-sm bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden p-6 text-center">
               <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><Trash2 size={24} className="text-red-500"/></div>
-              <h2 className="text-lg font-bold text-slate-900">Hapus Proses {tl[activeTahap]}?</h2>
-              <p className="text-sm text-slate-500 mt-2 mb-1">Data serah-terima <b>{tl[activeTahap]}</b> untuk {active.kode} akan dihapus.</p>
-              <p className="text-xs text-slate-400 mb-5">Status produksi kembali ke tahap sebelumnya.</p>
+              <h2 className="text-[16px] font-bold text-slate-900">Hapus Proses {tl[activeTahap]}?</h2>
+              <p className="text-[13px] text-slate-500 mt-2 mb-1">Data serah-terima <b>{tl[activeTahap]}</b> untuk {active.kode} akan dihapus.</p>
+              <p className="text-[12px] text-slate-400 mb-5">Status produksi kembali ke tahap sebelumnya.</p>
               {err&&<div className="mb-3 rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</div>}
               <div className="flex gap-2.5">
                 <button onClick={()=>setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
@@ -1916,9 +1916,9 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-sm bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden p-6 text-center">
             <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><Trash2 size={24} className="text-red-500"/></div>
-            <h2 className="text-lg font-bold text-slate-900">Hapus Proses Cutting?</h2>
-            <p className="text-sm text-slate-500 mt-2 mb-1">Data <b>terima Cutting</b> untuk {active.kode} akan dihapus.</p>
-            <p className="text-xs text-slate-400 mb-5">Status kembali ke Cutting (proses). Data penyerahan tetap.</p>
+            <h2 className="text-[16px] font-bold text-slate-900">Hapus Proses Cutting?</h2>
+            <p className="text-[13px] text-slate-500 mt-2 mb-1">Data <b>terima Cutting</b> untuk {active.kode} akan dihapus.</p>
+            <p className="text-[12px] text-slate-400 mb-5">Status kembali ke Cutting (proses). Data penyerahan tetap.</p>
             {err&&<div className="mb-3 rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</div>}
             <div className="flex gap-2.5">
               <button onClick={()=>setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>

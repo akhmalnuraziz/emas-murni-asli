@@ -71,12 +71,12 @@ function RangeRow({ idx, start, end, onChange, onRemove, onPreview }: {
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-gray-400 font-mono w-5 flex-shrink-0">{idx+1}.</span>
+      <span className="text-[12px] text-gray-400 font-mono w-5 flex-shrink-0">{idx+1}.</span>
       <input value={start} onChange={e=>onChange(e.target.value.toUpperCase(),end)}
-        placeholder="Kode awal (cth: 1H80AA)" className={cn(inp,'flex-1 font-mono text-xs')}/>
-      <span className="text-gray-400 text-sm flex-shrink-0">→</span>
+        placeholder="Kode awal (cth: 1H80AA)" className={cn(inp,'flex-1 font-mono text-[12px]')}/>
+      <span className="text-gray-400 text-[13px] flex-shrink-0">→</span>
       <input value={end} onChange={e=>{onChange(start,e.target.value.toUpperCase());onPreview(start,e.target.value.toUpperCase())}}
-        placeholder="Kode akhir (cth: 1H80AT)" className={cn(inp,'flex-1 font-mono text-xs')}/>
+        placeholder="Kode akhir (cth: 1H80AT)" className={cn(inp,'flex-1 font-mono text-[12px]')}/>
       {idx > 0 && (
         <button type="button" onClick={onRemove}
           className="w-8 h-8 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 flex-shrink-0">
@@ -144,7 +144,7 @@ function RegisterModal({ packings, onClose, onSubmit, isPending, error }: {
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Registrasi Shieldtag</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Input range kode dari stiker fisik vendor</p>
+            <p className="text-[12px] text-slate-400 mt-0.5">Input range kode dari stiker fisik vendor</p>
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X size={14}/></button>
         </div>
@@ -178,7 +178,7 @@ function RegisterModal({ packings, onClose, onSubmit, isPending, error }: {
                 Range Kode Shieldtag
               </label>
               <button type="button" onClick={() => setRanges(p => [...p, { start: '', end: '' }])}
-                className="text-xs text-violet-600 font-semibold hover:underline">+ Tambah range</button>
+                className="text-[12px] text-violet-600 font-semibold hover:underline">+ Tambah range</button>
             </div>
             {ranges.map((r, i) => (
               <RangeRow key={i} idx={i} start={r.start} end={r.end}
@@ -202,7 +202,7 @@ function RegisterModal({ packings, onClose, onSubmit, isPending, error }: {
                   {overLimit && ` — melebihi sisa slot (${selPacking?.pcs_tersisa})`}
                 </p>
                 <button type="button" onClick={() => setEditMode(!editMode)}
-                  className="text-xs text-violet-600 hover:underline font-semibold">
+                  className="text-[12px] text-violet-600 hover:underline font-semibold">
                   {editMode ? 'Kembali ke range' : 'Edit per kode'}
                 </button>
               </div>
@@ -212,7 +212,7 @@ function RegisterModal({ packings, onClose, onSubmit, isPending, error }: {
                   {editCodes.map((code, i) => (
                     <input key={i} value={code}
                       onChange={e => setEditCodes(p => p.map((c, j) => j === i ? e.target.value.toUpperCase() : c))}
-                      className="px-2 py-1.5 text-xs font-mono rounded-lg bg-white border border-slate-200 focus:outline-none focus:ring-1 focus:ring-violet-400 text-center"/>
+                      className="px-2 py-1.5 text-[12px] font-mono rounded-lg bg-white border border-slate-200 focus:outline-none focus:ring-1 focus:ring-violet-400 text-center"/>
                   ))}
                 </div>
               ) : (
@@ -266,7 +266,7 @@ function EditKodeModal({ st, onClose, onSubmit, isPending, error }: {
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Ganti Kode Shieldtag</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Ganti kode jika stiker fisik rusak atau keliru input</p>
+            <p className="text-[12px] text-slate-400 mt-0.5">Ganti kode jika stiker fisik rusak atau keliru input</p>
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X size={14}/></button>
         </div>
@@ -319,7 +319,7 @@ function ExplorerPanel() {
   const InfoRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
     <div className="flex items-start justify-between gap-4 py-2.5 border-b border-gray-100/80 last:border-0">
       <span className="text-[11px] font-bold text-gray-400 tracking-widest uppercase flex-shrink-0 mt-0.5">{label}</span>
-      <span className="text-sm font-semibold text-gray-800 text-right">{value ?? '—'}</span>
+      <span className="text-[13px] font-semibold text-gray-800 text-right">{value ?? '—'}</span>
     </div>
   )
 
@@ -327,7 +327,7 @@ function ExplorerPanel() {
     <div className="space-y-5">
       {/* Search bar */}
       <div className="rounded-3xl p-5 bg-white border border-white/60">
-        <p className="text-xs font-bold text-gray-400 tracking-widest uppercase mb-3">Cari Shieldtag by Kode</p>
+        <p className="text-[12px] font-bold text-gray-400 tracking-widest uppercase mb-3">Cari Shieldtag by Kode</p>
         <div className="flex gap-3">
           <div className="relative flex-1">
             <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
@@ -337,20 +337,20 @@ function ExplorerPanel() {
               onChange={e => { setQuery(e.target.value.toUpperCase()); setNotFound(false) }}
               onKeyDown={e => e.key === 'Enter' && doSearch()}
               placeholder="Masukkan kode Shieldtag, contoh: 1H80AA"
-              className="w-full pl-10 pr-4 py-3 text-sm font-mono rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all uppercase bg-gray-50/80 border border-gray-300/50"
+              className="w-full pl-10 pr-4 py-3 text-[13px] font-mono rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all uppercase bg-gray-50/80 border border-gray-300/50"
             />
           </div>
           <button
             onClick={() => doSearch()}
             disabled={isPending || !query.trim()}
-            className="px-6 py-3 text-sm font-bold text-white rounded-2xl transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 flex items-center gap-2 bg-violet-600 hover:bg-violet-700">
+            className="px-6 py-3 text-[13px] font-bold text-white rounded-2xl transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 flex items-center gap-2 bg-violet-600 hover:bg-violet-700">
             {isPending ? <Loader2 size={14} className="animate-spin"/> : <Search size={14}/>}
             Cari
           </button>
         </div>
 
         {notFound && (
-          <div className="mt-4 px-4 py-3 rounded-2xl text-sm font-medium text-red-600 bg-red-50 border border-red-100/80">
+          <div className="mt-4 px-4 py-3 rounded-2xl text-[13px] font-medium text-red-600 bg-red-50 border border-red-100/80">
             Shieldtag <span className="font-mono font-bold">{query}</span> tidak ditemukan.
           </div>
         )}
@@ -370,15 +370,15 @@ function ExplorerPanel() {
                 <Tag size={22} style={{ color: cfg.dot }}/>
               </div>
               <div>
-                <p className="text-xl font-black font-mono tracking-wider text-gray-900">
+                <p className="text-[18px] font-black font-mono tracking-wider text-gray-900">
                   {result.kode}
                 </p>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-[12px] text-gray-400 mt-0.5">
                   {result.gramasi}gr · {result.batch_kode}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold"
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-bold"
               style={{ background: cfg.bg, color: cfg.text, border: `1px solid ${cfg.dot}25` }}>
               <div className="w-2 h-2 rounded-full" style={{ background: cfg.dot }}/>
               {result.status}
@@ -396,7 +396,7 @@ function ExplorerPanel() {
               <InfoRow label="Gramasi" value={`${result.gramasi} gr`}/>
               <InfoRow label="Batch" value={<span className="font-mono">{result.batch_kode}</span>}/>
               <InfoRow label="Status" value={
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold"
+                <span className="px-2.5 py-0.5 rounded-full text-[12px] font-bold"
                   style={{ background: cfg.bg, color: cfg.text }}>{result.status}</span>
               }/>
               <InfoRow label="Lokasi" value={
@@ -409,12 +409,12 @@ function ExplorerPanel() {
               <InfoRow label="Didaftarkan oleh" value={result.registered_by ?? '—'}/>
               {result.packing && (
                 <InfoRow label="Packing" value={
-                  <span className="font-mono text-xs">{result.packing.kode}</span>
+                  <span className="font-mono text-[12px]">{result.packing.kode}</span>
                 }/>
               )}
               {result.voided_at && (
                 <InfoRow label="Void reason" value={
-                  <span className="text-red-500 text-xs">{result.void_reason}</span>
+                  <span className="text-red-500 text-[12px]">{result.void_reason}</span>
                 }/>
               )}
             </div>
@@ -425,7 +425,7 @@ function ExplorerPanel() {
                 <Clock size={11}/> Riwayat Pergerakan
               </p>
               {history.length === 0 ? (
-                <p className="text-sm text-gray-400 italic">Belum ada riwayat</p>
+                <p className="text-[13px] text-gray-400 italic">Belum ada riwayat</p>
               ) : (
                 <div className="space-y-0 relative">
                   {/* Timeline line */}
@@ -436,7 +436,7 @@ function ExplorerPanel() {
                         <div className={`w-2 h-2 rounded-full ${i === 0 ? 'bg-violet-500' : 'bg-gray-300'}`}/>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-gray-700 leading-snug">{h.action}</p>
+                        <p className="text-[12px] font-bold text-gray-700 leading-snug">{h.action}</p>
                         {(h.status || h.lokasi) && (
                           <p className="text-[11px] text-gray-400 mt-0.5">
                             {[h.status, h.lokasi].filter(Boolean).join(' · ')}
@@ -464,8 +464,8 @@ function ExplorerPanel() {
           <div className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4 bg-violet-50">
             <Search size={28} className="text-violet-300"/>
           </div>
-          <p className="text-sm font-semibold text-gray-400">Masukkan kode Shieldtag untuk mulai cari</p>
-          <p className="text-xs text-gray-300 mt-1">Cari tahu status, lokasi, dan riwayat pergerakan</p>
+          <p className="text-[13px] font-semibold text-gray-400">Masukkan kode Shieldtag untuk mulai cari</p>
+          <p className="text-[12px] text-gray-300 mt-1">Cari tahu status, lokasi, dan riwayat pergerakan</p>
         </div>
       )}
     </div>
@@ -552,7 +552,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
   return (
     <div className="space-y-5 pb-8">
       {toast && (
-        <div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-xl text-sm font-semibold text-white shadow-2xl',
+        <div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-xl text-[13px] font-semibold text-white shadow-2xl',
           toast.ok ? 'bg-emerald-600' : 'bg-red-600')}>
           {toast.ok ? <Check size={15}/> : <AlertTriangle size={15}/>}{toast.msg}
         </div>
@@ -622,7 +622,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
             <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Cari kode Shieldtag, batch..."
-              className="w-full pl-10 pr-4 py-2.5 text-sm rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all bg-white/80 border border-gray-300/50"/>
+              className="w-full pl-10 pr-4 py-2.5 text-[13px] rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all bg-white/80 border border-gray-300/50"/>
           </div>
           <div className="flex gap-2 flex-wrap">
             {tabs.map(t => {
@@ -631,7 +631,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
               const cnt = t === 'Semua' ? shieldtags.length : (counts[t] ?? 0)
               return (
                 <button key={t} onClick={() => setFilterStatus(t)}
-                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${isAct ? 'text-white' : 'bg-white/80 text-gray-500 border border-gray-200'}`}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-semibold transition-all ${isAct ? 'text-white' : 'bg-white/80 text-gray-500 border border-gray-200'}`}
                   style={isAct ? { background: cfg?.dot ?? '#8B5CF6', boxShadow: `0 4px 12px ${cfg?.dot ?? '#8B5CF6'}40` } : undefined}>
                   {t} {cnt > 0 && <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${isAct ? 'bg-white/25' : 'bg-gray-100'}`}>{cnt}</span>}
                 </button>
@@ -642,7 +642,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
 
         {/* Table */}
         <div className="rounded-3xl overflow-auto bg-white border border-white/60">
-          <table className="w-full min-w-[700px] text-sm">
+          <table className="w-full min-w-[700px] text-[13px]">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/60">
                 <th className="px-4 py-3.5 w-10">
@@ -661,12 +661,12 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
                   <div className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4 bg-violet-50">
                     <Tag size={28} className="text-violet-300"/>
                   </div>
-                  <p className="text-sm font-medium text-gray-400">
+                  <p className="text-[13px] font-medium text-gray-400">
                     {packingsWithSlots.length > 0 ? 'Belum ada Shieldtag terdaftar' : 'Semua Shieldtag sudah terdaftar'}
                   </p>
                   {packingsWithSlots.length > 0 && canRegister && (
                     <button onClick={() => { setModal('register'); setErr('') }}
-                      className="mt-3 px-4 py-2 text-sm font-semibold text-violet-600 hover:underline">
+                      className="mt-3 px-4 py-2 text-[13px] font-semibold text-violet-600 hover:underline">
                       Klik untuk registrasi →
                     </button>
                   )}
@@ -681,20 +681,20 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
                         checked={selected.has(st.id)} onChange={() => {}}/>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="font-mono text-sm font-black tracking-wider text-gray-900">{st.kode}</span>
+                      <span className="font-mono text-[13px] font-black tracking-wider text-gray-900">{st.kode}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full text-violet-700 bg-violet-50/40">{st.batch_kode}</span>
+                      <span className="text-[12px] font-bold px-2 py-0.5 rounded-full text-violet-700 bg-violet-50/40">{st.batch_kode}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full text-amber-700 bg-amber-50/40">{st.gramasi} gr</span>
+                      <span className="text-[12px] font-bold px-2 py-0.5 rounded-full text-amber-700 bg-amber-50/40">{st.gramasi} gr</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                      <span className="text-[12px] font-semibold px-2.5 py-1 rounded-full"
                         style={{ background: cfg.bg, color: cfg.text }}>{st.status}</span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{st.lokasi || '—'}</td>
-                    <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">{formatDate(st.tgl_regis)}</td>
+                    <td className="px-4 py-3 text-[13px] text-gray-600">{st.lokasi || '—'}</td>
+                    <td className="px-4 py-3 text-[12px] text-gray-400 whitespace-nowrap">{formatDate(st.tgl_regis)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">
                         <a href={`/shieldtag/print?kodes=${st.kode}`} target="_blank" rel="noopener noreferrer"
