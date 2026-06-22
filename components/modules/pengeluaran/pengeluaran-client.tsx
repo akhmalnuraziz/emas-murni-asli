@@ -327,8 +327,7 @@ export default function PengeluaranClient({
 
       {/* ── Header KPI ────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="rounded-3xl p-5 col-span-1 sm:col-span-1"
-          style={{ background: 'linear-gradient(135deg,#EF4444,#DC2626)', color: 'white' }}>
+        <div className="rounded-3xl p-5 col-span-1 sm:col-span-1 bg-red-600 text-white">
           <div className="flex items-center gap-2 mb-2">
             <TrendingDown size={16} className="opacity-80"/>
             <p className="text-xs font-semibold opacity-80">Total Pengeluaran</p>

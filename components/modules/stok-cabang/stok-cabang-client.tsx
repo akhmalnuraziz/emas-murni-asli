@@ -70,8 +70,7 @@ export default function StokCabangClient({ stokData, canAdjust, isCabangView }: 
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-violet-600">
             <Store size={18} className="text-white" />
           </div>
           <div>

@@ -78,8 +78,7 @@ export default function BuybackClient({ initialList, userRole, userName }: Props
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-violet-600">
             <RotateCcw size={20} className="text-white" />
           </div>
           <div>
@@ -98,8 +97,7 @@ export default function BuybackClient({ initialList, userRole, userName }: Props
             <RefreshCw size={13} /> Muat Ulang
           </button>
           <button onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all"
-            style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all bg-violet-600 hover:bg-violet-700">
             <Plus size={14} /> Terima Buyback
           </button>
         </div>

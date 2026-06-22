@@ -132,8 +132,7 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg,#F59E0B,#D97706)' }}>
+        <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-amber-500">
           <Star size={20} className="text-white" />
         </div>
         <div>

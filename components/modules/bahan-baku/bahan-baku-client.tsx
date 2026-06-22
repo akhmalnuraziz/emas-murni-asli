@@ -142,8 +142,7 @@ function BatchRingkasModal({onSubmit,onClose,isPending,error}:{onSubmit:(fd:Form
           <form id="ringkas-form" onSubmit={e=>{e.preventDefault();onSubmit(new FormData(e.currentTarget))}} className="space-y-4">
             <div>
               <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Kode Batch *</label>
-              <input name="kode" required placeholder="mis. B-001 atau BATCH-001" className={inp}
-                style={{fontFamily:'monospace',fontWeight:'bold'}} autoFocus/>
+              <input name="kode" required placeholder="mis. B-001 atau BATCH-001" className={`${inp} font-mono font-bold`} autoFocus/>
             </div>
             <div>
               <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Masuk *</label>

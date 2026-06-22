@@ -58,8 +58,7 @@ export default function PrioritasProduksiClient({
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,#475569,#334155)' }}>
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-slate-700">
             <ArrowUp size={20} className="text-white" />
           </div>
           <div>
@@ -146,8 +145,7 @@ export default function PrioritasProduksiClient({
                   </thead>
                   <tbody>
                     {items.map((item, i) => (
-                      <tr key={item.gramasi} style={{ borderTop: i === 0 ? 'none' : '1px solid rgba(0,0,0,0.04)' }}
-                        className="hover:bg-slate-50/30">
+                      <tr key={item.gramasi} className={`hover:bg-slate-50/30 ${i !== 0 ? 'border-t border-black/[0.04]' : ''}`}>
                         <td className="px-4 py-3 font-black text-slate-800">{item.gramasi} gr</td>
                         <td className="px-4 py-3">
                           <span className={`font-bold text-sm ${item.stok < item.safetyStock ? 'text-red-600' : 'text-slate-800'}`}>

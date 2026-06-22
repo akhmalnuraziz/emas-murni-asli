@@ -78,8 +78,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
         </div>
         {canManage && (
           <button onClick={() => { setModal('create'); setErr('') }}
-            className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-bold text-white rounded-2xl"
-            style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+            className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-bold text-white rounded-2xl bg-violet-600 hover:bg-violet-700 transition-colors">
             <Plus size={14}/> Tambah Scrap
           </button>
         )}
