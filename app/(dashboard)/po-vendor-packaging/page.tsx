@@ -25,7 +25,7 @@ export default async function POVendorPage() {
   ] = await Promise.all([
     supabase.from('vendor_packaging').select('*').is('voided_at', null).order('nama'),
     supabase.from('produk_packaging').select('*').eq('aktif', true).order('nama'),
-    supabase.from('reject_kategori_packaging').select('*').is('voided_at', null).order('urutan').order('nama'),
+    supabase.from('reject_kategori_packaging').select('*').is('voided_at', null).order('nama'),
     supabase.from('po_packaging').select('*').is('voided_at', null).order('created_at', { ascending: false }).limit(200),
     supabase.from('po_packaging_items').select('*').order('po_id').limit(2000),
     supabase.from('po_batch_penerimaan').select('*').order('created_at', { ascending: false }).limit(500),

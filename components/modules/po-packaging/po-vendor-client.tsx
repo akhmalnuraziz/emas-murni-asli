@@ -1843,8 +1843,6 @@ function KategoriRejectModal({ mode, kategori, onClose, onSave }: {
         className="space-y-3">
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Kategori *</label>
           <input name="nama" defaultValue={kategori?.nama} required placeholder="mis. Cover Baret" className={inp}/></div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Urutan Tampil</label>
-          <input name="urutan" type="number" defaultValue={kategori?.urutan ?? 0} className={inp}/></div>
         <button type="submit" disabled={loading}
           className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
           {loading ? 'Menyimpan...' : mode === 'create' ? 'Tambah Kategori' : 'Simpan Perubahan'}

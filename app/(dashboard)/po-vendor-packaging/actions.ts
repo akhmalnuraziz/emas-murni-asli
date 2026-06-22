@@ -98,10 +98,9 @@ export async function createKategoriReject(formData: FormData) {
 
   const { count } = await supabase.from('reject_kategori_packaging').select('*', { count: 'exact', head: true })
   const kode = `RJK${String((count ?? 0) + 1).padStart(3, '0')}`
-  const urutan = parseInt(formData.get('urutan') as string) || ((count ?? 0) + 1)
 
   const { error } = await supabase.from('reject_kategori_packaging').insert({
-    kode, nama, urutan, aktif: true,
+    kode, nama, aktif: true,
   })
   if (error) return { error: error.message }
   revalidatePath('/po-vendor-packaging')
@@ -118,7 +117,6 @@ export async function updateKategoriReject(id: number, formData: FormData) {
 
   const { error } = await supabase.from('reject_kategori_packaging').update({
     nama,
-    urutan: parseInt(formData.get('urutan') as string) || 0,
   }).eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/po-vendor-packaging')
