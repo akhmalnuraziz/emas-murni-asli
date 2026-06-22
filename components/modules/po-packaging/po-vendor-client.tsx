@@ -12,7 +12,7 @@ import {
   createProdukPackaging, updateProdukPackaging, toggleProdukAktif,
   createKategoriReject, updateKategoriReject, toggleKategoriRejectAktif, deleteKategoriReject,
   createPO, updatePO, voidPO, deletePO,
-  createBatchPenerimaan, submitQC, deleteBatch, editQCResult,
+  createBatchPenerimaan, createBatchPengganti, submitQC, deleteBatch, editQCResult,
   deleteRejectItem, resetRejectStatus, createSJRetur,
 } from '@/app/(dashboard)/po-vendor-packaging/actions'
 
@@ -27,7 +27,7 @@ const fmtDate = (d: string | null | undefined) => {
   return new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-type Tab = 'monitoring' | 'po' | 'batch' | 'reject' | 'stok' | 'vendor' | 'master'
+type Tab = 'monitoring' | 'po' | 'batch' | 'reject' | 'dashboard' | 'stok' | 'vendor' | 'master'
 
 interface Props {
   vendors: any[]
@@ -228,15 +228,17 @@ export default function POVendorClient({
   const [expandedPO, setExpandedPO]   = useState<number | null>(null)
   const [masterSubtab, setMasterSubtab] = useState<'produk' | 'kategori_reject' | 'histori_harga'>('produk')
   const [kategoriRejectModal, setKategoriRejectModal] = useState<'create' | number | null>(null)
+  const [penggantiModal, setPenggantiModal] = useState<any | null>(null)
 
   const tabs: { key: Tab; label: string; icon: any }[] = [
-    { key: 'monitoring', label: 'Monitoring',    icon: Eye },
-    { key: 'po',         label: 'PO',            icon: FileText },
-    { key: 'batch',      label: 'Penerimaan',    icon: Truck },
-    { key: 'reject',     label: 'Reject',        icon: AlertTriangle },
-    { key: 'stok',       label: 'Stok',          icon: Package2 },
-    { key: 'master',     label: 'Master Produk', icon: BoxSelect },
-    { key: 'vendor',     label: 'Vendor',        icon: Building2 },
+    { key: 'monitoring', label: 'Monitoring',       icon: Eye },
+    { key: 'po',         label: 'PO',               icon: FileText },
+    { key: 'batch',      label: 'Penerimaan',       icon: Truck },
+    { key: 'reject',     label: 'Reject',           icon: AlertTriangle },
+    { key: 'dashboard',  label: 'Dashboard Reject', icon: BoxSelect },
+    { key: 'stok',       label: 'Stok',             icon: Package2 },
+    { key: 'master',     label: 'Master',           icon: BoxSelect },
+    { key: 'vendor',     label: 'Vendor',           icon: Building2 },
   ]
 
   const pendingReject = rejectList.filter((r: any) => r.status_penanganan === 'pending').length
@@ -458,6 +460,11 @@ export default function POVendorClient({
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[12px] font-mono font-bold text-slate-700">{b.nomor_batch}</span>
                       <StatusBadge status={b.status_qc === 'selesai' ? 'selesai' : 'pending_qc'} />
+                      {b.is_pengganti && (
+                        <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-full">
+                          🔄 Pengganti (siklus {b.siklus_ke})
+                        </span>
+                      )}
                     </div>
                     <p className="text-[11px] text-slate-500 mt-0.5">
                       PO: <span className="font-semibold text-violet-700">{b.po_nomor}</span> · {b.vendor_nama}
@@ -500,6 +507,16 @@ export default function POVendorClient({
             ))}
           {batchList.length === 0 && <Empty text="Belum ada penerimaan" />}
         </div>
+      )}
+
+      {/* ── Tab: DASHBOARD REJECT ─────────────────────────────────────────── */}
+      {tab === 'dashboard' && (
+        <DashboardRejectPanel
+          rejectList={rejectList}
+          sjList={sjList}
+          poItems={poItems}
+          batchList={batchList}
+        />
       )}
 
       {/* ── Tab: REJECT ────────────────────────────────────────────────────── */}
@@ -621,10 +638,18 @@ export default function POVendorClient({
                         </div>
                       </div>
                     </div>
-                    <a href={`/po-vendor-packaging/sj-retur/${sj.id}`} target="_blank"
-                      className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-orange-600 rounded-xl bg-orange-50 hover:bg-orange-100 flex-shrink-0">
-                      <Printer size={11}/> Cetak
-                    </a>
+                    <div className="flex flex-col gap-1.5 flex-shrink-0">
+                      {canManage && sj.status !== 'selesai_diganti' && (
+                        <button onClick={() => setPenggantiModal(sj)}
+                          className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-blue-600 rounded-xl bg-blue-50 hover:bg-blue-100">
+                          <Truck size={11}/> Terima Pengganti
+                        </button>
+                      )}
+                      <a href={`/po-vendor-packaging/sj-retur/${sj.id}`} target="_blank"
+                        className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-orange-600 rounded-xl bg-orange-50 hover:bg-orange-100">
+                        <Printer size={11}/> Cetak
+                      </a>
+                    </div>
                   </div>
                 </div>
               )})}
@@ -775,6 +800,19 @@ export default function POVendorClient({
             if (r?.error) { showToast(r.error, false); return }
             showToast(produkModal === 'create' ? '✅ Produk ditambahkan' : '✅ Produk diperbarui')
             setProdukModal(null)
+          }}
+        />
+      )}
+
+      {penggantiModal !== null && (
+        <PenggantiModal
+          sj={penggantiModal}
+          onClose={() => setPenggantiModal(null)}
+          onSave={async (fd) => {
+            const r = await createBatchPengganti(fd)
+            if (r?.error) { showToast(r.error, false); return }
+            showToast('✅ Batch pengganti dibuat — silakan QC di tab Penerimaan')
+            setPenggantiModal(null)
           }}
         />
       )}
@@ -1510,12 +1548,288 @@ function EditQCModal({ batch, onClose, onSave }: {
   )
 }
 
+function DashboardRejectPanel({ rejectList, sjList, poItems, batchList }: {
+  rejectList: any[]; sjList: any[]; poItems: any[]; batchList: any[]
+}) {
+  const now = new Date()
+  const startMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const todayStr = now.toISOString().split('T')[0]
+
+  // Hanya reject (bukan lebihan)
+  const onlyReject = rejectList.filter((r: any) => r.jenis !== 'lebihan')
+
+  // Lookup harga: po_id + produk_id → harga_satuan
+  const hargaMap = new Map<string, number>()
+  for (const it of poItems) {
+    if (it.harga_satuan) hargaMap.set(`${it.po_id}_${it.produk_id}`, it.harga_satuan)
+  }
+  const hargaReject = (r: any) => hargaMap.get(`${r.po_id}_${r.produk_id}`) ?? 0
+
+  // Reject bulan ini
+  const rejectThisMonth = onlyReject.filter((r: any) => r.created_at && new Date(r.created_at) >= startMonth)
+  const totalQtyMonth   = rejectThisMonth.reduce((s: number, r: any) => s + (r.qty || 0), 0)
+  const totalNilaiMonth = rejectThisMonth.reduce((s: number, r: any) => s + (r.qty * hargaReject(r)), 0)
+  const totalRejectAll  = onlyReject.length
+
+  // Top vendor by reject qty
+  const vendorAgg: Record<number, { vendor_nama: string; qty: number; count: number }> = {}
+  for (const r of onlyReject) {
+    if (!vendorAgg[r.vendor_id]) vendorAgg[r.vendor_id] = { vendor_nama: r.vendor_nama, qty: 0, count: 0 }
+    vendorAgg[r.vendor_id].qty += r.qty || 0
+    vendorAgg[r.vendor_id].count += 1
+  }
+  const topVendor = Object.values(vendorAgg).sort((a: any, b: any) => b.qty - a.qty).slice(0, 5)
+  const leastVendor = Object.values(vendorAgg).sort((a: any, b: any) => a.qty - b.qty).slice(0, 3)
+
+  // Top kategori
+  const kategoriAgg: Record<string, { qty: number; count: number }> = {}
+  for (const r of onlyReject) {
+    const key = r.kategori_nama || r.alasan_manual || 'Tanpa Kategori'
+    if (!kategoriAgg[key]) kategoriAgg[key] = { qty: 0, count: 0 }
+    kategoriAgg[key].qty += r.qty || 0
+    kategoriAgg[key].count += 1
+  }
+  const topKategori = Object.entries(kategoriAgg)
+    .sort((a, b) => b[1].qty - a[1].qty).slice(0, 10)
+
+  // Status SJ Counts
+  const sjStatus = { menunggu_ganti: 0, sebagian_diganti: 0, selesai_diganti: 0 }
+  for (const sj of sjList) {
+    if (sj.status && sj.status in sjStatus) (sjStatus as any)[sj.status] += 1
+  }
+
+  // Alert: SJ overdue dan belum selesai
+  const overdueSJ = sjList.filter((sj: any) =>
+    sj.tanggal_jatuh_tempo_ganti && sj.status !== 'selesai_diganti' && sj.tanggal_jatuh_tempo_ganti < todayStr
+  )
+
+  return (
+    <div className="space-y-4">
+      {/* Alert overdue */}
+      {overdueSJ.length > 0 && (
+        <div className="rounded-2xl bg-red-50 border-2 border-red-200 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle size={16} className="text-red-600"/>
+            <p className="text-[13px] font-black text-red-700">
+              {overdueSJ.length} SJ Retur Lewat Tempo Penggantian!
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            {overdueSJ.slice(0, 5).map((sj: any) => {
+              const sisa = (sj.total_qty ?? 0) - (sj.total_qty_diganti ?? 0)
+              return (
+                <div key={sj.id} className="flex items-center justify-between text-[11px]">
+                  <span>
+                    <span className="font-mono font-bold text-red-700">{sj.nomor_sj}</span>
+                    <span className="text-slate-500"> · {sj.vendor_nama}</span>
+                  </span>
+                  <span className="text-red-600 font-bold">{fmtNum(sisa)} pcs belum diganti</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Ringkasan Bulan Ini */}
+      <div>
+        <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-2">Ringkasan Reject Bulan Ini</p>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-2xl bg-white border border-slate-200 p-3">
+            <p className="text-[10px] font-bold text-slate-400 uppercase">Total Kejadian</p>
+            <p className="text-[20px] font-black text-slate-800 mt-1">{fmtNum(rejectThisMonth.length)}</p>
+            <p className="text-[10px] text-slate-400">{fmtNum(totalRejectAll)} all-time</p>
+          </div>
+          <div className="rounded-2xl bg-white border border-slate-200 p-3">
+            <p className="text-[10px] font-bold text-slate-400 uppercase">Total Qty</p>
+            <p className="text-[20px] font-black text-red-600 mt-1">{fmtNum(totalQtyMonth)}</p>
+            <p className="text-[10px] text-slate-400">pcs reject</p>
+          </div>
+          <div className="rounded-2xl bg-white border border-slate-200 p-3">
+            <p className="text-[10px] font-bold text-slate-400 uppercase">Total Nilai</p>
+            <p className="text-[14px] font-black text-amber-700 mt-1">{fmtRp(totalNilaiMonth)}</p>
+            <p className="text-[10px] text-slate-400">kerugian potensial</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Status SJ */}
+      <div>
+        <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status SJ Retur</p>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-2xl bg-amber-50 border border-amber-200 p-3 text-center">
+            <p className="text-[20px] font-black text-amber-700">{sjStatus.menunggu_ganti}</p>
+            <p className="text-[10px] font-bold text-amber-600 mt-1">Menunggu Ganti</p>
+          </div>
+          <div className="rounded-2xl bg-blue-50 border border-blue-200 p-3 text-center">
+            <p className="text-[20px] font-black text-blue-700">{sjStatus.sebagian_diganti}</p>
+            <p className="text-[10px] font-bold text-blue-600 mt-1">Sebagian Diganti</p>
+          </div>
+          <div className="rounded-2xl bg-green-50 border border-green-200 p-3 text-center">
+            <p className="text-[20px] font-black text-green-700">{sjStatus.selesai_diganti}</p>
+            <p className="text-[10px] font-bold text-green-600 mt-1">Selesai Diganti</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Top Vendor */}
+      <div>
+        <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-2">Top 5 Vendor dengan Reject Terbanyak</p>
+        {topVendor.length === 0 ? (
+          <Empty text="Belum ada data reject" icon="📊"/>
+        ) : (
+          <div className="space-y-1.5">
+            {topVendor.map((v: any, i: number) => {
+              const max = topVendor[0].qty
+              const pct = max > 0 ? (v.qty / max) * 100 : 0
+              return (
+                <div key={i} className="rounded-xl bg-white border border-slate-200 p-2.5">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-[12px] font-bold text-slate-700">{i + 1}. {v.vendor_nama}</p>
+                    <p className="text-[12px] font-black text-red-600">{fmtNum(v.qty)} pcs</p>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                    <div className="h-full bg-red-400" style={{ width: `${pct}%` }}/>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">{v.count} kejadian reject</p>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Vendor dengan Reject Paling Sedikit */}
+      {leastVendor.length > 0 && (
+        <div>
+          <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-2">Vendor Terbaik (Reject Paling Sedikit)</p>
+          <div className="space-y-1.5">
+            {leastVendor.map((v: any, i: number) => (
+              <div key={i} className="rounded-xl bg-green-50 border border-green-100 p-2.5 flex justify-between">
+                <p className="text-[12px] font-bold text-slate-700">{i + 1}. {v.vendor_nama}</p>
+                <p className="text-[12px] font-bold text-green-700">{fmtNum(v.qty)} pcs · {v.count}×</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Top Kategori */}
+      <div>
+        <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-2">Top 10 Kategori Reject</p>
+        {topKategori.length === 0 ? (
+          <Empty text="Belum ada data kategori" icon="🏷️"/>
+        ) : (
+          <div className="space-y-1.5">
+            {topKategori.map(([nama, agg], i) => {
+              const max = topKategori[0][1].qty
+              const pct = max > 0 ? (agg.qty / max) * 100 : 0
+              return (
+                <div key={nama} className="rounded-xl bg-white border border-slate-200 p-2.5">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-[12px] font-semibold text-slate-700 truncate">{i + 1}. 🏷️ {nama}</p>
+                    <p className="text-[12px] font-bold text-orange-600">{fmtNum(agg.qty)} pcs</p>
+                  </div>
+                  <div className="h-1 rounded-full bg-slate-100 overflow-hidden">
+                    <div className="h-full bg-orange-400" style={{ width: `${pct}%` }}/>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-0.5">{agg.count}× reject</p>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function Empty({ text, icon = '📦' }: { text: string; icon?: string }) {
   return (
     <div className="py-10 flex flex-col items-center gap-2 opacity-40">
       <span className="text-[24px]">{icon}</span>
       <p className="text-[13px] text-slate-400">{text}</p>
     </div>
+  )
+}
+
+function PenggantiModal({ sj, onClose, onSave }: { sj: any; onClose: () => void; onSave: (fd: FormData) => Promise<void> }) {
+  const [loading, setLoading] = useState(false)
+  const items = (sj.items ?? []).filter((i: any) => (i.qty_retur ?? 0) > (i.qty_diganti ?? 0))
+  const [selectedItemId, setSelectedItemId] = useState<number>(items[0]?.id ?? 0)
+  const [qtyDiterima, setQtyDiterima] = useState(0)
+
+  const selectedItem = items.find((i: any) => i.id === selectedItemId)
+  const sisaPerluGanti = selectedItem ? (selectedItem.qty_retur - (selectedItem.qty_diganti ?? 0)) : 0
+
+  return (
+    <ModalShell title="Terima Barang Pengganti dari Vendor" onClose={onClose}>
+      <div className="rounded-lg px-3 py-2 text-[12px] bg-blue-50 border border-blue-100 text-blue-700 mb-4">
+        <p className="font-bold">{sj.nomor_sj}</p>
+        <p className="text-blue-600 mt-0.5">{sj.vendor_nama} · {items.length} item perlu diganti</p>
+      </div>
+      {items.length === 0 ? (
+        <Empty text="Semua item sudah sepenuhnya diganti" icon="✅"/>
+      ) : (
+        <form onSubmit={async e => {
+          e.preventDefault()
+          if (!selectedItemId || qtyDiterima <= 0) return
+          setLoading(true)
+          const fd = new FormData(e.currentTarget)
+          fd.set('sj_retur_id', String(sj.id))
+          fd.set('sj_item_id', String(selectedItemId))
+          fd.set('qty_diterima', String(qtyDiterima))
+          await onSave(fd)
+          setLoading(false)
+        }} className="space-y-3">
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Item yang Diganti *</label>
+            <select value={selectedItemId} onChange={e => setSelectedItemId(parseInt(e.target.value))} className={inp} required>
+              {items.map((it: any) => {
+                const sisa = it.qty_retur - (it.qty_diganti ?? 0)
+                return (
+                  <option key={it.id} value={it.id}>
+                    {it.produk_nama} · perlu ganti {fmtNum(sisa)} pcs (dari {fmtNum(it.qty_retur)})
+                  </option>
+                )
+              })}
+            </select>
+            {selectedItem && (
+              <p className="text-[11px] text-slate-500 mt-1">
+                {selectedItem.kategori_nama && <span className="text-red-500">🏷️ {selectedItem.kategori_nama} · </span>}
+                Sudah diganti: <b>{fmtNum(selectedItem.qty_diganti ?? 0)}</b> · Sisa perlu ganti: <b className="text-blue-600">{fmtNum(sisaPerluGanti)} pcs</b>
+              </p>
+            )}
+          </div>
+
+          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nomor Batch <span className="normal-case text-slate-400 font-normal">(kosongkan = auto)</span></label>
+            <input name="nomor_batch" placeholder="mis. BTH-G-001" className={inp}/></div>
+
+          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Terima *</label>
+            <input name="tanggal_terima" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/></div>
+
+          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Qty Diterima *</label>
+            <input type="number" min="1" value={qtyDiterima || ''} onChange={e => setQtyDiterima(parseInt(e.target.value) || 0)}
+              required className={inp} placeholder="0"/>
+            {qtyDiterima > sisaPerluGanti && (
+              <p className="text-[10px] text-red-500 mt-1">⚠️ Qty melebihi sisa perlu ganti ({fmtNum(sisaPerluGanti)})</p>
+            )}
+          </div>
+
+          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
+            <textarea name="catatan" rows={2} className={inp}/></div>
+
+          <p className="text-[10px] text-amber-700 px-1">
+            ⚡ Setelah simpan, batch pengganti akan muncul di tab <b>Penerimaan</b> dan menunggu QC. Lanjutkan QC seperti biasa untuk masukkan ke stok.
+          </p>
+
+          <button type="submit" disabled={loading || qtyDiterima <= 0 || qtyDiterima > sisaPerluGanti}
+            className="w-full h-9 rounded-lg bg-blue-600 hover:bg-blue-700 text-[13px] font-bold text-white disabled:opacity-50">
+            {loading ? 'Menyimpan...' : 'Simpan Penerimaan Pengganti'}
+          </button>
+        </form>
+      )}
+    </ModalShell>
   )
 }
 
