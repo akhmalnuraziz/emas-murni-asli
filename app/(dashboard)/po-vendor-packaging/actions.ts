@@ -390,6 +390,110 @@ export async function createBatchPenerimaan(formData: FormData) {
   return { success: true, nomor, batchId: batch.id, qtyLebih }
 }
 
+export async function deleteBatch(id: number) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+
+  const { data: batch } = await supabase.from('po_batch_penerimaan').select('*').eq('id', id).single()
+  if (!batch) return { error: 'Batch tidak ditemukan' }
+
+  // Reverse stok jika QC sudah selesai
+  if (batch.status_qc === 'selesai' && (batch.qty_acc ?? 0) > 0) {
+    const { data: stok } = await supabase.from('stok_packaging')
+      .select('stok_qty').eq('produk_id', batch.produk_id).single()
+    if (stok) {
+      await supabase.from('stok_packaging')
+        .update({ stok_qty: Math.max(0, (stok.stok_qty ?? 0) - batch.qty_acc) })
+        .eq('produk_id', batch.produk_id)
+    }
+  }
+
+  // Reverse qty_diterima pada po_packaging_items
+  if (batch.po_item_id && (batch.qty_diterima - (batch.qty_lebih ?? 0)) > 0) {
+    const { data: item } = await supabase.from('po_packaging_items')
+      .select('qty_diterima').eq('id', batch.po_item_id).single()
+    if (item) {
+      const newQty = Math.max(0, item.qty_diterima - (batch.qty_diterima - (batch.qty_lebih ?? 0)))
+      await supabase.from('po_packaging_items').update({ qty_diterima: newQty }).eq('id', batch.po_item_id)
+    }
+  }
+
+  // Hapus reject records terkait batch ini
+  await supabase.from('po_packaging_reject').delete().eq('batch_id', id)
+
+  const { error } = await supabase.from('po_batch_penerimaan').delete().eq('id', id)
+  if (error) return { error: error.message }
+
+  // Update PO status
+  const { data: allItems } = await supabase.from('po_packaging_items')
+    .select('qty_po, qty_diterima').eq('po_id', batch.po_id)
+  if (allItems) {
+    const allDone = allItems.every((i: any) => i.qty_diterima >= i.qty_po)
+    const anyDone = allItems.some((i: any) => i.qty_diterima > 0)
+    const newStatus = allDone ? 'selesai' : anyDone ? 'partial' : 'menunggu'
+    await supabase.from('po_packaging').update({ status: newStatus }).eq('id', batch.po_id)
+  }
+
+  revalidatePath('/po-vendor-packaging')
+  return { success: true }
+}
+
+export async function editQCResult(batchId: number, newQtyAcc: number, newQtyReject: number, catatan?: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+
+  const { data: batch } = await supabase.from('po_batch_penerimaan').select('*').eq('id', batchId).single()
+  if (!batch) return { error: 'Batch tidak ditemukan' }
+  if (batch.status_qc !== 'selesai') return { error: 'QC belum selesai, gunakan form QC biasa' }
+
+  const maxCheck = batch.qty_diterima - (batch.qty_lebih ?? 0)
+  if (newQtyAcc + newQtyReject !== maxCheck)
+    return { error: `Total ACC+Reject harus ${maxCheck} pcs` }
+
+  // Adjust stok: diff dari qty_acc lama vs baru
+  const oldAcc = batch.qty_acc ?? 0
+  const diff = newQtyAcc - oldAcc
+  if (diff !== 0) {
+    const { data: stok } = await supabase.from('stok_packaging')
+      .select('stok_qty').eq('produk_id', batch.produk_id).single()
+    if (stok) {
+      await supabase.from('stok_packaging')
+        .update({ stok_qty: Math.max(0, (stok.stok_qty ?? 0) + diff) })
+        .eq('produk_id', batch.produk_id)
+    }
+  }
+
+  // Update reject records
+  await supabase.from('po_packaging_reject').delete().eq('batch_id', batchId).eq('jenis', 'reject')
+  if (newQtyReject > 0) {
+    await supabase.from('po_packaging_reject').insert({
+      batch_id: batchId, nomor_batch: batch.nomor_batch,
+      po_id: batch.po_id, po_nomor: batch.po_nomor,
+      vendor_id: batch.vendor_id, vendor_nama: batch.vendor_nama,
+      produk_id: batch.produk_id, produk_kode: batch.produk_kode, produk_nama: batch.produk_nama,
+      tanggal_terima: batch.tanggal_terima,
+      jenis: 'reject', qty: newQtyReject,
+    })
+  }
+
+  await supabase.from('po_batch_penerimaan').update({
+    qty_acc: newQtyAcc,
+    qty_reject: newQtyReject,
+    catatan_qc: catatan ?? batch.catatan_qc,
+  }).eq('id', batchId)
+
+  revalidatePath('/po-vendor-packaging')
+  return { success: true }
+}
+
 // ── QC ────────────────────────────────────────────────────────────────────────
 
 export async function submitQC(formData: FormData) {

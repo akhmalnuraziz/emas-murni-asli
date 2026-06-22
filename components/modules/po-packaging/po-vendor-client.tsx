@@ -11,7 +11,7 @@ import {
   createVendor, updateVendor,
   createProdukPackaging, updateProdukPackaging, toggleProdukAktif,
   createPO, updatePO, voidPO, deletePO,
-  createBatchPenerimaan, submitQC,
+  createBatchPenerimaan, submitQC, deleteBatch, editQCResult,
   updatePenangananReject, deleteRejectItem, resetRejectStatus, createSJRetur,
 } from '@/app/(dashboard)/po-vendor-packaging/actions'
 
@@ -213,6 +213,7 @@ export default function POVendorClient({
   const [editPoId, setEditPoId]       = useState<number | null>(null)
   const [batchModal, setBatchModal]   = useState<number | null>(null)  // po_id
   const [qcModal, setQcModal]         = useState<any | null>(null)
+  const [editQcModal, setEditQcModal] = useState<any | null>(null)
   const [rejectModal, setRejectModal] = useState<any | null>(null)
   const [sjModal, setSjModal]         = useState<number | null>(null)
   const [voidPoId, setVoidPoId]       = useState<number | null>(null)
@@ -282,7 +283,7 @@ export default function POVendorClient({
             <Icon size={12}/>
             {label}
             {key === 'reject' && pendingReject > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[9px] flex items-center justify-center font-black">
+              <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 bg-red-500 text-white rounded-full text-[9px] flex items-center justify-center font-black">
                 {pendingReject > 9 ? '9+' : pendingReject}
               </span>
             )}
@@ -429,11 +430,29 @@ export default function POVendorClient({
                       </div>
                     )}
                   </div>
-                  {canManage && b.status_qc === 'pending' && (
-                    <button onClick={() => setQcModal(b)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-white rounded-xl bg-green-500 hover:bg-green-600 flex-shrink-0">
-                      <ClipboardCheck size={11}/> Input QC
-                    </button>
+                  {canManage && (
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {b.status_qc === 'pending' && (
+                        <button onClick={() => setQcModal(b)}
+                          className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-bold text-white rounded-lg bg-green-500 hover:bg-green-600">
+                          <ClipboardCheck size={11}/> Input QC
+                        </button>
+                      )}
+                      {b.status_qc === 'selesai' && (
+                        <button onClick={() => setEditQcModal(b)}
+                          className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-bold text-violet-600 rounded-lg bg-violet-50 hover:bg-violet-100">
+                          <Edit2 size={11}/> Edit QC
+                        </button>
+                      )}
+                      <button onClick={async () => {
+                        if (!confirm(`Hapus batch ${b.nomor_batch}? ${b.status_qc === 'selesai' ? 'Stok ACC akan dikurangi kembali.' : ''}`)) return
+                        const r = await deleteBatch(b.id)
+                        if (r?.error) showToast(r.error, false)
+                        else showToast('✅ Batch dihapus')
+                      }} className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-bold text-red-500 rounded-lg bg-red-50 hover:bg-red-100">
+                        <Trash2 size={11}/> Hapus
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -673,6 +692,19 @@ export default function POVendorClient({
             if (r?.error) { showToast(r.error, false); return }
             showToast('✅ QC selesai — stok diperbarui')
             setQcModal(null)
+          }}
+        />
+      )}
+
+      {editQcModal !== null && (
+        <EditQCModal
+          batch={editQcModal}
+          onClose={() => setEditQcModal(null)}
+          onSave={async (newAcc, newReject, catatan) => {
+            const r = await editQCResult(editQcModal.id, newAcc, newReject, catatan)
+            if (r?.error) { showToast(r.error, false); return }
+            showToast('✅ Hasil QC diperbarui — stok disesuaikan')
+            setEditQcModal(null)
           }}
         />
       )}
@@ -1168,6 +1200,56 @@ function VoidModal({ title, onClose, onConfirm }: { title: string; onClose: () =
           disabled={loading || !reason.trim()}
           className="w-full h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white disabled:opacity-50">
           {loading ? 'Memproses...' : 'Void PO'}
+        </button>
+      </div>
+    </ModalShell>
+  )
+}
+
+function EditQCModal({ batch, onClose, onSave }: {
+  batch: any
+  onClose: () => void
+  onSave: (acc: number, reject: number, catatan: string) => Promise<void>
+}) {
+  const maxCheck = batch.qty_diterima - (batch.qty_lebih ?? 0)
+  const [qtyAcc, setQtyAcc]       = useState<number>(batch.qty_acc ?? 0)
+  const [qtyReject, setQtyReject] = useState<number>(batch.qty_reject ?? 0)
+  const [catatan, setCatatan]     = useState<string>(batch.catatan_qc ?? '')
+  const [loading, setLoading]     = useState(false)
+
+  const total = qtyAcc + qtyReject
+  const ok    = total === maxCheck
+
+  return (
+    <ModalShell title="Edit Hasil QC" onClose={onClose}>
+      <div className="rounded-lg px-3 py-2 text-[12px] bg-amber-50 border border-amber-100 text-amber-700 mb-4">
+        <p className="font-bold">{batch.nomor_batch} · {batch.produk_nama}</p>
+        <p className="mt-0.5">Diterima: <b>{batch.qty_diterima} pcs</b> · QC: <b>{maxCheck} pcs</b>
+          {(batch.qty_lebih ?? 0) > 0 && <> · Lebihan: <b>{batch.qty_lebih} pcs</b></>}
+        </p>
+        <p className="mt-0.5 text-amber-600">⚠️ Stok akan disesuaikan otomatis dengan selisih ACC baru vs lama.</p>
+      </div>
+      <div className="space-y-3">
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Qty ACC (Lolos QC) *</label>
+          <input type="number" min="0" max={maxCheck} value={qtyAcc}
+            onChange={e => setQtyAcc(parseInt(e.target.value) || 0)} className={inp}/></div>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Qty Reject *</label>
+          <input type="number" min="0" max={maxCheck} value={qtyReject}
+            onChange={e => setQtyReject(parseInt(e.target.value) || 0)} className={inp}/></div>
+        <div className={`rounded-xl px-3 py-2 text-[12px] font-semibold flex items-center gap-2 ${ok ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+          {ok ? <CheckCircle2 size={12}/> : <XCircle size={12}/>}
+          {ok ? `✅ Total sesuai (${maxCheck} pcs)` : `Total ${total} ≠ ${maxCheck}`}
+        </div>
+        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan QC</label>
+          <textarea value={catatan} onChange={e => setCatatan(e.target.value)} rows={2} className={inp}/></div>
+        <button onClick={async () => {
+          if (!ok) return
+          setLoading(true)
+          await onSave(qtyAcc, qtyReject, catatan)
+          setLoading(false)
+        }} disabled={loading || !ok}
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
+          {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
         </button>
       </div>
     </ModalShell>
