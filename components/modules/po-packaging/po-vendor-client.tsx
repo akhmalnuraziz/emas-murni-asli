@@ -314,6 +314,7 @@ export default function POVendorClient({
                     </div>
                     <p className="text-[11px] text-slate-500 mt-0.5">
                       {po.vendor_nama} · {po.produk_nama} · {fmtNum(po.qty_po)} pcs · {fmtDate(po.tanggal_po)}
+                      {po.tanggal_jatuh_tempo && <span className="text-amber-600 font-medium"> · Jatuh tempo {fmtDate(po.tanggal_jatuh_tempo)}</span>}
                     </p>
                   </button>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -804,9 +805,9 @@ function POModal({ mode, po, duplikat, vendors, produkList, onClose, onSave }: {
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Qty PO (pcs) *</label>
           <input name="qty_po" type="number" min="1" defaultValue={isDuplikat ? undefined : src?.qty_po} required className={inp}/></div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal PO *</label>
-          <input name="tanggal_po" type="date" defaultValue={isDuplikat ? undefined : src?.tanggal_po} required className={inp}/></div>
+          <input name="tanggal_po" type="date" defaultValue={src?.tanggal_po} required className={inp}/></div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Jatuh Tempo</label>
-          <input name="tanggal_jatuh_tempo" type="date" defaultValue={isDuplikat ? undefined : src?.tanggal_jatuh_tempo} className={inp}/></div>
+          <input name="tanggal_jatuh_tempo" type="date" defaultValue={src?.tanggal_jatuh_tempo} className={inp}/></div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Harga Satuan (Rp)</label>
           <input name="harga_satuan" type="number" min="0" defaultValue={src?.harga_satuan} className={inp}/></div>
         <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
