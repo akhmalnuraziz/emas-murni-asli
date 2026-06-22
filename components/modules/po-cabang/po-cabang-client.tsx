@@ -62,15 +62,13 @@ export default function PoCabangClient({
   return (
     <div className="space-y-5">
       {toast && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-2xl text-sm font-semibold text-white shadow-lg"
-          style={{ background: 'linear-gradient(135deg,#7C3AED,#6D28D9)' }}>{toast}</div>
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-2xl text-sm font-semibold text-white shadow-lg bg-violet-700">{toast}</div>
       )}
 
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,#0EA5E9,#0284C7)' }}>
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-sky-500">
             <ClipboardList size={20} className="text-white" />
           </div>
           <div>
@@ -81,8 +79,7 @@ export default function PoCabangClient({
           </div>
         </div>
         <button onClick={() => { setShowCreate(true); setErr('') }}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold text-white"
-          style={{ background: 'linear-gradient(135deg,#0EA5E9,#0284C7)' }}>
+          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold text-white bg-sky-500 hover:bg-sky-600">
           <Plus size={15} /> Buat PO
         </button>
       </div>
@@ -199,8 +196,7 @@ export default function PoCabangClient({
                       {po.status === 'pending' && (
                         <>
                           <button onClick={() => handleUpdateStatus(po.id, 'diproses')} disabled={isPending}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-bold text-white"
-                            style={{ background: 'linear-gradient(135deg,#3B82F6,#2563EB)' }}>
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-bold text-white bg-blue-500 hover:bg-blue-600">
                             <Check size={12} /> Proses
                           </button>
                           <button onClick={() => handleUpdateStatus(po.id, 'ditolak', 'Ditolak oleh admin')} disabled={isPending}
@@ -211,8 +207,7 @@ export default function PoCabangClient({
                       )}
                       {po.status === 'diproses' && (
                         <button onClick={() => handleUpdateStatus(po.id, 'selesai')} disabled={isPending}
-                          className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-bold text-white"
-                          style={{ background: 'linear-gradient(135deg,#22C55E,#16A34A)' }}>
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-2xl text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-600">
                           <Check size={12} /> Tandai Selesai
                         </button>
                       )}

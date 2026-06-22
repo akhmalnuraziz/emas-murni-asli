@@ -54,17 +54,13 @@ export default function PengaturanClient({
   return (
     <div className="space-y-5 max-w-4xl">
       {toast && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-2xl text-sm font-semibold text-white shadow-lg"
-          style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>{toast}</div>
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-2xl text-sm font-semibold text-white shadow-lg bg-violet-600">{toast}</div>
       )}
 
       <div className="flex gap-2 flex-wrap">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setTab(id)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all"
-            style={tab === id
-              ? { background: 'linear-gradient(135deg,#7F6DC6,#6857B1)', color: '#fff', boxShadow: '0 4px 14px rgba(103,87,177,0.3)' }
-              : { background: 'rgba(255,255,255,0.9)', color: '#6B7280', border: '1px solid rgba(209,213,219,0.5)' }}>
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all ${tab === id ? 'bg-violet-600 text-white shadow-md shadow-violet-200' : 'bg-white/90 text-gray-500 border border-gray-200'}`}>
             <Icon size={15} /> {label}
           </button>
         ))}
@@ -108,8 +104,7 @@ function TimSection({ tims, isPending, start, showToast }: any) {
         </div>
         {!adding && (
           <button onClick={() => setAdding(true)}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-bold text-white"
-            style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-bold text-white bg-violet-600 hover:bg-violet-700">
             <Plus size={15} /> Tambah Tim
           </button>
         )}
@@ -130,8 +125,7 @@ function TimSection({ tims, isPending, start, showToast }: any) {
           <div className="flex gap-2 justify-end">
             <button onClick={() => { setAdding(false); setNewNama('') }} className="px-4 py-2 rounded-xl text-sm font-semibold bg-gray-100 text-gray-600">Batal</button>
             <button onClick={handleCreate} disabled={isPending || !newNama.trim()}
-              className="px-5 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>Simpan</button>
+              className="px-5 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">Simpan</button>
           </div>
         </div>
       )}
@@ -181,8 +175,7 @@ function TimCard({ tim, isPending, start, showToast, editing, onEdit, onCancelEd
                 showToast('✅ Tim diperbarui'); onCancelEdit()
               })
             }} disabled={isPending}
-              className="px-5 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>Simpan</button>
+              className="px-5 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">Simpan</button>
           </div>
         </div>
       ) : (
@@ -199,8 +192,7 @@ function TimCard({ tim, isPending, start, showToast, editing, onEdit, onCancelEd
                 await toggleTimAktif(tim.id, !tim.aktif)
                 showToast(tim.aktif ? 'Tim dinonaktifkan' : 'Tim diaktifkan')
               })}
-              className="px-2.5 py-1 rounded-lg text-[10px] font-semibold border"
-              style={{ color: tim.aktif ? '#22C55E' : '#9CA3AF', borderColor: tim.aktif ? 'rgba(34,197,94,0.25)' : 'rgba(156,163,175,0.25)' }}>
+              className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold border ${tim.aktif ? 'text-emerald-500 border-emerald-200' : 'text-gray-400 border-gray-200'}`}>
               {tim.aktif ? 'Aktif' : 'Nonaktif'}
             </button>
             <button onClick={onEdit} className="w-8 h-8 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center"><Edit2 size={13} /></button>
@@ -314,8 +306,7 @@ function AdminInputSection({ list, isPending, start, showToast, canManage }: any
             className={inp + ' flex-1'}
             onKeyDown={e => e.key === 'Enter' && handleCreate()} />
           <button onClick={handleCreate} disabled={isPending || !newNama.trim()}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-bold text-white flex-shrink-0 disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-bold text-white flex-shrink-0 disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
             <Plus size={15} /> Tambah
           </button>
         </div>
@@ -347,8 +338,7 @@ function AdminInputSection({ list, isPending, start, showToast, canManage }: any
                   {a.nama?.charAt(0)?.toUpperCase()}
                 </div>
                 <span className="flex-1 text-sm font-semibold text-gray-800">{a.nama}</span>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                  style={{ color: a.aktif ? '#16a34a' : '#9ca3af', background: a.aktif ? 'rgba(22,163,74,0.08)' : 'rgba(156,163,175,0.1)' }}>
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${a.aktif ? 'text-emerald-700 bg-emerald-50' : 'text-gray-400 bg-gray-100'}`}>
                   {a.aktif ? 'Aktif' : 'Nonaktif'}
                 </span>
                 {canManage && (
@@ -549,8 +539,7 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
       {canManage && (
         <div className="flex justify-end">
           <button onClick={handleSave} disabled={isPending}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-2xl text-sm font-bold text-white disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>
+            className="flex items-center gap-2 px-6 py-2.5 rounded-2xl text-sm font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
             {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
             <Check size={15} /> Simpan Pengaturan
           </button>
@@ -624,8 +613,7 @@ function BiayaPackagingSection({ pengaturan, isPending, start, showToast, canMan
       {canManage && (
         <div className="flex justify-end">
           <button onClick={handleSave} disabled={isPending}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-2xl text-sm font-bold text-white disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>
+            className="flex items-center gap-2 px-6 py-2.5 rounded-2xl text-sm font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
             {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
             <Check size={15} /> Simpan Biaya Packaging
           </button>
@@ -673,8 +661,7 @@ function MasterProdukSection({ list, isPending, start, showToast, canManage }: a
         </div>
         {canManage && !adding && (
           <button onClick={() => setAdding(true)}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-bold text-white"
-            style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-bold text-white bg-violet-600 hover:bg-violet-700">
             <Plus size={15} /> Tambah Produk
           </button>
         )}
@@ -696,8 +683,7 @@ function MasterProdukSection({ list, isPending, start, showToast, canManage }: a
             <button onClick={() => { setAdding(false); setForm({ nama: '', satuan: 'pcs', keterangan: '' }) }}
               className="px-4 py-2 rounded-xl text-sm font-semibold bg-gray-100 text-gray-600">Batal</button>
             <button onClick={handleCreate} disabled={isPending || !form.nama.trim()}
-              className="px-5 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>Simpan</button>
+              className="px-5 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">Simpan</button>
           </div>
         </div>
       )}
@@ -727,8 +713,7 @@ function MasterProdukSection({ list, isPending, start, showToast, canManage }: a
                 <div className="flex gap-2 justify-end">
                   <button onClick={() => setEditId(null)} className="px-4 py-2 rounded-xl text-sm font-semibold bg-gray-100 text-gray-600">Batal</button>
                   <button onClick={() => handleUpdate(p.id)} disabled={isPending}
-                    className="px-5 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-50"
-                    style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>Simpan</button>
+                    className="px-5 py-2 rounded-xl text-sm font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">Simpan</button>
                 </div>
               </div>
             ) : (
@@ -740,8 +725,7 @@ function MasterProdukSection({ list, isPending, start, showToast, canManage }: a
                   <p className="text-sm font-bold text-gray-800">{p.nama}</p>
                   <p className="text-[11px] text-gray-400">{p.kode} · {p.satuan}{p.keterangan ? ` · ${p.keterangan}` : ''}</p>
                 </div>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                  style={{ color: p.aktif ? '#16a34a' : '#9ca3af', background: p.aktif ? 'rgba(22,163,74,0.08)' : 'rgba(156,163,175,0.1)' }}>
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${p.aktif ? 'text-emerald-700 bg-emerald-50' : 'text-gray-400 bg-gray-100'}`}>
                   {p.aktif ? 'Aktif' : 'Nonaktif'}
                 </span>
                 {canManage && (
@@ -807,8 +791,7 @@ function MasterGramasiSection({ list, isPending, start, showToast, canManage }: 
             onKeyDown={e => e.key === 'Enter' && handleCreate()} />
           <div className="flex-shrink-0 flex items-center px-3 bg-gray-50 rounded-2xl border border-gray-200 text-sm text-gray-500 font-medium">gr</div>
           <button onClick={handleCreate} disabled={isPending || !newVal.trim()}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-bold text-white flex-shrink-0 disabled:opacity-50"
-            style={{ background: 'linear-gradient(135deg,#7F6DC6,#6857B1)' }}>
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-bold text-white flex-shrink-0 disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
             <Plus size={15} /> Tambah
           </button>
         </div>
@@ -840,8 +823,7 @@ function MasterGramasiSection({ list, isPending, start, showToast, canManage }: 
               ) : (
                 <>
                   <span className="flex-1 text-sm font-bold text-gray-800">{g.nilai} gr</span>
-                  <span className="w-24 text-center text-[10px] font-semibold"
-                    style={{ color: g.aktif ? '#16a34a' : '#9ca3af' }}>
+                  <span className={`w-24 text-center text-[10px] font-semibold ${g.aktif ? 'text-emerald-600' : 'text-gray-400'}`}>
                     {g.aktif ? 'Aktif' : 'Nonaktif'}
                   </span>
                   {canManage && (

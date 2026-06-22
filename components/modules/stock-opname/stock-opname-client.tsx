@@ -51,8 +51,7 @@ export default function StockOpnameClient({ initialList, cabangList, userRole, u
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-violet-600">
             <ClipboardList size={20} className="text-white" />
           </div>
           <div>
@@ -66,8 +65,7 @@ export default function StockOpnameClient({ initialList, cabangList, userRole, u
             <RefreshCw size={13} className={isPending ? 'animate-spin' : ''} /> Muat Ulang
           </button>
           <button onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all"
-            style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white transition-all bg-violet-600 hover:bg-violet-700">
             <Plus size={14} /> Buat Stock Opname
           </button>
         </div>
@@ -181,8 +179,7 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
               Ada selisih — menunggu approval
             </p>
           )}
-          <button onClick={onSaved} className="mt-2 px-6 py-2 rounded-xl text-sm font-semibold text-white"
-            style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+          <button onClick={onSaved} className="mt-2 px-6 py-2 rounded-xl text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700">
             Selesai
           </button>
         </div>
@@ -197,8 +194,7 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
             </select>
           </F>
           <button onClick={loadStok} disabled={loadingRows}
-            className="w-full py-3 rounded-2xl text-sm font-bold text-white transition-all"
-            style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+            className="w-full py-3 rounded-2xl text-sm font-bold text-white transition-all bg-violet-600 hover:bg-violet-700 disabled:opacity-50">
             {loadingRows ? 'Memuat stok sistem…' : `Ambil Stok ${lokasiLabel}`}
           </button>
         </div>
@@ -265,8 +261,7 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
               Kembali
             </button>
             <button onClick={handleSave} disabled={saving || rows.length === 0}
-              className="flex-1 py-3 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+              className="flex-1 py-3 rounded-2xl text-sm font-bold text-white transition-all disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
               {saving ? 'Menyimpan…' : 'Simpan Stock Opname'}
             </button>
           </div>
@@ -379,8 +374,7 @@ function SOCard({ so, expanded, onToggle, canApprove, userName, onApproved }: {
                   <X size={13} /> Tolak
                 </button>
                 <button onClick={() => doApprove(true)} disabled={approving}
-                  className="flex-1 py-2 rounded-xl text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5"
-                  style={{ background: 'linear-gradient(135deg,#22C55E,#16A34A)' }}>
+                  className="flex-1 py-2 rounded-xl text-xs font-bold text-white transition-all flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600">
                   <Check size={13} /> Setujui
                 </button>
               </div>

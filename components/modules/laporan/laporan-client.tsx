@@ -238,8 +238,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
   return (
     <div className="space-y-4">
       {/* P&L Summary Card */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6"
-        style={{ background: profitPositif ? 'linear-gradient(135deg,#16A34A,#15803D)' : 'linear-gradient(135deg,#DC2626,#B91C1C)', color: 'white' }}>
+      <div className={`border-0 rounded-xl p-6 text-white ${profitPositif ? 'bg-gradient-to-br from-green-600 to-green-700' : 'bg-gradient-to-br from-red-600 to-red-700'}`}>
         <p className="text-xs font-semibold opacity-80 mb-1">Laba Bersih — {periodLabel}</p>
         <p className="text-4xl font-black">{formatRupiah(labaRugi.labaBersih)}</p>
         <p className="text-sm opacity-70 mt-1">{profitPositif ? '▲ Profit' : '▼ Rugi'}</p>
@@ -360,8 +359,8 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
                       <td className="px-4 py-2.5 text-xs font-semibold text-slate-700 text-center">{p.pcs}</td>
                       <td className="px-4 py-2.5 text-xs font-bold text-green-700 whitespace-nowrap">{formatRupiah(omzet)}</td>
                       <td className="px-4 py-2.5 text-xs text-amber-700 whitespace-nowrap">{formatRupiah(hpp)}</td>
-                      <td className="px-4 py-2.5 text-xs font-semibold whitespace-nowrap" style={{ color: profit >= 0 ? '#16a34a' : '#dc2626' }}>{formatRupiah(profit)}</td>
-                      <td className="px-4 py-2.5 text-xs font-semibold whitespace-nowrap" style={{ color: margin >= 10 ? '#7c3aed' : margin >= 0 ? '#d97706' : '#dc2626' }}>{margin.toFixed(1)}%</td>
+                      <td className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap ${profit >= 0 ? 'text-green-700' : 'text-red-600'}`}>{formatRupiah(profit)}</td>
+                      <td className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap ${margin >= 10 ? 'text-violet-700' : margin >= 0 ? 'text-amber-600' : 'text-red-600'}`}>{margin.toFixed(1)}%</td>
                     </tr>
                   )
                 })}
@@ -371,7 +370,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
                   <td className="px-4 py-3 text-xs font-bold text-slate-600" colSpan={5}>Total</td>
                   <td className="px-4 py-3 text-xs font-black text-green-700 whitespace-nowrap">{formatRupiah(labaRugi.omzet)}</td>
                   <td className="px-4 py-3 text-xs font-bold text-amber-700 whitespace-nowrap">{formatRupiah(labaRugi.hpp)}</td>
-                  <td className="px-4 py-3 text-xs font-black whitespace-nowrap" style={{ color: labaRugi.labaKotor >= 0 ? '#16a34a' : '#dc2626' }}>{formatRupiah(labaRugi.labaKotor)}</td>
+                  <td className={`px-4 py-3 text-xs font-black whitespace-nowrap ${labaRugi.labaKotor >= 0 ? 'text-green-700' : 'text-red-600'}`}>{formatRupiah(labaRugi.labaKotor)}</td>
                   <td className="px-4 py-3 text-xs font-bold text-violet-700">{labaRugi.omzet > 0 ? (labaRugi.labaKotor / labaRugi.omzet * 100).toFixed(1) : '0.0'}%</td>
                 </tr>
               </tfoot>
@@ -647,13 +646,8 @@ function NeracaTab({ neraca }: { neraca: Props['neraca'] }) {
     <div className="space-y-4">
 
       {/* Status banner */}
-      <div className="rounded-3xl p-5 flex items-start gap-4"
-        style={{
-          background: selisihOk ? 'rgba(34,197,94,0.06)' : 'rgba(239,68,68,0.06)',
-          border: `1px solid ${selisihOk ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'}`,
-        }}>
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-          style={{ background: selisihOk ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)' }}>
+      <div className={`rounded-3xl p-5 flex items-start gap-4 ${selisihOk ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'}`}>
+        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${selisihOk ? 'bg-emerald-100' : 'bg-red-100'}`}>
           {selisihOk
             ? <CheckCircle2 size={22} className="text-green-600" />
             : <AlertTriangle size={22} className="text-red-500" />}

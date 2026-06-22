@@ -343,8 +343,7 @@ function ExplorerPanel() {
           <button
             onClick={() => doSearch()}
             disabled={isPending || !query.trim()}
-            className="px-6 py-3 text-sm font-bold text-white rounded-2xl transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 flex items-center gap-2"
-            style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+            className="px-6 py-3 text-sm font-bold text-white rounded-2xl transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 flex items-center gap-2 bg-violet-600 hover:bg-violet-700">
             {isPending ? <Loader2 size={14} className="animate-spin"/> : <Search size={14}/>}
             Cari
           </button>
@@ -430,15 +429,11 @@ function ExplorerPanel() {
               ) : (
                 <div className="space-y-0 relative">
                   {/* Timeline line */}
-                  <div className="absolute left-3 top-2 bottom-2 w-px"
-                    style={{ background: 'linear-gradient(to bottom, rgba(139,92,246,0.3), rgba(139,92,246,0.05))' }}/>
+                  <div className="absolute left-3 top-2 bottom-2 w-px bg-gradient-to-b from-violet-300/30 to-violet-200/10"/>
                   {history.slice().reverse().map((h: any, i: number) => (
                     <div key={i} className="flex gap-4 pb-4 last:pb-0 relative">
-                      <div className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center z-10 mt-0.5"
-                        style={{ background: i === 0 ? 'rgba(139,92,246,0.15)' : 'rgba(243,244,246,0.9)',
-                          border: i === 0 ? '1.5px solid rgba(139,92,246,0.3)' : '1px solid rgba(209,213,219,0.5)' }}>
-                        <div className="w-2 h-2 rounded-full"
-                          style={{ background: i === 0 ? '#8B5CF6' : '#D1D5DB' }}/>
+                      <div className={`w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center z-10 mt-0.5 ${i === 0 ? 'bg-violet-100 border border-violet-300' : 'bg-gray-100 border border-gray-200'}`}>
+                        <div className={`w-2 h-2 rounded-full ${i === 0 ? 'bg-violet-500' : 'bg-gray-300'}`}/>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold text-gray-700 leading-snug">{h.action}</p>
@@ -636,12 +631,9 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
               const cnt = t === 'Semua' ? shieldtags.length : (counts[t] ?? 0)
               return (
                 <button key={t} onClick={() => setFilterStatus(t)}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all"
-                  style={isAct
-                    ? { background: cfg?.dot ?? 'linear-gradient(135deg,#8B5CF6,#7C3AED)', color: '#fff', boxShadow: `0 4px 12px ${cfg?.dot ?? '#8B5CF6'}40` }
-                    : { background: 'rgba(255,255,255,0.8)', color: '#6B7280', border: '1px solid rgba(209,213,219,0.5)' }}>
-                  {t} {cnt > 0 && <span className="px-1.5 py-0.5 rounded-full text-[10px]"
-                    style={{ background: isAct ? 'rgba(255,255,255,0.25)' : 'rgba(107,114,128,0.12)' }}>{cnt}</span>}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${isAct ? 'text-white' : 'bg-white/80 text-gray-500 border border-gray-200'}`}
+                  style={isAct ? { background: cfg?.dot ?? '#8B5CF6', boxShadow: `0 4px 12px ${cfg?.dot ?? '#8B5CF6'}40` } : undefined}>
+                  {t} {cnt > 0 && <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${isAct ? 'bg-white/25' : 'bg-gray-100'}`}>{cnt}</span>}
                 </button>
               )
             })}
