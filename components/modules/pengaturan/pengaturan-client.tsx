@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import {
   Users, Plus, Trash2, Edit2, X, Check, AlertTriangle,
-  Sliders, UserCheck, Settings2, UserPlus, Building2, Package, Scale,
+  Sliders, UserCheck, Settings2, UserPlus, Building2, Scale,
 } from 'lucide-react'
 import {
   createTim, updateTim, toggleTimAktif, deleteTim,
@@ -11,7 +11,6 @@ import {
   createAdminInput, updateAdminInput, toggleAdminInputAktif, deleteAdminInput,
   updateToleransi, updateBiayaPackaging, updateTargetProduksi, updateKpiTargetTim,
   createGramasi, updateGramasi, toggleGramasiAktif, deleteGramasi,
-  createProdukPengaturan, updateProdukPengaturan, toggleProdukPengaturanAktif,
   updateSafetyStockGlobal,
 } from '@/app/(dashboard)/pengaturan/actions'
 import { CabangSection, UsersSection } from './cabang-users-sections'
@@ -21,7 +20,7 @@ const WARNA = ['#8B5CF6','#3B82F6','#22C55E','#F59E0B','#EF4444','#EC4899','#14B
 
 export default function PengaturanClient({
   tims, pengaturan, userRole, adminInputList, cabangList, userList, currentUserId,
-  produkList, gramasiList,
+  gramasiList,
 }: {
   tims: any[]
   pengaturan: Record<string, string>
@@ -30,12 +29,11 @@ export default function PengaturanClient({
   cabangList: any[]
   userList: any[]
   currentUserId: string
-  produkList: any[]
   gramasiList: any[]
 }) {
   const [isPending, start] = useTransition()
   const [toast, setToast] = useState('')
-  const [tab, setTab] = useState<'tim' | 'admin' | 'umum' | 'packaging' | 'cabang' | 'users' | 'produk' | 'gramasi'>('tim')
+  const [tab, setTab] = useState<'tim' | 'admin' | 'umum' | 'packaging' | 'cabang' | 'users' | 'gramasi'>('tim')
   const showToast = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500) }
   const canManage = ['owner','admin_pusat','spv'].includes(userRole)
   const isOwnerAdmin = ['owner','admin_pusat'].includes(userRole)
@@ -43,7 +41,6 @@ export default function PengaturanClient({
   const TABS = [
     { id: 'tim'       as const, label: 'Master Tim',        icon: Users     },
     { id: 'admin'     as const, label: 'Master Admin Input', icon: UserCheck },
-    { id: 'produk'    as const, label: 'Master Produk',      icon: Package   },
     { id: 'gramasi'   as const, label: 'Master Gramasi',     icon: Scale     },
     { id: 'cabang'    as const, label: 'Cabang',             icon: Building2 },
     { id: 'users'     as const, label: 'Manajemen User',     icon: UserPlus  },
@@ -70,7 +67,6 @@ export default function PengaturanClient({
       {tab === 'admin'     && <AdminInputSection list={adminInputList} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
       {tab === 'cabang'    && <CabangSection list={cabangList} showToast={showToast} canManage={isOwnerAdmin} />}
       {tab === 'users'     && <UsersSection list={userList} currentUserId={currentUserId} showToast={showToast} canManage={isOwnerAdmin} />}
-      {tab === 'produk'    && <MasterProdukSection list={produkList} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
       {tab === 'gramasi'   && <MasterGramasiSection list={gramasiList} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
       {tab === 'umum'      && <PengaturanUmumSection pengaturan={pengaturan} tims={tims} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
       {tab === 'packaging' && <BiayaPackagingSection pengaturan={pengaturan} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
@@ -619,132 +615,6 @@ function BiayaPackagingSection({ pengaturan, isPending, start, showToast, canMan
           </button>
         </div>
       )}
-    </div>
-  )
-}
-
-// === MASTER PRODUK PACKAGING ================================================
-function MasterProdukSection({ list, isPending, start, showToast, canManage }: any) {
-  const [adding, setAdding] = useState(false)
-  const [editId, setEditId] = useState<number | null>(null)
-  const [form, setForm] = useState({ nama: '', satuan: 'pcs', keterangan: '' })
-  const [editForm, setEditForm] = useState({ nama: '', satuan: 'pcs', keterangan: '' })
-
-  function handleCreate() {
-    if (!form.nama.trim()) return
-    const fd = new FormData()
-    fd.set('nama', form.nama); fd.set('satuan', form.satuan); fd.set('keterangan', form.keterangan)
-    start(async () => {
-      const r = await createProdukPengaturan(fd)
-      if (r?.error) { showToast('❌ ' + r.error); return }
-      showToast('✅ Produk ditambahkan')
-      setForm({ nama: '', satuan: 'pcs', keterangan: '' }); setAdding(false)
-    })
-  }
-
-  function handleUpdate(id: number) {
-    const fd = new FormData()
-    fd.set('nama', editForm.nama); fd.set('satuan', editForm.satuan); fd.set('keterangan', editForm.keterangan)
-    start(async () => {
-      const r = await updateProdukPengaturan(id, fd)
-      if (r?.error) { showToast('❌ ' + r.error); return }
-      showToast('✅ Diperbarui'); setEditId(null)
-    })
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-[14px] font-bold text-gray-900">Master Produk Packaging</h2>
-          <p className="text-[12px] text-gray-400 mt-0.5">Produk yang bisa dipilih saat buat PO Vendor Packaging.</p>
-        </div>
-        {canManage && !adding && (
-          <button onClick={() => setAdding(true)}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-[13px] font-bold text-white bg-violet-600 hover:bg-violet-700">
-            <Plus size={15} /> Tambah Produk
-          </button>
-        )}
-      </div>
-
-      {adding && (
-        <div className="rounded-3xl p-4 space-y-3 bg-white border border-violet-100 shadow-sm">
-          <input autoFocus value={form.nama} onChange={e => setForm(f => ({ ...f, nama: e.target.value }))}
-            placeholder="Nama produk (cth: Akrilik Kaca Bening)" className={inp} />
-          <div className="flex gap-2">
-            <select value={form.satuan} onChange={e => setForm(f => ({ ...f, satuan: e.target.value }))}
-              className={inp + ' flex-1'}>
-              {['pcs','lusin','kodi','box','set'].map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <input value={form.keterangan} onChange={e => setForm(f => ({ ...f, keterangan: e.target.value }))}
-              placeholder="Keterangan (opsional)" className={inp + ' flex-1'} />
-          </div>
-          <div className="flex gap-2 justify-end">
-            <button onClick={() => { setAdding(false); setForm({ nama: '', satuan: 'pcs', keterangan: '' }) }}
-              className="px-4 py-2 rounded-xl text-[13px] font-semibold bg-gray-100 text-gray-600">Batal</button>
-            <button onClick={handleCreate} disabled={isPending || !form.nama.trim()}
-              className="px-5 py-2 rounded-xl text-[13px] font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">Simpan</button>
-          </div>
-        </div>
-      )}
-
-      {list.length === 0 && !adding && (
-        <div className="rounded-3xl py-14 text-center bg-white border border-slate-100">
-          <Package size={28} className="mx-auto text-slate-200 mb-3" />
-          <p className="text-[13px] text-gray-400">Belum ada produk. Tambahkan produk packaging pertama.</p>
-        </div>
-      )}
-
-      <div className="space-y-2">
-        {list.map((p: any) => (
-          <div key={p.id} className="rounded-2xl bg-white border border-slate-100 shadow-sm overflow-hidden" style={{ opacity: p.aktif ? 1 : 0.55 }}>
-            {editId === p.id ? (
-              <div className="p-4 space-y-3">
-                <input value={editForm.nama} onChange={e => setEditForm(f => ({ ...f, nama: e.target.value }))}
-                  autoFocus className={inp} />
-                <div className="flex gap-2">
-                  <select value={editForm.satuan} onChange={e => setEditForm(f => ({ ...f, satuan: e.target.value }))}
-                    className={inp + ' flex-1'}>
-                    {['pcs','lusin','kodi','box','set'].map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                  <input value={editForm.keterangan} onChange={e => setEditForm(f => ({ ...f, keterangan: e.target.value }))}
-                    placeholder="Keterangan" className={inp + ' flex-1'} />
-                </div>
-                <div className="flex gap-2 justify-end">
-                  <button onClick={() => setEditId(null)} className="px-4 py-2 rounded-xl text-[13px] font-semibold bg-gray-100 text-gray-600">Batal</button>
-                  <button onClick={() => handleUpdate(p.id)} disabled={isPending}
-                    className="px-5 py-2 rounded-xl text-[13px] font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">Simpan</button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3 px-4 py-3">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-violet-50">
-                  <Package size={15} className="text-violet-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-bold text-gray-800">{p.nama}</p>
-                  <p className="text-[11px] text-gray-400">{p.kode} · {p.satuan}{p.keterangan ? ` · ${p.keterangan}` : ''}</p>
-                </div>
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${p.aktif ? 'text-emerald-700 bg-emerald-50' : 'text-gray-400 bg-gray-100'}`}>
-                  {p.aktif ? 'Aktif' : 'Nonaktif'}
-                </span>
-                {canManage && (
-                  <>
-                    <button onClick={() => start(async () => {
-                      await toggleProdukPengaturanAktif(p.id, !p.aktif)
-                      showToast(p.aktif ? 'Produk dinonaktifkan' : 'Produk diaktifkan')
-                    })} className="px-2 py-1 rounded-lg text-[10px] border text-gray-400 hover:text-gray-600 border-gray-200">
-                      {p.aktif ? 'Nonaktifkan' : 'Aktifkan'}
-                    </button>
-                    <button onClick={() => { setEditId(p.id); setEditForm({ nama: p.nama, satuan: p.satuan || 'pcs', keterangan: p.keterangan || '' }) }}
-                      className="w-8 h-8 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center"><Edit2 size={13} /></button>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
     </div>
   )
 }
