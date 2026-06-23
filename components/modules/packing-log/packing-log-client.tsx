@@ -473,13 +473,16 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
 
         <div className="grid grid-cols-3 gap-3">
           {[
-            {label:'Total Record',val:String(filteredByDate(filtered).length)+' record',cls:'text-violet-600'},
-            {label:'Sisa Siap Packing',val:totalSiapPackingPcs+' PCS',cls:'text-emerald-600'},
-            {label:'Total Sudah Dipack',val:filteredByDate(packingList).reduce((s:number,p:any)=>s+(p.pcs_dipack||0),0)+' PCS',cls:'text-blue-600'},
+            {label:'Total Record',val:String(filteredByDate(filtered).length)+' record',dot:'#8B5CF6'},
+            {label:'Sisa Siap Packing',val:totalSiapPackingPcs+' PCS',dot:'#10B981'},
+            {label:'Total Sudah Dipack',val:filteredByDate(packingList).reduce((s:number,p:any)=>s+(p.pcs_dipack||0),0)+' PCS',dot:'#3B82F6'},
           ].map(c=>(
-            <div key={c.label}className="rounded-xl p-4 text-center bg-slate-50 border border-slate-200">
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{c.label}</p>
-              <p className={`text-[14px] font-bold mt-0.5 ${c.cls}`}>{c.val}</p>
+            <div key={c.label}className="rounded-xl p-4 bg-white border border-slate-200">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="w-1.5 h-1.5 rounded-full" style={{background:c.dot}}/>
+                <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">{c.label}</p>
+              </div>
+              <p className="text-[18px] font-semibold text-slate-800 tabular-nums">{c.val}</p>
             </div>
           ))}
         </div>

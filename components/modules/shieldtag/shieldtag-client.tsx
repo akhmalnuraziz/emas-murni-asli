@@ -604,14 +604,17 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
         {/* Summary cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Aktif', val: counts['Aktif'] ?? 0, cls: 'text-green-600' },
-            { label: 'Terdistribusi', val: counts['Terdistribusi'] ?? 0, cls: 'text-blue-600' },
-            { label: 'Terjual', val: counts['Terjual'] ?? 0, cls: 'text-violet-600' },
-            { label: 'VOID', val: counts['VOID'] ?? 0, cls: 'text-red-500' },
+            { label: 'Aktif', val: counts['Aktif'] ?? 0, dot: '#22C55E' },
+            { label: 'Terdistribusi', val: counts['Terdistribusi'] ?? 0, dot: '#3B82F6' },
+            { label: 'Terjual', val: counts['Terjual'] ?? 0, dot: '#8B5CF6' },
+            { label: 'VOID', val: counts['VOID'] ?? 0, dot: '#EF4444', warn: true },
           ].map(c => (
-            <div key={c.label} className="bg-white border border-slate-200 rounded-xl p-4 text-center">
-              <p className="text-[10.5px] font-semibold text-slate-400 uppercase tracking-wide">{c.label}</p>
-              <p className={`text-[22px] font-bold mt-1 tabular-nums leading-none ${c.cls}`}>{c.val}</p>
+            <div key={c.label} className="bg-white border border-slate-200 rounded-xl p-4">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="w-1.5 h-1.5 rounded-full" style={{background: c.dot}}/>
+                <p className="text-[10.5px] font-semibold text-slate-500 uppercase tracking-wide">{c.label}</p>
+              </div>
+              <p className={`text-[20px] font-semibold mt-0.5 tabular-nums leading-none ${c.warn && c.val>0 ? 'text-red-500' : 'text-slate-800'}`}>{c.val}</p>
             </div>
           ))}
         </div>

@@ -1703,131 +1703,178 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                           <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">📋 Riwayat Serah-Terima</p>
                         </div>
 
-                        {/* Cutting card */}
+                        {/* Cutting card — Peleburan-style: single card, inline gram row, foto row */}
                         {(item.serah_gram||item.terima_gram)&&(()=>{
                           const serahFotosC: string[] = Array.isArray(item.foto_serahkan_cutting) ? item.foto_serahkan_cutting : []
                           const terimaFotosC: string[] = Array.isArray(item.foto_diterima_cutting) ? item.foto_diterima_cutting : []
                           const durasiC = getDurasiJam(item.jam_mulai_cutting, item.jam_selesai)
+                          const rejGram = Number(item.reject_cutting_gram ?? 0)
+                          const lossCutting = Number(item.losses_cutting ?? 0)
                           return (
-                            <div className="px-4 py-3.5 border-t border-slate-200">
-                              {/* Badge row */}
-                              <div className="flex items-center gap-2 mb-3 flex-wrap">
-                                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full text-white bg-blue-500">Cutting</span>
-                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${item.status_cutting==='selesai'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>
-                                  {item.status_cutting==='selesai'?'✓ Selesai':'⏳ Proses'}
-                                </span>
-                                {durasiC&&<span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 text-violet-600">⏱ {durasiC}</span>}
+                            <div className="px-4 py-3 border-t border-slate-200">
+                              {/* Header row */}
+                              <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">Cutting</span>
+                                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${item.status_cutting==='selesai'?'bg-green-50 text-green-700 border border-green-100':'bg-amber-50 text-amber-700 border border-amber-100'}`}>
+                                      {item.status_cutting==='selesai'?'✓ Selesai':'⏳ Proses'}
+                                    </span>
+                                    {durasiC&&<span className="text-[10px] text-slate-400">⏱ {durasiC}</span>}
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-1 flex-wrap text-[11px] text-slate-500">
+                                    {(item.tanggal_mulai||item.tanggal_produksi)&&<span>{new Date(item.tanggal_mulai||item.tanggal_produksi).toLocaleDateString('id-ID')}{item.jam_mulai_cutting?` · ${String(item.jam_mulai_cutting).slice(0,5)}`:''}{item.jam_selesai?` → ${String(item.jam_selesai).slice(0,5)}`:''}</span>}
+                                    {(item.tim_nama||item.operator)&&<span>· 👥 {item.tim_nama||item.operator}{item.tim_anggota_aktif?`: ${item.tim_anggota_aktif}`:''}</span>}
+                                    {item.admin_input&&<span>· ✍️ {item.admin_input}</span>}
+                                  </div>
+                                </div>
                                 {canEdit&&!isVoided&&(
-                                  <div className="ml-auto flex items-center gap-1.5">
+                                  <div className="flex items-center gap-1.5 flex-shrink-0">
                                     <button onClick={()=>openModal('edit',item)}
-                                      className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-semibold text-blue-500 hover:bg-blue-50 transition-colors border border-blue-100">
-                                      <Edit2 size={9}/> Serah
+                                      className="flex items-center gap-1 px-2 h-7 rounded-lg text-[11px] font-semibold text-blue-500 hover:bg-blue-50 transition-colors border border-blue-100">
+                                      <Edit2 size={10}/> Serah
                                     </button>
                                     {item.terima_gram&&(
                                       <button onClick={()=>openModal('editCutting',item)}
-                                        className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-semibold text-green-600 hover:bg-green-50 transition-colors border border-green-100">
-                                        <Edit2 size={9}/> Terima
+                                        className="flex items-center gap-1 px-2 h-7 rounded-lg text-[11px] font-semibold text-green-600 hover:bg-green-50 transition-colors border border-green-100">
+                                        <Edit2 size={10}/> Terima
                                       </button>
                                     )}
                                     {canDelete&&(
                                       <button onClick={()=>openModal('deleteCutting',item)}
-                                        className="flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] font-semibold text-red-400 hover:bg-red-50 transition-colors border border-red-100">
-                                        <Trash2 size={9}/>
+                                        className="w-7 h-7 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-50 transition-colors border border-red-100">
+                                        <Trash2 size={11}/>
                                       </button>
                                     )}
                                   </div>
                                 )}
                               </div>
-                              {/* Serah / Terima cards */}
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <div className="rounded-xl p-3 space-y-1 bg-blue-50/50 border border-blue-100">
-                                  <p className="text-[9px] font-bold text-blue-500 uppercase tracking-wide">📤 Diserahkan</p>
-                                  <p className="font-bold text-gray-800">{item.serah_gram?`${parseFloat(item.serah_gram).toFixed(3)} gr`:'—'}</p>
-                                  {(item.tanggal_mulai||item.tanggal_produksi||item.jam_mulai_cutting)&&<p className="text-[11px] text-gray-400">{new Date(item.tanggal_mulai||item.tanggal_produksi).toLocaleDateString('id-ID')}{item.jam_mulai_cutting?` · ${String(item.jam_mulai_cutting).slice(0,5)}`:''}</p>}
-                                  {(item.tim_nama||item.operator)&&<p className="text-[11px] text-gray-400">👥 {item.tim_nama||item.operator}{item.tim_anggota_aktif?`: ${item.tim_anggota_aktif}`:''}</p>}
-                                  {item.catatan&&<p className="text-[11px] text-gray-400 italic">{item.catatan}</p>}
-                                  {serahFotosC.length>0&&<div className="flex gap-1.5 flex-wrap pt-1">{serahFotosC.map((u,fi)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-14 h-14 rounded-xl object-cover border-2 border-blue-100 hover:scale-110 transition-transform shadow-sm cursor-pointer"/></a>)}</div>}
+                              {/* Gram row — inline like Peleburan */}
+                              <div className="grid grid-cols-3 gap-3 mb-2">
+                                <div>
+                                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Diserahkan</p>
+                                  <p className="text-[13px] font-semibold text-slate-800 tabular-nums mt-0.5">{item.serah_gram?`${parseFloat(item.serah_gram).toFixed(3)} gr`:'—'}</p>
                                 </div>
-                                <div className={`rounded-xl p-3 space-y-1 ${item.terima_gram ? 'bg-emerald-50/50 border border-emerald-100' : 'bg-slate-50 border border-slate-200'}`}>
-                                  <p className="text-[9px] font-bold text-green-500 uppercase tracking-wide">📥 Diterima</p>
-                                  {item.terima_gram?(<>
-                                    <p className="font-bold text-gray-800">{parseFloat(item.terima_gram).toFixed(3)} gr{item.terima_pcs?` · ${item.terima_pcs} PCS`:''}</p>
-                                    {(item.tanggal_selesai||item.jam_selesai)&&<p className="text-[11px] text-gray-400">{item.tanggal_selesai?new Date(item.tanggal_selesai).toLocaleDateString('id-ID'):''}{item.jam_selesai?` · ${String(item.jam_selesai).slice(0,5)}`:''}</p>}
-                                    {(item.tim_nama||item.tim_anggota_aktif)&&<p className="text-[11px] text-gray-400">👥 {item.tim_nama||''}{item.tim_anggota_aktif?`: ${item.tim_anggota_aktif}`:''}</p>}
-                                    {item.admin_input&&<p className="text-[11px] text-gray-400">✍️ {item.admin_input}</p>}
-                                    {Number(item.reject_cutting_gram)>0&&<p className="text-[11px] font-semibold text-red-500">Reject Cutting: {parseFloat(item.reject_cutting_gram).toFixed(3)} gr</p>}
-                                    {Number(item.losses_cutting)>0&&<p className="text-[11px] font-semibold text-orange-500">Losses: {parseFloat(item.losses_cutting).toFixed(3)} gr</p>}
-                                    {item.catatan_terima&&<p className="text-[11px] text-gray-400 italic">{item.catatan_terima}</p>}
-                                    {terimaFotosC.length>0&&<div className="flex gap-1.5 flex-wrap pt-1">{terimaFotosC.map((u,fi)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-14 h-14 rounded-xl object-cover border-2 border-green-100 hover:scale-110 transition-transform shadow-sm cursor-pointer"/></a>)}</div>}
-                                  </>):<p className="text-[11px] text-gray-400 italic">Belum diterima</p>}
+                                <div>
+                                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Diterima</p>
+                                  <p className="text-[13px] font-semibold text-slate-800 tabular-nums mt-0.5">{item.terima_gram?`${parseFloat(item.terima_gram).toFixed(3)} gr`:'—'}{item.terima_pcs?` · ${item.terima_pcs} pcs`:''}</p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Reject / Losses</p>
+                                  <p className={`text-[13px] font-semibold tabular-nums mt-0.5 ${(rejGram>0||lossCutting>0)?'text-red-500':'text-slate-400'}`}>
+                                    {rejGram>0?`${rejGram.toFixed(3)} gr`:(lossCutting>0?`${lossCutting.toFixed(3)} gr`:'—')}
+                                  </p>
                                 </div>
                               </div>
+                              {(item.catatan||item.catatan_terima)&&<p className="text-[11px] text-slate-400 italic mb-2">{[item.catatan,item.catatan_terima].filter(Boolean).join(' · ')}</p>}
+                              {/* Foto row */}
+                              {(serahFotosC.length>0||terimaFotosC.length>0)&&(
+                                <div className="flex flex-wrap gap-4 mt-2">
+                                  {serahFotosC.length>0&&(
+                                    <div className="min-w-[120px]">
+                                      <p className="text-[10px] font-semibold text-slate-400 mb-1">📷 Diserahkan ({serahFotosC.length})</p>
+                                      <div className="flex flex-wrap gap-1.5">{serahFotosC.map((u,fi)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-12 h-12 rounded-lg object-cover border border-slate-200 hover:scale-110 transition-transform cursor-pointer"/></a>)}</div>
+                                    </div>
+                                  )}
+                                  {terimaFotosC.length>0&&(
+                                    <div className="min-w-[120px]">
+                                      <p className="text-[10px] font-semibold text-slate-400 mb-1">📷 Diterima ({terimaFotosC.length})</p>
+                                      <div className="flex flex-wrap gap-1.5">{terimaFotosC.map((u,fi)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-12 h-12 rounded-lg object-cover border border-slate-200 hover:scale-110 transition-transform cursor-pointer"/></a>)}</div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                           {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='produksi_item'&&l.ref_id===item.id&&l.proses==='cutting');if(!_la)return null;return(<div className="mt-2 rounded-xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss Cutting</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-gray-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-gray-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
                             </div>
                           )
                         })()}
                         {handovers.map((h:any)=>{
                           const tl:Record<string,string>={pas_berat:'Pas Berat',annealing:'Annealing',siap_packing:'Siap Packing'}
-                          const tc:Record<string,string>={pas_berat:'bg-orange-400',annealing:'bg-yellow-500',siap_packing:'bg-violet-500'}
                           const serahFotos:string[]=Array.isArray(h.serah_fotos)?h.serah_fotos:[]
                           const terimaFotos:string[]=Array.isArray(h.terima_fotos)?h.terima_fotos:[]
                           const durasiH = getDurasiJam(h.serah_jam, h.terima_jam)
+                          const hReject = Number(h.reject_gram ?? 0)
+                          const hLosses = Number(h.losses_gram ?? 0)
+                          const hSerbuk = Number(h.sisa_serbuk ?? 0)
                           return (
-                            <div key={h.id} className="px-4 py-3.5 border-t border-slate-200">
-                              {/* Badge row */}
-                              <div className="flex items-center gap-2 mb-3 flex-wrap">
-                                <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full text-white ${tc[h.tahap]??'bg-slate-400'}`}>{tl[h.tahap]}</span>
-                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${h.status==='selesai'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>
-                                  {h.status==='selesai'?'✓ Selesai':'⏳ Proses'}
-                                </span>
-                                {durasiH&&<span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 text-violet-600">⏱ {durasiH}</span>}
+                            <div key={h.id} className="px-4 py-3 border-t border-slate-200">
+                              {/* Header row */}
+                              <div className="flex items-start justify-between gap-2 mb-2 flex-wrap">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">{tl[h.tahap]}</span>
+                                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${h.status==='selesai'?'bg-green-50 text-green-700 border border-green-100':'bg-amber-50 text-amber-700 border border-amber-100'}`}>
+                                      {h.status==='selesai'?'✓ Selesai':'⏳ Proses'}
+                                    </span>
+                                    {durasiH&&<span className="text-[10px] text-slate-400">⏱ {durasiH}</span>}
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-1 flex-wrap text-[11px] text-slate-500">
+                                    {h.serah_tanggal&&<span>{new Date(h.serah_tanggal).toLocaleDateString('id-ID')}{h.serah_jam?` · ${String(h.serah_jam).slice(0,5)}`:''}{h.terima_jam?` → ${String(h.terima_jam).slice(0,5)}`:''}</span>}
+                                    {(h.tim_nama||h.serah_operator||h.terima_operator)&&<span>· 👥 {h.tim_nama||h.terima_operator||h.serah_operator}{h.tim_anggota_aktif?`: ${h.tim_anggota_aktif}`:''}</span>}
+                                    {(h.serah_admin_input||h.terima_admin_input)&&<span>· ✍️ {h.terima_admin_input||h.serah_admin_input}</span>}
+                                  </div>
+                                </div>
                                 {canEdit&&(
-                                  <div className="ml-auto flex items-center gap-1.5">
+                                  <div className="flex items-center gap-1.5 flex-shrink-0">
                                     <button onClick={()=>openEditSerahStage(item,h)}
-                                      className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-semibold text-blue-500 hover:bg-blue-50 transition-colors border border-blue-100">
-                                      <Edit2 size={9}/> Serah
+                                      className="flex items-center gap-1 px-2 h-7 rounded-lg text-[11px] font-semibold text-blue-500 hover:bg-blue-50 transition-colors border border-blue-100">
+                                      <Edit2 size={10}/> Serah
                                     </button>
                                     {h.terima_gram!=null&&(
                                       <button onClick={()=>openEditHandover(item,h)}
-                                        className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-semibold text-green-600 hover:bg-green-50 transition-colors border border-green-100">
-                                        <Edit2 size={9}/> Terima
+                                        className="flex items-center gap-1 px-2 h-7 rounded-lg text-[11px] font-semibold text-green-600 hover:bg-green-50 transition-colors border border-green-100">
+                                        <Edit2 size={10}/> Terima
                                       </button>
                                     )}
                                     {canDelete&&(
                                       <button onClick={()=>openDeleteHandover(item,h)}
-                                        className="flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] font-semibold text-red-400 hover:bg-red-50 transition-colors border border-red-100">
-                                        <Trash2 size={9}/>
+                                        className="w-7 h-7 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-50 transition-colors border border-red-100">
+                                        <Trash2 size={11}/>
                                       </button>
                                     )}
                                   </div>
                                 )}
                               </div>
-                              {/* Serah / Terima cards */}
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <div className="rounded-xl p-3 space-y-1 bg-blue-50/50 border border-blue-100">
-                                  <p className="text-[9px] font-bold text-blue-500 uppercase tracking-wide">📤 Diserahkan</p>
-                                  <p className="font-bold text-gray-800">{h.serah_gram?`${parseFloat(h.serah_gram).toFixed(3)} gr`:'—'}{h.serah_pcs?` · ${h.serah_pcs} PCS`:''}</p>
-                                  {h.serah_tanggal&&<p className="text-[11px] text-gray-400">{new Date(h.serah_tanggal).toLocaleDateString('id-ID')}{h.serah_jam?` · ${String(h.serah_jam).slice(0,5)}`:''}</p>}
-                                  {(h.tim_nama||h.serah_operator)&&<p className="text-[11px] text-gray-400">👥 {h.tim_nama||h.serah_operator}{h.tim_anggota_aktif?`: ${h.tim_anggota_aktif}`:''}</p>}
-                                  {h.serah_admin_input&&<p className="text-[11px] text-gray-400">✍️ {h.serah_admin_input}</p>}
-                                  {h.serah_catatan&&<p className="text-[11px] text-gray-400 italic">{h.serah_catatan}</p>}
-                                  {serahFotos.length>0&&<div className="flex gap-1.5 flex-wrap pt-1">{serahFotos.map((u:string,fi:number)=><img key={fi} src={u} className="w-14 h-14 rounded-xl object-cover border-2 border-blue-100 hover:scale-110 transition-transform shadow-sm cursor-pointer"/>)}</div>}
+                              {/* Gram row */}
+                              <div className="grid grid-cols-3 gap-3 mb-2">
+                                <div>
+                                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Diserahkan</p>
+                                  <p className="text-[13px] font-semibold text-slate-800 tabular-nums mt-0.5">{h.serah_gram?`${parseFloat(h.serah_gram).toFixed(3)} gr`:'—'}{h.serah_pcs?` · ${h.serah_pcs} pcs`:''}</p>
                                 </div>
-                                <div className={`rounded-xl p-3 space-y-1 ${h.terima_gram ? 'bg-emerald-50/50 border border-emerald-100' : 'bg-slate-50 border border-slate-200'}`}>
-                                  <p className="text-[9px] font-bold text-green-500 uppercase tracking-wide">📥 Diterima</p>
-                                  {h.terima_gram?(<>
-                                    <p className="font-bold text-gray-800">{parseFloat(h.terima_gram).toFixed(3)} gr{h.terima_pcs?` · ${h.terima_pcs} PCS`:''}</p>
-                                    {h.terima_tanggal&&<p className="text-[11px] text-gray-400">{new Date(h.terima_tanggal).toLocaleDateString('id-ID')}{h.terima_jam?` · ${String(h.terima_jam).slice(0,5)}`:''}</p>}
-                                    {(h.tim_nama||h.tim_anggota_aktif||h.terima_operator)&&<p className="text-[11px] text-gray-400">👥 {h.tim_nama||h.terima_operator||''}{h.tim_anggota_aktif?`: ${h.tim_anggota_aktif}`:''}</p>}
-                                    {h.terima_admin_input&&<p className="text-[11px] text-gray-400">✍️ {h.terima_admin_input}</p>}
-                                    {Number(h.sisa_serbuk)>0&&<p className="text-[11px] font-semibold text-violet-600">Serbuk: {parseFloat(h.sisa_serbuk).toFixed(3)} gr</p>}
-                                    {Number(h.reject_gram)>0&&<p className="text-[11px] font-semibold text-red-500">Reject: {parseFloat(h.reject_gram).toFixed(3)} gr{h.reject_pcs?` · ${h.reject_pcs} PCS`:''}</p>}
-                                    {Number(h.losses_gram)>0&&<p className="text-[11px] font-semibold text-orange-500">Losses: {parseFloat(h.losses_gram).toFixed(3)} gr</p>}
-                                    {h.terima_catatan&&<p className="text-[11px] text-gray-400 italic">{h.terima_catatan}</p>}
-                                    {terimaFotos.length>0&&<div className="flex gap-1.5 flex-wrap pt-1">{terimaFotos.map((u:string,fi:number)=><img key={fi} src={u} className="w-14 h-14 rounded-xl object-cover border-2 border-green-100 hover:scale-110 transition-transform shadow-sm cursor-pointer"/>)}</div>}
-                                  </>):<p className="text-[11px] text-gray-400 italic">Belum diterima</p>}
+                                <div>
+                                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Diterima</p>
+                                  <p className="text-[13px] font-semibold text-slate-800 tabular-nums mt-0.5">{h.terima_gram?`${parseFloat(h.terima_gram).toFixed(3)} gr`:'—'}{h.terima_pcs?` · ${h.terima_pcs} pcs`:''}</p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Reject / Losses</p>
+                                  <p className={`text-[13px] font-semibold tabular-nums mt-0.5 ${(hReject>0||hLosses>0)?'text-red-500':'text-slate-400'}`}>
+                                    {hReject>0?`${hReject.toFixed(3)} gr${h.reject_pcs?` · ${h.reject_pcs} pcs`:''}`:(hLosses>0?`${hLosses.toFixed(3)} gr`:'—')}
+                                  </p>
                                 </div>
                               </div>
+                              {(hSerbuk>0||h.serah_catatan||h.terima_catatan)&&(
+                                <div className="text-[11px] text-slate-500 mb-2 flex flex-wrap gap-x-3 gap-y-0.5">
+                                  {hSerbuk>0&&<span className="text-violet-600 font-semibold">Sisa Serbuk: {hSerbuk.toFixed(3)} gr</span>}
+                                  {(h.serah_catatan||h.terima_catatan)&&<span className="italic text-slate-400">{[h.serah_catatan,h.terima_catatan].filter(Boolean).join(' · ')}</span>}
+                                </div>
+                              )}
+                              {/* Foto row */}
+                              {(serahFotos.length>0||terimaFotos.length>0)&&(
+                                <div className="flex flex-wrap gap-4 mt-2">
+                                  {serahFotos.length>0&&(
+                                    <div className="min-w-[120px]">
+                                      <p className="text-[10px] font-semibold text-slate-400 mb-1">📷 Diserahkan ({serahFotos.length})</p>
+                                      <div className="flex flex-wrap gap-1.5">{serahFotos.map((u:string,fi:number)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-12 h-12 rounded-lg object-cover border border-slate-200 hover:scale-110 transition-transform cursor-pointer"/></a>)}</div>
+                                    </div>
+                                  )}
+                                  {terimaFotos.length>0&&(
+                                    <div className="min-w-[120px]">
+                                      <p className="text-[10px] font-semibold text-slate-400 mb-1">📷 Diterima ({terimaFotos.length})</p>
+                                      <div className="flex flex-wrap gap-1.5">{terimaFotos.map((u:string,fi:number)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-12 h-12 rounded-lg object-cover border border-slate-200 hover:scale-110 transition-transform cursor-pointer"/></a>)}</div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                           {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='stage_handover'&&l.ref_id===h.id);if(!_la)return null;return(<div className="mt-2 rounded-xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss {(h.tahap as string).replace(/_/g,' ')}</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-gray-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-gray-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
                             </div>
                           )

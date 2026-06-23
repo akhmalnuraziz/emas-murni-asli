@@ -247,14 +247,13 @@ export default function DashboardClient({
       {/* ── Pipeline Produksi ─────────────────────────────────────────── */}
       <Section label="Pipeline Produksi" icon={<Hammer size={13} className="text-slate-400" />}>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {PIPELINE_STAGES.map(({ key, label, icon: Icon, color, bg, border }) => {
+          {PIPELINE_STAGES.map(({ key, label, icon: Icon, color, bg }) => {
             const count = pipeline[key] ?? 0
             return (
               <a key={key} href="/produksi"
                 className={cn(
-                  'bg-white border rounded-xl p-4 flex items-center gap-3 transition-all duration-150',
-                  'hover:shadow-md hover:border-slate-300 cursor-pointer',
-                  border
+                  'bg-white border border-slate-200 rounded-xl p-4 flex items-center gap-3 transition-all duration-150',
+                  'hover:shadow-md hover:border-slate-300 cursor-pointer'
                 )}>
                 <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0', bg)}>
                   <Icon size={16} className={color} />
@@ -304,13 +303,8 @@ export default function DashboardClient({
           <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
             {stokAkrilik.map((s) => (
               <div key={s.produk_kode}
-                className={cn(
-                  'rounded-xl py-3 px-2 text-center border transition-all',
-                  s.stok_qty > 0
-                    ? 'bg-blue-50 border-blue-100'
-                    : 'bg-slate-50 border-slate-200'
-                )}>
-                <p className={cn('text-[18px] font-bold leading-none tabular-nums', s.stok_qty > 0 ? 'text-blue-700' : 'text-slate-300')}>
+                className="rounded-xl py-3 px-2 text-center bg-white border border-slate-200 transition-all">
+                <p className={cn('text-[18px] font-semibold leading-none tabular-nums', s.stok_qty > 0 ? 'text-slate-800' : 'text-slate-300')}>
                   {s.stok_qty.toLocaleString('id-ID')}
                 </p>
                 <p className="text-[10px] text-slate-400 mt-1 font-medium">{s.gramasi}gr</p>
@@ -366,8 +360,8 @@ export default function DashboardClient({
                     {Object.entries(byGramasi)
                       .sort((a, b) => parseFloat(a[0]) - parseFloat(b[0]))
                       .map(([g, v]) => (
-                        <div key={g} className="bg-green-50 border border-green-100 rounded-lg px-3 py-2 text-center">
-                          <p className="text-[13px] font-bold text-green-700 tabular-nums">{v.pcs} pcs</p>
+                        <div key={g} className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-center">
+                          <p className="text-[13px] font-semibold text-slate-800 tabular-nums">{v.pcs} pcs</p>
                           <p className="text-[10px] text-slate-400 font-medium">{g}gr</p>
                         </div>
                       ))}
@@ -391,8 +385,8 @@ export default function DashboardClient({
             <Card hoverable>
               <div className="flex flex-wrap gap-2">
                 {siapPacking.map((item) => (
-                  <div key={item.id} className="bg-green-50 border border-green-100 rounded-lg px-2.5 py-2">
-                    <p className="text-[11px] font-mono font-semibold text-green-700">{item.kode}</p>
+                  <div key={item.id} className="bg-white border border-slate-200 rounded-lg px-2.5 py-2">
+                    <p className="text-[11px] font-mono font-semibold text-slate-800">{item.kode}</p>
                     <p className="text-[10px] text-slate-400">{item.gramasi}gr · {item.batch_kode}</p>
                   </div>
                 ))}

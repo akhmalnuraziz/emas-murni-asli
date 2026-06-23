@@ -611,9 +611,9 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                         {label:'Selisih Timbangan',val:batchPusat!==timbAkhir?formatGram(Math.abs(batchPusat-timbAkhir)):'✓ Sesuai'},
                         {label:'Catatan',val:batch.catatan||'—'},
                       ].map(item=>(
-                        <div key={item.label}className="rounded-lg p-3 bg-slate-50 border border-slate-200">
-                          <p className="text-[10px] text-gray-400 font-medium">{item.label}</p>
-                          <p className="text-[13px] font-bold text-gray-700 mt-0.5 break-words">{item.val}</p>
+                        <div key={item.label}className="rounded-lg p-3 bg-white border border-slate-200">
+                          <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">{item.label}</p>
+                          <p className="text-[13px] font-semibold text-slate-800 mt-1 break-words">{item.val}</p>
                         </div>
                       ))}
                     </div>
@@ -650,33 +650,33 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                       const sfSelisihLive = sfVal!=null&&!isNaN(sfVal) ? sfVal-sisaSeharusnya : null
                       const sfOverTol = sfSelisihLive!=null&&Math.abs(sfSelisihLive)>toleransiPeleburan+0.0001
                       const cols = [
-                        {label:'Bahan Masuk',     val:formatGram(bahanMasuk),  accent:'#64748B', sub:'total raw'},
-                        {label:'Sudah Dilebur',   val:formatGram(sudahDilebur),accent:'#3B82F6', sub:'diproses'},
-                        {label:'Siap Cetak',      val:formatGram(siapCetak),   accent:'#8B5CF6', sub:'bisa dipakai', highlight:true},
-                        {label:'Terpakai Cetak',  val:formatGram(terpakai),    accent:'#A855F7', sub:'sudah dicetak'},
-                        {label:'Sisa Seharusnya', val:formatGram(sisaSeharusnya), accent:sisaSeharusnya<0?'#EF4444':'#64748B', sub:'belum dilebur'},
-                        {label:'Total Losses',    val:formatGram(losses),      accent:losses>0?'#F87171':'#94A3B8', sub:`${bahanMasuk>0?(losses/bahanMasuk*100).toFixed(2):'0.00'}% dari bahan masuk`},
+                        {label:'Bahan Masuk',     val:formatGram(bahanMasuk),  dot:'#94A3B8', warn:false, sub:'total raw'},
+                        {label:'Sudah Dilebur',   val:formatGram(sudahDilebur),dot:'#3B82F6', warn:false, sub:'diproses'},
+                        {label:'Siap Cetak',      val:formatGram(siapCetak),   dot:'#8B5CF6', warn:false, sub:'bisa dipakai'},
+                        {label:'Terpakai Cetak',  val:formatGram(terpakai),    dot:'#A855F7', warn:false, sub:'sudah dicetak'},
+                        {label:'Sisa Seharusnya', val:formatGram(sisaSeharusnya), dot:sisaSeharusnya<0?'#EF4444':'#94A3B8', warn:sisaSeharusnya<0, sub:'belum dilebur'},
+                        {label:'Total Losses',    val:formatGram(losses),      dot:losses>0?'#F87171':'#94A3B8', warn:losses>0, sub:`${bahanMasuk>0?(losses/bahanMasuk*100).toFixed(2):'0.00'}% dari bahan masuk`},
                       ]
                       return (
                         <div>
-                          <p className="text-[11px] font-bold text-violet-600 uppercase tracking-wide mb-2.5 px-1">Rekonsiliasi Detail</p>
+                          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2.5 px-1">Rekonsiliasi Detail</p>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                             {cols.map(col=>(
-                              <div key={col.label} className={`rounded-lg px-3.5 py-3 ${col.highlight?'bg-violet-50 border border-violet-200':'bg-white border border-slate-200'}`}>
+                              <div key={col.label} className="rounded-lg px-3.5 py-3 bg-white border border-slate-200">
                                 <div className="flex items-center gap-1.5 mb-1.5">
-                                  <span className="w-1.5 h-1.5 rounded-full" style={{background:col.accent}}/>
-                                  <p className="text-[10px] font-semibold text-slate-500 leading-tight">{col.label}</p>
+                                  <span className="w-1.5 h-1.5 rounded-full" style={{background:col.dot}}/>
+                                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide leading-tight">{col.label}</p>
                                 </div>
-                                <p className="text-[14px] font-extrabold" style={{color:col.accent}}>{col.val}</p>
+                                <p className={`text-[14px] font-semibold ${col.warn?'text-red-500':'text-slate-800'}`}>{col.val}</p>
                                 <p className="text-[9px] text-slate-400 mt-0.5">{col.sub}</p>
                               </div>
                             ))}
                             {/* Poin 5+11: Kolom Sisa Fisik inline-edit */}
-                            <div className="rounded-xl px-3.5 py-3 col-span-2 sm:col-span-3 bg-emerald-50 border border-emerald-200">
+                            <div className="rounded-lg px-3.5 py-3 col-span-2 sm:col-span-3 bg-white border border-slate-200">
                               <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
                                 <div className="flex items-center gap-1.5">
                                   <span className="w-1.5 h-1.5 rounded-full bg-green-500"/>
-                                  <p className="text-[10px] font-semibold text-slate-500">Sisa Fisik</p>
+                                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Sisa Fisik</p>
                                   {selisihSisaFisik!=null&&(
                                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${selisihSisaFisik>0?'bg-blue-50 text-blue-600':selisihSisaFisik<0?'bg-red-50 text-red-500':'bg-green-50 text-green-600'}`}>
                                       {selisihSisaFisik>0?`+${formatGram(selisihSisaFisik)}`:selisihSisaFisik<0?`-${formatGram(Math.abs(selisihSisaFisik))}`:'✓ Sesuai'}
