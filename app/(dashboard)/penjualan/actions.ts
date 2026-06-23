@@ -103,49 +103,35 @@ export async function createPenjualan(formData: FormData) {
   })
   const totalProfit = totalHargaJual - hppTotal - (totalHargaJual * feeMarketplace / 100)
 
-  // Insert penjualan header
-  const { data: pj, error: pjErr } = await supabase.from('penjualan').insert({
-    no_faktur: noFaktur,
-    tanggal,
-    status: 'lunas',
-    channel,
-    source: channel === 'toko' ? 'toko' : (channel === 'cabang' ? 'cabang' : 'marketplace'),
-    tipe: 'jual',
-    nama_customer: namaCustomer || null,
-    hp_customer: hpCustomer || null,
-    ktp_customer: ktpCustomer || null,
-    alamat_customer: alamatCustomer || null,
-    marketplace_akun: marketplaceAkun || null,
-    no_invoice_mktpl: noInvoiceMktpl || null,
-    cabang_kode: cabangKode || null,
-    cabang_nama: cabangNama || null,
-    catatan: catatan || null,
-    pcs: items.length,
-    gramasi: items.length === 1 ? (tags as any[])[0].gramasi : null,
-    shieldtag_kodes: kodes,
-    harga_jual: items.length === 1 ? Number(items[0].harga_jual) : null,
-    total_harga_jual: totalHargaJual,
-    hpp_total: hppTotal,
-    fee_marketplace: feeMarketplace,
-    profit: items.length === 1 ? itemRows[0].profit : null,
-    total_profit: totalProfit,
-    created_by: user.id,
-  }).select('id').single()
-  if (pjErr) return { error: pjErr.message }
-
-  // Insert items
-  const { error: itemErr } = await supabase.from('penjualan_item').insert(itemRows.map(r => ({ ...r, penjualan_id: pj.id })))
-  if (itemErr) return { error: itemErr.message }
-
-  // Insert payments
-  if (payments.length > 0) {
-    const { error: payErr } = await supabase.from('penjualan_payment').insert(payments.map(p => ({ penjualan_id: pj.id, ...p })))
-    if (payErr) return { error: payErr.message }
-  }
-
-  // Update shieldtag status to Terjual
-  const { error: stErr } = await supabase.from('shieldtag').update({ status: 'Terjual' }).in('kode', kodes)
-  if (stErr) return { error: stErr.message }
+  // Atomic: lock shieldtag + insert pj+items+payments + update shieldtag in one TX.
+  // Fixes double-sell race + partial-write inconsistency.
+  const { data: rpcData, error: rpcErr } = await supabase.rpc('create_penjualan_atomic', {
+    p_no_faktur: noFaktur,
+    p_tanggal: tanggal,
+    p_channel: channel,
+    p_source: channel === 'toko' ? 'toko' : (channel === 'cabang' ? 'cabang' : 'marketplace'),
+    p_kodes: kodes,
+    p_items: itemRows,
+    p_payments: payments,
+    p_header: {
+      nama_customer: namaCustomer,
+      hp_customer: hpCustomer,
+      ktp_customer: ktpCustomer,
+      alamat_customer: alamatCustomer,
+      marketplace_akun: marketplaceAkun,
+      no_invoice_mktpl: noInvoiceMktpl,
+      cabang_kode: cabangKode,
+      cabang_nama: cabangNama,
+      catatan,
+    },
+    p_user_id: user.id,
+    p_total_harga_jual: totalHargaJual,
+    p_hpp_total: hppTotal,
+    p_fee_marketplace: feeMarketplace,
+    p_total_profit: totalProfit,
+  })
+  if (rpcErr) return { error: rpcErr.message }
+  const pj = { id: (rpcData as any)?.id as number }
 
   revalidatePath('/penjualan')
   revalidatePath('/dashboard')

@@ -31,22 +31,28 @@ async function updateBatchSisaSeharusnya(supabase: any, batchKode: string) {
 }
 
 async function uploadBase64Fotos(supabase: any, b64Array: string[], prefix: string): Promise<string[]> {
+  const { decodeAndValidateBase64Image, sanitizePathSegment } = await import('@/lib/upload-validation')
   const urls: string[] = []
-  const safe = prefix.replace(/[^a-zA-Z0-9_-]/g, '_')
+  const safe = sanitizePathSegment(prefix)
   for (let i = 0; i < b64Array.length; i++) {
     const b64 = b64Array[i]
     if (!b64) continue
     try {
-      const base64Data = b64.replace(/^data:image\/[^;]+;base64,/, '')
-      const buffer = Buffer.from(base64Data, 'base64')
-      const path = `produksi/${safe}/${Date.now()}_${i}.jpg`
+      const { buffer, ext, contentType } = decodeAndValidateBase64Image(b64)
+      // Crypto-random suffix to avoid collision when 2 concurrent uploads race on Date.now()
+      const rand = Math.random().toString(36).slice(2, 8)
+      const path = `produksi/${safe}/${Date.now()}_${i}_${rand}.${ext}`
       const { error } = await supabase.storage
-        .from('emas-fotos').upload(path, buffer, { contentType: 'image/jpeg', upsert: true })
+        .from('emas-fotos').upload(path, buffer, { contentType, upsert: false })
       if (!error) {
         const { data } = supabase.storage.from('emas-fotos').getPublicUrl(path)
         urls.push(data.publicUrl)
+      } else {
+        console.error('[uploadBase64Fotos] storage error:', error.message, 'path:', path)
       }
-    } catch {}
+    } catch (err: any) {
+      console.error('[uploadBase64Fotos] validation failed:', err?.message ?? err)
+    }
   }
   return urls
 }

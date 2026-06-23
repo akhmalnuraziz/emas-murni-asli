@@ -28,28 +28,24 @@ async function updateSisaSeharusnya(supabase: any, batchKode: string) {
 async function uploadBase64Fotos(
   supabase: any, b64Array: string[], prefix: string, existing: string[]
 ): Promise<{ urls: string[]; uploadError?: string }> {
+  const { decodeAndValidateBase64Image, sanitizePathSegment } = await import('@/lib/upload-validation')
   const urls: string[] = [...existing]
-  const safe = prefix.replace(/[^a-zA-Z0-9_-]/g, '_')
+  const safe = sanitizePathSegment(prefix)
   for (let i = 0; i < b64Array.length; i++) {
     const b64 = b64Array[i]
     if (!b64) continue
-    try {
-      const base64Data = b64.replace(/^data:image\/[^;]+;base64,/, '')
-      if (!base64Data) return { urls, uploadError: `Foto ${i+1}: format base64 tidak valid` }
-      const buffer = Buffer.from(base64Data, 'base64')
-      if (buffer.length === 0) return { urls, uploadError: `Foto ${i+1}: buffer kosong` }
-      const path = `batch/${safe}/${Date.now()}_${i}.jpg`
-      const { error: storageErr } = await supabase.storage
-        .from('fotos')
-        .upload(path, buffer, { contentType: 'image/jpeg', upsert: true })
-      if (storageErr) {
-        return { urls, uploadError: `Foto ${i+1} gagal upload: ${storageErr.message}` }
-      }
-      const { data } = supabase.storage.from('fotos').getPublicUrl(path)
-      urls.push(data.publicUrl)
-    } catch (err: any) {
-      return { urls, uploadError: `Foto ${i+1} error: ${err?.message ?? 'unknown'}` }
+    let buf: Buffer, ext: string, contentType: string
+    try { ({ buffer: buf, ext, contentType } = decodeAndValidateBase64Image(b64)) }
+    catch (err: any) { return { urls, uploadError: `Foto ${i+1}: ${err?.message ?? 'invalid'}` } }
+    const rand = Math.random().toString(36).slice(2, 8)
+    const path = `batch/${safe}/${Date.now()}_${i}_${rand}.${ext}`
+    const { error: storageErr } = await supabase.storage
+      .from('fotos').upload(path, buf, { contentType, upsert: false })
+    if (storageErr) {
+      return { urls, uploadError: `Foto ${i+1} gagal upload: ${storageErr.message}` }
     }
+    const { data } = supabase.storage.from('fotos').getPublicUrl(path)
+    urls.push(data.publicUrl)
   }
   return { urls }
 }
