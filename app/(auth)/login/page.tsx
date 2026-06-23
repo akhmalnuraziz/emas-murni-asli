@@ -35,9 +35,8 @@ function LoginForm() {
 
       {/* Brand */}
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-gold-400 to-gold-600 shadow-md mb-4">
-          <span className="text-white text-[11px] font-black tracking-tight">EMA</span>
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="PT Emas Murni Asli" className="w-20 h-20 mx-auto mb-3 object-contain"/>
         <h1 className="text-[22px] font-bold text-slate-900 tracking-tight">PT Emas Murni Asli</h1>
         <p className="text-[13px] text-slate-500 mt-1 font-normal">Production & Inventory System</p>
       </div>

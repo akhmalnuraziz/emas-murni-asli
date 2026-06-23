@@ -107,9 +107,13 @@ export default async function PrintSJPage({ params }: { params: Promise<{ id: st
 
           {/* Header */}
           <div className="header">
-            <div className="company">
-              <h1>PT Emas Murni Asli</h1>
-              <p>Produsen Perhiasan Emas · Cirebon, Jawa Barat</p>
+            <div className="company" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="Logo" style={{ width: 56, height: 56, objectFit: 'contain', flexShrink: 0 }}/>
+              <div>
+                <h1>PT Emas Murni Asli</h1>
+                <p>Produsen Perhiasan Emas · Cirebon, Jawa Barat</p>
+              </div>
             </div>
             <div className="sj-title">
               <h2>Surat Jalan</h2>

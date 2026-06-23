@@ -32,9 +32,13 @@ export default async function SJReturPrintPage({ params }: { params: Promise<{ i
       <div className="page max-w-[700px] mx-auto my-8 bg-white rounded-2xl shadow-lg p-10">
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-black text-slate-800">SURAT JALAN RETUR</h1>
-            <p className="text-sm text-slate-500 mt-1">PT Emas Murni Asli</p>
+          <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Logo" className="w-14 h-14 object-contain flex-shrink-0"/>
+            <div>
+              <h1 className="text-2xl font-black text-slate-800">SURAT JALAN RETUR</h1>
+              <p className="text-sm text-slate-500 mt-0.5">PT Emas Murni Asli</p>
+            </div>
           </div>
           <div className="text-right">
             <p className="text-lg font-black text-orange-600">{sj.nomor_sj}</p>

@@ -133,12 +133,11 @@ export default function Sidebar({ mobileOpen, onClose, serverProfile }: SidebarP
         {/* ── Logo ── */}
         <div className="flex items-center justify-between px-4 h-[52px] flex-shrink-0 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-br from-gold-400 to-gold-600 shadow-sm flex-shrink-0">
-              <span className="text-white text-[8px] font-black tracking-tight leading-none">EMA</span>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain flex-shrink-0"/>
             <div className="min-w-0">
-              <p className="text-[13px] font-bold text-slate-900 leading-tight tracking-tight">PT Emas Murni</p>
-              <p className="text-[10px] text-slate-400 leading-tight font-medium">Production System</p>
+              <p className="text-[13px] font-bold text-slate-900 leading-tight tracking-tight">PT Emas Murni Asli</p>
+              <p className="text-[10px] text-slate-400 leading-tight font-medium">Production & Inventory System</p>
             </div>
           </div>
           <button onClick={onClose}

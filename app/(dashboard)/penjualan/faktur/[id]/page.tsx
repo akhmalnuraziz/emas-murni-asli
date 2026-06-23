@@ -55,10 +55,8 @@ export default async function FakturPage({ params }: { params: Promise<{ id: str
         <div className="flex items-start justify-between mb-6">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg,#D4AF37,#B8960C)' }}>
-                <span className="text-white text-[9px] font-black">EMA</span>
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain flex-shrink-0"/>
               <span className="font-black text-slate-800 text-base">{namaToko}</span>
             </div>
             <p className="text-xs text-slate-400">Perhiasan Emas Murni</p>

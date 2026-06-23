@@ -113,9 +113,13 @@ function PrintView({p}:{p:any}){
   return(
     <div id={`print-${p.id}`}className="hidden">
       <div style={{fontFamily:'Arial,sans-serif',padding:'32px',maxWidth:'600px',margin:'0 auto',border:'2px solid #333'}}>
-        <div style={{textAlign:'center',borderBottom:'2px solid #333',paddingBottom:'16px',marginBottom:'20px'}}>
-          <h1 style={{fontSize:'20px',fontWeight:'900',margin:'0'}}>PT EMAS MURNI ASLI</h1>
-          <p style={{fontSize:'13px',color:'#666',margin:'4px 0 0'}}>Surat Packing Produksi</p>
+        <div style={{textAlign:'center',borderBottom:'2px solid #333',paddingBottom:'16px',marginBottom:'20px',display:'flex',alignItems:'center',justifyContent:'center',gap:'12px'}}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Logo" style={{width:'48px',height:'48px',objectFit:'contain'}}/>
+          <div style={{textAlign:'left'}}>
+            <h1 style={{fontSize:'20px',fontWeight:'900',margin:'0'}}>PT EMAS MURNI ASLI</h1>
+            <p style={{fontSize:'13px',color:'#666',margin:'4px 0 0'}}>Surat Packing Produksi</p>
+          </div>
         </div>
         <table style={{width:'100%',borderCollapse:'collapse',fontSize:'12px',marginBottom:'20px'}}>
           <tbody>
