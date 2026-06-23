@@ -532,20 +532,20 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                     <p className="text-[11px] text-gray-400">Datang: {formatDate(batch.tanggal)}</p>
                   </div>
                   {/* FIX poin 3: tampilkan pusat + gudang + sisa langsung di card */}
-                  <div className="hidden sm:flex items-center gap-3 flex-shrink-0 mr-1">
-                    <div className="text-center">
-                      <p className="text-[9px] font-bold text-gray-400 uppercase">Pusat</p>
-                      <p className="text-[12px] font-bold text-gray-600">{formatGram(batchPusat)}</p>
+                  <div className="hidden sm:flex items-center gap-4 flex-shrink-0 mr-1">
+                    <div className="text-right">
+                      <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">Pusat</p>
+                      <p className="text-[12px] font-semibold text-slate-700 tabular-nums">{formatGram(batchPusat)}</p>
                     </div>
-                    <div className="w-px h-8 bg-gray-200"/>
-                    <div className="text-center">
-                      <p className="text-[9px] font-bold text-gray-400 uppercase">Gudang</p>
-                      <p className="text-[12px] font-bold text-gray-600">{formatGram(timbAkhir)}</p>
+                    <div className="w-px h-7 bg-slate-200"/>
+                    <div className="text-right">
+                      <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">Gudang</p>
+                      <p className="text-[12px] font-semibold text-slate-700 tabular-nums">{formatGram(timbAkhir)}</p>
                     </div>
-                    <div className="w-px h-8 bg-gray-200"/>
-                    <div className="text-center">
-                      <p className="text-[9px] font-bold text-gray-400 uppercase">Sisa</p>
-                      <p className="text-[12px] font-bold text-gray-600">{formatGram(sisaSeharusnya)}</p>
+                    <div className="w-px h-7 bg-slate-200"/>
+                    <div className="text-right">
+                      <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">Sisa</p>
+                      <p className="text-[12px] font-semibold text-slate-700 tabular-nums">{formatGram(sisaSeharusnya)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">

@@ -1584,31 +1584,23 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
 
                 {/* ── Card Header ─────────────────────────────────────────── */}
                 <div className="flex items-center gap-3 px-5 pt-4 pb-3">
-                  {/* Avatar */}
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-[12px] flex-shrink-0"
-                    style={{background:`linear-gradient(135deg,${sc.dot}22,${sc.dot}10)`,color:sc.dot}}>
-                    {item.gramasi ? `${item.gramasi}gr` : '?'}
-                  </div>
-
-                  {/* Main info */}
+                  {/* Main info — avatar dihapus, border-left strip warna sudah indicator status */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[13px] font-bold text-gray-900 truncate">{item.nama_item ?? item.kode}</span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 flex-shrink-0">{item.gramasi}gr</span>
+                      <span className="text-[13px] font-semibold text-slate-800 truncate">{item.nama_item ?? item.kode}</span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
                         style={{background:sc.bg,color:sc.text}}>
                         {statusLabel}
                       </span>
-                      {item.status_cutting==='proses'&&<span className="text-[9px] bg-blue-100 text-blue-600 font-bold px-1.5 py-0.5 rounded-full">proses</span>}
+                      {item.status_cutting==='proses'&&<span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100">proses</span>}
                     </div>
-                    <p className="text-[11px] text-gray-400 mt-0.5 font-medium">
+                    <p className="text-[11px] text-slate-400 mt-1 font-medium">
                       {item.kode} · {item.batch_kode}
                     </p>
-                    <p className="text-[12px] text-gray-600 mt-0.5">
-                      <span className="font-bold">{item.gramasi}gr</span>
-                      <span className="text-gray-300 mx-1">×</span>
-                      <span className="font-semibold">{item.pcs_good??item.pcs??'?'} pcs</span>
-                      <span className="text-gray-300 mx-1">=</span>
-                      <span className="font-bold text-gray-700">{fgr(item.total_gram)} gr</span>
+                    <p className="text-[12px] text-slate-600 mt-0.5 tabular-nums">
+                      {item.gramasi}gr <span className="text-slate-300 mx-0.5">×</span> {item.pcs_good??item.pcs??'?'} pcs <span className="text-slate-300 mx-0.5">=</span>
+                      <span className="font-semibold text-slate-800 ml-0.5">{fgr(item.total_gram)} gr</span>
                     </p>
                   </div>
 
@@ -1767,21 +1759,16 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                 </div>
                               </div>
                               {(item.catatan||item.catatan_terima)&&<p className="text-[11px] text-slate-400 italic mb-2">{[item.catatan,item.catatan_terima].filter(Boolean).join(' · ')}</p>}
-                              {/* Foto row */}
+                              {/* Foto row — aligned to gram columns (Diserahkan | Diterima | -) */}
                               {(serahFotosC.length>0||terimaFotosC.length>0)&&(
-                                <div className="flex flex-wrap gap-4 mt-2">
-                                  {serahFotosC.length>0&&(
-                                    <div className="min-w-[120px]">
-                                      <p className="text-[10px] font-semibold text-slate-400 mb-1">📷 Diserahkan ({serahFotosC.length})</p>
-                                      <div className="flex flex-wrap gap-1.5">{serahFotosC.map((u,fi)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-12 h-12 rounded-lg object-cover border border-slate-200 hover:scale-110 transition-transform cursor-pointer"/></a>)}</div>
-                                    </div>
-                                  )}
-                                  {terimaFotosC.length>0&&(
-                                    <div className="min-w-[120px]">
-                                      <p className="text-[10px] font-semibold text-slate-400 mb-1">📷 Diterima ({terimaFotosC.length})</p>
-                                      <div className="flex flex-wrap gap-1.5">{terimaFotosC.map((u,fi)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-12 h-12 rounded-lg object-cover border border-slate-200 hover:scale-110 transition-transform cursor-pointer"/></a>)}</div>
-                                    </div>
-                                  )}
+                                <div className="grid grid-cols-3 gap-3 mt-2">
+                                  <div>
+                                    {serahFotosC.length>0&&<div className="flex flex-wrap gap-1.5">{serahFotosC.map((u,fi)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-12 h-12 rounded-lg object-cover border border-slate-200 hover:scale-110 transition-transform cursor-pointer"/></a>)}</div>}
+                                  </div>
+                                  <div>
+                                    {terimaFotosC.length>0&&<div className="flex flex-wrap gap-1.5">{terimaFotosC.map((u,fi)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-12 h-12 rounded-lg object-cover border border-slate-200 hover:scale-110 transition-transform cursor-pointer"/></a>)}</div>}
+                                  </div>
+                                  <div/>
                                 </div>
                               )}
                           {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='produksi_item'&&l.ref_id===item.id&&l.proses==='cutting');if(!_la)return null;return(<div className="mt-2 rounded-xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss Cutting</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-gray-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-gray-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
@@ -1835,7 +1822,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   </div>
                                 )}
                               </div>
-                              {/* Gram row */}
+                              {/* Gram row — Sisa Serbuk sebagai sub-info di bawah Diterima */}
                               <div className="grid grid-cols-3 gap-3 mb-2">
                                 <div>
                                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Diserahkan</p>
@@ -1844,6 +1831,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                 <div>
                                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Diterima</p>
                                   <p className="text-[13px] font-semibold text-slate-800 tabular-nums mt-0.5">{h.terima_gram?`${parseFloat(h.terima_gram).toFixed(3)} gr`:'—'}{h.terima_pcs?` · ${h.terima_pcs} pcs`:''}</p>
+                                  {hSerbuk>0&&<p className="text-[10px] text-slate-500 mt-0.5">Sisa Serbuk: <span className="font-semibold text-slate-700 tabular-nums">{hSerbuk.toFixed(3)} gr</span></p>}
                                 </div>
                                 <div>
                                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Reject / Losses</p>
@@ -1852,27 +1840,17 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   </p>
                                 </div>
                               </div>
-                              {(hSerbuk>0||h.serah_catatan||h.terima_catatan)&&(
-                                <div className="text-[11px] text-slate-500 mb-2 flex flex-wrap gap-x-3 gap-y-0.5">
-                                  {hSerbuk>0&&<span className="text-violet-600 font-semibold">Sisa Serbuk: {hSerbuk.toFixed(3)} gr</span>}
-                                  {(h.serah_catatan||h.terima_catatan)&&<span className="italic text-slate-400">{[h.serah_catatan,h.terima_catatan].filter(Boolean).join(' · ')}</span>}
-                                </div>
-                              )}
-                              {/* Foto row */}
+                              {(h.serah_catatan||h.terima_catatan)&&<p className="text-[11px] text-slate-400 italic mb-2">{[h.serah_catatan,h.terima_catatan].filter(Boolean).join(' · ')}</p>}
+                              {/* Foto row — aligned to gram columns (Diserahkan | Diterima | -) */}
                               {(serahFotos.length>0||terimaFotos.length>0)&&(
-                                <div className="flex flex-wrap gap-4 mt-2">
-                                  {serahFotos.length>0&&(
-                                    <div className="min-w-[120px]">
-                                      <p className="text-[10px] font-semibold text-slate-400 mb-1">📷 Diserahkan ({serahFotos.length})</p>
-                                      <div className="flex flex-wrap gap-1.5">{serahFotos.map((u:string,fi:number)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-12 h-12 rounded-lg object-cover border border-slate-200 hover:scale-110 transition-transform cursor-pointer"/></a>)}</div>
-                                    </div>
-                                  )}
-                                  {terimaFotos.length>0&&(
-                                    <div className="min-w-[120px]">
-                                      <p className="text-[10px] font-semibold text-slate-400 mb-1">📷 Diterima ({terimaFotos.length})</p>
-                                      <div className="flex flex-wrap gap-1.5">{terimaFotos.map((u:string,fi:number)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-12 h-12 rounded-lg object-cover border border-slate-200 hover:scale-110 transition-transform cursor-pointer"/></a>)}</div>
-                                    </div>
-                                  )}
+                                <div className="grid grid-cols-3 gap-3 mt-2">
+                                  <div>
+                                    {serahFotos.length>0&&<div className="flex flex-wrap gap-1.5">{serahFotos.map((u:string,fi:number)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-12 h-12 rounded-lg object-cover border border-slate-200 hover:scale-110 transition-transform cursor-pointer"/></a>)}</div>}
+                                  </div>
+                                  <div>
+                                    {terimaFotos.length>0&&<div className="flex flex-wrap gap-1.5">{terimaFotos.map((u:string,fi:number)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-12 h-12 rounded-lg object-cover border border-slate-200 hover:scale-110 transition-transform cursor-pointer"/></a>)}</div>}
+                                  </div>
+                                  <div/>
                                 </div>
                               )}
                           {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='stage_handover'&&l.ref_id===h.id);if(!_la)return null;return(<div className="mt-2 rounded-xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss {(h.tahap as string).replace(/_/g,' ')}</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-gray-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-gray-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
