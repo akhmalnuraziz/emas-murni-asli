@@ -141,7 +141,7 @@ function RegisterModal({ packings, onClose, onSubmit, isPending, error }: {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-xl bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Registrasi Shieldtag</h2>
             <p className="text-[12px] text-slate-400 mt-0.5">Input range kode dari stiker fisik vendor</p>
@@ -241,7 +241,7 @@ function RegisterModal({ packings, onClose, onSubmit, isPending, error }: {
             </div>
           )}
         </form>
-        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
           <button type="button" onClick={onClose}
             className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
           <button type="submit" form="register-form" disabled={isPending || overLimit || previewCount === 0}
@@ -263,7 +263,7 @@ function EditKodeModal({ st, onClose, onSubmit, isPending, error }: {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Ganti Kode Shieldtag</h2>
             <p className="text-[12px] text-slate-400 mt-0.5">Ganti kode jika stiker fisik rusak atau keliru input</p>
@@ -277,7 +277,7 @@ function EditKodeModal({ st, onClose, onSubmit, isPending, error }: {
           </F>
           {error && <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600"><AlertTriangle size={13}/>{error}</div>}
         </div>
-        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100">
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200">
           <button onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
           <button onClick={() => onSubmit(kode)} disabled={isPending || !kode}
             className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
@@ -326,7 +326,7 @@ function ExplorerPanel() {
   return (
     <div className="space-y-5">
       {/* Search bar */}
-      <div className="rounded-3xl p-5 bg-white border border-white/60">
+      <div className="rounded-xl p-5 bg-white border border-white/60">
         <p className="text-[12px] font-bold text-gray-400 tracking-widest uppercase mb-3">Cari Shieldtag by Kode</p>
         <div className="flex gap-3">
           <div className="relative flex-1">
@@ -337,20 +337,20 @@ function ExplorerPanel() {
               onChange={e => { setQuery(e.target.value.toUpperCase()); setNotFound(false) }}
               onKeyDown={e => e.key === 'Enter' && doSearch()}
               placeholder="Masukkan kode Shieldtag, contoh: 1H80AA"
-              className="w-full pl-10 pr-4 py-3 text-[13px] font-mono rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all uppercase bg-gray-50/80 border border-gray-300/50"
+              className="w-full pl-10 pr-4 py-3 text-[13px] font-mono rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all uppercase bg-gray-50/80 border border-gray-300/50"
             />
           </div>
           <button
             onClick={() => doSearch()}
             disabled={isPending || !query.trim()}
-            className="px-6 py-3 text-[13px] font-bold text-white rounded-2xl transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 flex items-center gap-2 bg-violet-600 hover:bg-violet-700">
+            className="px-6 py-3 text-[13px] font-bold text-white rounded-xl transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 flex items-center gap-2 bg-violet-600 hover:bg-violet-700">
             {isPending ? <Loader2 size={14} className="animate-spin"/> : <Search size={14}/>}
             Cari
           </button>
         </div>
 
         {notFound && (
-          <div className="mt-4 px-4 py-3 rounded-2xl text-[13px] font-medium text-red-600 bg-red-50 border border-red-100/80">
+          <div className="mt-4 px-4 py-3 rounded-xl text-[13px] font-medium text-red-600 bg-red-50 border border-red-100/80">
             Shieldtag <span className="font-mono font-bold">{query}</span> tidak ditemukan.
           </div>
         )}
@@ -358,14 +358,14 @@ function ExplorerPanel() {
 
       {/* Result card */}
       {result && cfg && (
-        <div className="rounded-3xl overflow-hidden bg-white border border-white/60">
+        <div className="rounded-xl overflow-hidden bg-white border border-white/60">
 
           {/* Card header */}
           <div className="px-6 py-5 flex items-center justify-between gap-4"
             style={{ background: `linear-gradient(135deg,${cfg.bg},rgba(255,255,255,0))`,
               borderBottom: '1px solid rgba(243,244,246,0.9)' }}>
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center"
                 style={{ background: cfg.bg, border: `1.5px solid ${cfg.dot}30` }}>
                 <Tag size={22} style={{ color: cfg.dot }}/>
               </div>
@@ -461,7 +461,7 @@ function ExplorerPanel() {
       {/* Empty state */}
       {!result && !notFound && !isPending && (
         <div className="rounded-xl py-16 text-center bg-white/40 border border-dashed border-violet-200/60">
-          <div className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4 bg-violet-50">
+          <div className="w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4 bg-violet-50">
             <Search size={28} className="text-violet-300"/>
           </div>
           <p className="text-[13px] font-semibold text-gray-400">Masukkan kode Shieldtag untuk mulai cari</p>
@@ -622,7 +622,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
             <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Cari kode Shieldtag, batch..."
-              className="w-full pl-10 pr-4 py-2.5 text-[13px] rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all bg-white/80 border border-gray-300/50"/>
+              className="w-full pl-10 pr-4 py-2.5 text-[13px] rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all bg-white/80 border border-gray-300/50"/>
           </div>
           <div className="flex gap-2 flex-wrap">
             {tabs.map(t => {
@@ -641,7 +641,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
         </div>
 
         {/* Table */}
-        <div className="rounded-3xl overflow-auto bg-white border border-white/60">
+        <div className="rounded-xl overflow-auto bg-white border border-white/60">
           <table className="w-full min-w-[700px] text-[13px]">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/60">
@@ -658,7 +658,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
             <tbody>
               {filtered.length === 0 ? (
                 <tr><td colSpan={7} className="text-center py-16">
-                  <div className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4 bg-violet-50">
+                  <div className="w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4 bg-violet-50">
                     <Tag size={28} className="text-violet-300"/>
                   </div>
                   <p className="text-[13px] font-medium text-gray-400">
@@ -745,7 +745,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
       {modal === 'void' && activeItem && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
           <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
               <h2 className="text-[15px] font-bold text-slate-900">VOID Shieldtag?</h2>
               <button onClick={() => setModal(null)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X size={14}/></button>
             </div>
@@ -758,7 +758,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
                   placeholder="Contoh: stiker rusak, hilang, dll" className={inp}/>
               </F>
             </div>
-            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100">
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200">
               <button onClick={() => setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
               <button onClick={handleVoid} disabled={isPending || !voidReason.trim()}
                 className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
@@ -772,7 +772,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
       {modal === 'bulk_void' && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
           <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
               <h2 className="text-[15px] font-bold text-slate-900">VOID {selected.size} Shieldtag?</h2>
               <button onClick={() => setModal(null)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X size={14}/></button>
             </div>
@@ -785,7 +785,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
                   placeholder="Contoh: stiker rusak, batch recall, dll" className={inp}/>
               </F>
             </div>
-            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100">
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200">
               <button onClick={() => setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
               <button onClick={handleBulkVoid} disabled={isPending || !bulkVoidReason.trim()}
                 className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">

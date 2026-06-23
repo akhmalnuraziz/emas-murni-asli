@@ -90,7 +90,7 @@ function PeriodSelector({ period, dateFrom, dateTo }: { period: string; dateFrom
         {isPending && <span className="text-[10px] text-slate-400 ml-1">Memuat...</span>}
       </div>
       {showCustom && (
-        <div className="flex items-center gap-2 flex-wrap bg-white rounded-2xl px-3 py-2 border border-slate-200">
+        <div className="flex items-center gap-2 flex-wrap bg-white rounded-xl px-3 py-2 border border-slate-200">
           <span className="text-[12px] text-slate-400 font-medium">Dari</span>
           <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
             className="text-[12px] border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-violet-400" />
@@ -143,7 +143,7 @@ function PengeluaranModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">{item ? 'Edit Pengeluaran' : 'Tambah Pengeluaran'}</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">Isi data pengeluaran dengan lengkap</p>
@@ -208,7 +208,7 @@ function PengeluaranModal({
             )}
           </div>
         </form>
-        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
           <button type="button" onClick={onClose}
             className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">
             Batal
@@ -244,7 +244,7 @@ function KategoriModal({ onClose, item }: { onClose: () => void; item?: Kategori
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">{item ? 'Edit Kategori' : 'Tambah Kategori'}</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">Kelola kategori pengeluaran</p>
@@ -271,7 +271,7 @@ function KategoriModal({ onClose, item }: { onClose: () => void; item?: Kategori
             </div>
           </div>
         </form>
-        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
           <button type="button" onClick={onClose}
             className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
           <button form="kategori-form" type="submit" disabled={isPending}
@@ -327,7 +327,7 @@ export default function PengeluaranClient({
 
       {/* ── Header KPI ────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="rounded-3xl p-5 col-span-1 sm:col-span-1 bg-red-600 text-white">
+        <div className="rounded-xl p-5 col-span-1 sm:col-span-1 bg-red-600 text-white">
           <div className="flex items-center gap-2 mb-2">
             <TrendingDown size={16} className="opacity-80"/>
             <p className="text-[12px] font-semibold opacity-80">Total Pengeluaran</p>
@@ -335,7 +335,7 @@ export default function PengeluaranClient({
           <p className="text-[20px] font-black">{formatRupiah(totalPengeluaran)}</p>
           <p className="text-[12px] opacity-70 mt-1">{periodLabel}</p>
         </div>
-        <div className="rounded-3xl p-5 sm:col-span-2"
+        <div className="rounded-xl p-5 sm:col-span-2"
           >
           <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-3">Per Kategori</p>
           {sorted.length > 0 ? (
@@ -368,7 +368,7 @@ export default function PengeluaranClient({
       {/* ── Period + Tabs ─────────────────────────────────────────────────── */}
       <PeriodSelector period={period} dateFrom={dateFrom} dateTo={dateTo} />
 
-      <div className="flex gap-1 bg-slate-100 rounded-2xl p-1 w-fit">
+      <div className="flex gap-1 bg-slate-100 rounded-xl p-1 w-fit">
         {(['pengeluaran', 'kategori'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={cn('px-4 py-1.5 rounded-xl text-[12px] font-bold transition-all capitalize',
@@ -398,14 +398,14 @@ export default function PengeluaranClient({
           </div>
 
           {filtered.length === 0 ? (
-            <div className="rounded-3xl p-12 text-center bg-white border border-slate-100">
+            <div className="rounded-xl p-12 text-center bg-white border border-slate-200">
               <Wallet size={32} className="text-slate-200 mx-auto mb-3"/>
               <p className="text-[13px] text-slate-400">Belum ada pengeluaran di periode ini</p>
             </div>
           ) : (
             <div className="space-y-2">
               {filtered.map(p => (
-                <div key={p.id} className="bg-white rounded-2xl px-4 py-3 border border-slate-100 flex items-center gap-3">
+                <div key={p.id} className="bg-white rounded-xl px-4 py-3 border border-slate-200 flex items-center gap-3">
                   <div className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                     style={{ background: p.kategori?.warna ?? '#94A3B8' }} />
                   <div className="flex-1 min-w-0">
@@ -435,7 +435,7 @@ export default function PengeluaranClient({
                   </div>
                   {p.foto && (
                     <a href={p.foto} target="_blank" rel="noopener noreferrer">
-                      <img src={p.foto} alt="bukti" className="w-10 h-10 rounded-xl object-cover border border-slate-100 flex-shrink-0" />
+                      <img src={p.foto} alt="bukti" className="w-10 h-10 rounded-xl object-cover border border-slate-200 flex-shrink-0" />
                     </a>
                   )}
                   {canManage && (
@@ -468,8 +468,8 @@ export default function PengeluaranClient({
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {kategoriList.map(k => (
-              <div key={k.id} className="bg-white rounded-2xl p-4 border border-slate-100 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
+              <div key={k.id} className="bg-white rounded-xl p-4 border border-slate-200 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background: `${k.warna}22` }}>
                   <Tag size={16} style={{ color: k.warna ?? '#94A3B8' }} />
                 </div>
@@ -520,7 +520,7 @@ export default function PengeluaranClient({
       {voidId !== null && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
           <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
               <div>
                 <h2 className="text-[15px] font-bold text-slate-900">Hapus Pengeluaran?</h2>
                 <p className="text-[11px] text-slate-400 mt-0.5">Data tidak bisa dikembalikan</p>
@@ -538,7 +538,7 @@ export default function PengeluaranClient({
                   className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
               </div>
             </div>
-            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
               <button onClick={() => setVoidId(null)}
                 className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">
                 Batal

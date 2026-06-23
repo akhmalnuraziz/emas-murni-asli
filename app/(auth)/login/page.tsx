@@ -56,8 +56,8 @@ function LoginForm() {
       )}
 
       {/* Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 pt-6 pb-2 border-b border-slate-100">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-6 pt-6 pb-2 border-b border-slate-200">
           <p className="text-[13px] font-semibold text-slate-900">Masuk ke Sistem</p>
         </div>
 

@@ -145,7 +145,7 @@ function CreatePenjualanModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Catat Penjualan Baru</h2>
           </div>
@@ -316,7 +316,7 @@ function CreatePenjualanModal({
           {error && <p className="text-[11px] text-red-500 mt-1">{error}</p>}
         </form>
 
-        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
           <button type="button" onClick={onClose}
             className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">
             Batal
@@ -347,7 +347,7 @@ function PenjualanRow({ pj, canSeeRp, isOwner }: { pj: Penjualan; canSeeRp: bool
   }
 
   return (
-    <div className="rounded-3xl overflow-hidden"
+    <div className="rounded-xl overflow-hidden"
       >
       <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50/50"
         onClick={() => setOpen(o => !o)}>
@@ -379,7 +379,7 @@ function PenjualanRow({ pj, canSeeRp, isOwner }: { pj: Penjualan; canSeeRp: bool
       </div>
 
       {open && (
-        <div className="px-4 pb-4 border-t border-slate-100 pt-3 space-y-3">
+        <div className="px-4 pb-4 border-t border-slate-200 pt-3 space-y-3">
           {/* Items */}
           <div>
             <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Item</p>

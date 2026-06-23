@@ -64,7 +64,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
   return (
     <div className="space-y-5 pb-20">
       {toast && (
-        <div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-2xl text-[13px] font-semibold text-white shadow-2xl',
+        <div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-xl text-[13px] font-semibold text-white shadow-2xl',
           toast.ok ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 'bg-gradient-to-r from-red-500 to-rose-600')}>
           {toast.ok ? <Check size={15}/> : <AlertTriangle size={15}/>}{toast.msg}
         </div>
@@ -78,7 +78,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
         </div>
         {canManage && (
           <button onClick={() => { setModal('create'); setErr('') }}
-            className="flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-bold text-white rounded-2xl bg-violet-600 hover:bg-violet-700 transition-colors">
+            className="flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-bold text-white rounded-xl bg-violet-600 hover:bg-violet-700 transition-colors">
             <Plus size={14}/> Tambah Scrap
           </button>
         )}
@@ -91,7 +91,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
           { label: 'Tersedia', val: fmtGram(totalSisa), color: '#16A34A' },
           { label: 'Entri', val: `${scrapList.length} item`, color: '#7C3AED' },
         ].map(c => (
-          <div key={c.label} className="rounded-2xl px-4 py-3 bg-white border border-slate-100">
+          <div key={c.label} className="rounded-xl px-4 py-3 bg-white border border-slate-200">
             <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">{c.label}</p>
             <p className="text-[16px] font-extrabold mt-0.5" style={{ color: c.color }}>{c.val}</p>
           </div>
@@ -118,7 +118,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
       </div>
 
       {/* Table */}
-      <div className="rounded-3xl overflow-hidden bg-white border border-slate-100">
+      <div className="rounded-xl overflow-hidden bg-white border border-slate-200">
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
@@ -180,7 +180,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
       {modal === 'create' && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
           <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
               <h2 className="text-[15px] font-bold text-slate-900">Tambah Scrap</h2>
               <button onClick={() => setModal(null)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X size={14}/></button>
             </div>
@@ -206,7 +206,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
                 <input name="catatan" placeholder="opsional" className={inp}/></div>
               {err && <p className="text-[12px] text-red-500 font-semibold">{err}</p>}
             </form>
-            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
               <button type="button" onClick={() => setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
               <button type="submit" form="scrap-form" disabled={isPending} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
                 {isPending ? 'Menyimpan...' : 'Simpan'}
@@ -220,7 +220,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
       {voidModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
           <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
               <h2 className="text-[15px] font-bold text-slate-900">Void Scrap {voidModal.kode}?</h2>
               <button onClick={() => setVoidModal(null)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X size={14}/></button>
             </div>
@@ -233,7 +233,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
                   placeholder="Alasan void..." className={inp}/>
               </div>
             </div>
-            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100">
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200">
               <button onClick={() => setVoidModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
               <button disabled={!voidReason.trim() || isPending}
                 onClick={() => {

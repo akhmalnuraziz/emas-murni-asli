@@ -15,7 +15,7 @@ import {
 } from '@/app/(dashboard)/produksi/actions'
 import type { UserRole } from '@/lib/types/database'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
-import { SerahModalStd, TerimaModalStd, TimPickerStd, AdminPickerStd } from '@/components/modules/produksi/serah-terima-modal'
+import { SerahModalStd, TerimaModalStd, AdminPickerStd } from '@/components/modules/produksi/serah-terima-modal'
 
 interface Props { produksiList: any[]; batches: any[]; peleburanByBatch: Record<string, any[]>; tims: any[]; toleransi: Record<string, number>; adminList: any[]; userRole: UserRole; userName: string; lossApprovals?: any[] }
 
@@ -117,7 +117,7 @@ function Lightbox({ url, onClose }: { url: string; onClose: () => void }) {
   }, [onClose])
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/85" onClick={onClose}>
-      <img src={url} alt="" className="max-w-[95vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()} />
+      <img src={url} alt="" className="max-w-[95vw] max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
       <button onClick={onClose} className="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-all">
         <X size={18} />
       </button>
@@ -310,7 +310,7 @@ function TLine({ events }: { events: any[] }) {
           }}
         >
           {/* Dark iOS-style tooltip */}
-          <div className="rounded-2xl p-3" style={{ background: 'rgba(22,22,26,0.94)', backdropFilter: 'blur(24px) saturate(180%)', boxShadow: '0 8px 32px rgba(0,0,0,0.28), 0 0 0 0.5px rgba(255,255,255,0.08)' }}>
+          <div className="rounded-xl p-3" style={{ background: 'rgba(22,22,26,0.94)', backdropFilter: 'blur(24px) saturate(180%)', boxShadow: '0 8px 32px rgba(0,0,0,0.28), 0 0 0 0.5px rgba(255,255,255,0.08)' }}>
             <div className="flex items-center gap-1.5 mb-1.5">
               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: hover.dot }} />
               <span className="text-[12px] font-semibold text-white tracking-tight">{hover.ev.status}</span>
@@ -420,9 +420,9 @@ function EventHistory({ events, item, stageHandovers = [], lossApprovals = [] }:
         // Parse catatan for clean display
         const hasCatatanBreakdown = ev.catatan?.includes('Serah:')
         return (
-          <div key={ev.id ?? i} className="rounded-2xl overflow-hidden bg-white border border-slate-100">
+          <div key={ev.id ?? i} className="rounded-xl overflow-hidden bg-white border border-slate-200">
             {/* Header row */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-100" style={{background:c.bg+'66'}}>
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-200" style={{background:c.bg+'66'}}>
               <div className="w-2 h-2 rounded-full flex-shrink-0" style={{background:c.dot}}/>
               <Sbadge s={ev.status} />
               <span className="text-[11px] text-gray-400 font-medium">{formatDate(ev.tanggal)}</span>
@@ -551,7 +551,7 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Permintaan Cetak Baru</h2>
           </div>
@@ -599,14 +599,13 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
             <F label="Jam Mulai" req><input name="jam_mulai" type="time" value={f.jam_mulai ?? ''} onChange={e => s('jam_mulai', e.target.value)} className={inp} required /></F>
   
           </div>
-          <TimPickerStd tims={tims} prefix="" />
-          <AdminPickerStd adminList={adminList} prefix="" />
+          <AdminPickerStd adminList={adminList} prefix="" label="Admin Yang Menyerahkan" />
           <F label="Catatan"><input name="catatan" placeholder="Keterangan tambahan..." className={inp} /></F>
           <F label="Foto Proses (opsional, max 10)">
             <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto proses awal" />
           </F>
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/>{error}</div>}
-          <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0 -mx-5 -mb-4 mt-2">
+          <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0 -mx-5 -mb-4 mt-2">
             <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
             <button type="submit" disabled={isPending || up} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {(isPending || up) && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
@@ -645,7 +644,7 @@ function TambahProduksiModal({ item, peleburanByBatch, tims, adminList, onClose,
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Tambah Produksi</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">Batch {batchKode} — lanjut cetak gramasi</p>
@@ -694,13 +693,12 @@ function TambahProduksiModal({ item, peleburanByBatch, tims, adminList, onClose,
   
           </div>
 
-          <TimPickerStd tims={tims} prefix="" />
-          <AdminPickerStd adminList={adminList} prefix="" />
+          <AdminPickerStd adminList={adminList} prefix="" label="Admin Yang Menyerahkan" />
           <F label="Foto Proses (opsional, max 10)">
             <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto" />
           </F>
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/>{error}</div>}
-          <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0 -mx-5 -mb-4 mt-2">
+          <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0 -mx-5 -mb-4 mt-2">
             <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
             <button type="submit" disabled={isPending || up || plbList.length === 0} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {(isPending || up) && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
@@ -744,7 +742,7 @@ function EditModal({ item, tims, adminList, onClose, onSubmit, isPending, error 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Edit Diserahkan</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">{item.kode}</p>
@@ -762,8 +760,7 @@ function EditModal({ item, tims, adminList, onClose, onSubmit, isPending, error 
             <F label="Tanggal"><input name="tanggal_produksi" type="date" value={f.tanggal_produksi} onChange={e => s('tanggal_produksi', e.target.value)} className={inp} /></F>
           </div>
 
-          <TimPickerStd tims={tims} prefix="" initialTimId={String(item.tim_id ?? '')} initialAnggota={item.tim_anggota_aktif ? item.tim_anggota_aktif.split(', ').filter(Boolean) : []} />
-          <AdminPickerStd adminList={adminList} prefix="" initialValue={item.admin_input ?? item.operator ?? ''} />
+          <AdminPickerStd adminList={adminList} prefix="" initialValue={item.admin_input ?? item.operator ?? ''} label="Admin Yang Menyerahkan" />
           <F label="Catatan"><input name="catatan" value={f.catatan} onChange={e => s('catatan', e.target.value)} placeholder="Catatan tambahan…" className={inp} /></F>
           <div>
             <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Diserahkan</label>
@@ -781,7 +778,7 @@ function EditModal({ item, tims, adminList, onClose, onSubmit, isPending, error 
             <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label={existingFotos.length > 0 ? 'Tambah foto lagi' : 'Tambah foto (opsional)'} />
           </div>
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/>{error}</div>}
-          <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0 -mx-5 -mb-4 mt-2">
+          <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0 -mx-5 -mb-4 mt-2">
             <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
             <button type="submit" disabled={isPending || uploading} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {(isPending || uploading) && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
@@ -845,7 +842,7 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">{isEdit ? 'Edit Diterima' : 'Konfirmasi Terima Cutting'}</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">{item.kode} — {item.nama_item}</p>
@@ -939,7 +936,7 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
                 ))}
               </div>
             )}
-            <label className="flex items-center gap-2 h-11 px-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-violet-50 transition-colors border border-gray-200">
+            <label className="flex items-center gap-2 h-11 px-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-violet-50 transition-colors border border-gray-200">
               <Camera size={14} className="text-gray-400 flex-shrink-0" />
               <span className="text-[12px] text-gray-400">{fotos.length > 0 ? `${fotos.length} foto baru` : (existingFotos.length > 0 ? 'Tambah foto lagi' : 'Tambah foto (opsional)')}</span>
               <input type="file" accept="image/*" multiple className="hidden"
@@ -964,7 +961,7 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
             </div>
           )}
 
-          <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0 -mx-5 -mb-4 mt-2">
+          <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0 -mx-5 -mb-4 mt-2">
             <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
             <button type="submit" disabled={isPending || uploading}
               className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
@@ -1018,7 +1015,7 @@ function SerahStageModal({ item, tahap, tims, onClose, onSubmit, isPending, erro
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Serah ke {label}</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">{item.kode} — {item.nama_item}</p>
@@ -1059,7 +1056,7 @@ function SerahStageModal({ item, tahap, tims, onClose, onSubmit, isPending, erro
             <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto (opsional)" />
           </div>
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/><span>{error}</span></div>}
-          <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0 -mx-5 -mb-4 mt-2">
+          <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0 -mx-5 -mb-4 mt-2">
             <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
             <button type="submit" disabled={isPending||uploading}
               className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
@@ -1135,7 +1132,7 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Konfirmasi Terima {label}</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">{item.kode} — {item.nama_item}</p>
@@ -1233,7 +1230,7 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
 
           <div>
             <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bukti</label>
-            <label className="flex items-center gap-2 h-11 px-4 bg-gray-50 rounded-2xl cursor-pointer hover:bg-violet-50 transition-colors border border-gray-200">
+            <label className="flex items-center gap-2 h-11 px-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-violet-50 transition-colors border border-gray-200">
               <Camera size={14} className="text-gray-400 flex-shrink-0"/>
               <span className="text-[12px] text-gray-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto (opsional, max 5)'}</span>
               <input type="file" accept="image/*" multiple className="hidden" onChange={e=>setFotos(p=>[...p,...Array.from(e.target.files??[])].slice(0,10))}/>
@@ -1242,7 +1239,7 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
               <div className="flex gap-2 mt-2 flex-wrap">
                 {fotos.map((f, i) => (
                   <div key={i} className="relative">
-                    <img src={URL.createObjectURL(f)} alt="" className="w-16 h-16 rounded-2xl object-cover border-2 border-emerald-200 shadow-sm"/>
+                    <img src={URL.createObjectURL(f)} alt="" className="w-16 h-16 rounded-xl object-cover border-2 border-emerald-200 shadow-sm"/>
                     <button type="button" onClick={() => setFotos(p => p.filter((_, j) => j !== i))}
                       className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center font-bold shadow-md hover:bg-red-600 transition-colors">
                       ×
@@ -1255,7 +1252,7 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
 
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/><span>{error}</span></div>}
 
-          <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0 -mx-5 -mb-4 mt-2">
+          <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0 -mx-5 -mb-4 mt-2">
             <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
             <button type="submit" disabled={isPending||uploading}
               className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
@@ -1294,7 +1291,7 @@ function UpdateModal({ item, onClose, onSubmit, isPending, error }: {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Update Status Produksi</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">{item.kode} — {item.nama_item || `${item.gramasi}gr × ${item.pcs} PCS`}</p>
@@ -1345,7 +1342,7 @@ function UpdateModal({ item, onClose, onSubmit, isPending, error }: {
           )}
           <F label="Catatan"><input name="catatan" className={inp} placeholder="Keterangan…" /></F>
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/>{error}</div>}
-          <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0 -mx-5 -mb-4 mt-2">
+          <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0 -mx-5 -mb-4 mt-2">
             <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
             <button type="submit" disabled={isPending || up} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {(isPending || up) && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
@@ -1364,7 +1361,7 @@ function DelModal({ item, onClose, onConfirm, isPending, error }: { item: any; o
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="w-full max-w-sm bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden p-6">
-        <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><Trash2 size={24} className="text-red-500" /></div>
+        <div className="w-14 h-14 bg-red-50 rounded-xl flex items-center justify-center mx-auto mb-4"><Trash2 size={24} className="text-red-500" /></div>
         <h2 className="text-[16px] font-bold text-slate-900 text-center">Hapus Batch Produksi?</h2>
         <p className="text-[13px] text-slate-500 mt-2 text-center"><span className="font-semibold text-slate-700">{item.kode}</span> akan dihapus permanen beserta semua event-nya.</p>
         {error && (
@@ -1404,7 +1401,7 @@ function StatChip({ label, value, accent }: { label: string; value: React.ReactN
   }
   const cls = accent ? (accentMap[accent] ?? 'bg-slate-50 text-slate-700') : 'bg-slate-50 text-slate-700'
   return (
-    <div className={`rounded-2xl px-3 py-2 overflow-hidden min-w-0 ${cls}`}>
+    <div className={`rounded-xl px-3 py-2 overflow-hidden min-w-0 ${cls}`}>
       <p className="text-[9.5px] font-bold tracking-widest uppercase mb-0.5 truncate opacity-70">{label}</p>
       <div className="text-[13px] font-bold leading-tight min-w-0">{value}</div>
     </div>
@@ -1552,7 +1549,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
               return (
                 <div key={gk} className="space-y-3">
                   {gk!=='__no_plb__' && (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-2xl mt-1 bg-violet-50 border border-violet-100">
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl mt-1 bg-violet-50 border border-violet-100">
                       <span className="text-[11px] font-bold text-violet-700">🔥 {gk}</span>
                       <span className="text-[10px] text-violet-400 font-semibold">{gItems.length} produksi · {plbTotal.toFixed(2)} gr dipakai</span>
                     </div>
@@ -1588,7 +1585,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                 {/* ── Card Header ─────────────────────────────────────────── */}
                 <div className="flex items-center gap-3 px-5 pt-4 pb-3">
                   {/* Avatar */}
-                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center font-extrabold text-[12px] flex-shrink-0"
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-[12px] flex-shrink-0"
                     style={{background:`linear-gradient(135deg,${sc.dot}22,${sc.dot}10)`,color:sc.dot}}>
                     {item.gramasi ? `${item.gramasi}gr` : '?'}
                   </div>
@@ -1637,11 +1634,19 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                         className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
                         <Check size={11}/> Terima
                       </button>
-                    if(s==='Pas Berat'&&pbH?.status==='selesai'&&!annH)
-                      return <button onClick={()=>openSerahStage(item,'annealing')}
-                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-amber-50 text-amber-700">
-                        <Plus size={11}/> Annealing
-                      </button>
+                    if(s==='Pas Berat'&&pbH?.status==='selesai'&&!annH&&!spH)
+                      return <div className="flex items-center gap-1 flex-shrink-0">
+                        <button onClick={()=>openSerahStage(item,'annealing')}
+                          className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all bg-amber-50 text-amber-700"
+                          title="Lanjut ke Annealing">
+                          <Plus size={11}/> Annealing
+                        </button>
+                        <button onClick={()=>openSerahStage(item,'siap_packing')}
+                          className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all bg-violet-50 text-violet-700"
+                          title="Skip Annealing → langsung Siap Packing">
+                          <Plus size={11}/> Siap Packing
+                        </button>
+                      </div>
                     if(s==='Annealing'&&annH?.status==='proses')
                       return <button onClick={()=>openTerimaStage(item,'annealing',annH.id)}
                         className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
@@ -1689,13 +1694,13 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
 
                 {/* ── Expanded ────────────────────────────────────────────── */}
                 {isExp&&(
-                  <div className="px-4 pb-5 pt-4 border-t border-slate-100 space-y-3 bg-slate-50/40">
+                  <div className="px-4 pb-5 pt-4 border-t border-slate-200 space-y-3 bg-slate-50/40">
 
                     {/* ④ Stage handover + Cutting */}
                     {(item.serah_gram||item.terima_gram||handovers.length>0)&&(
-                      <div className="rounded-2xl overflow-hidden border border-violet-100 bg-white">
-                        <div className="px-4 py-2 text-[10px] font-bold text-violet-600 uppercase tracking-wide bg-violet-50/50">
-                          ⛓ Alur Serah-Terima
+                      <div className="rounded-lg overflow-hidden border border-slate-200 bg-white">
+                        <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-200">
+                          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">📋 Riwayat Serah-Terima</p>
                         </div>
 
                         {/* Cutting card */}
@@ -1704,7 +1709,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                           const terimaFotosC: string[] = Array.isArray(item.foto_diterima_cutting) ? item.foto_diterima_cutting : []
                           const durasiC = getDurasiJam(item.jam_mulai_cutting, item.jam_selesai)
                           return (
-                            <div className="px-4 py-3.5 border-t border-slate-100">
+                            <div className="px-4 py-3.5 border-t border-slate-200">
                               {/* Badge row */}
                               <div className="flex items-center gap-2 mb-3 flex-wrap">
                                 <span className="text-[10px] font-bold px-2.5 py-1 rounded-full text-white bg-blue-500">Cutting</span>
@@ -1743,11 +1748,12 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   {item.catatan&&<p className="text-[11px] text-gray-400 italic">{item.catatan}</p>}
                                   {serahFotosC.length>0&&<div className="flex gap-1.5 flex-wrap pt-1">{serahFotosC.map((u,fi)=><a key={fi} href={u} target="_blank" rel="noopener noreferrer"><img src={u} className="w-14 h-14 rounded-xl object-cover border-2 border-blue-100 hover:scale-110 transition-transform shadow-sm cursor-pointer"/></a>)}</div>}
                                 </div>
-                                <div className={`rounded-xl p-3 space-y-1 ${item.terima_gram ? 'bg-emerald-50/50 border border-emerald-100' : 'bg-slate-50 border border-slate-100'}`}>
+                                <div className={`rounded-xl p-3 space-y-1 ${item.terima_gram ? 'bg-emerald-50/50 border border-emerald-100' : 'bg-slate-50 border border-slate-200'}`}>
                                   <p className="text-[9px] font-bold text-green-500 uppercase tracking-wide">📥 Diterima</p>
                                   {item.terima_gram?(<>
                                     <p className="font-bold text-gray-800">{parseFloat(item.terima_gram).toFixed(3)} gr{item.terima_pcs?` · ${item.terima_pcs} PCS`:''}</p>
                                     {(item.tanggal_selesai||item.jam_selesai)&&<p className="text-[11px] text-gray-400">{item.tanggal_selesai?new Date(item.tanggal_selesai).toLocaleDateString('id-ID'):''}{item.jam_selesai?` · ${String(item.jam_selesai).slice(0,5)}`:''}</p>}
+                                    {(item.tim_nama||item.tim_anggota_aktif)&&<p className="text-[11px] text-gray-400">👥 {item.tim_nama||''}{item.tim_anggota_aktif?`: ${item.tim_anggota_aktif}`:''}</p>}
                                     {item.admin_input&&<p className="text-[11px] text-gray-400">✍️ {item.admin_input}</p>}
                                     {Number(item.reject_cutting_gram)>0&&<p className="text-[11px] font-semibold text-red-500">Reject Cutting: {parseFloat(item.reject_cutting_gram).toFixed(3)} gr</p>}
                                     {Number(item.losses_cutting)>0&&<p className="text-[11px] font-semibold text-orange-500">Losses: {parseFloat(item.losses_cutting).toFixed(3)} gr</p>}
@@ -1756,7 +1762,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   </>):<p className="text-[11px] text-gray-400 italic">Belum diterima</p>}
                                 </div>
                               </div>
-                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='produksi_item'&&l.ref_id===item.id&&l.proses==='cutting');if(!_la)return null;return(<div className="mt-2 rounded-2xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss Cutting</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-gray-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-gray-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
+                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='produksi_item'&&l.ref_id===item.id&&l.proses==='cutting');if(!_la)return null;return(<div className="mt-2 rounded-xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss Cutting</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-gray-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-gray-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
                             </div>
                           )
                         })()}
@@ -1767,7 +1773,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                           const terimaFotos:string[]=Array.isArray(h.terima_fotos)?h.terima_fotos:[]
                           const durasiH = getDurasiJam(h.serah_jam, h.terima_jam)
                           return (
-                            <div key={h.id} className="px-4 py-3.5 border-t border-slate-100">
+                            <div key={h.id} className="px-4 py-3.5 border-t border-slate-200">
                               {/* Badge row */}
                               <div className="flex items-center gap-2 mb-3 flex-wrap">
                                 <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full text-white ${tc[h.tahap]??'bg-slate-400'}`}>{tl[h.tahap]}</span>
@@ -1807,11 +1813,12 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   {h.serah_catatan&&<p className="text-[11px] text-gray-400 italic">{h.serah_catatan}</p>}
                                   {serahFotos.length>0&&<div className="flex gap-1.5 flex-wrap pt-1">{serahFotos.map((u:string,fi:number)=><img key={fi} src={u} className="w-14 h-14 rounded-xl object-cover border-2 border-blue-100 hover:scale-110 transition-transform shadow-sm cursor-pointer"/>)}</div>}
                                 </div>
-                                <div className={`rounded-xl p-3 space-y-1 ${h.terima_gram ? 'bg-emerald-50/50 border border-emerald-100' : 'bg-slate-50 border border-slate-100'}`}>
+                                <div className={`rounded-xl p-3 space-y-1 ${h.terima_gram ? 'bg-emerald-50/50 border border-emerald-100' : 'bg-slate-50 border border-slate-200'}`}>
                                   <p className="text-[9px] font-bold text-green-500 uppercase tracking-wide">📥 Diterima</p>
                                   {h.terima_gram?(<>
                                     <p className="font-bold text-gray-800">{parseFloat(h.terima_gram).toFixed(3)} gr{h.terima_pcs?` · ${h.terima_pcs} PCS`:''}</p>
                                     {h.terima_tanggal&&<p className="text-[11px] text-gray-400">{new Date(h.terima_tanggal).toLocaleDateString('id-ID')}{h.terima_jam?` · ${String(h.terima_jam).slice(0,5)}`:''}</p>}
+                                    {(h.tim_nama||h.tim_anggota_aktif||h.terima_operator)&&<p className="text-[11px] text-gray-400">👥 {h.tim_nama||h.terima_operator||''}{h.tim_anggota_aktif?`: ${h.tim_anggota_aktif}`:''}</p>}
                                     {h.terima_admin_input&&<p className="text-[11px] text-gray-400">✍️ {h.terima_admin_input}</p>}
                                     {Number(h.sisa_serbuk)>0&&<p className="text-[11px] font-semibold text-violet-600">Serbuk: {parseFloat(h.sisa_serbuk).toFixed(3)} gr</p>}
                                     {Number(h.reject_gram)>0&&<p className="text-[11px] font-semibold text-red-500">Reject: {parseFloat(h.reject_gram).toFixed(3)} gr{h.reject_pcs?` · ${h.reject_pcs} PCS`:''}</p>}
@@ -1821,7 +1828,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   </>):<p className="text-[11px] text-gray-400 italic">Belum diterima</p>}
                                 </div>
                               </div>
-                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='stage_handover'&&l.ref_id===h.id);if(!_la)return null;return(<div className="mt-2 rounded-2xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss {(h.tahap as string).replace(/_/g,' ')}</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-gray-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-gray-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
+                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='stage_handover'&&l.ref_id===h.id);if(!_la)return null;return(<div className="mt-2 rounded-xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss {(h.tahap as string).replace(/_/g,' ')}</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-gray-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-gray-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
                             </div>
                           )
                         })}
@@ -1831,7 +1838,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                     {/* + Cetak Gramasi / Tambah Produksi — lanjut cetak dari batch ini */}
                     {canEdit&&!isVoided&&(
                       <button onClick={()=>openTambahProduksi(item)}
-                        className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-[12px] font-bold text-violet-600 border border-dashed border-violet-300 transition-all hover:bg-violet-50">
+                        className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-bold text-violet-600 border border-dashed border-violet-300 transition-all hover:bg-violet-50">
                         <Plus size={14}/> Cetak Gramasi / Tambah Produksi
                       </button>
                     )}
@@ -1897,7 +1904,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
             <div className="w-full max-w-sm bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden p-6 text-center">
-              <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><Trash2 size={24} className="text-red-500"/></div>
+              <div className="w-14 h-14 bg-red-50 rounded-xl flex items-center justify-center mx-auto mb-4"><Trash2 size={24} className="text-red-500"/></div>
               <h2 className="text-[16px] font-bold text-slate-900">Hapus Proses {tl[activeTahap]}?</h2>
               <p className="text-[13px] text-slate-500 mt-2 mb-1">Data serah-terima <b>{tl[activeTahap]}</b> untuk {active.kode} akan dihapus.</p>
               <p className="text-[12px] text-slate-400 mb-5">Status produksi kembali ke tahap sebelumnya.</p>
@@ -1915,7 +1922,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
       {modal==='deleteCutting' && active && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-sm bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden p-6 text-center">
-            <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4"><Trash2 size={24} className="text-red-500"/></div>
+            <div className="w-14 h-14 bg-red-50 rounded-xl flex items-center justify-center mx-auto mb-4"><Trash2 size={24} className="text-red-500"/></div>
             <h2 className="text-[16px] font-bold text-slate-900">Hapus Proses Cutting?</h2>
             <p className="text-[13px] text-slate-500 mt-2 mb-1">Data <b>terima Cutting</b> untuk {active.kode} akan dihapus.</p>
             <p className="text-[12px] text-slate-400 mb-5">Status kembali ke Cutting (proses). Data penyerahan tetap.</p>

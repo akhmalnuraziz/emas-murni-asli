@@ -50,7 +50,7 @@ export default async function FakturPage({ params }: { params: Promise<{ id: str
       </div>
 
       {/* Invoice */}
-      <div className="print-page bg-white rounded-3xl border border-slate-200 max-w-2xl mx-auto p-8 shadow-sm">
+      <div className="print-page bg-white rounded-xl border border-slate-200 max-w-2xl mx-auto p-8 shadow-sm">
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div>
@@ -68,7 +68,7 @@ export default async function FakturPage({ params }: { params: Promise<{ id: str
           </div>
         </div>
 
-        <hr className="border-slate-100 mb-5" />
+        <hr className="border-slate-200 mb-5" />
 
         {/* Info */}
         <div className="grid grid-cols-2 gap-4 mb-6">
@@ -91,7 +91,7 @@ export default async function FakturPage({ params }: { params: Promise<{ id: str
         </div>
 
         {/* Items table */}
-        <div className="rounded-2xl overflow-hidden border border-slate-100 mb-5">
+        <div className="rounded-xl overflow-hidden border border-slate-200 mb-5">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-slate-50">
@@ -127,7 +127,7 @@ export default async function FakturPage({ params }: { params: Promise<{ id: str
               )}
             </tbody>
             <tfoot>
-              <tr className="border-t-2 border-slate-100 bg-slate-50">
+              <tr className="border-t-2 border-slate-200 bg-slate-50">
                 <td className="px-4 py-3 font-bold text-slate-700 text-sm" colSpan={2}>Total</td>
                 <td className="px-4 py-3 text-right font-black text-violet-700 text-base">
                   {totalHarga.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })}
@@ -175,7 +175,7 @@ export default async function FakturPage({ params }: { params: Promise<{ id: str
         )}
 
         {/* Footer */}
-        <hr className="border-slate-100 mb-5" />
+        <hr className="border-slate-200 mb-5" />
         <div className="grid grid-cols-2 gap-8 mt-2">
           <div className="text-center">
             <p className="text-[10px] text-slate-400 mb-12">Penjual</p>

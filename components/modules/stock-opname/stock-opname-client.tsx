@@ -25,7 +25,7 @@ const STATUS_CFG: Record<string, { bg: string; text: string; label: string }> = 
   selesai:          { bg: 'rgba(139,92,246,0.1)', text: '#7C3AED', label: 'Selesai' },
 }
 
-const inp = "w-full px-4 py-3 text-[13px] rounded-2xl border border-gray-200/70 bg-white/80 focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all"
+const inp = "w-full px-4 py-3 text-[13px] rounded-xl border border-gray-200/70 bg-white/80 focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all"
 const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div className="flex flex-col gap-1.5">
     <label className="text-[11px] font-bold text-gray-400 tracking-widest uppercase">{label}</label>
@@ -51,7 +51,7 @@ export default function StockOpnameClient({ initialList, cabangList, userRole, u
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-violet-600">
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-violet-600">
             <ClipboardList size={20} className="text-white" />
           </div>
           <div>
@@ -84,7 +84,7 @@ export default function StockOpnameClient({ initialList, cabangList, userRole, u
       {/* Riwayat */}
       <div className="space-y-3">
         {list.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-slate-100 py-16 text-center text-slate-300 text-[13px]">
+          <div className="bg-white rounded-xl border border-slate-200 py-16 text-center text-slate-300 text-[13px]">
             Belum ada stock opname
           </div>
         ) : list.map(so => (
@@ -163,7 +163,7 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
     : cabangList.find(c => c.kode === lokasi)?.nama ?? lokasi
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-100 p-6 space-y-5">
+    <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-5">
       <div className="flex items-center justify-between">
         <h2 className="font-bold text-slate-800">Stock Opname Baru</h2>
         <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"><X size={16} /></button>
@@ -175,7 +175,7 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
           <p className="font-bold text-slate-800">Stock Opname Tersimpan</p>
           <p className="text-[13px] text-slate-500 font-mono">{savedKode}</p>
           {rows.some(r => r.selisih_pcs !== 0) && (
-            <p className="text-[12px] text-amber-600 bg-amber-50 rounded-2xl px-4 py-2">
+            <p className="text-[12px] text-amber-600 bg-amber-50 rounded-xl px-4 py-2">
               Ada selisih — menunggu approval
             </p>
           )}
@@ -194,7 +194,7 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
             </select>
           </F>
           <button onClick={loadStok} disabled={loadingRows}
-            className="w-full py-3 rounded-2xl text-[13px] font-bold text-white transition-all bg-violet-600 hover:bg-violet-700 disabled:opacity-50">
+            className="w-full py-3 rounded-xl text-[13px] font-bold text-white transition-all bg-violet-600 hover:bg-violet-700 disabled:opacity-50">
             {loadingRows ? 'Memuat stok sistem…' : `Ambil Stok ${lokasiLabel}`}
           </button>
         </div>
@@ -206,7 +206,7 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
           <p className="text-[12px] text-slate-400">Masukkan jumlah fisik yang dihitung langsung. Sistem akan otomatis menghitung selisih.</p>
 
           {/* Tabel input */}
-          <div className="rounded-2xl overflow-hidden border border-slate-100">
+          <div className="rounded-xl overflow-hidden border border-slate-200">
             <table className="w-full text-[13px]">
               <thead className="bg-slate-50">
                 <tr>
@@ -242,7 +242,7 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
           </div>
 
           {rows.some(r => r.selisih_pcs !== 0) && (
-            <div className="flex items-start gap-2.5 px-4 py-3 rounded-2xl bg-amber-50 border border-amber-100">
+            <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-amber-50 border border-amber-100">
               <AlertTriangle size={15} className="text-amber-500 flex-shrink-0 mt-0.5" />
               <p className="text-[12px] text-amber-700">Ada selisih stok — akan membutuhkan approval setelah disimpan.</p>
             </div>
@@ -253,15 +253,15 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
               className={cn(inp, 'resize-none')} rows={2} placeholder="Keterangan tambahan (opsional)" />
           </F>
 
-          {err && <p className="text-[12px] text-red-600 bg-red-50 rounded-2xl px-4 py-2">{err}</p>}
+          {err && <p className="text-[12px] text-red-600 bg-red-50 rounded-xl px-4 py-2">{err}</p>}
 
           <div className="flex gap-2 pt-1">
             <button onClick={() => setStep('pilih')}
-              className="flex-1 py-3 rounded-2xl text-[13px] font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors">
+              className="flex-1 py-3 rounded-xl text-[13px] font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors">
               Kembali
             </button>
             <button onClick={handleSave} disabled={saving || rows.length === 0}
-              className="flex-1 py-3 rounded-2xl text-[13px] font-bold text-white transition-all disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
+              className="flex-1 py-3 rounded-xl text-[13px] font-bold text-white transition-all disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
               {saving ? 'Menyimpan…' : 'Simpan Stock Opname'}
             </button>
           </div>
@@ -290,7 +290,7 @@ function SOCard({ so, expanded, onToggle, canApprove, userName, onApproved }: {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-slate-50/50 transition-colors"
         onClick={onToggle}>
         <div className="flex items-center gap-3">
@@ -314,7 +314,7 @@ function SOCard({ so, expanded, onToggle, canApprove, userName, onApproved }: {
         <div className="px-5 pb-5 border-t border-slate-50 pt-4 space-y-4">
           {/* Detail tabel */}
           {(so.data_sistem ?? []).length > 0 && (
-            <div className="rounded-2xl overflow-hidden border border-slate-100">
+            <div className="rounded-xl overflow-hidden border border-slate-200">
               <table className="w-full text-[13px]">
                 <thead className="bg-slate-50">
                   <tr>
@@ -348,7 +348,7 @@ function SOCard({ so, expanded, onToggle, canApprove, userName, onApproved }: {
           )}
 
           {so.catatan && (
-            <p className="text-[12px] text-slate-500 bg-slate-50 rounded-2xl px-4 py-3">
+            <p className="text-[12px] text-slate-500 bg-slate-50 rounded-xl px-4 py-3">
               <span className="font-semibold">Catatan:</span> {so.catatan}
             </p>
           )}
@@ -361,7 +361,7 @@ function SOCard({ so, expanded, onToggle, canApprove, userName, onApproved }: {
 
           {/* Approval panel */}
           {so.status === 'pending_approval' && canApprove && (
-            <div className="bg-amber-50 rounded-2xl border border-amber-100 p-4 space-y-3">
+            <div className="bg-amber-50 rounded-xl border border-amber-100 p-4 space-y-3">
               <p className="text-[12px] font-semibold text-amber-700 flex items-center gap-1.5">
                 <AlertTriangle size={13} /> Menunggu Approval
               </p>

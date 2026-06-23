@@ -73,7 +73,7 @@ const inp = "w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text
 function JsonBlock({ label, data, color }: { label: string; data: Record<string, unknown> | null; color: string }) {
   const entries = data ? Object.entries(data) : []
   return (
-    <div className="rounded-lg px-3 py-2 bg-slate-50 border border-slate-100">
+    <div className="rounded-lg px-3 py-2 bg-slate-50 border border-slate-200">
       <p className="text-[10px] font-bold tracking-widest uppercase mb-2" style={{ color }}>{label}</p>
       {entries.length === 0 ? (
         <p className="text-[12px] text-gray-400 italic">Tidak ada data</p>
@@ -102,7 +102,7 @@ function DetailDrawer({ log, onClose }: { log: AuditLogRow; onClose: () => void 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: acfg.bg }}>
               <ActionIcon size={16} style={{ color: acfg.text }}/>
@@ -119,11 +119,11 @@ function DetailDrawer({ log, onClose }: { log: AuditLogRow; onClose: () => void 
         </div>
         <div className="px-5 py-4 overflow-y-auto space-y-4 flex-1">
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg px-3 py-2 bg-slate-50 border border-slate-100">
+            <div className="rounded-lg px-3 py-2 bg-slate-50 border border-slate-200">
               <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Waktu</p>
               <p className="text-[13px] font-semibold text-slate-700 mt-0.5">{formatDateTime(log.timestamp)}</p>
             </div>
-            <div className="rounded-lg px-3 py-2 bg-slate-50 border border-slate-100">
+            <div className="rounded-lg px-3 py-2 bg-slate-50 border border-slate-200">
               <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Oleh</p>
               <p className="text-[13px] font-semibold text-slate-700 mt-0.5">{log.user_name || '—'} <span className="text-slate-400 font-normal">({log.user_role || '—'})</span></p>
             </div>
@@ -226,7 +226,7 @@ export default function AuditLogClient({ logs }: Props) {
             <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Cari record, user, alasan, aksi..."
-              className="w-full pl-10 pr-4 py-2.5 text-[13px] rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 text-[13px] rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all"
               style={{ background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(12px)', border: '1px solid rgba(209,213,219,0.5)' }}/>
           </div>
           <select value={filterAction} onChange={e => setFilterAction(e.target.value)} className={cn(inp, 'w-auto min-w-[140px]')}>
@@ -264,7 +264,7 @@ export default function AuditLogClient({ logs }: Props) {
         </div>
 
         {/* Table */}
-        <div className="rounded-3xl overflow-auto"
+        <div className="rounded-xl overflow-auto"
           style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(24px)',
             border: '1px solid rgba(255,255,255,0.6)', boxShadow: '0 8px 40px rgba(139,92,246,0.08)' }}>
           <table className="w-full min-w-[760px] text-[13px]">
@@ -278,7 +278,7 @@ export default function AuditLogClient({ logs }: Props) {
             <tbody>
               {filtered.length === 0 ? (
                 <tr><td colSpan={7} className="text-center py-16">
-                  <div className="w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-4"
+                  <div className="w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4"
                     style={{ background: 'rgba(139,92,246,0.08)' }}>
                     <ScrollText size={28} className="text-violet-300"/>
                   </div>

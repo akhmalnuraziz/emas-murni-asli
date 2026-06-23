@@ -73,7 +73,7 @@ export default function SignaturePad({ label, onChange }: {
           <button type="button" onClick={clear} className="text-[10px] font-semibold text-red-400 hover:text-red-600">Hapus</button>
         )}
       </div>
-      <div className="relative rounded-2xl overflow-hidden" style={{ background: '#F8FAFC', border: '1px solid rgba(139,92,246,0.2)' }}>
+      <div className="relative rounded-xl overflow-hidden" style={{ background: '#F8FAFC', border: '1px solid rgba(139,92,246,0.2)' }}>
         <canvas
           ref={canvasRef}
           className="w-full h-32 touch-none cursor-crosshair block"

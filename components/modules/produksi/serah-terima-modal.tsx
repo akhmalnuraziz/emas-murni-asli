@@ -94,14 +94,14 @@ export function TimPickerStd({ tims, prefix, initialTimId, initialAnggota }: { t
 }
 
 // ─── Admin Input Picker: dropdown + manual ──────────────────────────────────────
-export function AdminPickerStd({ adminList, prefix, initialValue }: { adminList: { id: number; nama: string }[]; prefix: string; initialValue?: string }) {
+export function AdminPickerStd({ adminList, prefix, initialValue, label }: { adminList: { id: number; nama: string }[]; prefix: string; initialValue?: string; label?: string }) {
   const knownNames = adminList.map(a => a.nama)
   const startManual = !!initialValue && !knownNames.includes(initialValue)
   const [manual, setManual] = useState(startManual)
   const [value, setValue] = useState(initialValue ?? '')
   return (
     <div>
-      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Admin Yang Input</label>
+      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{label ?? 'Admin Yang Input'}</label>
       {manual ? (
         <input name={`${prefix}admin_input`} value={value} onChange={e => setValue(e.target.value)} placeholder="Ketik nama admin" className={inp} autoFocus />
       ) : (
@@ -132,13 +132,18 @@ function FotoPickerStd({ fotos, setFotos, accent }: { fotos: File[]; setFotos: (
       </label>
       {fotos.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-2">
-          {fotos.map((f, i) => (
-            <div key={i} className="relative">
-              <img src={URL.createObjectURL(f)} alt="" className={`w-14 h-14 rounded-lg object-cover border ${border}`} />
-              <button type="button" onClick={() => setFotos(fotos.filter((_, j) => j !== i))}
-                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[12px] flex items-center justify-center">×</button>
-            </div>
-          ))}
+          {fotos.map((f, i) => {
+            const url = URL.createObjectURL(f)
+            return (
+              <div key={i} className="relative">
+                <a href={url} target="_blank" rel="noopener noreferrer" title="Klik untuk lihat ukuran penuh">
+                  <img src={url} alt="" className={`w-14 h-14 rounded-lg object-cover border cursor-zoom-in hover:scale-110 transition-transform ${border}`} />
+                </a>
+                <button type="button" onClick={() => setFotos(fotos.filter((_, j) => j !== i))}
+                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[12px] flex items-center justify-center">×</button>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
@@ -191,8 +196,7 @@ export function SerahModalStd({ judul, kode, tims, adminList, isPending, error, 
                   <input name="serah_jam" type="time" defaultValue={d.serah_jam ? String(d.serah_jam).slice(0,5) : undefined} className={inp} required />
                 </div>
               </div>
-              <TimPickerStd tims={tims} prefix="serah_" initialTimId={initTimId} initialAnggota={initAnggota} />
-              <AdminPickerStd adminList={adminList} prefix="serah_" initialValue={d.serah_admin_input ?? ''} />
+              <AdminPickerStd adminList={adminList} prefix="serah_" initialValue={d.serah_admin_input ?? ''} label="Admin Yang Menyerahkan" />
               <FotoPickerStd fotos={fotos} setFotos={setFotos} accent="violet" />
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan Penyerahan</label>
@@ -207,7 +211,7 @@ export function SerahModalStd({ judul, kode, tims, adminList, isPending, error, 
             </div>
           )}
         </div>
-        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
           <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
           <button type="submit" disabled={isPending || up} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
             {up ? 'Upload foto…' : isPending ? 'Menyimpan…' : isEdit ? 'Simpan Perubahan' : 'Serahkan'}
@@ -305,7 +309,7 @@ export function TerimaModalStd({
                 </div>
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jumlah PCS</label>
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jumlah PCS {prosesLabel === 'Cutting' ? '(ACC)' : ''}</label>
                 <input name="terima_pcs" type="number" min="1" defaultValue={d.terima_pcs ?? ''} placeholder="Isi jika sudah dihitung" className={inp} />
               </div>
 
@@ -326,18 +330,12 @@ export function TerimaModalStd({
                   <p className="text-[10px] text-slate-400 mb-2 leading-relaxed">
                     Reject cutting dilebur ulang → kembali jadi bahan baku batch. Isi 0 jika tidak ada reject.
                   </p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Berat Reject Cutting (gr)</label>
-                      <input name="reject_gram" type="number" step="0.001" min="0"
-                        value={rejectVal} onChange={e => setRejectVal(e.target.value)}
-                        className={inp} placeholder="0.000" />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Reject (pcs)</label>
-                      <input name="reject_pcs" type="number" min="0"
-                        defaultValue={d.reject_pcs ?? 0} className={inp} placeholder="0" />
-                    </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Berat Reject Cutting (gr)</label>
+                    <input name="reject_gram" type="number" step="0.001" min="0"
+                      value={rejectVal} onChange={e => setRejectVal(e.target.value)}
+                      className={inp} placeholder="0.000" />
+                    <input type="hidden" name="reject_pcs" value="0" />
                   </div>
                 </div>
               ) : (
@@ -364,14 +362,16 @@ export function TerimaModalStd({
               )}
 
               <TimPickerStd tims={tims} prefix="terima_" initialTimId={initTimId} initialAnggota={initAnggota} />
-              <AdminPickerStd adminList={adminList} prefix="terima_" initialValue={d.terima_admin_input ?? ''} />
+              <AdminPickerStd adminList={adminList} prefix="terima_" initialValue={d.terima_admin_input ?? ''} label="Admin Yang Menerima" />
               {existingFotos.length > 0 && (
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Sebelumnya</label>
                   <div className="flex flex-wrap gap-2">
                     {existingFotos.map((u, i) => (
                       <div key={i} className="relative">
-                        <img src={u} alt="" className="w-14 h-14 rounded-lg object-cover border-2 border-green-100" />
+                        <a href={u} target="_blank" rel="noopener noreferrer" title="Klik untuk lihat ukuran penuh">
+                          <img src={u} alt="" className="w-14 h-14 rounded-lg object-cover border-2 border-green-100 cursor-zoom-in hover:scale-110 transition-transform" />
+                        </a>
                         <button type="button" onClick={() => setExistingFotos(existingFotos.filter((_, j) => j !== i))}
                           className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[12px] flex items-center justify-center">×</button>
                       </div>
@@ -411,7 +411,7 @@ export function TerimaModalStd({
             </div>
           )}
         </div>
-        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
           <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
           <button type="submit" disabled={isPending || up} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
             {up ? 'Upload foto…' : isPending ? 'Menyimpan…' : isEdit ? 'Simpan Perubahan' : 'Terima'}
@@ -427,7 +427,7 @@ function ModalShell({ judul, kode, onClose, children }: { judul: string; kode: s
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">{judul}</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">{kode}</p>

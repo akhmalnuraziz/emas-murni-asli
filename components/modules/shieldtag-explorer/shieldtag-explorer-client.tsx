@@ -52,7 +52,7 @@ export default function ShieldtagExplorerClient() {
     <div className="space-y-5 max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
+        <div className="w-11 h-11 rounded-xl flex items-center justify-center"
           style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
           <Search size={20} className="text-white" />
         </div>
@@ -63,24 +63,24 @@ export default function ShieldtagExplorerClient() {
       </div>
 
       {/* Search box */}
-      <div className="bg-white rounded-3xl border border-slate-100 p-5 space-y-3">
+      <div className="bg-white rounded-xl border border-slate-200 p-5 space-y-3">
         <p className="text-[12px] text-slate-400">Masukkan kode shieldtag (contoh: <span className="font-mono font-semibold">1H80AA</span>)</p>
         <div className="flex gap-2">
           <input
             value={query}
             onChange={e => setQuery(e.target.value.toUpperCase())}
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
-            className="flex-1 px-4 py-3 text-[13px] font-mono rounded-2xl border border-gray-200 bg-white/80 focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all tracking-wider"
+            className="flex-1 px-4 py-3 text-[13px] font-mono rounded-xl border border-gray-200 bg-white/80 focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all tracking-wider"
             placeholder="Kode Shieldtag…"
           />
           <button onClick={handleSearch} disabled={loading}
-            className="px-6 py-3 rounded-2xl text-[13px] font-bold text-white transition-all disabled:opacity-50 flex items-center gap-2"
+            className="px-6 py-3 rounded-xl text-[13px] font-bold text-white transition-all disabled:opacity-50 flex items-center gap-2"
             style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)', boxShadow: '0 4px 12px rgba(139,92,246,0.35)' }}>
             <Search size={15} /> {loading ? 'Mencari…' : 'Cari'}
           </button>
         </div>
         {err && (
-          <p className="text-[12px] text-red-600 bg-red-50 rounded-2xl px-4 py-2 flex items-center gap-1.5">
+          <p className="text-[12px] text-red-600 bg-red-50 rounded-xl px-4 py-2 flex items-center gap-1.5">
             <XCircle size={13} /> {err}
           </p>
         )}
@@ -91,7 +91,7 @@ export default function ShieldtagExplorerClient() {
 
       {/* Empty state */}
       {!result && !err && !loading && (
-        <div className="bg-white rounded-3xl border border-slate-100 py-20 text-center space-y-2">
+        <div className="bg-white rounded-xl border border-slate-200 py-20 text-center space-y-2">
           <Tag size={36} className="mx-auto text-slate-200" />
           <p className="text-slate-300 text-[13px]">Ketik kode shieldtag dan tekan Cari</p>
         </div>
@@ -108,10 +108,10 @@ function ShieldtagResult({ data }: { data: ShieldtagDetail }) {
   return (
     <div className="space-y-4">
       {/* Hero card */}
-      <div className="bg-white rounded-3xl border border-slate-100 p-6">
+      <div className="bg-white rounded-xl border border-slate-200 p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center"
               style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
               <Tag size={24} className="text-white" />
             </div>
@@ -138,13 +138,13 @@ function ShieldtagResult({ data }: { data: ShieldtagDetail }) {
         </div>
 
         {tag.replaced_by_kode && (
-          <div className="mt-4 text-[12px] text-amber-700 bg-amber-50 rounded-2xl px-4 py-2.5 flex items-center gap-1.5">
+          <div className="mt-4 text-[12px] text-amber-700 bg-amber-50 rounded-xl px-4 py-2.5 flex items-center gap-1.5">
             <AlertTriangle size={13} />
             Digantikan oleh: <span className="font-mono font-bold">{tag.replaced_by_kode}</span>
           </div>
         )}
         {tag.replaces_kode && (
-          <div className="mt-4 text-[12px] text-blue-700 bg-blue-50 rounded-2xl px-4 py-2.5 flex items-center gap-1.5">
+          <div className="mt-4 text-[12px] text-blue-700 bg-blue-50 rounded-xl px-4 py-2.5 flex items-center gap-1.5">
             <AlertTriangle size={13} />
             Menggantikan: <span className="font-mono font-bold">{tag.replaces_kode}</span>
           </div>
@@ -152,7 +152,7 @@ function ShieldtagResult({ data }: { data: ShieldtagDetail }) {
       </div>
 
       {/* Timeline */}
-      <div className="bg-white rounded-3xl border border-slate-100 p-5">
+      <div className="bg-white rounded-xl border border-slate-200 p-5">
         <h3 className="font-bold text-slate-800 text-[13px] mb-4">Timeline Perjalanan</h3>
         <div className="space-y-1">
           {/* Batch */}
@@ -192,7 +192,7 @@ function ShieldtagResult({ data }: { data: ShieldtagDetail }) {
 
       {/* Audit Log */}
       {auditLogs.length > 0 && (
-        <div className="bg-white rounded-3xl border border-slate-100 p-5">
+        <div className="bg-white rounded-xl border border-slate-200 p-5">
           <h3 className="font-bold text-slate-800 text-[13px] mb-4">Riwayat Perubahan</h3>
           <div className="space-y-2">
             {auditLogs.map((log, i) => (

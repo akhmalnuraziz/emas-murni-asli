@@ -150,7 +150,7 @@ function PeriodSelector({ period, dateFrom, dateTo }: { period: string; dateFrom
         {isPending && <span className="text-[10px] text-slate-400 ml-1">Memuat...</span>}
       </div>
       {showCustom && (
-        <div className="flex items-center gap-2 flex-wrap bg-white rounded-2xl px-3 py-2 border border-slate-200">
+        <div className="flex items-center gap-2 flex-wrap bg-white rounded-xl px-3 py-2 border border-slate-200">
           <span className="text-[12px] text-slate-400 font-medium">Dari</span>
           <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
             className="text-[12px] border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-violet-400" />
@@ -195,7 +195,7 @@ export default function LaporanClient({
       <PeriodSelector period={period} dateFrom={dateFrom} dateTo={dateTo} />
 
       {/* Tabs */}
-      <div className="flex gap-1 flex-wrap bg-slate-100 rounded-2xl p-1 w-fit">
+      <div className="flex gap-1 flex-wrap bg-slate-100 rounded-xl p-1 w-fit">
         {TABS.map(([key, label, Icon], i) => (
           <button key={i} onClick={() => setTab(key as any)}
             className={cn('flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[12px] font-bold transition-all',
@@ -257,7 +257,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
       {/* 3-kolom: Omzet, HPP, Pengeluaran */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <button onClick={() => setShowDetail(showDetail === 'penjualan' ? null : 'penjualan')}
-          className="rounded-3xl p-5 text-left hover:shadow-sm transition-shadow"
+          className="rounded-xl p-5 text-left hover:shadow-sm transition-shadow"
           >
           <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-emerald-50">
             <ShoppingCart size={15} className="text-green-600" />
@@ -267,7 +267,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
           <p className="text-[12px] text-slate-400 mt-0.5">{labaRugi.penjualanCount} transaksi · tap detail</p>
         </button>
 
-        <div className="rounded-3xl p-5"
+        <div className="rounded-xl p-5"
           >
           <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-amber-50">
             <Package size={15} className="text-amber-500" />
@@ -282,7 +282,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
         </div>
 
         <button onClick={() => setShowDetail(showDetail === 'pengeluaran' ? null : 'pengeluaran')}
-          className="rounded-3xl p-5 text-left hover:shadow-sm transition-shadow"
+          className="rounded-xl p-5 text-left hover:shadow-sm transition-shadow"
           >
           <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-red-50">
             <TrendingDown size={15} className="text-red-500" />
@@ -295,7 +295,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
 
       {/* Channel breakdown */}
       {channelBreakdown.length > 0 && (
-        <div className="rounded-3xl p-5"
+        <div className="rounded-xl p-5"
           >
           <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-4">Omzet per Channel</p>
           <div className="space-y-3">
@@ -324,7 +324,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
 
       {/* Penjualan detail */}
       {showDetail === 'penjualan' && (
-        <div className="rounded-3xl overflow-hidden"
+        <div className="rounded-xl overflow-hidden"
           >
           <div className="px-5 py-4 border-b border-slate-50">
             <p className="text-[13px] font-bold text-slate-800">Detail Penjualan</p>
@@ -381,7 +381,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
 
       {/* Pengeluaran detail */}
       {showDetail === 'pengeluaran' && (
-        <div className="rounded-3xl overflow-hidden"
+        <div className="rounded-xl overflow-hidden"
           >
           <div className="px-5 py-4 border-b border-slate-50 flex items-center justify-between">
             <p className="text-[13px] font-bold text-slate-800">Detail Pengeluaran</p>
@@ -426,7 +426,7 @@ function RingkasanTab({ summary }: { summary: Props['summary'] }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
       {cards.map(c => (
-        <div key={c.label} className="rounded-3xl p-5"
+        <div key={c.label} className="rounded-xl p-5"
           >
           <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: c.bg }}>
             <c.icon size={16} style={{ color: c.color }} />
@@ -481,7 +481,7 @@ function PenjualanTab({
         </button>
       </div>
 
-      <div className="rounded-3xl overflow-hidden"
+      <div className="rounded-xl overflow-hidden"
         >
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
@@ -501,7 +501,7 @@ function PenjualanTab({
             </thead>
             <tbody>
               {displayRows.map((r, i) => (
-                <tr key={r.gramasi} className={`hover:bg-violet-50/10 ${i > 0 ? 'border-t border-slate-100' : ''}`}>
+                <tr key={r.gramasi} className={`hover:bg-violet-50/10 ${i > 0 ? 'border-t border-slate-200' : ''}`}>
                   <td className="px-5 py-3.5 font-black text-slate-800">{r.gramasi}gr</td>
                   <td className="px-5 py-3.5 font-semibold text-slate-700">{r.pcs} pcs</td>
                   {showHpp && <>
@@ -544,7 +544,7 @@ function PenjualanTab({
 function BatchTab({ rows, showHpp }: { rows: Props['batchList']; showHpp: boolean }) {
   if (rows.length === 0) return <Empty text="Belum ada batch." />
   return (
-    <div className="rounded-3xl overflow-hidden"
+    <div className="rounded-xl overflow-hidden"
       >
       <div className="overflow-x-auto">
         <table className="w-full min-w-[520px] text-[13px]">
@@ -557,7 +557,7 @@ function BatchTab({ rows, showHpp }: { rows: Props['batchList']; showHpp: boolea
           </thead>
           <tbody>
             {rows.map((b, i) => (
-              <tr key={b.kode} className={`hover:bg-violet-50/10 ${i > 0 ? 'border-t border-slate-100' : ''}`}>
+              <tr key={b.kode} className={`hover:bg-violet-50/10 ${i > 0 ? 'border-t border-slate-200' : ''}`}>
                 <td className="px-4 py-3.5">
                   <Link href={`/laporan/batch/${encodeURIComponent(b.kode)}`}
                     className="font-mono font-bold text-violet-700 text-[12px] hover:underline flex items-center gap-1">
@@ -646,8 +646,8 @@ function NeracaTab({ neraca }: { neraca: Props['neraca'] }) {
     <div className="space-y-4">
 
       {/* Status banner */}
-      <div className={`rounded-3xl p-5 flex items-start gap-4 ${selisihOk ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'}`}>
-        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 ${selisihOk ? 'bg-emerald-100' : 'bg-red-100'}`}>
+      <div className={`rounded-xl p-5 flex items-start gap-4 ${selisihOk ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'}`}>
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${selisihOk ? 'bg-emerald-100' : 'bg-red-100'}`}>
           {selisihOk
             ? <CheckCircle2 size={22} className="text-green-600" />
             : <AlertTriangle size={22} className="text-red-500" />}
@@ -667,7 +667,7 @@ function NeracaTab({ neraca }: { neraca: Props['neraca'] }) {
       </div>
 
       {/* Flow diagram */}
-      <div className="rounded-3xl p-5"
+      <div className="rounded-xl p-5"
         >
         <div className="flex items-center gap-2 mb-5">
           <Scale size={15} className="text-violet-500" />
@@ -675,7 +675,7 @@ function NeracaTab({ neraca }: { neraca: Props['neraca'] }) {
         </div>
 
         {/* Masuk */}
-        <div className="rounded-2xl p-4 mb-4 bg-violet-50/40 border border-violet-500/[0.12]">
+        <div className="rounded-xl p-4 mb-4 bg-violet-50/40 border border-violet-500/[0.12]">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Masuk</p>
           <p className="text-[20px] font-black text-violet-700">{fmt(neraca.masukBatch)}</p>
           <p className="text-[12px] text-slate-400 mt-0.5">dari semua batch bahan baku</p>
@@ -687,7 +687,7 @@ function NeracaTab({ neraca }: { neraca: Props['neraca'] }) {
         <div className="space-y-2">
           {rows.map(r => (
             <a key={r.label} href={r.href ?? '#'}
-              className="flex items-center justify-between p-3 rounded-2xl hover:opacity-80 transition-opacity"
+              className="flex items-center justify-between p-3 rounded-xl hover:opacity-80 transition-opacity"
               style={{ background: `${r.color}08`, border: `1px solid ${r.color}18` }}>
               <div>
                 <p className="text-[13px] font-bold" style={{ color: r.color }}>{r.label}</p>
@@ -699,7 +699,7 @@ function NeracaTab({ neraca }: { neraca: Props['neraca'] }) {
         </div>
 
         {/* Total tracked vs masuk */}
-        <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+        <div className="mt-4 pt-4 border-t border-slate-200 flex items-center justify-between">
           <div>
             <p className="text-[12px] font-bold text-slate-500">Total Tertracking</p>
             <p className="text-[10px] text-slate-400">stok aktif + transit + WIP + terjual + reject belum dilebur</p>

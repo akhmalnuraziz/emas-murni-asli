@@ -58,7 +58,7 @@ export default function PrioritasProduksiClient({
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-slate-700">
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-slate-700">
             <ArrowUp size={20} className="text-white" />
           </div>
           <div>
@@ -82,7 +82,7 @@ export default function PrioritasProduksiClient({
           const Icon = cfg.icon
           const count = prioritasList.filter(x => x.prioritas === p).length
           return (
-            <div key={p} className="rounded-3xl p-4 flex items-center gap-3"
+            <div key={p} className="rounded-xl p-4 flex items-center gap-3"
               style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}>
               <Icon size={18} style={{ color: cfg.text }} className="flex-shrink-0" />
               <div>
@@ -96,7 +96,7 @@ export default function PrioritasProduksiClient({
 
       {/* Total rekomendasi */}
       {totalRekomendasi > 0 && (
-        <div className="rounded-3xl p-4 flex items-center gap-4 bg-violet-50/20 border border-violet-200/50">
+        <div className="rounded-xl p-4 flex items-center gap-4 bg-violet-50/20 border border-violet-200/50">
           <div className="text-center">
             <p className="text-[20px] font-black text-violet-700">{totalRekomendasi}</p>
             <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">pcs total</p>
@@ -132,7 +132,7 @@ export default function PrioritasProduksiClient({
                 {cfg.label}
               </p>
             </div>
-            <div className="rounded-3xl overflow-hidden"
+            <div className="rounded-xl overflow-hidden"
               >
               <div className="overflow-x-auto">
                 <table className="w-full text-[13px]">

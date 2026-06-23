@@ -34,7 +34,7 @@ function Lightbox({url,onClose}:{url:string;onClose:()=>void}){
   },[onClose])
   return(
     <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/85" onClick={onClose}>
-      <img src={url} alt="" className="max-w-[95vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl" onClick={e=>e.stopPropagation()}/>
+      <img src={url} alt="" className="max-w-[95vw] max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e=>e.stopPropagation()}/>
       <button onClick={onClose} className="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center backdrop-blur-sm transition-all">
         <X size={18}/>
       </button>
@@ -171,7 +171,7 @@ function CreateModal({items,onClose,onSubmit,isPending,error}:{
   return(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Catat Packing Baru</h2>
           </div>
@@ -205,7 +205,7 @@ function CreateModal({items,onClose,onSubmit,isPending,error}:{
           </F>
           {error&&<div className="flex items-center gap-2 rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600"><AlertTriangle size={14}/>{error}</div>}
           </div>
-          <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+          <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
             <button type="button"onClick={onClose}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
             <button type="submit" disabled={isPending||up}className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {(isPending||up)&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
@@ -236,7 +236,7 @@ function EditModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;
   return(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Edit Packing</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">{p.kode}</p>
@@ -263,7 +263,7 @@ function EditModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;
           </F>
           {error&&<div className="flex items-center gap-2 rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600"><AlertTriangle size={14}/>{error}</div>}
           </div>
-          <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+          <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
             <button type="button"onClick={onClose}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
             <button type="submit"disabled={isPending||up}className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {(isPending||up)&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
@@ -285,7 +285,7 @@ function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint,onShieldtagC
   const stCount=p.shieldtag_count??0
   const isPrinted=p.status_surat==='sudah_cetak'
   return(
-    <div className="rounded-2xl p-4 space-y-3 bg-white border border-slate-100">
+    <div className="rounded-xl p-4 space-y-3 bg-white border border-slate-200">
       {lightbox&&<Lightbox url={lightbox} onClose={()=>setLightbox(null)}/>}
       <div className="flex items-center justify-between">
         <span className="text-[12px] font-mono font-bold text-violet-600">{p.kode}</span>
@@ -474,7 +474,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
             {label:'Sisa Siap Packing',val:totalSiapPackingPcs+' PCS',cls:'text-emerald-600'},
             {label:'Total Sudah Dipack',val:filteredByDate(packingList).reduce((s:number,p:any)=>s+(p.pcs_dipack||0),0)+' PCS',cls:'text-blue-600'},
           ].map(c=>(
-            <div key={c.label}className="rounded-xl p-4 text-center bg-slate-50 border border-slate-100">
+            <div key={c.label}className="rounded-xl p-4 text-center bg-slate-50 border border-slate-200">
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">{c.label}</p>
               <p className={`text-[14px] font-bold mt-0.5 ${c.cls}`}>{c.val}</p>
             </div>
@@ -484,7 +484,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
         {/* Mobile cards */}
         <div className="lg:hidden space-y-3">
           {filteredByDate(filtered).length===0?(
-            <div className="text-center py-12 rounded-3xl bg-white border border-slate-100">
+            <div className="text-center py-12 rounded-xl bg-white border border-slate-200">
               <Package size={32}className="mx-auto text-violet-200 mb-3"/>
               <p className="text-[13px] font-medium text-gray-400">Belum ada record packing</p>
             </div>
@@ -498,10 +498,10 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
         </div>
 
         {/* Desktop table */}
-        <div className="hidden lg:block rounded-3xl overflow-auto bg-white border border-slate-100">
+        <div className="hidden lg:block rounded-xl overflow-auto bg-white border border-slate-200">
           <table className="w-full min-w-[860px] text-[13px]">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/60">
+              <tr className="border-b border-slate-200 bg-slate-50/60">
                 <th className="px-4 py-3 w-10">
                   {filteredByDate(filtered).length>0&&(
                     <input type="checkbox" className="rounded accent-violet-600 cursor-pointer"
@@ -526,7 +526,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
                 const isPrinted=p.status_surat==='sudah_cetak'
                 const pcsGood=p.produksi_item?.pcs_good??p.produksi_item?.pcs??'—'
                 return(
-                  <tr key={p.id}className={cn('border-t border-slate-100 transition-colors hover:bg-violet-50/20 align-middle',idx===0?'border-transparent':'',selectedIds.has(p.id)?'bg-violet-50/40':'')}>
+                  <tr key={p.id}className={cn('border-t border-slate-200 transition-colors hover:bg-violet-50/20 align-middle',idx===0?'border-transparent':'',selectedIds.has(p.id)?'bg-violet-50/40':'')}>
                     <td className="px-4 py-3 w-10 align-middle">
                       <input type="checkbox" className="rounded accent-violet-600 cursor-pointer"
                         checked={selectedIds.has(p.id)}
@@ -583,7 +583,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
       {modal==='delete'&&active&&(
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
           <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
               <div>
                 <h2 className="text-[15px] font-bold text-slate-900">Hapus Packing?</h2>
                 <p className="text-[11px] text-slate-400 mt-0.5">{active.kode}</p>
@@ -596,7 +596,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
                 <span><span className="font-semibold">{active.kode}</span> akan dihapus. Status produksi kembali ke Siap Packing.</span>
               </div>
             </div>
-            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
               <button onClick={()=>setModal(null)}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
               <button onClick={handleDelete}disabled={isPending}className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                 {isPending&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
@@ -624,7 +624,7 @@ function ShieldtagListModal({kode,list,onClose}:{kode:string;list:{kode:string;s
   return (
     <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center bg-black/40" onClick={onClose}>
       <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col" onClick={e=>e.stopPropagation()}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 flex-shrink-0">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Daftar Shieldtag</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">{kode} · {list.length} tag</p>
@@ -636,7 +636,7 @@ function ShieldtagListModal({kode,list,onClose}:{kode:string;list:{kode:string;s
           {list.map((st,i)=>{
             const sc=statusColor[st.status]??{bg:'rgba(107,114,128,0.08)',text:'#6B7280'}
             return (
-              <div key={st.kode} className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50 border border-slate-100">
+              <div key={st.kode} className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50 border border-slate-200">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span className="text-[10px] font-bold text-slate-300 w-5 flex-shrink-0">{i+1}</span>
                   <span className="text-[13px] font-mono font-bold text-slate-800 truncate">{st.kode}</span>

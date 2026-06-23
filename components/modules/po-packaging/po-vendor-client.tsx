@@ -111,7 +111,7 @@ function MonitoringCard({ po }: { po: any }) {
   const sisaRatio   = totalPO > 0 ? ((totalPO - totalSisa) / totalPO) * 100 : 0
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-slate-200">
+    <div className="rounded-xl overflow-hidden border border-slate-200">
       <button className="w-full flex items-start justify-between px-4 py-3.5 text-left gap-3 bg-white"
         onClick={() => setOpen(p => !p)}>
         <div className="flex-1 min-w-0">
@@ -138,7 +138,7 @@ function MonitoringCard({ po }: { po: any }) {
           {po.items.map((it: any) => {
             const itemRatio = it.qty_po > 0 ? ((it.qty_po - Math.max(0, it.sisa_belum_datang)) / it.qty_po) * 100 : 0
             return (
-              <div key={it.item_id} className="rounded-xl bg-white border border-slate-100 px-3 py-2.5">
+              <div key={it.item_id} className="rounded-xl bg-white border border-slate-200 px-3 py-2.5">
                 <p className="text-[12px] font-bold text-slate-700">{it.produk_nama}</p>
                 <div className="mt-1.5 h-1 rounded-full bg-slate-100 overflow-hidden">
                   <div className="h-full rounded-full bg-violet-400"
@@ -324,7 +324,7 @@ export default function POVendorClient({
   return (
     <div className="space-y-4 pb-20">
       {toast && (
-        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-2xl text-[13px] font-semibold shadow-xl flex items-center gap-2 ${toast.ok ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-xl text-[13px] font-semibold shadow-xl flex items-center gap-2 ${toast.ok ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
           {toast.ok ? <CheckCircle2 size={15}/> : <XCircle size={15}/>}
           {toast.msg}
         </div>
@@ -339,31 +339,31 @@ export default function POVendorClient({
         <div className="flex gap-2 flex-wrap">
           {canManage && tab === 'po' && (
             <button onClick={() => setPoModal('create')}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-2xl bg-violet-600 hover:bg-violet-700">
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-xl bg-violet-600 hover:bg-violet-700">
               <Plus size={13}/> Buat PO
             </button>
           )}
           {canManage && tab === 'vendor' && (
             <button onClick={() => setVendorModal('create')}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-2xl bg-violet-600 hover:bg-violet-700">
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-xl bg-violet-600 hover:bg-violet-700">
               <Plus size={13}/> Tambah Vendor
             </button>
           )}
           {canManage && tab === 'master' && masterSubtab === 'produk' && (
             <button onClick={() => setProdukModal('create')}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-2xl bg-emerald-600 hover:bg-emerald-700">
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-xl bg-emerald-600 hover:bg-emerald-700">
               <Plus size={13}/> Tambah Produk
             </button>
           )}
           {canManage && tab === 'master' && masterSubtab === 'kategori_reject' && (
             <button onClick={() => setKategoriRejectModal('create')}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-2xl bg-emerald-600 hover:bg-emerald-700">
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-xl bg-emerald-600 hover:bg-emerald-700">
               <Plus size={13}/> Tambah Kategori
             </button>
           )}
           {canManage && tab === 'reject' && (
             <button onClick={() => setSjModal(-1)}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-2xl bg-orange-500 hover:bg-orange-600">
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-xl bg-orange-500 hover:bg-orange-600">
               <Printer size={13}/> Buat SJ Retur
             </button>
           )}
@@ -421,7 +421,7 @@ export default function POVendorClient({
               const totalNilai = items.reduce((s: number, it: any) => s + (it.qty_po * (it.harga_satuan || 0)), 0)
               const hasHarga = items.some((it: any) => it.harga_satuan)
               return (
-                <div key={po.id} className="rounded-2xl overflow-hidden border border-slate-200">
+                <div key={po.id} className="rounded-xl overflow-hidden border border-slate-200">
                   <div className="px-4 py-3 flex items-center justify-between gap-3 bg-white">
                     <button className="flex-1 text-left" onClick={() => setExpandedPO(isOpen ? null : po.id)}>
                       <div className="flex items-center gap-2 flex-wrap">
@@ -509,7 +509,7 @@ export default function POVendorClient({
                                 ? `${bChild[0].produk_nama} · ${fmtNum(bChild[0].qty_diterima)} pcs`
                                 : `${bChild.length} produk · total ${fmtNum(b.qty_diterima)} pcs`
                             return (
-                              <div key={b.id} className="rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 bg-white border border-slate-100">
+                              <div key={b.id} className="rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 bg-white border border-slate-200">
                                 <div>
                                   <p className="text-[12px] font-mono font-bold text-slate-700">{b.nomor_batch}</p>
                                   <p className="text-[10px] text-slate-400">
@@ -543,7 +543,7 @@ export default function POVendorClient({
           {batchList
             .filter((b: any) => !search || b.nomor_batch.toLowerCase().includes(search.toLowerCase()) || b.po_nomor.toLowerCase().includes(search.toLowerCase()))
             .map((b: any) => (
-              <div key={b.id} className="rounded-2xl px-4 py-3 bg-white border border-slate-200">
+              <div key={b.id} className="rounded-xl px-4 py-3 bg-white border border-slate-200">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
@@ -642,7 +642,7 @@ export default function POVendorClient({
           {rejectList
             .filter((r: any) => !search || r.po_nomor.toLowerCase().includes(search.toLowerCase()) || r.vendor_nama.toLowerCase().includes(search.toLowerCase()))
             .map((r: any) => (
-              <div key={r.id} className="rounded-2xl px-4 py-3 bg-white border border-slate-200">
+              <div key={r.id} className="rounded-xl px-4 py-3 bg-white border border-slate-200">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -706,7 +706,7 @@ export default function POVendorClient({
           <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider">Stok Packaging</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {stokList.map((s: any) => (
-              <div key={s.id} className="rounded-2xl px-4 py-3.5 text-center bg-white border border-slate-200">
+              <div key={s.id} className="rounded-xl px-4 py-3.5 text-center bg-white border border-slate-200">
                 <p className="text-[20px] font-black text-slate-800">{fmtNum(s.stok_qty)}</p>
                 <p className="text-[12px] font-bold text-slate-500 mt-0.5">pcs</p>
                 <div className="w-6 h-0.5 rounded-full mx-auto my-2" style={{ background: s.stok_qty > 0 ? '#7C3AED' : '#e2e8f0' }}/>
@@ -737,7 +737,7 @@ export default function POVendorClient({
                   const overdue     = sj.status === 'menunggu_ganti' && sj.tanggal_jatuh_tempo_ganti && new Date(sj.tanggal_jatuh_tempo_ganti) < new Date()
                   const displayStatus = overdue ? 'overdue' : (sj.status || 'menunggu_ganti')
                   return (
-                  <div key={sj.id} className="rounded-2xl px-4 py-3 bg-white border border-slate-200">
+                  <div key={sj.id} className="rounded-xl px-4 py-3 bg-white border border-slate-200">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -836,7 +836,7 @@ export default function POVendorClient({
             <div className="space-y-2">
               <p className="text-[12px] text-slate-400 px-1">Daftar produk packaging yang bisa dipilih saat buat PO</p>
               {produkList.map((p: any) => (
-                <div key={p.id} className="rounded-2xl px-4 py-3 flex items-center justify-between gap-3 bg-white border border-slate-200">
+                <div key={p.id} className="rounded-xl px-4 py-3 flex items-center justify-between gap-3 bg-white border border-slate-200">
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="text-[13px] font-bold text-slate-800">{p.nama}</p>
@@ -874,7 +874,7 @@ export default function POVendorClient({
               {kategoriRejectList.length === 0 ? (
                 <Empty text="Belum ada kategori reject — klik Tambah Kategori" icon="🏷️"/>
               ) : kategoriRejectList.map((k: any) => (
-                <div key={k.id} className="rounded-2xl px-4 py-3 flex items-center justify-between gap-3 bg-white border border-slate-200">
+                <div key={k.id} className="rounded-xl px-4 py-3 flex items-center justify-between gap-3 bg-white border border-slate-200">
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="text-[13px] font-bold text-slate-800">{k.nama}</p>
@@ -927,7 +927,7 @@ export default function POVendorClient({
       {tab === 'vendor' && (
         <div className="space-y-2">
           {vendors.map((v: any) => (
-            <div key={v.id} className="rounded-2xl px-4 py-3 flex items-center justify-between gap-3 bg-white border border-slate-200">
+            <div key={v.id} className="rounded-xl px-4 py-3 flex items-center justify-between gap-3 bg-white border border-slate-200">
               <div>
                 <div className="flex items-center gap-2">
                   <p className="text-[13px] font-bold text-slate-800">{v.nama}</p>
@@ -1139,7 +1139,7 @@ function ModalShell({ title, onClose, children }: { title: string; onClose: () =
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 flex-shrink-0">
           <h2 className="text-[15px] font-bold text-slate-900">{title}</h2>
           <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center">
             <X size={14} className="text-slate-500"/>
@@ -1543,7 +1543,7 @@ function QCModal({ batch, batchItems, kategoriList, timAnggotaList, adminInputLi
 
         {/* Per produk: ACC + rejects */}
         {itemValidations.map(({ bi, itemQC, qtyR, maxChk, total, ok, rejectsOk }) => (
-          <div key={bi.id} className="rounded-2xl border border-slate-200 bg-white p-3 space-y-2">
+          <div key={bi.id} className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
             <div className="flex items-center justify-between gap-2">
               <p className="text-[13px] font-bold text-slate-800">{bi.produk_nama}</p>
               <p className="text-[10px] text-slate-400">
@@ -1618,7 +1618,7 @@ function QCModal({ batch, batchItems, kategoriList, timAnggotaList, adminInputLi
           {showTtd ? '▲ Sembunyikan TTD' : '✍️ Tambah TTD (Opsional)'}
         </button>
         {showTtd && (
-          <div className="space-y-3 rounded-2xl p-3 bg-violet-50">
+          <div className="space-y-3 rounded-xl p-3 bg-violet-50">
             <SignaturePad label="TTD Operator" initial={ttdOp} onSave={v => setTtdOp(v)}/>
             <SignaturePad label="TTD Admin" initial={ttdAdmin} onSave={v => setTtdAdmin(v)}/>
           </div>
@@ -1777,7 +1777,7 @@ function ConfirmModal({ state, onClose }: { state: ConfirmState; onClose: () => 
   const danger = state.danger ?? false
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 px-4">
-      <div className="w-full max-w-sm bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden">
+      <div className="w-full max-w-sm bg-white rounded-xl border border-slate-200 shadow-2xl overflow-hidden">
         <div className="px-5 pt-5 pb-3 flex items-start gap-3">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${danger ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
             <AlertTriangle size={20}/>
@@ -1890,7 +1890,7 @@ function DashboardRejectPanel({ rejectList, sjList, poItems, batchList }: {
     <div className="space-y-4">
       {/* Alert overdue */}
       {overdueSJ.length > 0 && (
-        <div className="rounded-2xl bg-red-50 border-2 border-red-200 p-4">
+        <div className="rounded-xl bg-red-50 border-2 border-red-200 p-4">
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle size={16} className="text-red-600"/>
             <p className="text-[13px] font-black text-red-700">
@@ -1918,17 +1918,17 @@ function DashboardRejectPanel({ rejectList, sjList, poItems, batchList }: {
       <div>
         <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-2">Ringkasan Reject Bulan Ini</p>
         <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-2xl bg-white border border-slate-200 p-3">
+          <div className="rounded-xl bg-white border border-slate-200 p-3">
             <p className="text-[10px] font-bold text-slate-400 uppercase">Total Kejadian</p>
             <p className="text-[20px] font-black text-slate-800 mt-1">{fmtNum(rejectThisMonth.length)}</p>
             <p className="text-[10px] text-slate-400">{fmtNum(totalRejectAll)} all-time</p>
           </div>
-          <div className="rounded-2xl bg-white border border-slate-200 p-3">
+          <div className="rounded-xl bg-white border border-slate-200 p-3">
             <p className="text-[10px] font-bold text-slate-400 uppercase">Total Qty</p>
             <p className="text-[20px] font-black text-red-600 mt-1">{fmtNum(totalQtyMonth)}</p>
             <p className="text-[10px] text-slate-400">pcs reject</p>
           </div>
-          <div className="rounded-2xl bg-white border border-slate-200 p-3">
+          <div className="rounded-xl bg-white border border-slate-200 p-3">
             <p className="text-[10px] font-bold text-slate-400 uppercase">Total Nilai</p>
             <p className="text-[14px] font-black text-amber-700 mt-1">{fmtRp(totalNilaiMonth)}</p>
             <p className="text-[10px] text-slate-400">kerugian potensial</p>
@@ -1940,15 +1940,15 @@ function DashboardRejectPanel({ rejectList, sjList, poItems, batchList }: {
       <div>
         <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status SJ Retur</p>
         <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-2xl bg-amber-50 border border-amber-200 p-3 text-center">
+          <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-center">
             <p className="text-[20px] font-black text-amber-700">{sjStatus.menunggu_ganti}</p>
             <p className="text-[10px] font-bold text-amber-600 mt-1">Menunggu Ganti</p>
           </div>
-          <div className="rounded-2xl bg-blue-50 border border-blue-200 p-3 text-center">
+          <div className="rounded-xl bg-blue-50 border border-blue-200 p-3 text-center">
             <p className="text-[20px] font-black text-blue-700">{sjStatus.sebagian_diganti}</p>
             <p className="text-[10px] font-bold text-blue-600 mt-1">Sebagian Diganti</p>
           </div>
-          <div className="rounded-2xl bg-green-50 border border-green-200 p-3 text-center">
+          <div className="rounded-xl bg-green-50 border border-green-200 p-3 text-center">
             <p className="text-[20px] font-black text-green-700">{sjStatus.selesai_diganti}</p>
             <p className="text-[10px] font-bold text-green-600 mt-1">Selesai Diganti</p>
           </div>
@@ -2209,7 +2209,7 @@ function HistoriHargaPanel({ produkList, poList, poItems, vendors }: { produkLis
       {produkId && rows.length > 0 && (
         <>
           {/* Ringkasan per-vendor */}
-          <div className="rounded-2xl bg-white border border-slate-200 p-3">
+          <div className="rounded-xl bg-white border border-slate-200 p-3">
             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-2">Perbandingan Vendor</p>
             <div className="space-y-2">
               {(perVendor as any[])
@@ -2219,7 +2219,7 @@ function HistoriHargaPanel({ produkList, poList, poItems, vendors }: { produkLis
                   const isMin = v.last.harga === minHarga
                   const isMax = v.last.harga === maxHarga
                   return (
-                    <div key={v.vendor_id} className="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 last:border-0">
+                    <div key={v.vendor_id} className="flex items-center justify-between gap-2 py-1.5 border-b border-slate-200 last:border-0">
                       <div className="min-w-0">
                         <p className="text-[12px] font-bold text-slate-700 truncate">{v.vendor_nama}</p>
                         <p className="text-[10px] text-slate-400">{v.prices.length}× PO · rata2 {fmtRp(avg)}</p>

@@ -139,7 +139,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
   const Card = ({ label, value, sub, accent = '#8B5CF6', bg = 'rgba(139,92,246,0.06)' }: {
     label: string; value: string; sub?: string; accent?: string; bg?: string
   }) => (
-    <div className="rounded-2xl p-4" style={{ background: bg, border: `1px solid ${accent}22` }}>
+    <div className="rounded-xl p-4" style={{ background: bg, border: `1px solid ${accent}22` }}>
       <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: accent }}>{label}</p>
       <p className="text-[18px] font-black text-slate-800 mt-0.5">{value}</p>
       {sub && <p className="text-[11px] text-slate-400 mt-0.5">{sub}</p>}
@@ -167,7 +167,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
           </p>
         </div>
         <button onClick={exportCSV}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-slate-200 bg-white text-[12px] font-bold text-slate-600 hover:border-violet-300 hover:text-violet-700 transition-colors">
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-[12px] font-bold text-slate-600 hover:border-violet-300 hover:text-violet-700 transition-colors">
           <Download size={13} /> Export CSV
         </button>
       </div>
@@ -185,7 +185,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
       </div>
 
       {/* Alur gram */}
-      <div className="rounded-3xl p-5 bg-white border border-slate-100 space-y-4">
+      <div className="rounded-xl p-5 bg-white border border-slate-200 space-y-4">
         <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">Alur Gram — Batch {batch.kode}</p>
 
         <div className="space-y-2">
@@ -217,7 +217,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
 
       {/* Peleburan detail */}
       {peleburans.length > 0 && (
-        <div className="rounded-3xl overflow-hidden bg-white border border-slate-100">
+        <div className="rounded-xl overflow-hidden bg-white border border-slate-200">
           <div className="px-5 py-4 border-b border-slate-50 flex items-center gap-2">
             <Layers size={14} className="text-cyan-500" />
             <p className="text-[13px] font-bold text-slate-800">Peleburan ({peleburans.length})</p>
@@ -273,7 +273,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
 
       {/* Produksi per gramasi */}
       {gramasiRows.length > 0 && (
-        <div className="rounded-3xl overflow-hidden bg-white border border-slate-100">
+        <div className="rounded-xl overflow-hidden bg-white border border-slate-200">
           <div className="px-5 py-4 border-b border-slate-50 flex items-center gap-2">
             <Hammer size={14} className="text-violet-500" />
             <p className="text-[13px] font-bold text-slate-800">Produksi per Gramasi</p>
@@ -328,7 +328,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
 
       {/* Packing */}
       {packings.length > 0 && (
-        <div className="rounded-3xl overflow-hidden bg-white border border-slate-100">
+        <div className="rounded-xl overflow-hidden bg-white border border-slate-200">
           <div className="px-5 py-4 border-b border-slate-50 flex items-center gap-2">
             <Package size={14} className="text-blue-500" />
             <p className="text-[13px] font-bold text-slate-800">Packing ({packings.length} entry · {packings.reduce((s, p) => s + p.pcs, 0)} pcs)</p>
@@ -361,7 +361,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
 
       {/* Shieldtag summary */}
       {shieldtags.length > 0 && (
-        <div className="rounded-3xl p-5 bg-white border border-slate-100">
+        <div className="rounded-xl p-5 bg-white border border-slate-200">
           <div className="flex items-center gap-2 mb-4">
             <Tag size={14} className="text-green-500" />
             <p className="text-[13px] font-bold text-slate-800">Shieldtag — {stTotal} total</p>
@@ -385,7 +385,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
 
       {/* HPP info (restricted) */}
       {showHpp && batch.hpp_gr != null && (
-        <div className="rounded-2xl p-4 bg-amber-50 border border-amber-100">
+        <div className="rounded-xl p-4 bg-amber-50 border border-amber-100">
           <div className="flex items-center justify-between">
             <p className="text-[12px] font-bold text-amber-700">HPP / Gram</p>
             <p className="text-[16px] font-black text-amber-800">{formatRupiah(batch.hpp_gr)}</p>
@@ -398,7 +398,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
 
       {/* Catatan */}
       {batch.catatan && (
-        <div className="rounded-2xl p-4 bg-slate-50 border border-slate-100">
+        <div className="rounded-xl p-4 bg-slate-50 border border-slate-200">
           <p className="text-[12px] font-bold text-slate-400 mb-1">Catatan</p>
           <p className="text-[13px] text-slate-700">{batch.catatan}</p>
         </div>

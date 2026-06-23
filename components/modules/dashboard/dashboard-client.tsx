@@ -308,7 +308,7 @@ export default function DashboardClient({
                   'rounded-xl py-3 px-2 text-center border transition-all',
                   s.stok_qty > 0
                     ? 'bg-blue-50 border-blue-100'
-                    : 'bg-slate-50 border-slate-100'
+                    : 'bg-slate-50 border-slate-200'
                 )}>
                 <p className={cn('text-[18px] font-bold leading-none tabular-nums', s.stok_qty > 0 ? 'text-blue-700' : 'text-slate-300')}>
                   {s.stok_qty.toLocaleString('id-ID')}
@@ -595,7 +595,7 @@ function TrendProduksi({ trend }: {
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-wrap gap-2">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Hammer size={14} className="text-violet-500" />
           <h3 className="text-[13px] font-semibold text-slate-800">Trend Produksi Harian</h3>
@@ -657,8 +657,8 @@ function TrendProduksi({ trend }: {
         <div className="overflow-x-auto">
           <table className="text-[11px] min-w-max w-full">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-100">
-                <th className="sticky left-0 bg-slate-50 px-4 py-2.5 text-left font-semibold text-slate-500 border-r border-slate-100 min-w-[60px] text-[11px]">
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="sticky left-0 bg-slate-50 px-4 py-2.5 text-left font-semibold text-slate-500 border-r border-slate-200 min-w-[60px] text-[11px]">
                   Gramasi
                 </th>
                 {allDays.map(d => (
@@ -669,7 +669,7 @@ function TrendProduksi({ trend }: {
                     {d}
                   </th>
                 ))}
-                <th className="px-4 py-2.5 text-right font-semibold text-slate-600 border-l border-slate-100 min-w-[56px] text-[11px]">
+                <th className="px-4 py-2.5 text-right font-semibold text-slate-600 border-l border-slate-200 min-w-[56px] text-[11px]">
                   Total
                 </th>
               </tr>
@@ -677,7 +677,7 @@ function TrendProduksi({ trend }: {
             <tbody>
               {gramasi.map((g, ri) => (
                 <tr key={g} className={cn('border-b border-slate-50', ri % 2 === 0 ? '' : 'bg-slate-50/40')}>
-                  <td className="sticky left-0 bg-white px-4 py-2 font-semibold text-slate-700 border-r border-slate-100">
+                  <td className="sticky left-0 bg-white px-4 py-2 font-semibold text-slate-700 border-r border-slate-200">
                     {g}gr
                   </td>
                   {allDays.map(d => {
@@ -695,7 +695,7 @@ function TrendProduksi({ trend }: {
                       </td>
                     )
                   })}
-                  <td className="px-4 py-2 text-right font-bold text-slate-700 border-l border-slate-100 tabular-nums">
+                  <td className="px-4 py-2 text-right font-bold text-slate-700 border-l border-slate-200 tabular-nums">
                     {totalPerGramasi[g].toLocaleString('id-ID')}
                   </td>
                 </tr>

@@ -70,7 +70,7 @@ export default function StokCabangClient({ stokData, canAdjust, isCabangView }: 
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl flex items-center justify-center bg-violet-600">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-violet-600">
             <Store size={18} className="text-white" />
           </div>
           <div>
@@ -99,7 +99,7 @@ export default function StokCabangClient({ stokData, canAdjust, isCabangView }: 
 
       {/* List cabang */}
       {stokData.length === 0 ? (
-        <div className="rounded-3xl py-16 text-center border border-slate-100 bg-white/70">
+        <div className="rounded-xl py-16 text-center border border-slate-200 bg-white/70">
           <Store size={32} className="mx-auto text-slate-200 mb-3" />
           <p className="text-[13px] text-slate-400">Belum ada data cabang</p>
           <p className="text-[12px] text-slate-300 mt-1">Tambah cabang dulu di Pengaturan</p>
@@ -155,7 +155,7 @@ function CabangCard({ cabang, expanded, onToggle, canAdjust, onAdjust, onHistory
   const hasStock = cabang.total_ready > 0
 
   return (
-    <div className="rounded-3xl overflow-hidden border border-slate-100 bg-white/80">
+    <div className="rounded-xl overflow-hidden border border-slate-200 bg-white/80">
       {/* Cabang header row */}
       <button
         onClick={onToggle}
@@ -188,7 +188,7 @@ function CabangCard({ cabang, expanded, onToggle, canAdjust, onAdjust, onHistory
 
       {/* Expanded detail */}
       {expanded && (
-        <div className="border-t border-slate-100">
+        <div className="border-t border-slate-200">
           {/* Action bar */}
           <div className="flex items-center justify-between px-5 py-3 bg-slate-50/50">
             <p className="text-[11px] text-slate-400 font-medium">
@@ -307,7 +307,7 @@ function KpiCard({ label, value, sub, color, bg, icon }: {
   label: string; value: number; sub: string; color: string; bg: string; icon: React.ReactNode
 }) {
   return (
-    <div className="rounded-2xl p-4 border border-slate-100 bg-white/80">
+    <div className="rounded-xl p-4 border border-slate-200 bg-white/80">
       <div className="flex items-center justify-between mb-2">
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{label}</span>
         <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -359,8 +359,8 @@ function AdjustmentModal({ cabang, defaultGramasi, onClose, onSuccess }: {
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
           <div>
             <h2 className="font-bold text-slate-800">Adjust Ready Stock</h2>
             <p className="text-[12px] text-slate-400">{cabang.nama} ({cabang.kode})</p>
@@ -372,7 +372,7 @@ function AdjustmentModal({ cabang, defaultGramasi, onClose, onSuccess }: {
 
         <div className="px-6 py-5 space-y-4">
           {/* Warning */}
-          <div className="flex items-start gap-2.5 rounded-2xl px-4 py-3 bg-amber-50 border border-amber-100">
+          <div className="flex items-start gap-2.5 rounded-xl px-4 py-3 bg-amber-50 border border-amber-100">
             <AlertTriangle size={14} className="text-amber-500 flex-shrink-0 mt-0.5" />
             <p className="text-[12px] text-amber-700 leading-relaxed">
               Adjustment ini <strong>tidak mengubah data di Accurate</strong>. Hanya untuk koreksi tampilan stok di website.
@@ -395,12 +395,12 @@ function AdjustmentModal({ cabang, defaultGramasi, onClose, onSuccess }: {
           {/* Current vs New */}
           {gramasi && (
             <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-2xl p-3 bg-slate-50 border border-slate-100">
+              <div className="rounded-xl p-3 bg-slate-50 border border-slate-200">
                 <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Stok Sekarang</p>
                 <p className="text-[20px] font-black text-slate-700">{currentReady}</p>
                 <p className="text-[10px] text-slate-400">pcs</p>
               </div>
-              <div className="rounded-2xl p-3 bg-violet-50 border border-violet-100">
+              <div className="rounded-xl p-3 bg-violet-50 border border-violet-100">
                 <p className="text-[10px] font-bold text-violet-500 uppercase mb-1">Stok Baru</p>
                 <input
                   type="number" min="0" value={qtyAfter}
@@ -457,8 +457,8 @@ function HistoryModal({ cabang, data, loading, onClose }: {
 }) {
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 flex-shrink-0">
           <div>
             <h2 className="font-bold text-slate-800">Riwayat Adjustment</h2>
             <p className="text-[12px] text-slate-400">{cabang.nama}</p>
@@ -479,7 +479,7 @@ function HistoryModal({ cabang, data, loading, onClose }: {
           ) : (
             <div className="space-y-2">
               {data.map((d, i) => (
-                <div key={i} className="rounded-2xl border border-slate-100 px-4 py-3">
+                <div key={i} className="rounded-xl border border-slate-200 px-4 py-3">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
                       <span className="text-[12px] font-bold text-slate-700">{d.gramasi}gr</span>

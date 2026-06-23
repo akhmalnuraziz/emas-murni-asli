@@ -29,7 +29,7 @@ export default async function SJReturPrintPage({ params }: { params: Promise<{ i
 
       <PrintButtons />
 
-      <div className="page max-w-[700px] mx-auto my-8 bg-white rounded-2xl shadow-lg p-10">
+      <div className="page max-w-[700px] mx-auto my-8 bg-white rounded-xl shadow-lg p-10">
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -92,9 +92,9 @@ export default async function SJReturPrintPage({ params }: { params: Promise<{ i
             <tbody>
               {(items ?? []).map((item: any, i: number) => (
                 <tr key={item.id} style={{ background: i % 2 === 0 ? 'white' : '#fafafa' }}>
-                  <td className="p-2 border border-slate-100 text-slate-500 text-[11px] align-top">{i + 1}</td>
-                  <td className="p-2 border border-slate-100 font-semibold text-slate-800 text-[12px] align-top">{item.produk_nama}</td>
-                  <td className="p-2 border border-slate-100 align-top">
+                  <td className="p-2 border border-slate-200 text-slate-500 text-[11px] align-top">{i + 1}</td>
+                  <td className="p-2 border border-slate-200 font-semibold text-slate-800 text-[12px] align-top">{item.produk_nama}</td>
+                  <td className="p-2 border border-slate-200 align-top">
                     {item.kategori_nama ? (
                       <p className="text-[11px] font-bold text-red-600">🏷️ {item.kategori_nama}</p>
                     ) : null}
@@ -108,12 +108,12 @@ export default async function SJReturPrintPage({ params }: { params: Promise<{ i
                       <p className="text-[10px] text-slate-400 mt-0.5">Catatan: {item.catatan}</p>
                     ) : null}
                   </td>
-                  <td className="p-2 border border-slate-100 align-top">
+                  <td className="p-2 border border-slate-200 align-top">
                     <p className="font-mono text-[10px] text-violet-700">{item.po_nomor}</p>
                     <p className="font-mono text-[10px] text-slate-500">{item.nomor_batch}</p>
                     <p className="text-[10px] text-slate-400">{fmtDate(item.tanggal_terima)}</p>
                   </td>
-                  <td className="p-2 border border-slate-100 font-bold text-right text-slate-800 text-[12px] align-top">
+                  <td className="p-2 border border-slate-200 font-bold text-right text-slate-800 text-[12px] align-top">
                     {fmtNum(item.qty_retur)}
                     {item.qty_diganti > 0 && (
                       <p className="text-[9px] font-normal text-green-600 mt-0.5">{fmtNum(item.qty_diganti)} diganti</p>
@@ -151,7 +151,7 @@ export default async function SJReturPrintPage({ params }: { params: Promise<{ i
           </div>
         </div>
 
-        <div className="mt-10 pt-4 border-t border-slate-100 text-center">
+        <div className="mt-10 pt-4 border-t border-slate-200 text-center">
           <p className="text-[10px] text-slate-300">Dokumen dicetak dari sistem ERP PT Emas Murni Asli · {sj.nomor_sj}</p>
         </div>
       </div>

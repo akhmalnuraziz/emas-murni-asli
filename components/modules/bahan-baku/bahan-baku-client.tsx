@@ -100,7 +100,7 @@ function FotoPicker({files,onAdd,onRemove,label='Tambah foto',small=false}:{
     <div className="space-y-2">
       {lb&&(
         <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/85 p-4"onClick={()=>setLb(null)}>
-          <img src={lb}className="max-w-[95vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl"onClick={e=>e.stopPropagation()}/>
+          <img src={lb}className="max-w-[95vw] max-h-[90vh] object-contain rounded-xl shadow-2xl"onClick={e=>e.stopPropagation()}/>
           <button onClick={()=>setLb(null)}className="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center backdrop-blur-sm"><X size={18}/></button>
         </div>
       )}
@@ -125,7 +125,7 @@ function BatchRingkasModal({onSubmit,onClose,isPending,error}:{onSubmit:(fd:Form
   return(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Impor Batch Lama</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">Untuk batch 1-29 yang belum diinput — minimal data</p>
@@ -159,7 +159,7 @@ function BatchRingkasModal({onSubmit,onClose,isPending,error}:{onSubmit:(fd:Form
             {error&&<p className="text-[12px] text-red-500 font-semibold">{error}</p>}
           </form>
         </div>
-        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
           <button type="button" onClick={onClose}
             className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
           <button type="submit" form="ringkas-form" disabled={isPending}
@@ -226,7 +226,7 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
   return(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">{isEdit?'Edit Batch':'Registrasi Logam Mulia Masuk'}</h2>
           </div>
@@ -270,7 +270,7 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
             ))}
           </div>
           {hargaNum>0&&(
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-50 border border-slate-100">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200">
               <div className="flex-1 space-y-1.5">
                 <div className="flex justify-between text-[12px]"><span className="text-slate-500">Harga Beli</span><span className="font-semibold text-slate-700">{formatRupiah(hargaNum)}</span></div>
                 {totalBiaya>0&&<div className="flex justify-between text-[12px]"><span className="text-slate-500">Biaya Tambahan</span><span className="font-semibold text-slate-700">{formatRupiah(totalBiaya)}</span></div>}
@@ -317,7 +317,7 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
           </F>
           {error&&<div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/>{error}</div>}
         </form>
-        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
           <button type="button" onClick={onClose}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
           <button type="submit" form="batch-form" disabled={isPending||uploading}
             className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
@@ -587,7 +587,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
 
                 {/* Expanded detail */}
                 {isExp&&(
-                  <div className="px-5 pb-5 border-t border-slate-100 space-y-4 bg-violet-50/20">
+                  <div className="px-5 pb-5 border-t border-slate-200 space-y-4 bg-violet-50/20">
 
                     {/* FIX poin 4: Foto Bukti di ATAS selisih description */}
                     {fotos.length>0&&(
@@ -611,7 +611,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                         {label:'Selisih Timbangan',val:batchPusat!==timbAkhir?formatGram(Math.abs(batchPusat-timbAkhir)):'✓ Sesuai'},
                         {label:'Catatan',val:batch.catatan||'—'},
                       ].map(item=>(
-                        <div key={item.label}className="rounded-lg p-3 bg-slate-50 border border-slate-100">
+                        <div key={item.label}className="rounded-lg p-3 bg-slate-50 border border-slate-200">
                           <p className="text-[10px] text-gray-400 font-medium">{item.label}</p>
                           <p className="text-[13px] font-bold text-gray-700 mt-0.5 break-words">{item.val}</p>
                         </div>
@@ -620,7 +620,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
 
                     {/* Selisih description */}
                     {(si.warn || Math.abs((batchPusat)-(timbAkhir)) > 0) && (
-                      <div className={cn('flex items-start gap-3 px-4 py-3 rounded-2xl border',si.warn?'bg-red-50 border-red-200':'bg-amber-50 border-amber-200')}>
+                      <div className={cn('flex items-start gap-3 px-4 py-3 rounded-xl border',si.warn?'bg-red-50 border-red-200':'bg-amber-50 border-amber-200')}>
                         <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0"style={{background:si.dot}}/>
                         <p className={cn('text-[12px] font-medium',si.color)}>{si.desc}</p>
                       </div>
@@ -662,7 +662,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                           <p className="text-[11px] font-bold text-violet-600 uppercase tracking-wide mb-2.5 px-1">Rekonsiliasi Detail</p>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                             {cols.map(col=>(
-                              <div key={col.label} className={`rounded-lg px-3.5 py-3 ${col.highlight?'bg-violet-50 border border-violet-200':'bg-white border border-slate-100'}`}>
+                              <div key={col.label} className={`rounded-lg px-3.5 py-3 ${col.highlight?'bg-violet-50 border border-violet-200':'bg-white border border-slate-200'}`}>
                                 <div className="flex items-center gap-1.5 mb-1.5">
                                   <span className="w-1.5 h-1.5 rounded-full" style={{background:col.accent}}/>
                                   <p className="text-[10px] font-semibold text-slate-500 leading-tight">{col.label}</p>
@@ -672,7 +672,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                               </div>
                             ))}
                             {/* Poin 5+11: Kolom Sisa Fisik inline-edit */}
-                            <div className="rounded-2xl px-3.5 py-3 col-span-2 sm:col-span-3 bg-emerald-50 border border-emerald-200">
+                            <div className="rounded-xl px-3.5 py-3 col-span-2 sm:col-span-3 bg-emerald-50 border border-emerald-200">
                               <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
                                 <div className="flex items-center gap-1.5">
                                   <span className="w-1.5 h-1.5 rounded-full bg-green-500"/>
@@ -751,7 +751,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
 
                     {/* ─── Peleburan section ─────────────── */}
                     <div className="rounded-lg overflow-hidden border border-slate-200">
-                      <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-100">
+                      <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-200">
                         <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">🔥 Riwayat Peleburan</p>
                         {status==='aktif'&&(
                           <button type="button" onClick={()=>setPeleburanModalBatch(batch.kode)}
@@ -769,7 +769,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                           // FIX poin 7: hitung durasi
                           const durasi = durasiText(plb.jam_mulai, plb.jam_selesai)
                           return (
-                          <div key={plb.id} className="px-4 py-3 border-t border-slate-100">
+                          <div key={plb.id} className="px-4 py-3 border-t border-slate-200">
                             <div className="flex items-start justify-between gap-2 mb-2">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -914,7 +914,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                             )}
                             {/* TTD Loss — tampil kalau ada loss_approval */}
                             {plb.loss_approval&&(
-                              <div className="mt-2 rounded-2xl overflow-hidden border border-red-100">
+                              <div className="mt-2 rounded-xl overflow-hidden border border-red-100">
                                 <div className="px-3 py-2 flex items-center gap-2 bg-red-50">
                                   <span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss Peleburan</span>
                                   <span className="text-[10px] text-red-400 ml-auto">Loss disetujui</span>
@@ -999,7 +999,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
       {lockModal&&(
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
           <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
               <div>
                 <h2 className="text-[15px] font-bold text-slate-900">Kunci Batch?</h2>
                 <p className="text-[11px] text-slate-400 mt-0.5"><span className="font-semibold text-slate-600">{lockModal.kode}</span> akan dikunci dan tidak bisa digunakan untuk produksi baru.</p>
@@ -1010,7 +1010,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
               <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center flex-shrink-0"><Lock size={18}className="text-amber-500"/></div>
               <p className="text-[13px] text-slate-500">Batch yang sudah dikunci tidak bisa digunakan untuk proses produksi baru.</p>
             </div>
-            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100">
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200">
               <button onClick={()=>setLockModal(null)}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
               <button onClick={()=>startTransition(async()=>{const r=await lockBatch(lockModal.id,lockModal.kode);if(r?.error)showToast(r.error,false);else{showToast('🔒 Batch dikunci');setLockModal(null)}})} disabled={isPending}
                 className="flex-1 h-9 rounded-lg bg-amber-500 hover:bg-amber-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
@@ -1025,7 +1025,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
       {delModal&&(
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
           <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
               <div>
                 <h2 className="text-[15px] font-bold text-slate-900">Hapus Batch?</h2>
                 <p className="text-[11px] text-slate-400 mt-0.5"><span className="font-semibold text-slate-600">{delModal.kode}</span> akan dihapus permanen.</p>
@@ -1039,7 +1039,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                 <p className="text-[12px] text-red-500 font-semibold mt-0.5">⚠ Data akan dihapus permanen</p>
               </div>
             </div>
-            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100">
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200">
               <button onClick={()=>setDelModal(null)}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
               <button onClick={()=>startTransition(async()=>{const r=await deleteBatch(delModal.id,delModal.kode);if(r?.error)showToast(r.error,false);else{showToast('🗑️ Batch dihapus');setDelModal(null)}})} disabled={isPending}
                 className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
@@ -1117,7 +1117,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 flex-shrink-0">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Buat Peleburan</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">{batchNama||batchKode}</p>
@@ -1128,7 +1128,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
 
           {/* SUMBER BAHAN — 3 pilihan */}
           <div className="rounded-lg overflow-hidden border border-slate-200">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-100">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-200">
               <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">🧱 Sumber Bahan</span>
             </div>
             <div className="p-4 space-y-4">
@@ -1176,7 +1176,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                       const prosesLabel = rc > 0 && Math.abs(rc - br) < 0.001
                         ? 'Reject Cutting'
                         : rc > 0
-                          ? 'Reject Cutting + Stage'
+                          ? 'Reject Cutting + Reject Pas Berat'
                           : `Reject ${rej.current_status ?? 'Proses'}`
                       return (
                       <div key={rej.id}>
@@ -1214,7 +1214,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
 
           {/* DISERAHKAN */}
           <div className="rounded-lg overflow-hidden border border-slate-200">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-100">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-200">
               <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">📤 Diserahkan</span>
             </div>
             <div className="p-4 space-y-3">
@@ -1261,7 +1261,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
             </div>
           </div>
 
-          <div className="px-4 py-3 rounded-2xl border border-dashed border-gray-200 text-center">
+          <div className="px-4 py-3 rounded-xl border border-dashed border-gray-200 text-center">
             <p className="text-[12px] text-gray-400">Bagian <span className="font-semibold text-gray-500">Diterima</span> diisi setelah proses lebur selesai</p>
           </div>
 
@@ -1332,7 +1332,7 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 flex-shrink-0">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Selesai Lebur</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">{peleburan.kode}</p>
@@ -1348,7 +1348,7 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
           </div>
 
           <div className="rounded-lg overflow-hidden border border-slate-200">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-100">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-200">
               <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">📥 Diterima</span>
             </div>
             <div className="p-4 space-y-3">
@@ -1474,7 +1474,7 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 flex-shrink-0">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Edit Diserahkan</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">{peleburan.kode}</p>
@@ -1483,7 +1483,7 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
         </div>
         <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           <div className="rounded-lg overflow-hidden border border-slate-200">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-100">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-200">
               <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">📤 Diserahkan</span>
             </div>
             <div className="p-4 space-y-3">
@@ -1626,7 +1626,7 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 flex-shrink-0">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Edit Diterima</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">{peleburan.kode}</p>
@@ -1652,7 +1652,7 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
           )}
 
           <div className="rounded-lg overflow-hidden border border-slate-200">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-100">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-200">
               <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">📥 Diterima</span>
             </div>
             <div className="p-4 space-y-3">

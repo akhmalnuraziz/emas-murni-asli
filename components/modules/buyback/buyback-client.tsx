@@ -78,7 +78,7 @@ export default function BuybackClient({ initialList, userRole, userName }: Props
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-violet-600">
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-violet-600">
             <RotateCcw size={20} className="text-white" />
           </div>
           <div>
@@ -104,7 +104,7 @@ export default function BuybackClient({ initialList, userRole, userName }: Props
       </div>
 
       {/* Panduan flow */}
-      <div className="bg-slate-50 rounded-2xl px-5 py-4 border border-slate-100">
+      <div className="bg-slate-50 rounded-xl px-5 py-4 border border-slate-200">
         <p className="text-[12px] font-semibold text-slate-500 mb-2">Flow Buyback (PRD v5)</p>
         <div className="flex items-center gap-2 flex-wrap text-[12px] text-slate-400">
           {['Terima Buyback', '→', 'Inspeksi', '→', ['Siap Jual','Repair','Holding Reject','Lebur']].map((step, i) =>
@@ -129,7 +129,7 @@ export default function BuybackClient({ initialList, userRole, userName }: Props
       {/* List */}
       <div className="space-y-3">
         {list.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-slate-100 py-16 text-center text-slate-300 text-[13px]">
+          <div className="bg-white rounded-xl border border-slate-200 py-16 text-center text-slate-300 text-[13px]">
             Belum ada data buyback
           </div>
         ) : list.map(b => (
@@ -186,7 +186,7 @@ function BuybackForm({ userName, onClose, onSaved }: {
   }
 
   if (done) return (
-    <div className="bg-white rounded-3xl border border-slate-100 p-8 text-center space-y-3">
+    <div className="bg-white rounded-xl border border-slate-200 p-8 text-center space-y-3">
       <CheckCircle2 size={40} className="mx-auto text-emerald-500" />
       <p className="font-bold text-slate-800">Buyback Diterima</p>
       <p className="text-[13px] font-mono text-slate-500">{done}</p>
@@ -197,7 +197,7 @@ function BuybackForm({ userName, onClose, onSaved }: {
   )
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-100 p-6 space-y-5">
+    <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-5">
       <div className="flex items-center justify-between">
         <h2 className="font-bold text-slate-800">Terima Buyback Baru</h2>
         <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"><X size={16} /></button>
@@ -310,7 +310,7 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, userName, onUp
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-slate-50/50"
         onClick={onToggle}>
         <div className="flex items-center gap-3">
@@ -348,13 +348,13 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, userName, onUp
           {(b.foto ?? []).length > 0 && (
             <div className="flex gap-2 flex-wrap">
               {(b.foto as string[]).map((url, i) => (
-                <img key={i} src={url} alt="" className="w-20 h-20 rounded-xl object-cover border border-slate-100" />
+                <img key={i} src={url} alt="" className="w-20 h-20 rounded-xl object-cover border border-slate-200" />
               ))}
             </div>
           )}
 
           {b.catatan && (
-            <p className="text-[12px] text-slate-500 bg-slate-50 rounded-2xl px-4 py-3">
+            <p className="text-[12px] text-slate-500 bg-slate-50 rounded-xl px-4 py-3">
               <span className="font-semibold">Catatan:</span> {b.catatan}
             </p>
           )}

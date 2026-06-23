@@ -35,7 +35,7 @@ export default function PageSkeleton() {
 
       {/* Table rows */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-slate-100">
+        <div className="px-5 py-3 border-b border-slate-200">
           <div className="skeleton h-4 w-32 rounded" />
         </div>
         <div className="divide-y divide-slate-50">

@@ -42,11 +42,11 @@ export default function IdleLogoutProvider({ children }: { children: React.React
 
       {showWarning && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200">
 
             {/* Header */}
             <div className="px-6 pt-6 pb-4 text-center">
-              <div className="w-12 h-12 rounded-2xl mx-auto mb-3 flex items-center justify-center bg-amber-50 border border-amber-100">
+              <div className="w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center bg-amber-50 border border-amber-100">
                 <Clock size={22} className="text-amber-500" />
               </div>
               <h2 className="text-[15px] font-semibold text-slate-900">Sesi hampir berakhir</h2>

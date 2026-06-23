@@ -15,7 +15,7 @@ import {
 } from '@/app/(dashboard)/pengaturan/actions'
 import { CabangSection, UsersSection } from './cabang-users-sections'
 
-const inp = 'w-full h-11 px-4 bg-gray-50 rounded-2xl text-[13px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-200 border border-gray-200'
+const inp = 'w-full h-11 px-4 bg-gray-50 rounded-xl text-[13px] text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-200 border border-gray-200'
 const WARNA = ['#8B5CF6','#3B82F6','#22C55E','#F59E0B','#EF4444','#EC4899','#14B8A6','#6366F1']
 
 export default function PengaturanClient({
@@ -51,13 +51,13 @@ export default function PengaturanClient({
   return (
     <div className="space-y-5 max-w-4xl">
       {toast && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-2xl text-[13px] font-semibold text-white shadow-lg bg-violet-600">{toast}</div>
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-xl text-[13px] font-semibold text-white shadow-lg bg-violet-600">{toast}</div>
       )}
 
       <div className="flex gap-2 flex-wrap">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setTab(id)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[13px] font-semibold transition-all ${tab === id ? 'bg-violet-600 text-white shadow-md shadow-violet-200' : 'bg-white/90 text-gray-500 border border-gray-200'}`}>
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-all ${tab === id ? 'bg-violet-600 text-white shadow-md shadow-violet-200' : 'bg-white/90 text-gray-500 border border-gray-200'}`}>
             <Icon size={15} /> {label}
           </button>
         ))}
@@ -100,14 +100,14 @@ function TimSection({ tims, isPending, start, showToast }: any) {
         </div>
         {!adding && (
           <button onClick={() => setAdding(true)}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-[13px] font-bold text-white bg-violet-600 hover:bg-violet-700">
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-bold text-white bg-violet-600 hover:bg-violet-700">
             <Plus size={15} /> Tambah Tim
           </button>
         )}
       </div>
 
       {adding && (
-        <div className="rounded-3xl p-4 space-y-3 bg-white border border-violet-100 shadow-sm">
+        <div className="rounded-xl p-4 space-y-3 bg-white border border-violet-100 shadow-sm">
           <input autoFocus value={newNama} onChange={e => setNewNama(e.target.value)}
             placeholder="Nama tim (cth: Tim A)" className={inp}
             onKeyDown={e => e.key === 'Enter' && handleCreate()} />
@@ -127,7 +127,7 @@ function TimSection({ tims, isPending, start, showToast }: any) {
       )}
 
       {tims.length === 0 && !adding && (
-        <div className="rounded-3xl py-14 text-center bg-white border border-slate-100">
+        <div className="rounded-xl py-14 text-center bg-white border border-slate-200">
           <Users size={28} className="mx-auto text-slate-200 mb-3" />
           <p className="text-[13px] text-gray-400">Belum ada tim. Tambahkan tim pertama.</p>
         </div>
@@ -150,7 +150,7 @@ function TimCard({ tim, isPending, start, showToast, editing, onEdit, onCancelEd
   const [confirmDel, setConfirmDel] = useState(false)
 
   return (
-    <div className="rounded-3xl p-4 bg-white border border-slate-100 shadow-sm" style={{ opacity: tim.aktif ? 1 : 0.6 }}>
+    <div className="rounded-xl p-4 bg-white border border-slate-200 shadow-sm" style={{ opacity: tim.aktif ? 1 : 0.6 }}>
       {editing ? (
         <div className="space-y-3">
           <input value={nama} onChange={e => setNama(e.target.value)} className={inp} />
@@ -177,7 +177,7 @@ function TimCard({ tim, isPending, start, showToast, editing, onEdit, onCancelEd
       ) : (
         <>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center font-extrabold text-white text-[13px] flex-shrink-0"
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-white text-[13px] flex-shrink-0"
               style={{ background: tim.warna || WARNA[0] }}>{tim.nama?.slice(-2).toUpperCase()}</div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-gray-900 text-[13px]">{tim.nama}{!tim.aktif && <span className="ml-2 text-[10px] text-gray-400">(nonaktif)</span>}</p>
@@ -239,7 +239,7 @@ function TimCard({ tim, isPending, start, showToast, editing, onEdit, onCancelEd
           </div>
 
           {confirmDel && (
-            <div className="mt-3 p-3 rounded-2xl flex items-center gap-3 bg-red-50 border border-red-100">
+            <div className="mt-3 p-3 rounded-xl flex items-center gap-3 bg-red-50 border border-red-100">
               <AlertTriangle size={16} className="text-red-500 flex-shrink-0" />
               <p className="text-[12px] text-red-600 flex-1">Hapus tim <b>{tim.nama}</b>? Jika sudah dipakai, hanya dinonaktifkan.</p>
               <button onClick={() => setConfirmDel(false)} className="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-white text-gray-600">Batal</button>
@@ -302,14 +302,14 @@ function AdminInputSection({ list, isPending, start, showToast, canManage }: any
             className={inp + ' flex-1'}
             onKeyDown={e => e.key === 'Enter' && handleCreate()} />
           <button onClick={handleCreate} disabled={isPending || !newNama.trim()}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-[13px] font-bold text-white flex-shrink-0 disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-bold text-white flex-shrink-0 disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
             <Plus size={15} /> Tambah
           </button>
         </div>
       )}
 
       {list.length === 0 && (
-        <div className="rounded-3xl py-14 text-center bg-white border border-slate-100">
+        <div className="rounded-xl py-14 text-center bg-white border border-slate-200">
           <UserCheck size={28} className="mx-auto text-slate-200 mb-3" />
           <p className="text-[13px] text-gray-400">Belum ada admin input. Tambahkan dulu.</p>
           <p className="text-[12px] text-gray-300 mt-1">Dipakai sebagai dropdown "Admin Yang Input" di form produksi, packing, dll.</p>
@@ -318,7 +318,7 @@ function AdminInputSection({ list, isPending, start, showToast, canManage }: any
 
       <div className="space-y-2">
         {list.map((a: any) => (
-          <div key={a.id} className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white border border-slate-100 shadow-sm" style={{ opacity: a.aktif ? 1 : 0.55 }}>
+          <div key={a.id} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-slate-200 shadow-sm" style={{ opacity: a.aktif ? 1 : 0.55 }}>
             {editId === a.id ? (
               <>
                 <input value={editNama} onChange={e => setEditNama(e.target.value)}
@@ -409,7 +409,7 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
           <h2 className="text-[14px] font-bold text-gray-900">Toleransi Loss per Proses</h2>
           <p className="text-[12px] text-gray-400 mt-0.5">Batas loss yang diizinkan (gram). Jika melebihi, sistem minta tanda tangan.</p>
         </div>
-        <div className="rounded-3xl p-4 space-y-3 bg-white border border-slate-100 shadow-sm">
+        <div className="rounded-xl p-4 space-y-3 bg-white border border-slate-200 shadow-sm">
           {([
             ['toleransi_loss_peleburan',    'Peleburan',    '🔥'],
             ['toleransi_loss_cutting',      'Cutting',      '✂️'],
@@ -436,7 +436,7 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
           <h2 className="text-[14px] font-bold text-gray-900">Ambang Batas Sistem</h2>
           <p className="text-[12px] text-gray-400 mt-0.5">Nilai batas untuk trigger notif dan penentuan gain wajar.</p>
         </div>
-        <div className="rounded-3xl p-4 space-y-4 bg-white border border-slate-100 shadow-sm">
+        <div className="rounded-xl p-4 space-y-4 bg-white border border-slate-200 shadow-sm">
           {([
             ['ambang_gain_wajar',     'Gain Wajar (max tanpa persetujuan)', '✨', 'Gain di bawah ini dianggap wajar, tidak menurunkan KPI'],
             ['ambang_loss_kumulatif', 'Loss Kumulatif Waspada per Batch',   '⚠️', 'Jika total loss batch melebihi ini, sistem kirim notif'],
@@ -463,7 +463,7 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
           <h2 className="text-[14px] font-bold text-gray-900">Target Produksi Harian</h2>
           <p className="text-[12px] text-gray-400 mt-0.5">Target packing per hari. Ditampilkan sebagai progress bar di dashboard.</p>
         </div>
-        <div className="rounded-3xl p-4 bg-white border border-slate-100 shadow-sm">
+        <div className="rounded-xl p-4 bg-white border border-slate-200 shadow-sm">
           <div className="flex items-center gap-3">
             <span className="text-[16px] w-8 text-center">🎯</span>
             <span className="flex-1 text-[13px] font-semibold text-gray-700">Target Packing Harian</span>
@@ -483,7 +483,7 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
           <h2 className="text-[14px] font-bold text-gray-900">Safety Stock Stok Minimum</h2>
           <p className="text-[12px] text-gray-400 mt-0.5">Batas stok minimum per gramasi. Jika di bawah ini, item masuk Prioritas Produksi P2.</p>
         </div>
-        <div className="rounded-3xl p-4 bg-white border border-slate-100 shadow-sm">
+        <div className="rounded-xl p-4 bg-white border border-slate-200 shadow-sm">
           <div className="flex items-center gap-3">
             <span className="text-[16px] w-8 text-center">🛡️</span>
             <span className="flex-1 text-[13px] font-semibold text-gray-700">Safety Stock Default (semua gramasi)</span>
@@ -504,7 +504,7 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
             <h2 className="text-[14px] font-bold text-gray-900">Target KPI per Tim</h2>
             <p className="text-[12px] text-gray-400 mt-0.5">Target gram serah per bulan per tim. Digunakan untuk menghitung achievement rate di KPI Tim.</p>
           </div>
-          <div className="rounded-3xl p-4 space-y-3 bg-white border border-slate-100 shadow-sm">
+          <div className="rounded-xl p-4 space-y-3 bg-white border border-slate-200 shadow-sm">
             {tims.filter((t: any) => t.aktif).map((tim: any) => {
               const key = `kpi_target_tim_${tim.id}`
               return (
@@ -535,7 +535,7 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
       {canManage && (
         <div className="flex justify-end">
           <button onClick={handleSave} disabled={isPending}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-2xl text-[13px] font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
             {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
             <Check size={15} /> Simpan Pengaturan
           </button>
@@ -574,8 +574,8 @@ function BiayaPackagingSection({ pengaturan, isPending, start, showToast, canMan
         </p>
       </div>
 
-      <div className="rounded-3xl overflow-hidden bg-white border border-slate-100 shadow-sm">
-        <div className="px-5 py-3 border-b border-slate-100 grid grid-cols-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+      <div className="rounded-xl overflow-hidden bg-white border border-slate-200 shadow-sm">
+        <div className="px-5 py-3 border-b border-slate-200 grid grid-cols-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
           <span>Gramasi</span>
           <span className="text-right col-span-2">Biaya Packaging / pcs (Rp)</span>
         </div>
@@ -598,7 +598,7 @@ function BiayaPackagingSection({ pengaturan, isPending, start, showToast, canMan
         </div>
       </div>
 
-      <div className="rounded-3xl p-4 bg-violet-50 border border-violet-100">
+      <div className="rounded-xl p-4 bg-violet-50 border border-violet-100">
         <p className="text-[12px] text-violet-700 font-semibold mb-1">Contoh perhitungan HPP</p>
         <p className="text-[12px] text-violet-600">
           Batch HPP/gr: <span className="font-mono">Rp 950.000</span> · Gramasi: <span className="font-mono">1 gr</span> · Biaya packaging: <span className="font-mono">Rp {Number(vals['1'] || 10000).toLocaleString('id-ID')}</span><br/>
@@ -609,7 +609,7 @@ function BiayaPackagingSection({ pengaturan, isPending, start, showToast, canMan
       {canManage && (
         <div className="flex justify-end">
           <button onClick={handleSave} disabled={isPending}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-2xl text-[13px] font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
             {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
             <Check size={15} /> Simpan Biaya Packaging
           </button>
@@ -659,16 +659,16 @@ function MasterGramasiSection({ list, isPending, start, showToast, canManage }: 
             type="number" step="any" min="0"
             className={inp + ' flex-1'}
             onKeyDown={e => e.key === 'Enter' && handleCreate()} />
-          <div className="flex-shrink-0 flex items-center px-3 bg-gray-50 rounded-2xl border border-gray-200 text-[13px] text-gray-500 font-medium">gr</div>
+          <div className="flex-shrink-0 flex items-center px-3 bg-gray-50 rounded-xl border border-gray-200 text-[13px] text-gray-500 font-medium">gr</div>
           <button onClick={handleCreate} disabled={isPending || !newVal.trim()}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-[13px] font-bold text-white flex-shrink-0 disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[13px] font-bold text-white flex-shrink-0 disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
             <Plus size={15} /> Tambah
           </button>
         </div>
       )}
 
-      <div className="rounded-3xl overflow-hidden bg-white border border-slate-100 shadow-sm">
-        <div className="px-5 py-3 border-b border-slate-100 flex text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+      <div className="rounded-xl overflow-hidden bg-white border border-slate-200 shadow-sm">
+        <div className="px-5 py-3 border-b border-slate-200 flex text-[10px] font-bold text-slate-400 uppercase tracking-wider">
           <span className="flex-1">Gramasi</span>
           <span className="w-24 text-center">Status</span>
           {canManage && <span className="w-36 text-right">Aksi</span>}
@@ -729,7 +729,7 @@ function MasterGramasiSection({ list, isPending, start, showToast, canManage }: 
         </div>
       </div>
 
-      <div className="rounded-2xl p-4 bg-amber-50 border border-amber-100">
+      <div className="rounded-xl p-4 bg-amber-50 border border-amber-100">
         <p className="text-[12px] font-semibold text-amber-700">Perhatian</p>
         <p className="text-[12px] text-amber-600 mt-0.5">
           Menghapus gramasi yang sudah dipakai di transaksi akan menyebabkan inkonsistensi data.

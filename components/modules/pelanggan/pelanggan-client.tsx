@@ -85,7 +85,7 @@ export default function PelangganClient({ pelangganList, canSeeRp }: Props) {
               className="w-full pl-9 pr-3 h-8 text-[12px] rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all" />
             {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2"><X size={13} className="text-slate-400" /></button>}
           </div>
-          <div className="flex rounded-2xl overflow-hidden border border-slate-200">
+          <div className="flex rounded-xl overflow-hidden border border-slate-200">
             {(['belanja', 'transaksi', 'terakhir'] as const).map(s => (
               <button key={s} onClick={() => setSort(s)}
                 className={cn('px-3 py-2 text-[12px] font-bold transition-colors',

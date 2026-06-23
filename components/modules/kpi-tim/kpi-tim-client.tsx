@@ -103,7 +103,7 @@ function PeriodSelector({ period, dateFrom, dateTo }: { period: string; dateFrom
         })}
       </div>
       {showCustom && (
-        <div className="flex items-center gap-2 flex-wrap bg-white rounded-2xl px-3 py-2 border border-slate-200">
+        <div className="flex items-center gap-2 flex-wrap bg-white rounded-xl px-3 py-2 border border-slate-200">
           <span className="text-[12px] text-slate-400">Dari</span>
           <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
             className="text-[12px] border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-violet-400" />
@@ -132,7 +132,7 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-amber-500">
+        <div className="w-11 h-11 rounded-xl flex items-center justify-center bg-amber-500">
           <Star size={20} className="text-white" />
         </div>
         <div>
@@ -147,7 +147,7 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
       <PeriodSelector period={period} dateFrom={dateFrom} dateTo={dateTo} />
 
       {/* Legend bobot */}
-      <div className="rounded-3xl p-4 flex gap-4 flex-wrap"
+      <div className="rounded-xl p-4 flex gap-4 flex-wrap"
         >
         {[
           { label: 'Efisiensi', pct: bobot.efisiensi, color: '#7C3AED', desc: 'Output / Input (gain wajar tidak dihukum)' },
@@ -167,7 +167,7 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
       {/* Tim list */}
       <div className="space-y-3">
         {sorted.map((tim, rank) => (
-          <div key={tim.id} className="rounded-3xl overflow-hidden"
+          <div key={tim.id} className="rounded-xl overflow-hidden"
             >
             <button
               onClick={() => setExpanded(expanded === tim.id ? null : tim.id)}
@@ -213,7 +213,7 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
                   <>
                     {/* Achievement vs Target */}
                     {tim.targetSerah > 0 && tim.achievementPct !== null && (
-                      <div className="rounded-2xl p-4 bg-slate-400/5 border border-slate-400/10">
+                      <div className="rounded-xl p-4 bg-slate-400/5 border border-slate-400/10">
                         <AchievementBar
                           pct={tim.achievementPct}
                           targetSerah={tim.targetSerah}
@@ -259,7 +259,7 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
                         { label: 'On-Time',      value: `${tim.stats.onTimeCount} / ${tim.stats.onTimeCount + tim.stats.lateCount}` },
                         { label: 'Total Proses', value: `${tim.stats.count}x` },
                       ].map(({ label, value }) => (
-                        <div key={label} className="rounded-2xl p-3 text-center bg-slate-400/[0.06] border border-slate-400/[0.08]">
+                        <div key={label} className="rounded-xl p-3 text-center bg-slate-400/[0.06] border border-slate-400/[0.08]">
                           <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">{label}</p>
                           <p className="text-[13px] font-black text-slate-700 mt-0.5">{value}</p>
                         </div>

@@ -94,7 +94,7 @@ function SerialPickerModal({ gramasi, available, selected, onConfirm, onClose }:
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Pilih Serial Emas {gramasi}gr</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">{available.length} tersedia di gudang</p>
@@ -105,7 +105,7 @@ function SerialPickerModal({ gramasi, available, selected, onConfirm, onClose }:
         </div>
 
         {/* Search */}
-        <div className="px-5 py-3 border-b border-slate-100">
+        <div className="px-5 py-3 border-b border-slate-200">
           <div className="relative">
             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
             <input value={search} onChange={e => setSearch(e.target.value)}
@@ -115,7 +115,7 @@ function SerialPickerModal({ gramasi, available, selected, onConfirm, onClose }:
         </div>
 
         {/* Select all */}
-        <div className="px-5 py-2 border-b border-slate-100">
+        <div className="px-5 py-2 border-b border-slate-200">
           <button onClick={toggleAll} className="flex items-center gap-2 text-[12px] font-semibold text-slate-600 hover:text-violet-600">
             <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${allChecked ? 'bg-violet-500 border-violet-500' : 'border-slate-300'}`}>
               {allChecked && <Check size={10} className="text-white" />}
@@ -142,7 +142,7 @@ function SerialPickerModal({ gramasi, available, selected, onConfirm, onClose }:
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0 items-center">
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0 items-center">
           <p className="text-[12px] text-slate-500 font-semibold flex-1">{local.size} Serial dipilih</p>
           <button onClick={() => onConfirm(local)}
             className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
@@ -242,7 +242,7 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
       {/* Item table */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
         {/* Table header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200">
           <div className="flex items-center gap-2">
             <ShieldCheck size={15} className="text-green-500" />
             <span className="text-[13px] font-bold text-slate-800">Daftar Barang</span>
@@ -271,7 +271,7 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] text-[13px]">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
+                <tr className="bg-slate-50 border-b border-slate-200">
                   {['Nama Barang', 'Gramasi', 'Tersedia', 'Dipilih', 'Satuan', 'Aksi'].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">{h}</th>
                   ))}
@@ -284,7 +284,7 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
                   const currentSelected = new Set(items.filter(t => selected.has(t.kode)).map(t => t.kode))
                   return (
                     <tr key={gramasi}
-                      className={`border-t border-slate-100 hover:bg-violet-50/20 transition-colors ${i === 0 ? 'border-t-0' : ''}`}>
+                      className={`border-t border-slate-200 hover:bg-violet-50/20 transition-colors ${i === 0 ? 'border-t-0' : ''}`}>
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-amber-50">
@@ -328,7 +328,7 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
 
         {/* Footer with send button */}
         {tags.length > 0 && (
-          <div className="px-5 py-4 border-t border-slate-100 flex items-center justify-between gap-4">
+          <div className="px-5 py-4 border-t border-slate-200 flex items-center justify-between gap-4">
             {msg && (
               <p className={`text-[12px] flex-1 px-3 py-2 rounded-lg ${msg.type === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 border border-red-100 text-red-600'}`}>
                 {msg.text}
@@ -453,7 +453,7 @@ function TerimaCard({ mutasi, cabangNama, open, onToggle, onDone }: {
       </button>
 
       {open && (
-        <div className="mt-4 pt-4 space-y-3 border-t border-slate-100">
+        <div className="mt-4 pt-4 space-y-3 border-t border-slate-200">
           <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Centang shieldtag yang fisiknya benar-benar diterima</p>
           <div className="flex flex-wrap gap-1.5 max-h-[220px] overflow-y-auto pr-1">
             {sentKodes.map(kode => {
@@ -547,7 +547,7 @@ function StokCabang({ cabangList, selectedCabang, setSelectedCabang }: {
           <div className="overflow-x-auto">
             <table className="w-full text-[13px]">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wide">
+                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wide">
                   <th className="text-left px-4 py-3">Gramasi</th>
                   <th className="text-right px-4 py-3">Stok Ready</th>
                   <th className="text-right px-4 py-3">PO</th>
@@ -557,7 +557,7 @@ function StokCabang({ cabangList, selectedCabang, setSelectedCabang }: {
                 {visibleRows.length === 0 ? (
                   <tr><td colSpan={3} className="py-10 text-center text-[13px] text-slate-400">Belum ada stok di cabang ini.</td></tr>
                 ) : visibleRows.map((r, i) => (
-                  <tr key={r.gramasi} className={`border-t border-slate-100 ${i % 2 ? 'bg-slate-50/50' : ''}`}>
+                  <tr key={r.gramasi} className={`border-t border-slate-200 ${i % 2 ? 'bg-slate-50/50' : ''}`}>
                     <td className="px-4 py-3 font-bold text-slate-800">{r.gramasi}gr</td>
                     <td className="px-4 py-3 text-right font-semibold text-green-600">{r.stok_ready} pcs</td>
                     <td className="px-4 py-3 text-right font-semibold text-amber-600">{r.po_pcs > 0 ? `PO ${r.po_pcs}` : '—'}</td>

@@ -131,7 +131,7 @@ export default function Sidebar({ mobileOpen, onClose, serverProfile }: SidebarP
       )}>
 
         {/* ── Logo ── */}
-        <div className="flex items-center justify-between px-4 h-[52px] flex-shrink-0 border-b border-slate-100">
+        <div className="flex items-center justify-between px-4 h-[52px] flex-shrink-0 border-b border-slate-200">
           <div className="flex items-center gap-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain flex-shrink-0"/>
@@ -163,13 +163,13 @@ export default function Sidebar({ mobileOpen, onClose, serverProfile }: SidebarP
         </nav>
 
         {/* ── Bottom nav ── */}
-        <div className="px-2 py-2 border-t border-slate-100 space-y-px">
+        <div className="px-2 py-2 border-t border-slate-200 space-y-px">
           {BOTTOM_NAV.filter(item => canShow(item.module as any)).map(item => renderItem(item))}
         </div>
 
         {/* ── User ── */}
-        <div className="px-3 pb-3 pt-2 border-t border-slate-100">
-          <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-slate-50 border border-slate-100">
+        <div className="px-3 pb-3 pt-2 border-t border-slate-200">
+          <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-slate-50 border border-slate-200">
             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center flex-shrink-0">
               <span className="text-white text-[10px] font-bold leading-none">{getInitials(profile?.name)}</span>
             </div>

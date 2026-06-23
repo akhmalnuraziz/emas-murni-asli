@@ -96,7 +96,7 @@ export default function BackupClient({ userRole }: { userRole: string }) {
   return (
     <div className="space-y-6 pb-16 max-w-3xl">
       {toast && (
-        <div className={`fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-2xl text-[13px] font-semibold text-white shadow-2xl ${toast.ok ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 'bg-gradient-to-r from-red-500 to-rose-600'}`}>
+        <div className={`fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-xl text-[13px] font-semibold text-white shadow-2xl ${toast.ok ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 'bg-gradient-to-r from-red-500 to-rose-600'}`}>
           {toast.ok ? <Check size={15}/> : <AlertTriangle size={15}/>}{toast.msg}
         </div>
       )}
@@ -108,14 +108,14 @@ export default function BackupClient({ userRole }: { userRole: string }) {
           <p className="text-[12px] text-slate-400 mt-0.5">Unduh data sebagai CSV — kompatibel dengan Excel</p>
         </div>
         <button onClick={downloadAll} disabled={isPending}
-          className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold text-white rounded-2xl disabled:opacity-60"
+          className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold text-white rounded-xl disabled:opacity-60"
           style={{ background: 'linear-gradient(135deg,#0891B2,#0E7490)', boxShadow: '0 4px 20px rgba(8,145,178,0.4)' }}>
           <Download size={14}/> Unduh Semua
         </button>
       </div>
 
       {/* Info banner */}
-      <div className="rounded-2xl px-4 py-3 text-[13px] text-blue-700" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)' }}>
+      <div className="rounded-xl px-4 py-3 text-[13px] text-blue-700" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)' }}>
         <p className="font-bold mb-1">Cara backup:</p>
         <ul className="text-[12px] space-y-0.5 text-blue-600">
           <li>• Klik per-tabel untuk unduh satu file CSV</li>
@@ -133,7 +133,7 @@ export default function BackupClient({ userRole }: { userRole: string }) {
             {TABLES.filter(t => t.group === group).map(t => {
               const st = status[t.key] ?? 'idle'
               return (
-                <div key={t.key} className="rounded-2xl px-4 py-3 flex items-center justify-between gap-3 bg-white border border-slate-100">
+                <div key={t.key} className="rounded-xl px-4 py-3 flex items-center justify-between gap-3 bg-white border border-slate-200">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
                       style={{ background: 'rgba(8,145,178,0.08)' }}>

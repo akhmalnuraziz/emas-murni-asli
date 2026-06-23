@@ -62,7 +62,7 @@ export default function InventoryClient() {
 
       {/* Error */}
       {err && (
-        <div className="rounded-2xl px-4 py-3 text-[12px] text-red-600 bg-red-50 border border-red-100">{err}</div>
+        <div className="rounded-xl px-4 py-3 text-[12px] text-red-600 bg-red-50 border border-red-100">{err}</div>
       )}
 
       {/* Table */}
@@ -81,7 +81,7 @@ export default function InventoryClient() {
           <div className="overflow-x-auto">
             <table className="w-full text-[13px]">
               <thead>
-                <tr className="text-[10.5px] font-semibold text-slate-400 uppercase tracking-wide bg-slate-50 border-b border-slate-100">
+                <tr className="text-[10.5px] font-semibold text-slate-400 uppercase tracking-wide bg-slate-50 border-b border-slate-200">
                   <th className="text-left px-4 py-3">Gramasi</th>
                   <th className="text-right px-4 py-3">Total Gudang</th>
                   <th className="text-right px-4 py-3">Tershieldtag</th>
@@ -91,7 +91,7 @@ export default function InventoryClient() {
               </thead>
               <tbody>
                 {rows.map((r, i) => (
-                  <tr key={r.gramasi} className={`border-t border-slate-100 ${i % 2 ? 'bg-slate-50/50' : ''}`}>
+                  <tr key={r.gramasi} className={`border-t border-slate-200 ${i % 2 ? 'bg-slate-50/50' : ''}`}>
                     <td className="px-4 py-3 font-bold text-slate-800">{r.gramasi}gr</td>
                     <td className="px-4 py-3 text-right font-semibold text-slate-700">{r.total_packed} pcs</td>
                     <td className="px-4 py-3 text-right font-semibold text-green-600">{r.tershieldtag} pcs</td>

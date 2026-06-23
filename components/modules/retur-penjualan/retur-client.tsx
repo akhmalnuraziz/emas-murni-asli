@@ -170,7 +170,7 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
       {modal === 'form' && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
           <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
               <div>
                 <h2 className="text-[15px] font-bold text-slate-900">Catat Retur Penjualan</h2>
                 <p className="text-[11px] text-slate-400 mt-0.5">Isi detail retur di bawah ini</p>
@@ -228,7 +228,7 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
                   <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</div>
                 )}
               </div>
-              <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+              <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
                 <button type="button" onClick={() => setModal(null)}
                   className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">
                   Batal
@@ -247,7 +247,7 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
       {modal === 'detail' && active && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
           <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
               <div>
                 <h2 className="text-[15px] font-bold text-slate-900">{active.kode}</h2>
                 <p className="text-[11px] text-slate-400 mt-0.5">Detail retur penjualan</p>
@@ -282,7 +282,7 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
               )}
             </div>
             {canManage && active.status !== 'selesai' && active.status !== 'ditolak' && (
-              <div className="px-5 py-4 flex gap-2.5 border-t border-slate-100 flex-shrink-0">
+              <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
                 {active.status === 'pending' && (
                   <button onClick={() => handleStatus('diproses')} disabled={isPending}
                     className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
