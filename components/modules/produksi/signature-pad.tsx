@@ -68,7 +68,7 @@ export default function SignaturePad({ label, onChange }: {
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <label className="text-[12px] font-semibold text-gray-500">{label}</label>
+        <label className="text-[12px] font-semibold text-slate-500">{label}</label>
         {hasSign && (
           <button type="button" onClick={clear} className="text-[10px] font-semibold text-red-400 hover:text-red-600">Hapus</button>
         )}
@@ -84,7 +84,7 @@ export default function SignaturePad({ label, onChange }: {
         />
         {!hasSign && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <span className="text-[12px] text-gray-300">✍️ Tanda tangan di sini</span>
+            <span className="text-[12px] text-slate-300">✍️ Tanda tangan di sini</span>
           </div>
         )}
       </div>

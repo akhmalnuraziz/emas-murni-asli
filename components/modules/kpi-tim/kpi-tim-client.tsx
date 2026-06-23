@@ -63,7 +63,7 @@ function AchievementBar({ pct, targetSerah, actual }: { pct: number; targetSerah
         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
           <Target size={10} /> Achievement Target
         </p>
-        <span className="text-[12px] font-black" style={{ color }}>{pct.toFixed(0)}%</span>
+        <span className="text-[12px] font-bold" style={{ color }}>{pct.toFixed(0)}%</span>
       </div>
       <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
         <div className="h-full rounded-full transition-all" style={{ width: `${clamped}%`, background: color }} />
@@ -172,7 +172,7 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
             <button
               onClick={() => setExpanded(expanded === tim.id ? null : tim.id)}
               className="w-full px-5 py-4 flex items-center gap-4 text-left hover:bg-slate-50/50 transition-colors">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[13px] font-black text-white flex-shrink-0"
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[13px] font-bold text-white flex-shrink-0"
                 style={{ background: tim.warna ?? '#7F6DC6' }}>
                 {rank + 1}
               </div>
@@ -187,7 +187,7 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
               {tim.achievementPct !== null && (
                 <div className="flex-shrink-0 text-center hidden sm:block">
                   <p className="text-[10px] text-slate-400 font-semibold">Target</p>
-                  <p className="text-[13px] font-black" style={{ color: tim.achievementPct >= 100 ? '#16a34a' : tim.achievementPct >= 70 ? '#d97706' : '#dc2626' }}>
+                  <p className="text-[13px] font-bold" style={{ color: tim.achievementPct >= 100 ? '#16a34a' : tim.achievementPct >= 70 ? '#d97706' : '#dc2626' }}>
                     {tim.achievementPct.toFixed(0)}%
                   </p>
                 </div>
@@ -196,7 +196,7 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
                 {tim.kpi ? (
                   <>
                     <Stars n={tim.bintang} />
-                    <span className="text-[13px] font-black text-slate-600 w-10 text-right">
+                    <span className="text-[13px] font-bold text-slate-600 w-10 text-right">
                       {Math.round(tim.kpi.totalScore)}
                     </span>
                   </>
@@ -261,7 +261,7 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
                       ].map(({ label, value }) => (
                         <div key={label} className="rounded-xl p-3 text-center bg-slate-400/[0.06] border border-slate-400/[0.08]">
                           <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">{label}</p>
-                          <p className="text-[13px] font-black text-slate-700 mt-0.5">{value}</p>
+                          <p className="text-[13px] font-bold text-slate-700 mt-0.5">{value}</p>
                         </div>
                       ))}
                     </div>

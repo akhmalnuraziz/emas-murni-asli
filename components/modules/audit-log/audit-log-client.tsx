@@ -76,13 +76,13 @@ function JsonBlock({ label, data, color }: { label: string; data: Record<string,
     <div className="rounded-lg px-3 py-2 bg-slate-50 border border-slate-200">
       <p className="text-[10px] font-bold tracking-widest uppercase mb-2" style={{ color }}>{label}</p>
       {entries.length === 0 ? (
-        <p className="text-[12px] text-gray-400 italic">Tidak ada data</p>
+        <p className="text-[12px] text-slate-400 italic">Tidak ada data</p>
       ) : (
         <div className="space-y-1.5">
           {entries.map(([k, v]) => (
             <div key={k} className="flex items-start justify-between gap-3 text-[12px]">
-              <span className="text-gray-400 font-medium flex-shrink-0">{k}</span>
-              <span className="font-mono text-gray-700 text-right break-all">
+              <span className="text-slate-400 font-medium flex-shrink-0">{k}</span>
+              <span className="font-mono text-slate-700 text-right break-all">
                 {typeof v === 'object' ? JSON.stringify(v) : String(v ?? '—')}
               </span>
             </div>
@@ -223,7 +223,7 @@ export default function AuditLogClient({ logs }: Props) {
         {/* Search + filters */}
         <div className="flex gap-3 flex-wrap items-center">
           <div className="relative flex-1 min-w-[200px]">
-            <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
+            <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"/>
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Cari record, user, alasan, aksi..."
               className="w-full pl-10 pr-4 py-2.5 text-[13px] rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all"
@@ -233,11 +233,11 @@ export default function AuditLogClient({ logs }: Props) {
             {actions.map(a => <option key={a} value={a}>{a === 'Semua' ? 'Semua Aksi' : a}</option>)}
           </select>
           <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className={cn(inp, 'w-auto')}/>
-          <span className="text-gray-400 text-[12px]">s/d</span>
+          <span className="text-slate-400 text-[12px]">s/d</span>
           <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className={cn(inp, 'w-auto')}/>
           {(search || filterAction !== 'Semua' || dateFrom || dateTo || filterModule !== 'Semua') && (
             <button onClick={() => { setSearch(''); setFilterAction('Semua'); setDateFrom(''); setDateTo(''); setFilterModule('Semua') }}
-              className="flex items-center gap-1.5 px-3 py-2 text-[12px] font-semibold text-gray-500 hover:text-red-500 rounded-xl transition-colors">
+              className="flex items-center gap-1.5 px-3 py-2 text-[12px] font-semibold text-slate-500 hover:text-red-500 rounded-xl transition-colors">
               <X size={12}/> Reset
             </button>
           )}
@@ -245,7 +245,7 @@ export default function AuditLogClient({ logs }: Props) {
 
         {/* Module tabs */}
         <div className="flex gap-2 flex-wrap items-center">
-          <Filter size={13} className="text-gray-400 flex-shrink-0"/>
+          <Filter size={13} className="text-slate-400 flex-shrink-0"/>
           {modules.map(m => {
             const isAct = filterModule === m
             const mcfg = m !== 'Semua' ? moduleStyle(m) : null
@@ -271,7 +271,7 @@ export default function AuditLogClient({ logs }: Props) {
             <thead>
               <tr className="border-b" style={{ borderColor: 'rgba(243,244,246,0.9)', background: 'rgba(249,250,251,0.6)' }}>
                 {['WAKTU', 'MODUL', 'AKSI', 'RECORD', 'USER', 'ALASAN', ''].map(h => (
-                  <th key={h} className="px-4 py-3.5 text-left text-[10px] font-bold text-gray-400 tracking-widest uppercase whitespace-nowrap">{h}</th>
+                  <th key={h} className="px-4 py-3.5 text-left text-[10px] font-bold text-slate-400 tracking-widest uppercase whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -282,7 +282,7 @@ export default function AuditLogClient({ logs }: Props) {
                     style={{ background: 'rgba(139,92,246,0.08)' }}>
                     <ScrollText size={28} className="text-violet-300"/>
                   </div>
-                  <p className="text-[13px] font-medium text-gray-400">Tidak ada aktivitas yang cocok</p>
+                  <p className="text-[13px] font-medium text-slate-400">Tidak ada aktivitas yang cocok</p>
                 </td></tr>
               ) : filtered.map((l, idx) => {
                 const mod = normModule(l.module)
@@ -293,8 +293,8 @@ export default function AuditLogClient({ logs }: Props) {
                     className={cn('border-t transition-colors hover:bg-violet-50/20 cursor-pointer', idx === 0 ? 'border-transparent' : '')}
                     style={{ borderColor: 'rgba(243,244,246,0.7)' }}
                     onClick={() => setDetailItem(l)}>
-                    <td className="px-4 py-3 text-[12px] text-gray-500 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5"><Clock size={11} className="text-gray-300"/>{formatDateTime(l.timestamp)}</div>
+                    <td className="px-4 py-3 text-[12px] text-slate-500 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5"><Clock size={11} className="text-slate-300"/>{formatDateTime(l.timestamp)}</div>
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-[12px] font-bold px-2 py-0.5 rounded-full" style={{ background: mcfg.bg, color: mcfg.text }}>{mod}</span>
@@ -303,13 +303,13 @@ export default function AuditLogClient({ logs }: Props) {
                       <span className="text-[12px] font-semibold px-2.5 py-1 rounded-full" style={{ background: acfg.bg, color: acfg.text }}>{normAction(l.action)}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="font-mono text-[12px] font-bold text-gray-900">{l.record_key || l.record_id || '—'}</span>
+                      <span className="font-mono text-[12px] font-bold text-slate-900">{l.record_key || l.record_id || '—'}</span>
                     </td>
-                    <td className="px-4 py-3 text-[12px] text-gray-600">
-                      <div className="flex items-center gap-1.5"><User size={11} className="text-gray-300"/>{l.user_name || '—'}</div>
+                    <td className="px-4 py-3 text-[12px] text-slate-600">
+                      <div className="flex items-center gap-1.5"><User size={11} className="text-slate-300"/>{l.user_name || '—'}</div>
                     </td>
-                    <td className="px-4 py-3 text-[12px] text-gray-400 max-w-[200px] truncate">{l.reason || '—'}</td>
-                    <td className="px-4 py-3"><ChevronRight size={14} className="text-gray-300"/></td>
+                    <td className="px-4 py-3 text-[12px] text-slate-400 max-w-[200px] truncate">{l.reason || '—'}</td>
+                    <td className="px-4 py-3"><ChevronRight size={14} className="text-slate-300"/></td>
                   </tr>
                 )
               })}

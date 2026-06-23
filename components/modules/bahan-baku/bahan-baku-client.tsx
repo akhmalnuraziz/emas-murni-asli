@@ -112,7 +112,7 @@ function FotoPicker({files,onAdd,onRemove,label='Tambah foto',small=false}:{
       ))}</div>}
       <label className="flex items-center gap-2 px-3.5 py-2.5 border border-dashed border-violet-200 rounded-xl cursor-pointer hover:border-violet-400 hover:bg-violet-50/50 bg-white/40 transition-all">
         <Camera size={13}className="text-violet-400 flex-shrink-0"/>
-        <span className={`text-gray-400 ${small?'text-[11px]':'text-[12px]'}`}>{files.length>0?`${files.length} foto — klik tambah`:label}</span>
+        <span className={`text-slate-400 ${small?'text-[11px]':'text-[12px]'}`}>{files.length>0?`${files.length} foto — klik tambah`:label}</span>
         <input type="file" accept="image/*" multiple className="hidden"onChange={e=>{onAdd(Array.from(e.target.files??[]));e.currentTarget.value=''}}/>
       </label>
       {files.length>0&&<button type="button"onClick={()=>onRemove(-1)}className="text-[11px] text-red-400 hover:underline">Hapus semua</button>}
@@ -307,7 +307,7 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
               <div className="flex gap-2 flex-wrap mb-2">
                 {existingFotos.map((url,i)=>(
                   <div key={i}className="relative w-14 h-14">
-                    <img src={url} alt="" className="w-full h-full object-cover rounded-xl border border-gray-200"/>
+                    <img src={url} alt="" className="w-full h-full object-cover rounded-xl border border-slate-200"/>
                     <button type="button"onClick={()=>setExistingFotos(p=>p.filter((_,j)=>j!==i))}className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center"><X size={9}/></button>
                   </div>
                 ))}
@@ -528,8 +528,8 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                         {status==='aktif'?'AKTIF':'TERKUNCI 🔒'}
                       </span>
                     </div>
-                    <p className="text-[12px] text-gray-400 mt-0.5 font-medium truncate">{batch.kode} · {supplierLabel}</p>
-                    <p className="text-[11px] text-gray-400">Datang: {formatDate(batch.tanggal)}</p>
+                    <p className="text-[12px] text-slate-400 mt-0.5 font-medium truncate">{batch.kode} · {supplierLabel}</p>
+                    <p className="text-[11px] text-slate-400">Datang: {formatDate(batch.tanggal)}</p>
                   </div>
                   {/* FIX poin 3: tampilkan pusat + gudang + sisa langsung di card */}
                   <div className="hidden sm:flex items-center gap-4 flex-shrink-0 mr-1">
@@ -559,7 +559,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                     {['owner','admin_pusat'].includes(userRole)&&(
                       <button onClick={()=>setDelModal(batch)}className="w-8 h-8 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 hover:scale-110 transition-all"title="Hapus"><Trash2 size={13}/></button>
                     )}
-                    <button onClick={()=>setExpanded(isExp?null:batch.id)}className="w-8 h-8 rounded-xl bg-gray-100 text-gray-500 flex items-center justify-center hover:bg-gray-200 hover:scale-110 transition-all">
+                    <button onClick={()=>setExpanded(isExp?null:batch.id)}className="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200 hover:scale-110 transition-all">
                       {isExp?<ChevronUp size={14}/>:<ChevronDown size={14}/>}
                     </button>
                   </div>
@@ -592,10 +592,10 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                     {/* FIX poin 4: Foto Bukti di ATAS selisih description */}
                     {fotos.length>0&&(
                       <div className="pt-4">
-                        <p className="text-[12px] font-semibold text-gray-400 mb-2">📷 Foto Bukti / Sertifikat ({fotos.length})</p>
+                        <p className="text-[12px] font-semibold text-slate-400 mb-2">📷 Foto Bukti / Sertifikat ({fotos.length})</p>
                         <div className="flex gap-2 flex-wrap">
                           {fotos.map((url:string,i:number)=>(
-                            <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="w-14 h-14 rounded-xl overflow-hidden border border-gray-200 block hover:opacity-80 hover:scale-105 transition-transform">
+                            <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="w-14 h-14 rounded-xl overflow-hidden border border-slate-200 block hover:opacity-80 hover:scale-105 transition-transform">
                               <img src={url} alt="" className="w-full h-full object-cover"/>
                             </a>
                           ))}
@@ -699,7 +699,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                 )}
                               </div>
                               {!isEditSF&&(
-                                <p className="text-[14px] font-extrabold text-green-600">{sisaFisik!=null?formatGram(sisaFisik):'—'}</p>
+                                <p className="text-[14px] font-bold text-green-600">{sisaFisik!=null?formatGram(sisaFisik):'—'}</p>
                               )}
                               {isEditSF&&(
                                 <div className="space-y-2 mt-1">
@@ -713,7 +713,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                       {sfUploading[batch.id]?'Simpan...':'Simpan'}
                                     </button>
                                     <button onClick={()=>{setEditingSF(null);setSfFotos(p=>({...p,[batch.id]:[]}))} }
-                                      className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0"><X size={12}/></button>
+                                      className="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0"><X size={12}/></button>
                                   </div>
                                   {/* Live selisih indicator */}
                                   {sfSelisihLive!=null&&sfInput[batch.id]!==''&&(
@@ -736,7 +736,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                   )}
                                   <input type="text" value={sfCatatan[batch.id]??''} onChange={e=>setSfCatatan(p=>({...p,[batch.id]:e.target.value}))}
                                     placeholder="Catatan sisa fisik (opsional)"
-                                    className="w-full px-3 py-2 text-[13px] rounded-xl border border-gray-200 bg-white focus:outline-none"/>
+                                    className="w-full px-3 py-2 text-[13px] rounded-xl border border-slate-200 bg-white focus:outline-none"/>
                                   <FotoPicker files={sfFotos[batch.id]??[]}
                                     onAdd={f=>setSfFotos(p=>({...p,[batch.id]:[...(p[batch.id]??[]),...f].slice(0,10)}))}
                                     onRemove={i=>i===-1?setSfFotos(p=>({...p,[batch.id]:[]})):setSfFotos(p=>({...p,[batch.id]:(p[batch.id]??[]).filter((_,j)=>j!==i)}))}
@@ -763,7 +763,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                       {(()=>{
                         const plbList=(peleburanList as any[]).filter((p:any)=>p.batch_kode===batch.kode)
                         if(plbList.length===0) return (
-                          <p className="text-[12px] text-gray-400 text-center py-4">Belum ada peleburan.</p>
+                          <p className="text-[12px] text-slate-400 text-center py-4">Belum ada peleburan.</p>
                         )
                         return plbList.map((plb:any)=>{
                           // FIX poin 7: hitung durasi
@@ -773,14 +773,14 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                             <div className="flex items-start justify-between gap-2 mb-2">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <p className="text-[12px] font-bold text-gray-800">{plb.kode}</p>
+                                  <p className="text-[12px] font-bold text-slate-800">{plb.kode}</p>
                                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${plb.status==='selesai'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>
                                     {plb.status==='selesai'?'✓ Selesai':'⏳ Proses'}
                                   </span>
                                 </div>
                                 {/* FIX poin 7: jam mulai & selesai */}
                                 <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                                  <p className="text-[10px] text-gray-400">
+                                  <p className="text-[10px] text-slate-400">
                                     {new Date(plb.tanggal).toLocaleDateString('id-ID')}
                                   </p>
                                   {plb.jam_mulai&&(
@@ -789,11 +789,11 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                     </span>
                                   )}
                                   {plb.jam_selesai&&(
-                                    <span className="text-[10px] text-gray-400">→ <span className="text-green-600 font-semibold">{String(plb.jam_selesai).slice(0,5)}</span></span>
+                                    <span className="text-[10px] text-slate-400">→ <span className="text-green-600 font-semibold">{String(plb.jam_selesai).slice(0,5)}</span></span>
                                   )}
-                                  {durasi&&<span className="text-[10px] text-gray-400 italic">({durasi})</span>}
-                                  {(plb.tim_nama||plb.operator)&&<span className="text-[10px] text-gray-400">· 👥 {plb.tim_nama||plb.operator}</span>}
-                                  {plb.admin_input&&<span className="text-[10px] text-gray-400">· ✍️ {plb.admin_input}</span>}
+                                  {durasi&&<span className="text-[10px] text-slate-400 italic">({durasi})</span>}
+                                  {(plb.tim_nama||plb.operator)&&<span className="text-[10px] text-slate-400">· 👥 {plb.tim_nama||plb.operator}</span>}
+                                  {plb.admin_input&&<span className="text-[10px] text-slate-400">· ✍️ {plb.admin_input}</span>}
                                 </div>
                               </div>
                               {/* FIX poin 12: Tombol hapus dengan konfirmasi yang lebih jelas */}
@@ -813,7 +813,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                         setHapusPlbId(null); router.refresh()
                                       }} className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-red-500 text-white">Ya</button>
                                       <button type="button" onClick={()=>setHapusPlbId(null)}
-                                        className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-gray-200 text-gray-600">Batal</button>
+                                        className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-slate-200 text-slate-600">Batal</button>
                                     </div>
                                   ) : (
                                     <div className="flex items-center gap-1">
@@ -841,9 +841,9 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                             </div>
                             {/* Gram info */}
                             <div className="flex gap-4 text-[12px]">
-                              <div><p className="text-[10px] text-gray-400">Dikasih</p><p className="font-semibold text-gray-700">{formatGram(plb.dikasih_gram)}</p></div>
-                              <div><p className="text-[10px] text-gray-400">Diterima</p><p className="font-semibold text-gray-700">{plb.diterima_gram!=null?formatGram(plb.diterima_gram):'—'}</p></div>
-                              <div><p className="text-[10px] text-gray-400">Losses</p><p className={`font-semibold ${plb.losses_gram>0?'text-red-500':'text-gray-500'}`}>{plb.losses_gram!=null?formatGram(plb.losses_gram):'—'}</p></div>
+                              <div><p className="text-[10px] text-slate-400">Dikasih</p><p className="font-semibold text-slate-700">{formatGram(plb.dikasih_gram)}</p></div>
+                              <div><p className="text-[10px] text-slate-400">Diterima</p><p className="font-semibold text-slate-700">{plb.diterima_gram!=null?formatGram(plb.diterima_gram):'—'}</p></div>
+                              <div><p className="text-[10px] text-slate-400">Losses</p><p className={`font-semibold ${plb.losses_gram>0?'text-red-500':'text-slate-500'}`}>{plb.losses_gram!=null?formatGram(plb.losses_gram):'—'}</p></div>
                             </div>
                             {/* Foto diserahkan + diterima */}
                             {(()=>{
@@ -921,9 +921,9 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                 </div>
                                 <div className="px-3 py-2.5 space-y-1.5">
                                   {plb.loss_approval.alasan&&(
-                                    <p className="text-[12px] text-gray-600"><span className="font-semibold text-gray-700">Alasan:</span> {plb.loss_approval.alasan}</p>
+                                    <p className="text-[12px] text-slate-600"><span className="font-semibold text-slate-700">Alasan:</span> {plb.loss_approval.alasan}</p>
                                   )}
-                                  <div className="flex items-center gap-4 text-[12px] text-gray-500">
+                                  <div className="flex items-center gap-4 text-[12px] text-slate-500">
                                     {plb.loss_approval.operator_nama&&<span>👷 Operator: <b>{plb.loss_approval.operator_nama}</b></span>}
                                     {plb.loss_approval.admin_nama&&<span>✍️ Admin: <b>{plb.loss_approval.admin_nama}</b></span>}
                                   </div>
@@ -931,7 +931,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                     <div className="flex gap-3 pt-1">
                                       {plb.loss_approval.ttd_operator_url&&(
                                         <div>
-                                          <p className="text-[10px] text-gray-400 mb-1">TTD Operator</p>
+                                          <p className="text-[10px] text-slate-400 mb-1">TTD Operator</p>
                                           <a href={plb.loss_approval.ttd_operator_url} target="_blank" rel="noopener noreferrer">
                                             <img src={plb.loss_approval.ttd_operator_url} alt="TTD Operator"
                                               className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/>
@@ -940,7 +940,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                       )}
                                       {plb.loss_approval.ttd_admin_url&&(
                                         <div>
-                                          <p className="text-[10px] text-gray-400 mb-1">TTD Admin</p>
+                                          <p className="text-[10px] text-slate-400 mb-1">TTD Admin</p>
                                           <a href={plb.loss_approval.ttd_admin_url} target="_blank" rel="noopener noreferrer">
                                             <img src={plb.loss_approval.ttd_admin_url} alt="TTD Admin"
                                               className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/>
@@ -1137,8 +1137,8 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
               <div>
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input type="checkbox" checked={mentahChecked} onChange={e=>setMentahChecked(e.target.checked)} className="w-4 h-4 rounded accent-violet-600"/>
-                  <span className="text-[12px] font-semibold text-gray-700">Sisa Bahan Mentah Belum Di Lebur</span>
-                  <span className="ml-auto text-[10px] text-gray-400">{formatGram(sisaMentahBelumLebur)}</span>
+                  <span className="text-[12px] font-semibold text-slate-700">Sisa Bahan Mentah Belum Di Lebur</span>
+                  <span className="ml-auto text-[10px] text-slate-400">{formatGram(sisaMentahBelumLebur)}</span>
                 </label>
                 {mentahChecked&&(
                   <div className="mt-2 pl-6">
@@ -1153,7 +1153,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
               <div>
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input type="checkbox" checked={leburChecked} onChange={e=>setLeburChecked(e.target.checked)} className="w-4 h-4 rounded accent-violet-600"/>
-                  <span className="text-[12px] font-semibold text-gray-700">Hasil Lebur Belum Dicetak</span>
+                  <span className="text-[12px] font-semibold text-slate-700">Hasil Lebur Belum Dicetak</span>
                   <span className="ml-auto text-[10px] text-violet-400 font-semibold">{formatGram(hasilLeburBelumCetak)}</span>
                 </label>
                 {leburChecked&&(
@@ -1167,7 +1167,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
               {/* 3. Reject Cutting / Reject PCS */}
               {rejectOptions.length>0&&(
                 <div>
-                  <p className="text-[12px] font-semibold text-gray-700 mb-2">Reject (Cutting / Pas Berat / Annealing)</p>
+                  <p className="text-[12px] font-semibold text-slate-700 mb-2">Reject (Cutting / Pas Berat / Annealing)</p>
                   <div className="space-y-2">
                     {rejectOptions.map((rej:any)=>{
                       // Tentukan asal reject berdasarkan data
@@ -1182,9 +1182,9 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                       <div key={rej.id}>
                         <label className="flex items-center gap-2 cursor-pointer select-none">
                           <input type="checkbox" checked={rejGram[rej.id]!==undefined} onChange={()=>toggleRej(rej.id,rej.berat_reject)} className="w-4 h-4 rounded accent-violet-600"/>
-                          <span className="text-[12px] font-medium text-gray-700">{rej.kode??rej.nama_item}</span>
+                          <span className="text-[12px] font-medium text-slate-700">{rej.kode??rej.nama_item}</span>
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">{prosesLabel}</span>
-                          <span className="text-[10px] text-gray-400">({rej.gramasi}gr)</span>
+                          <span className="text-[10px] text-slate-400">({rej.gramasi}gr)</span>
                           <span className="ml-auto text-[10px] text-red-400 font-semibold">{formatGram(rej.berat_reject)}{rej.pcs_reject?` · ${rej.pcs_reject} pcs`:''}</span>
                         </label>
                         {rejGram[rej.id]!==undefined&&(
@@ -1201,7 +1201,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
               )}
 
               {rejectOptions.length===0&&!mentahChecked&&!leburChecked&&(
-                <p className="text-[12px] text-gray-400 italic text-center py-2">Centang sumber bahan di atas</p>
+                <p className="text-[12px] text-slate-400 italic text-center py-2">Centang sumber bahan di atas</p>
               )}
 
               {/* Total */}
@@ -1231,8 +1231,8 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto</label>
                 <label className="flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-violet-50">
-                  <Camera size={14} className="text-gray-400 flex-shrink-0"/>
-                  <span className="text-[12px] text-gray-400">{fotos.length>0?`${fotos.length} foto dipilih`:'Tambah foto'}</span>
+                  <Camera size={14} className="text-slate-400 flex-shrink-0"/>
+                  <span className="text-[12px] text-slate-400">{fotos.length>0?`${fotos.length} foto dipilih`:'Tambah foto'}</span>
                   <input type="file" accept="image/*" multiple className="hidden"
                     onChange={e=>setFotos(p=>[...p,...Array.from(e.target.files??[])].slice(0,10))}/>
                 </label>
@@ -1261,8 +1261,8 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
             </div>
           </div>
 
-          <div className="px-4 py-3 rounded-xl border border-dashed border-gray-200 text-center">
-            <p className="text-[12px] text-gray-400">Bagian <span className="font-semibold text-gray-500">Diterima</span> diisi setelah proses lebur selesai</p>
+          <div className="px-4 py-3 rounded-xl border border-dashed border-slate-200 text-center">
+            <p className="text-[12px] text-slate-400">Bagian <span className="font-semibold text-slate-500">Diterima</span> diisi setelah proses lebur selesai</p>
           </div>
 
           {err&&<div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13} className="flex-shrink-0"/><span>{err}</span></div>}
@@ -1373,8 +1373,8 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bukti</label>
                 <label className="flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-green-50 transition-colors">
-                  <Camera size={14} className="text-gray-400 flex-shrink-0"/>
-                  <span className="text-[12px] text-gray-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto'}</span>
+                  <Camera size={14} className="text-slate-400 flex-shrink-0"/>
+                  <span className="text-[12px] text-slate-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto'}</span>
                   <input type="file" accept="image/*" multiple className="hidden"
                     onChange={e => setFotos(p => [...p, ...Array.from(e.target.files??[])].slice(0,10))}/>
                 </label>
@@ -1531,8 +1531,8 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tambah Foto</label>
                 <label className="flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-violet-50">
-                  <Camera size={14} className="text-gray-400 flex-shrink-0"/>
-                  <span className="text-[12px] text-gray-400">{newFotos.length > 0 ? `${newFotos.length} foto baru` : 'Tambah foto'}</span>
+                  <Camera size={14} className="text-slate-400 flex-shrink-0"/>
+                  <span className="text-[12px] text-slate-400">{newFotos.length > 0 ? `${newFotos.length} foto baru` : 'Tambah foto'}</span>
                   <input type="file" accept="image/*" multiple className="hidden"
                     onChange={e => setNewFotos(p => [...p, ...Array.from(e.target.files??[])].slice(0,5))}/>
                 </label>
@@ -1689,8 +1689,8 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tambah Foto Diterima</label>
                 <label className="flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-green-50">
-                  <Camera size={14} className="text-gray-400 flex-shrink-0"/>
-                  <span className="text-[12px] text-gray-400">{newFotosDiterima.length > 0 ? `${newFotosDiterima.length} foto baru` : 'Tambah foto'}</span>
+                  <Camera size={14} className="text-slate-400 flex-shrink-0"/>
+                  <span className="text-[12px] text-slate-400">{newFotosDiterima.length > 0 ? `${newFotosDiterima.length} foto baru` : 'Tambah foto'}</span>
                   <input type="file" accept="image/*" multiple className="hidden"
                     onChange={e => setNewFotosDiterima(p => [...p, ...Array.from(e.target.files??[])].slice(0,5))}/>
                 </label>

@@ -71,10 +71,10 @@ function RangeRow({ idx, start, end, onChange, onRemove, onPreview }: {
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[12px] text-gray-400 font-mono w-5 flex-shrink-0">{idx+1}.</span>
+      <span className="text-[12px] text-slate-400 font-mono w-5 flex-shrink-0">{idx+1}.</span>
       <input value={start} onChange={e=>onChange(e.target.value.toUpperCase(),end)}
         placeholder="Kode awal (cth: 1H80AA)" className={cn(inp,'flex-1 font-mono text-[12px]')}/>
-      <span className="text-gray-400 text-[13px] flex-shrink-0">→</span>
+      <span className="text-slate-400 text-[13px] flex-shrink-0">→</span>
       <input value={end} onChange={e=>{onChange(start,e.target.value.toUpperCase());onPreview(start,e.target.value.toUpperCase())}}
         placeholder="Kode akhir (cth: 1H80AT)" className={cn(inp,'flex-1 font-mono text-[12px]')}/>
       {idx > 0 && (
@@ -317,9 +317,9 @@ function ExplorerPanel() {
     : []
 
   const InfoRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
-    <div className="flex items-start justify-between gap-4 py-2.5 border-b border-gray-100/80 last:border-0">
-      <span className="text-[11px] font-bold text-gray-400 tracking-widest uppercase flex-shrink-0 mt-0.5">{label}</span>
-      <span className="text-[13px] font-semibold text-gray-800 text-right">{value ?? '—'}</span>
+    <div className="flex items-start justify-between gap-4 py-2.5 border-b border-slate-100/80 last:border-0">
+      <span className="text-[11px] font-bold text-slate-400 tracking-widest uppercase flex-shrink-0 mt-0.5">{label}</span>
+      <span className="text-[13px] font-semibold text-slate-800 text-right">{value ?? '—'}</span>
     </div>
   )
 
@@ -327,17 +327,17 @@ function ExplorerPanel() {
     <div className="space-y-5">
       {/* Search bar */}
       <div className="rounded-xl p-5 bg-white border border-white/60">
-        <p className="text-[12px] font-bold text-gray-400 tracking-widest uppercase mb-3">Cari Shieldtag by Kode</p>
+        <p className="text-[12px] font-bold text-slate-400 tracking-widest uppercase mb-3">Cari Shieldtag by Kode</p>
         <div className="flex gap-3">
           <div className="relative flex-1">
-            <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
+            <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
             <input
               ref={inputRef}
               value={query}
               onChange={e => { setQuery(e.target.value.toUpperCase()); setNotFound(false) }}
               onKeyDown={e => e.key === 'Enter' && doSearch()}
               placeholder="Masukkan kode Shieldtag, contoh: 1H80AA"
-              className="w-full pl-10 pr-4 py-3 text-[13px] font-mono rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all uppercase bg-gray-50/80 border border-gray-300/50"
+              className="w-full pl-10 pr-4 py-3 text-[13px] font-mono rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all uppercase bg-slate-50/80 border border-slate-300/50"
             />
           </div>
           <button
@@ -370,10 +370,10 @@ function ExplorerPanel() {
                 <Tag size={22} style={{ color: cfg.dot }}/>
               </div>
               <div>
-                <p className="text-[18px] font-black font-mono tracking-wider text-gray-900">
+                <p className="text-[18px] font-bold font-mono tracking-wider text-slate-900">
                   {result.kode}
                 </p>
-                <p className="text-[12px] text-gray-400 mt-0.5">
+                <p className="text-[12px] text-slate-400 mt-0.5">
                   {result.gramasi}gr · {result.batch_kode}
                 </p>
               </div>
@@ -389,7 +389,7 @@ function ExplorerPanel() {
 
             {/* Detail info */}
             <div className="px-6 py-5">
-              <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-3 flex items-center gap-1.5">
+              <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase mb-3 flex items-center gap-1.5">
                 <Package size={11}/> Detail
               </p>
               <InfoRow label="Kode" value={<span className="font-mono">{result.kode}</span>}/>
@@ -401,7 +401,7 @@ function ExplorerPanel() {
               }/>
               <InfoRow label="Lokasi" value={
                 <span className="flex items-center gap-1.5 justify-end">
-                  <MapPin size={12} className="text-gray-400"/>{result.lokasi ?? '—'}
+                  <MapPin size={12} className="text-slate-400"/>{result.lokasi ?? '—'}
                 </span>
               }/>
               <InfoRow label="HPP / pcs" value={result.hpp ? formatRupiah(result.hpp) : '—'}/>
@@ -421,31 +421,31 @@ function ExplorerPanel() {
 
             {/* Riwayat */}
             <div className="px-6 py-5">
-              <p className="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-3 flex items-center gap-1.5">
+              <p className="text-[10px] font-bold text-slate-400 tracking-widest uppercase mb-3 flex items-center gap-1.5">
                 <Clock size={11}/> Riwayat Pergerakan
               </p>
               {history.length === 0 ? (
-                <p className="text-[13px] text-gray-400 italic">Belum ada riwayat</p>
+                <p className="text-[13px] text-slate-400 italic">Belum ada riwayat</p>
               ) : (
                 <div className="space-y-0 relative">
                   {/* Timeline line */}
                   <div className="absolute left-3 top-2 bottom-2 w-px bg-gradient-to-b from-violet-300/30 to-violet-200/10"/>
                   {history.slice().reverse().map((h: any, i: number) => (
                     <div key={i} className="flex gap-4 pb-4 last:pb-0 relative">
-                      <div className={`w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center z-10 mt-0.5 ${i === 0 ? 'bg-violet-100 border border-violet-300' : 'bg-gray-100 border border-gray-200'}`}>
-                        <div className={`w-2 h-2 rounded-full ${i === 0 ? 'bg-violet-500' : 'bg-gray-300'}`}/>
+                      <div className={`w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center z-10 mt-0.5 ${i === 0 ? 'bg-violet-100 border border-violet-300' : 'bg-slate-100 border border-slate-200'}`}>
+                        <div className={`w-2 h-2 rounded-full ${i === 0 ? 'bg-violet-500' : 'bg-slate-300'}`}/>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[12px] font-bold text-gray-700 leading-snug">{h.action}</p>
+                        <p className="text-[12px] font-bold text-slate-700 leading-snug">{h.action}</p>
                         {(h.status || h.lokasi) && (
-                          <p className="text-[11px] text-gray-400 mt-0.5">
+                          <p className="text-[11px] text-slate-400 mt-0.5">
                             {[h.status, h.lokasi].filter(Boolean).join(' · ')}
                           </p>
                         )}
                         {h.alasan && (
                           <p className="text-[11px] text-red-500 mt-0.5 italic">{h.alasan}</p>
                         )}
-                        <p className="text-[10px] text-gray-400 mt-0.5">
+                        <p className="text-[10px] text-slate-400 mt-0.5">
                           {h.tanggal} {h.oleh && `· ${h.oleh}`}
                         </p>
                       </div>
@@ -464,8 +464,8 @@ function ExplorerPanel() {
           <div className="w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4 bg-violet-50">
             <Search size={28} className="text-violet-300"/>
           </div>
-          <p className="text-[13px] font-semibold text-gray-400">Masukkan kode Shieldtag untuk mulai cari</p>
-          <p className="text-[12px] text-gray-300 mt-1">Cari tahu status, lokasi, dan riwayat pergerakan</p>
+          <p className="text-[13px] font-semibold text-slate-400">Masukkan kode Shieldtag untuk mulai cari</p>
+          <p className="text-[12px] text-slate-300 mt-1">Cari tahu status, lokasi, dan riwayat pergerakan</p>
         </div>
       )}
     </div>
@@ -622,10 +622,10 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
         {/* Search + Filter */}
         <div className="flex gap-3 flex-wrap items-center">
           <div className="relative flex-1 min-w-[200px]">
-            <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"/>
+            <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"/>
             <input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Cari kode Shieldtag, batch..."
-              className="w-full pl-10 pr-4 py-2.5 text-[13px] rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all bg-white/80 border border-gray-300/50"/>
+              className="w-full pl-10 pr-4 py-2.5 text-[13px] rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all bg-white/80 border border-slate-300/50"/>
           </div>
           <div className="flex gap-2 flex-wrap">
             {tabs.map(t => {
@@ -634,9 +634,9 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
               const cnt = t === 'Semua' ? shieldtags.length : (counts[t] ?? 0)
               return (
                 <button key={t} onClick={() => setFilterStatus(t)}
-                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-semibold transition-all ${isAct ? 'text-white' : 'bg-white/80 text-gray-500 border border-gray-200'}`}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-semibold transition-all ${isAct ? 'text-white' : 'bg-white/80 text-slate-500 border border-slate-200'}`}
                   style={isAct ? { background: cfg?.dot ?? '#8B5CF6', boxShadow: `0 4px 12px ${cfg?.dot ?? '#8B5CF6'}40` } : undefined}>
-                  {t} {cnt > 0 && <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${isAct ? 'bg-white/25' : 'bg-gray-100'}`}>{cnt}</span>}
+                  {t} {cnt > 0 && <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${isAct ? 'bg-white/25' : 'bg-slate-100'}`}>{cnt}</span>}
                 </button>
               )
             })}
@@ -647,14 +647,14 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
         <div className="rounded-xl overflow-auto bg-white border border-white/60">
           <table className="w-full min-w-[700px] text-[13px]">
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-50/60">
+              <tr className="border-b border-slate-100 bg-slate-50/60">
                 <th className="px-4 py-3.5 w-10">
                 <input type="checkbox" className="w-4 h-4 rounded cursor-pointer accent-violet-500"
                   checked={filtered.length > 0 && selected.size === filtered.length}
                   onChange={toggleAll}/>
               </th>
               {['KODE SHIELDTAG', 'BATCH', 'GRAMASI', 'STATUS', 'LOKASI', 'TGL REGIS', 'AKSI'].map(h => (
-                  <th key={h} className="px-4 py-3.5 text-left text-[10px] font-bold text-gray-400 tracking-widest uppercase whitespace-nowrap">{h}</th>
+                  <th key={h} className="px-4 py-3.5 text-left text-[10px] font-bold text-slate-400 tracking-widest uppercase whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -664,7 +664,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
                   <div className="w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4 bg-violet-50">
                     <Tag size={28} className="text-violet-300"/>
                   </div>
-                  <p className="text-[13px] font-medium text-gray-400">
+                  <p className="text-[13px] font-medium text-slate-400">
                     {packingsWithSlots.length > 0 ? 'Belum ada Shieldtag terdaftar' : 'Semua Shieldtag sudah terdaftar'}
                   </p>
                   {packingsWithSlots.length > 0 && canRegister && (
@@ -678,13 +678,13 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
                 const cfg = STATUS_CFG[st.status] ?? STATUS_CFG['Aktif']
                 return (
                   <tr key={st.id}
-                    className={cn('border-t border-gray-100/70 transition-colors hover:bg-violet-50/10', idx === 0 ? 'border-transparent' : '', selected.has(st.id) ? 'bg-violet-50/40' : '')}>
+                    className={cn('border-t border-slate-100/70 transition-colors hover:bg-violet-50/10', idx === 0 ? 'border-transparent' : '', selected.has(st.id) ? 'bg-violet-50/40' : '')}>
                     <td className="px-4 py-3" onClick={e => { e.stopPropagation(); toggleSelect(st.id) }}>
                       <input type="checkbox" className="w-4 h-4 rounded cursor-pointer accent-violet-500"
                         checked={selected.has(st.id)} onChange={() => {}}/>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="font-mono text-[13px] font-black tracking-wider text-gray-900">{st.kode}</span>
+                      <span className="font-mono text-[13px] font-bold tracking-wider text-slate-900">{st.kode}</span>
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-[12px] font-bold px-2 py-0.5 rounded-full text-violet-700 bg-violet-50/40">{st.batch_kode}</span>
@@ -696,8 +696,8 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
                       <span className="text-[12px] font-semibold px-2.5 py-1 rounded-full"
                         style={{ background: cfg.bg, color: cfg.text }}>{st.status}</span>
                     </td>
-                    <td className="px-4 py-3 text-[13px] text-gray-600">{st.lokasi || '—'}</td>
-                    <td className="px-4 py-3 text-[12px] text-gray-400 whitespace-nowrap">{formatDate(st.tgl_regis)}</td>
+                    <td className="px-4 py-3 text-[13px] text-slate-600">{st.lokasi || '—'}</td>
+                    <td className="px-4 py-3 text-[12px] text-slate-400 whitespace-nowrap">{formatDate(st.tgl_regis)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">
                         <a href={`/shieldtag/print?kodes=${st.kode}`} target="_blank" rel="noopener noreferrer"

@@ -244,7 +244,7 @@ function CabangCard({ cabang, expanded, onToggle, canAdjust, onAdjust, onHistory
                         </span>
                       </td>
                       <td className="px-4 py-2.5 text-right">
-                        <span className="font-black text-green-700">{row.ready_stock}</span>
+                        <span className="font-bold text-green-700">{row.ready_stock}</span>
                         <span className="text-[10px] text-slate-400 ml-1">pcs</span>
                       </td>
                       <td className="px-4 py-2.5 text-right">
@@ -255,7 +255,7 @@ function CabangCard({ cabang, expanded, onToggle, canAdjust, onAdjust, onHistory
                         )}
                       </td>
                       <td className="px-4 py-2.5 text-right">
-                        <span className="font-black text-violet-700">{row.total_stock}</span>
+                        <span className="font-bold text-violet-700">{row.total_stock}</span>
                         <span className="text-[10px] text-slate-400 ml-1">pcs</span>
                       </td>
                       {canAdjust && (
@@ -271,14 +271,14 @@ function CabangCard({ cabang, expanded, onToggle, canAdjust, onAdjust, onHistory
                 </tbody>
                 <tfoot>
                   <tr className="border-t-2 border-slate-200 bg-slate-50/80">
-                    <td className="px-5 py-2.5 text-[12px] font-black text-slate-600">TOTAL</td>
+                    <td className="px-5 py-2.5 text-[12px] font-bold text-slate-600">TOTAL</td>
                     <td className="px-4 py-2.5" />
                     <td className="px-4 py-2.5" />
-                    <td className="px-4 py-2.5 text-right font-black text-green-700">{cabang.total_ready} pcs</td>
-                    <td className="px-4 py-2.5 text-right font-black text-orange-600">
+                    <td className="px-4 py-2.5 text-right font-bold text-green-700">{cabang.total_ready} pcs</td>
+                    <td className="px-4 py-2.5 text-right font-bold text-orange-600">
                       {cabang.total_outstanding > 0 ? `${cabang.total_outstanding} pcs` : '—'}
                     </td>
-                    <td className="px-4 py-2.5 text-right font-black text-violet-700">{cabang.total_stok} pcs</td>
+                    <td className="px-4 py-2.5 text-right font-bold text-violet-700">{cabang.total_stok} pcs</td>
                     {canAdjust && <td />}
                   </tr>
                 </tfoot>
@@ -313,7 +313,7 @@ function KpiCard({ label, value, sub, color, bg, icon }: {
         <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
           style={{ background: bg, color }}>{icon}</div>
       </div>
-      <p className="text-[20px] font-black" style={{ color }}>{value.toLocaleString('id-ID')}</p>
+      <p className="text-[20px] font-bold" style={{ color }}>{value.toLocaleString('id-ID')}</p>
       <p className="text-[10px] text-slate-400 mt-0.5">{sub}</p>
     </div>
   )
@@ -397,7 +397,7 @@ function AdjustmentModal({ cabang, defaultGramasi, onClose, onSuccess }: {
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl p-3 bg-slate-50 border border-slate-200">
                 <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Stok Sekarang</p>
-                <p className="text-[20px] font-black text-slate-700">{currentReady}</p>
+                <p className="text-[20px] font-bold text-slate-700">{currentReady}</p>
                 <p className="text-[10px] text-slate-400">pcs</p>
               </div>
               <div className="rounded-xl p-3 bg-violet-50 border border-violet-100">
@@ -406,7 +406,7 @@ function AdjustmentModal({ cabang, defaultGramasi, onClose, onSuccess }: {
                   type="number" min="0" value={qtyAfter}
                   onChange={e => setQtyAfter(e.target.value)}
                   placeholder="0"
-                  className="w-full text-[20px] font-black text-violet-700 bg-transparent border-none outline-none"
+                  className="w-full text-[20px] font-bold text-violet-700 bg-transparent border-none outline-none"
                 />
                 {selisih !== null && (
                   <p className={cn('text-[10px] font-bold', selisih > 0 ? 'text-green-600' : selisih < 0 ? 'text-red-500' : 'text-slate-400')}>
@@ -484,7 +484,7 @@ function HistoryModal({ cabang, data, loading, onClose }: {
                     <div className="flex items-center gap-2">
                       <span className="text-[12px] font-bold text-slate-700">{d.gramasi}gr</span>
                       <span className={cn(
-                        'text-[10px] font-black px-2 py-0.5 rounded-full',
+                        'text-[10px] font-bold px-2 py-0.5 rounded-full',
                         d.selisih > 0 ? 'bg-green-50 text-green-700' :
                         d.selisih < 0 ? 'bg-red-50 text-red-600' : 'bg-slate-50 text-slate-500'
                       )}>

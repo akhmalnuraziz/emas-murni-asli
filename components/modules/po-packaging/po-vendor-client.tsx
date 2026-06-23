@@ -74,14 +74,14 @@ function StatusBadge({ status }: { status: string }) {
     selesai:          { label: 'Selesai',          cls: 'bg-green-50 text-green-700' },
     void:             { label: 'Void',             cls: 'bg-red-50 text-red-500' },
     pending_qc:       { label: 'Pending QC',       cls: 'bg-orange-50 text-orange-600' },
-    pending:          { label: 'Pending',          cls: 'bg-gray-50 text-gray-500' },
+    pending:          { label: 'Pending',          cls: 'bg-slate-50 text-slate-500' },
     diretur:          { label: 'Diretur',          cls: 'bg-orange-50 text-orange-600' },
     menunggu_ganti:   { label: 'Menunggu Ganti',   cls: 'bg-amber-50 text-amber-700' },
     sebagian_diganti: { label: 'Sebagian Diganti', cls: 'bg-blue-50 text-blue-600' },
     selesai_diganti:  { label: 'Selesai Diganti',  cls: 'bg-green-50 text-green-700' },
     overdue:          { label: 'Lewat Tempo',      cls: 'bg-red-50 text-red-600' },
   }
-  const { label, cls } = map[status] ?? { label: status, cls: 'bg-gray-50 text-gray-500' }
+  const { label, cls } = map[status] ?? { label: status, cls: 'bg-slate-50 text-slate-500' }
   return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}`}>{label}</span>
 }
 
@@ -252,7 +252,7 @@ function SignaturePad({ onSave, label, initial }: { onSave: (b64: string) => voi
         </div>
       ) : (
         <>
-          <div className="rounded-xl overflow-hidden border border-gray-200 bg-white">
+          <div className="rounded-xl overflow-hidden border border-slate-200 bg-white">
             <canvas
               ref={initCanvas}
               className="w-full h-24 touch-none block cursor-crosshair"
@@ -268,7 +268,7 @@ function SignaturePad({ onSave, label, initial }: { onSave: (b64: string) => voi
           </div>
           <div className="flex gap-2">
             <button type="button" onClick={clear}
-              className="flex-1 py-1.5 text-[10px] font-semibold rounded-lg border border-gray-200 text-gray-500">Hapus</button>
+              className="flex-1 py-1.5 text-[10px] font-semibold rounded-lg border border-slate-200 text-slate-500">Hapus</button>
             <button type="button" onClick={save} disabled={empty}
               className="flex-1 py-1.5 text-[10px] font-bold rounded-lg bg-violet-600 text-white disabled:opacity-50">Simpan TTD</button>
           </div>
@@ -333,7 +333,7 @@ export default function POVendorClient({
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-[18px] font-black text-slate-800">PO Vendor Packaging</h1>
+          <h1 className="text-[18px] font-bold text-slate-800">PO Vendor Packaging</h1>
           <p className="text-[12px] text-slate-400 mt-0.5">{poList.length} PO aktif · {pendingReject > 0 ? `${pendingReject} reject pending` : 'semua reject tertangani'}</p>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -378,7 +378,7 @@ export default function POVendorClient({
             <Icon size={12}/>
             {label}
             {key === 'reject' && pendingReject > 0 && (
-              <span className="min-w-[16px] h-4 px-1 bg-red-500 text-white rounded-full text-[9px] flex items-center justify-center font-black">
+              <span className="min-w-[16px] h-4 px-1 bg-red-500 text-white rounded-full text-[9px] flex items-center justify-center font-bold">
                 {pendingReject > 9 ? '9+' : pendingReject}
               </span>
             )}
@@ -392,7 +392,7 @@ export default function POVendorClient({
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Cari nomor PO, vendor, produk..."
-            className="w-full pl-8 pr-3 py-2 text-[13px] rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30"/>
+            className="w-full pl-8 pr-3 py-2 text-[13px] rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30"/>
         </div>
       )}
 
@@ -493,7 +493,7 @@ export default function POVendorClient({
                           ))}
                           <div className="flex justify-between gap-2 mt-1.5 pt-1.5 border-t border-emerald-100 text-[12px]">
                             <span className="font-bold text-slate-700">Total Nilai PO</span>
-                            <span className="font-black text-emerald-700">{fmtRp(totalNilai)}</span>
+                            <span className="font-bold text-emerald-700">{fmtRp(totalNilai)}</span>
                           </div>
                         </div>
                       )}
@@ -707,7 +707,7 @@ export default function POVendorClient({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {stokList.map((s: any) => (
               <div key={s.id} className="rounded-xl px-4 py-3.5 text-center bg-white border border-slate-200">
-                <p className="text-[20px] font-black text-slate-800">{fmtNum(s.stok_qty)}</p>
+                <p className="text-[20px] font-bold text-slate-800">{fmtNum(s.stok_qty)}</p>
                 <p className="text-[12px] font-bold text-slate-500 mt-0.5">pcs</p>
                 <div className="w-6 h-0.5 rounded-full mx-auto my-2" style={{ background: s.stok_qty > 0 ? '#7C3AED' : '#e2e8f0' }}/>
                 <p className="text-[11px] font-semibold text-slate-600">{s.produk_nama}</p>
@@ -1345,7 +1345,7 @@ function POModal({ mode, po, poItemsForEdit, vendors, produkList, allPoItems, al
           {totalNilai > 0 && (
             <div className="mt-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 flex justify-between items-center">
               <span className="text-[12px] font-bold text-emerald-700">Total Nilai PO</span>
-              <span className="text-[14px] font-black text-emerald-700">{fmtRp(totalNilai)}</span>
+              <span className="text-[14px] font-bold text-emerald-700">{fmtRp(totalNilai)}</span>
             </div>
           )}
         </div>
@@ -1417,10 +1417,10 @@ function BatchModal({ po, poItemsForPO, onClose, onSave }: {
               const checked = it.id in selected
               return (
                 <div key={it.id}
-                  className={`rounded-xl border transition-all ${checked ? 'border-violet-400 bg-violet-50' : 'border-gray-200 bg-white'}`}>
+                  className={`rounded-xl border transition-all ${checked ? 'border-violet-400 bg-violet-50' : 'border-slate-200 bg-white'}`}>
                   <button type="button" onClick={() => toggle(it)}
                     className="w-full flex items-center gap-2 px-3 py-2 text-left">
-                    <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${checked ? 'bg-violet-600' : 'border border-gray-300'}`}>
+                    <div className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${checked ? 'bg-violet-600' : 'border border-slate-300'}`}>
                       {checked && <Check size={10} className="text-white"/>}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -1618,7 +1618,7 @@ function QCModal({ batch, batchItems, kategoriList, timAnggotaList, adminInputLi
           {showTtd ? '▲ Sembunyikan TTD' : '✍️ Tambah TTD (Opsional)'}
         </button>
         {showTtd && (
-          <div className="space-y-3 rounded-xl p-3 bg-violet-50">
+          <div className="space-y-3 rounded-xl p-3 bg-white border border-slate-200">
             <SignaturePad label="TTD Operator" initial={ttdOp} onSave={v => setTtdOp(v)}/>
             <SignaturePad label="TTD Admin" initial={ttdAdmin} onSave={v => setTtdAdmin(v)}/>
           </div>
@@ -1694,10 +1694,10 @@ function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]
                 <p className="text-[12px] text-slate-400 py-2 text-center">Tidak ada reject pending dari vendor ini</p>
               ) : vendorRejects.map((r: any) => (
                 <div key={r.id}
-                  className={`rounded-xl border transition-all ${isSelected(r.id) ? 'border-violet-400 bg-violet-50' : 'border-gray-200 bg-white'}`}>
+                  className={`rounded-xl border transition-all ${isSelected(r.id) ? 'border-violet-400 bg-violet-50' : 'border-slate-200 bg-white'}`}>
                   <button type="button" onClick={() => toggle(r)}
                     className="w-full flex items-center gap-2 px-3 py-2 text-left">
-                    <div className={`w-4 h-4 rounded flex-shrink-0 flex items-center justify-center ${isSelected(r.id) ? 'bg-violet-600' : 'border border-gray-300'}`}>
+                    <div className={`w-4 h-4 rounded flex-shrink-0 flex items-center justify-center ${isSelected(r.id) ? 'bg-violet-600' : 'border border-slate-300'}`}>
                       {isSelected(r.id) && <Check size={10} className="text-white"/>}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -1783,7 +1783,7 @@ function ConfirmModal({ state, onClose }: { state: ConfirmState; onClose: () => 
             <AlertTriangle size={20}/>
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-[14px] font-black text-slate-900">{state.title}</h3>
+            <h3 className="text-[14px] font-bold text-slate-900">{state.title}</h3>
             <p className="text-[12px] text-slate-600 mt-1 leading-relaxed">{state.message}</p>
           </div>
         </div>
@@ -1893,7 +1893,7 @@ function DashboardRejectPanel({ rejectList, sjList, poItems, batchList }: {
         <div className="rounded-xl bg-red-50 border-2 border-red-200 p-4">
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle size={16} className="text-red-600"/>
-            <p className="text-[13px] font-black text-red-700">
+            <p className="text-[13px] font-bold text-red-700">
               {overdueSJ.length} SJ Retur Lewat Tempo Penggantian!
             </p>
           </div>
@@ -1920,17 +1920,17 @@ function DashboardRejectPanel({ rejectList, sjList, poItems, batchList }: {
         <div className="grid grid-cols-3 gap-2">
           <div className="rounded-xl bg-white border border-slate-200 p-3">
             <p className="text-[10px] font-bold text-slate-400 uppercase">Total Kejadian</p>
-            <p className="text-[20px] font-black text-slate-800 mt-1">{fmtNum(rejectThisMonth.length)}</p>
+            <p className="text-[20px] font-bold text-slate-800 mt-1">{fmtNum(rejectThisMonth.length)}</p>
             <p className="text-[10px] text-slate-400">{fmtNum(totalRejectAll)} all-time</p>
           </div>
           <div className="rounded-xl bg-white border border-slate-200 p-3">
             <p className="text-[10px] font-bold text-slate-400 uppercase">Total Qty</p>
-            <p className="text-[20px] font-black text-red-600 mt-1">{fmtNum(totalQtyMonth)}</p>
+            <p className="text-[20px] font-bold text-red-600 mt-1">{fmtNum(totalQtyMonth)}</p>
             <p className="text-[10px] text-slate-400">pcs reject</p>
           </div>
           <div className="rounded-xl bg-white border border-slate-200 p-3">
             <p className="text-[10px] font-bold text-slate-400 uppercase">Total Nilai</p>
-            <p className="text-[14px] font-black text-amber-700 mt-1">{fmtRp(totalNilaiMonth)}</p>
+            <p className="text-[14px] font-bold text-amber-700 mt-1">{fmtRp(totalNilaiMonth)}</p>
             <p className="text-[10px] text-slate-400">kerugian potensial</p>
           </div>
         </div>
@@ -1940,17 +1940,17 @@ function DashboardRejectPanel({ rejectList, sjList, poItems, batchList }: {
       <div>
         <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status SJ Retur</p>
         <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-center">
-            <p className="text-[20px] font-black text-amber-700">{sjStatus.menunggu_ganti}</p>
-            <p className="text-[10px] font-bold text-amber-600 mt-1">Menunggu Ganti</p>
+          <div className="rounded-xl bg-white border border-slate-200 p-3">
+            <div className="flex items-center gap-1.5 mb-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"/><p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Menunggu Ganti</p></div>
+            <p className="text-[18px] font-semibold text-slate-800 tabular-nums">{sjStatus.menunggu_ganti}</p>
           </div>
-          <div className="rounded-xl bg-blue-50 border border-blue-200 p-3 text-center">
-            <p className="text-[20px] font-black text-blue-700">{sjStatus.sebagian_diganti}</p>
-            <p className="text-[10px] font-bold text-blue-600 mt-1">Sebagian Diganti</p>
+          <div className="rounded-xl bg-white border border-slate-200 p-3">
+            <div className="flex items-center gap-1.5 mb-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"/><p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Sebagian Diganti</p></div>
+            <p className="text-[18px] font-semibold text-slate-800 tabular-nums">{sjStatus.sebagian_diganti}</p>
           </div>
-          <div className="rounded-xl bg-green-50 border border-green-200 p-3 text-center">
-            <p className="text-[20px] font-black text-green-700">{sjStatus.selesai_diganti}</p>
-            <p className="text-[10px] font-bold text-green-600 mt-1">Selesai Diganti</p>
+          <div className="rounded-xl bg-white border border-slate-200 p-3">
+            <div className="flex items-center gap-1.5 mb-1"><span className="w-1.5 h-1.5 rounded-full bg-green-500"/><p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Selesai Diganti</p></div>
+            <p className="text-[18px] font-semibold text-slate-800 tabular-nums">{sjStatus.selesai_diganti}</p>
           </div>
         </div>
       </div>
@@ -1969,7 +1969,7 @@ function DashboardRejectPanel({ rejectList, sjList, poItems, batchList }: {
                 <div key={i} className="rounded-xl bg-white border border-slate-200 p-2.5">
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-[12px] font-bold text-slate-700">{i + 1}. {v.vendor_nama}</p>
-                    <p className="text-[12px] font-black text-red-600">{fmtNum(v.qty)} pcs</p>
+                    <p className="text-[12px] font-bold text-red-600">{fmtNum(v.qty)} pcs</p>
                   </div>
                   <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
                     <div className="h-full bg-red-400" style={{ width: `${pct}%` }}/>
@@ -2100,10 +2100,10 @@ function PenggantiModal({ sj, onClose, onSave }: { sj: any; onClose: () => void;
                 const checked = isSelected(it.id)
                 return (
                   <div key={it.id}
-                    className={`rounded-xl border transition-all ${checked ? 'border-blue-400 bg-blue-50' : 'border-gray-200 bg-white'}`}>
+                    className={`rounded-xl border transition-all ${checked ? 'border-blue-400 bg-blue-50' : 'border-slate-200 bg-white'}`}>
                     <button type="button" onClick={() => toggle(it)}
                       className="w-full flex items-center gap-2 px-3 py-2 text-left">
-                      <div className={`w-4 h-4 rounded flex-shrink-0 flex items-center justify-center ${checked ? 'bg-blue-600' : 'border border-gray-300'}`}>
+                      <div className={`w-4 h-4 rounded flex-shrink-0 flex items-center justify-center ${checked ? 'bg-blue-600' : 'border border-slate-300'}`}>
                         {checked && <Check size={10} className="text-white"/>}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -2225,7 +2225,7 @@ function HistoriHargaPanel({ produkList, poList, poItems, vendors }: { produkLis
                         <p className="text-[10px] text-slate-400">{v.prices.length}× PO · rata2 {fmtRp(avg)}</p>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className={`text-[13px] font-black ${isMin ? 'text-green-600' : isMax ? 'text-red-500' : 'text-slate-700'}`}>
+                        <p className={`text-[13px] font-bold ${isMin ? 'text-green-600' : isMax ? 'text-red-500' : 'text-slate-700'}`}>
                           {fmtRp(v.last.harga)}
                           {isMin && <span className="ml-1 text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">Termurah</span>}
                           {isMax && !isMin && <span className="ml-1 text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">Termahal</span>}

@@ -86,7 +86,7 @@ export default function PrioritasProduksiClient({
               style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}>
               <Icon size={18} style={{ color: cfg.text }} className="flex-shrink-0" />
               <div>
-                <p className="text-[13px] font-black" style={{ color: cfg.text }}>{count} gramasi</p>
+                <p className="text-[13px] font-bold" style={{ color: cfg.text }}>{count} gramasi</p>
                 <p className="text-[10px] font-semibold text-slate-500">{cfg.desc}</p>
               </div>
             </div>
@@ -98,7 +98,7 @@ export default function PrioritasProduksiClient({
       {totalRekomendasi > 0 && (
         <div className="rounded-xl p-4 flex items-center gap-4 bg-violet-50/20 border border-violet-200/50">
           <div className="text-center">
-            <p className="text-[20px] font-black text-violet-700">{totalRekomendasi}</p>
+            <p className="text-[20px] font-bold text-violet-700">{totalRekomendasi}</p>
             <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">pcs total</p>
           </div>
           <div>
@@ -146,7 +146,7 @@ export default function PrioritasProduksiClient({
                   <tbody>
                     {items.map((item, i) => (
                       <tr key={item.gramasi} className={`hover:bg-slate-50/30 ${i !== 0 ? 'border-t border-black/[0.04]' : ''}`}>
-                        <td className="px-4 py-3 font-black text-slate-800">{item.gramasi} gr</td>
+                        <td className="px-4 py-3 font-bold text-slate-800">{item.gramasi} gr</td>
                         <td className="px-4 py-3">
                           <span className={`font-bold text-[13px] ${item.stok < item.safetyStock ? 'text-red-600' : 'text-slate-800'}`}>
                             {item.stok} pcs
@@ -170,7 +170,7 @@ export default function PrioritasProduksiClient({
                         </td>
                         <td className="px-4 py-3">
                           {item.rekomendasi > 0 ? (
-                            <span className="inline-flex items-center gap-1 font-black text-white text-[12px] px-2.5 py-1 rounded-full"
+                            <span className="inline-flex items-center gap-1 font-bold text-white text-[12px] px-2.5 py-1 rounded-full"
                               style={{ background: cfg.text }}>
                               +{item.rekomendasi} pcs
                             </span>

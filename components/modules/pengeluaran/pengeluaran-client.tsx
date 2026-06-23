@@ -332,7 +332,7 @@ export default function PengeluaranClient({
             <TrendingDown size={16} className="opacity-80"/>
             <p className="text-[12px] font-semibold opacity-80">Total Pengeluaran</p>
           </div>
-          <p className="text-[20px] font-black">{formatRupiah(totalPengeluaran)}</p>
+          <p className="text-[20px] font-bold">{formatRupiah(totalPengeluaran)}</p>
           <p className="text-[12px] opacity-70 mt-1">{periodLabel}</p>
         </div>
         <div className="rounded-xl p-5 sm:col-span-2"
@@ -429,7 +429,7 @@ export default function PengeluaranClient({
                         {p.keterangan && <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{p.keterangan}</p>}
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-[13px] font-black text-red-600">{formatRupiah(p.nominal)}</p>
+                        <p className="text-[13px] font-bold text-red-600">{formatRupiah(p.nominal)}</p>
                       </div>
                     </div>
                   </div>

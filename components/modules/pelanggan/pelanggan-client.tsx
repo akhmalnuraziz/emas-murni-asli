@@ -109,7 +109,7 @@ export default function PelangganClient({ pelangganList, canSeeRp }: Props) {
               <div className="p-4 flex items-center justify-between gap-3 cursor-pointer"
                 onClick={() => setExpanded(expanded === p.key ? null : p.key)}>
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 font-black text-[13px] text-violet-700 bg-violet-50">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 font-bold text-[13px] text-violet-700 bg-violet-50">
                     {i + 1}
                   </div>
                   <div className="min-w-0">
@@ -125,7 +125,7 @@ export default function PelangganClient({ pelangganList, canSeeRp }: Props) {
                 </div>
                 <div className="flex items-center gap-4 flex-shrink-0">
                   <div className="text-right">
-                    <p className="text-[13px] font-black text-slate-800">{p.txCount}x beli · {p.totalPcs} pcs</p>
+                    <p className="text-[13px] font-bold text-slate-800">{p.txCount}x beli · {p.totalPcs} pcs</p>
                     {canSeeRp && <p className="text-[11px] text-violet-600 font-semibold">{formatRupiah(p.totalBelanja)}</p>}
                     <p className="text-[10px] text-slate-400">Terakhir {formatDate(p.lastTanggal)}</p>
                   </div>

@@ -176,7 +176,7 @@ function FotoPicker({ files, onAdd, onRemove, label='Tambah foto', small=false }
       )}
       <label className="flex items-center gap-2 px-3.5 py-2.5 border border-dashed border-violet-200 rounded-xl cursor-pointer hover:border-violet-400 hover:bg-violet-50/50 bg-white/40 transition-all">
         <Camera size={13} className="text-violet-400 flex-shrink-0" />
-        <span className={`text-gray-400 ${small ? 'text-[11px]' : 'text-[12px]'}`}>{files.length > 0 ? `${files.length} foto — klik tambah` : label}</span>
+        <span className={`text-slate-400 ${small ? 'text-[11px]' : 'text-[12px]'}`}>{files.length > 0 ? `${files.length} foto — klik tambah` : label}</span>
         <input type="file" accept="image/*" multiple className="hidden" onChange={e => { onAdd(Array.from(e.target.files ?? [])); e.currentTarget.value = '' }} />
       </label>
       {files.length > 0 && <button type="button" onClick={() => onRemove(-1)} className="text-[11px] text-red-400 hover:underline">Hapus semua foto</button>}
@@ -194,7 +194,7 @@ function TimPicker({ tims, timId, setTimId, anggota, setAnggota, label = 'Tim Pe
   const anggotaList = selectedTim?.anggota?.filter((a: any) => a.aktif) ?? []
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[11px] font-bold text-gray-400 tracking-widest uppercase">{label}{req && <span className="text-red-400 ml-0.5">*</span>}</label>
+      <label className="text-[11px] font-bold text-slate-400 tracking-widest uppercase">{label}{req && <span className="text-red-400 ml-0.5">*</span>}</label>
       <div className="grid grid-cols-2 gap-2">
         <select name={`${namePrefix}tim_id`} value={timId} onChange={e => { setTimId(e.target.value); setAnggota('') }} className={inp} required={req}>
           <option value="">Pilih tim…</option>
@@ -293,7 +293,7 @@ function TLine({ events }: { events: any[] }) {
           )
         })}
         {Array.from({ length: Math.max(0, 5 - dots.length) }).map((_, i) => (
-          <div key={`e${i}`} className="w-3 h-3 rounded-full bg-gray-200/80 border-2 border-white shadow-sm flex-shrink-0" />
+          <div key={`e${i}`} className="w-3 h-3 rounded-full bg-slate-200/80 border-2 border-white shadow-sm flex-shrink-0" />
         ))}
       </div>
 
@@ -316,8 +316,8 @@ function TLine({ events }: { events: any[] }) {
               <span className="text-[12px] font-semibold text-white tracking-tight">{hover.ev.status}</span>
             </div>
             <div className="space-y-0.5 text-[11px]">
-              <p className="text-gray-400">{formatDate(hover.ev.tanggal)}</p>
-              <p className="font-semibold text-gray-100">{hover.ev.total_gram} gr</p>
+              <p className="text-slate-400">{formatDate(hover.ev.tanggal)}</p>
+              <p className="font-semibold text-slate-100">{hover.ev.total_gram} gr</p>
               {Number(hover.ev.sisa_serbuk) > 0 && <p style={{ color: '#A78BFA' }}>Serbuk: {hover.ev.sisa_serbuk} gr</p>}
               {Number(hover.ev.losses)      > 0 && <p style={{ color: '#FB923C' }}>Losses: {hover.ev.losses} gr</p>}
             </div>
@@ -369,7 +369,7 @@ function SisaFisikInput({ batchKode, initialValue }: { batchKode: string; initia
   return (
     <button type="button" onClick={() => setEditing(true)}
       className={cn('flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg transition-colors group',
-        val !== null ? 'text-gray-700 hover:bg-gray-100' : 'text-violet-500 hover:bg-violet-50'
+        val !== null ? 'text-slate-700 hover:bg-slate-100' : 'text-violet-500 hover:bg-violet-50'
       )}>
       {val !== null ? `${fgr(val)}gr` : '+ Isi fisik'}
       <Pencil size={9} className="opacity-0 group-hover:opacity-50 transition-opacity flex-shrink-0" />
@@ -408,7 +408,7 @@ function EventHistory({ events, item, stageHandovers = [], lossApprovals = [] }:
   return (
     <div className="space-y-2">
       {lightbox && <Lightbox url={lightbox} onClose={() => setLightbox(null)} />}
-      {filtered.length === 0 && <p className="text-[12px] text-gray-400 italic">Belum ada riwayat proses</p>}
+      {filtered.length === 0 && <p className="text-[12px] text-slate-400 italic">Belum ada riwayat proses</p>}
       {filtered.map((ev: any, i: number) => {
         const c = STATUS_CFG[ev.status] ?? { dot: '#94A3B8', bg: 'rgba(148,163,184,0.1)', text: '#64748B' }
         const fotos  = Array.isArray(ev.fotos) ? ev.fotos : []
@@ -425,34 +425,34 @@ function EventHistory({ events, item, stageHandovers = [], lossApprovals = [] }:
             <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-200" style={{background:c.bg+'66'}}>
               <div className="w-2 h-2 rounded-full flex-shrink-0" style={{background:c.dot}}/>
               <Sbadge s={ev.status} />
-              <span className="text-[11px] text-gray-400 font-medium">{formatDate(ev.tanggal)}</span>
+              <span className="text-[11px] text-slate-400 font-medium">{formatDate(ev.tanggal)}</span>
               {ev.jam_mulai && (
-                <span className="text-[11px] text-gray-400 flex items-center gap-0.5">
+                <span className="text-[11px] text-slate-400 flex items-center gap-0.5">
                   ⏱ {fmtTime(ev.jam_mulai)}
                   {ev.created_at && ` → ${new Date(ev.created_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}`}
-                  {getDurasi(ev.jam_mulai, ev.created_at) && <span className="text-gray-300 ml-1">({getDurasi(ev.jam_mulai, ev.created_at)})</span>}
+                  {getDurasi(ev.jam_mulai, ev.created_at) && <span className="text-slate-300 ml-1">({getDurasi(ev.jam_mulai, ev.created_at)})</span>}
                 </span>
               )}
-              {ev.user_name && <span className="text-[10px] text-gray-400 ml-auto bg-white/80 px-2 py-0.5 rounded-full border border-gray-100">👤 {ev.user_name}</span>}
+              {ev.user_name && <span className="text-[10px] text-slate-400 ml-auto bg-white/80 px-2 py-0.5 rounded-full border border-slate-100">👤 {ev.user_name}</span>}
             </div>
             {/* Data row */}
             <div className="px-3 py-2 flex flex-wrap gap-3 items-center text-[12px]">
-              <div><span className="text-gray-400">Berat: </span><span className="font-bold text-gray-700">{ev.total_gram} gr</span></div>
-              {Number(ev.sisa_serbuk) > 0 && <div><span className="text-gray-400">{serbukLabel}: </span><span className={`font-semibold ${serbukColor}`}>{fgr(Number(ev.sisa_serbuk))} gr</span></div>}
-              {Number(ev.losses) > 0 && <div><span className="text-gray-400">losses: </span><span className="font-semibold text-orange-500">{fgr(Number(ev.losses))} gr</span></div>}
+              <div><span className="text-slate-400">Berat: </span><span className="font-bold text-slate-700">{ev.total_gram} gr</span></div>
+              {Number(ev.sisa_serbuk) > 0 && <div><span className="text-slate-400">{serbukLabel}: </span><span className={`font-semibold ${serbukColor}`}>{fgr(Number(ev.sisa_serbuk))} gr</span></div>}
+              {Number(ev.losses) > 0 && <div><span className="text-slate-400">losses: </span><span className="font-semibold text-orange-500">{fgr(Number(ev.losses))} gr</span></div>}
               {ev.kategori_losses && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">⚠ {ev.kategori_losses}</span>}
             </div>
             {/* Catatan — only show if it's not the auto-generated breakdown from selesaiCutting */}
             {ev.catatan && !hasCatatanBreakdown && (
               <div className="px-3 pb-2">
-                <p className="text-[11px] text-gray-400 italic">{ev.catatan}</p>
+                <p className="text-[11px] text-slate-400 italic">{ev.catatan}</p>
               </div>
             )}
             {/* Fotos */}
             {(fotos.length > 0 || serbuk.length > 0) && (
               <div className="px-3 pb-2 flex gap-1.5 flex-wrap">
                 {fotos.map((u: string, fi: number) => (
-                  <img key={fi} src={u} onClick={() => setLightbox(u)} className="w-12 h-12 rounded-xl object-cover cursor-pointer border border-gray-100 hover:scale-110 transition-transform shadow-sm" />
+                  <img key={fi} src={u} onClick={() => setLightbox(u)} className="w-12 h-12 rounded-xl object-cover cursor-pointer border border-slate-100 hover:scale-110 transition-transform shadow-sm" />
                 ))}
                 {serbuk.map((u: string, fi: number) => (
                   <div key={`s${fi}`} className="relative">
@@ -476,8 +476,8 @@ function EventHistory({ events, item, stageHandovers = [], lossApprovals = [] }:
                     <span className="text-[10px] text-red-400 ml-auto">{la.loss_gram ? `${Number(la.loss_gram).toFixed(3)} gr` : ''}</span>
                   </div>
                   <div className="px-3 py-2 space-y-1.5">
-                    {la.alasan && <p className="text-[11px] text-gray-600"><span className="font-semibold">Alasan:</span> {la.alasan}</p>}
-                    <div className="flex gap-3 text-[10px] text-gray-500">
+                    {la.alasan && <p className="text-[11px] text-slate-600"><span className="font-semibold">Alasan:</span> {la.alasan}</p>}
+                    <div className="flex gap-3 text-[10px] text-slate-500">
                       {la.operator_nama && <span>👷 <b>{la.operator_nama}</b></span>}
                       {la.admin_nama && <span>✍️ <b>{la.admin_nama}</b></span>}
                     </div>
@@ -485,7 +485,7 @@ function EventHistory({ events, item, stageHandovers = [], lossApprovals = [] }:
                       <div className="flex gap-2 pt-1">
                         {la.ttd_operator_url && (
                           <div>
-                            <p className="text-[9px] text-gray-400 mb-1">TTD Operator</p>
+                            <p className="text-[9px] text-slate-400 mb-1">TTD Operator</p>
                             <a href={la.ttd_operator_url} target="_blank" rel="noopener noreferrer">
                               <img src={la.ttd_operator_url} alt="TTD Operator"
                                 className="h-12 w-24 object-contain rounded-xl border border-red-100 bg-white"/>
@@ -494,7 +494,7 @@ function EventHistory({ events, item, stageHandovers = [], lossApprovals = [] }:
                         )}
                         {la.ttd_admin_url && (
                           <div>
-                            <p className="text-[9px] text-gray-400 mb-1">TTD Admin</p>
+                            <p className="text-[9px] text-slate-400 mb-1">TTD Admin</p>
                             <a href={la.ttd_admin_url} target="_blank" rel="noopener noreferrer">
                               <img src={la.ttd_admin_url} alt="TTD Admin"
                                 className="h-12 w-24 object-contain rounded-xl border border-red-100 bg-white"/>
@@ -854,11 +854,11 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
         <form onSubmit={submit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           {/* Info Diserahkan */}
           <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700">
-            <span className="text-gray-400">Diserahkan: </span>
+            <span className="text-slate-400">Diserahkan: </span>
             <span className="font-bold text-violet-700">{fgr(serahGram)} gr</span>
-            <span className="text-gray-400 mx-1">·</span>
-            <span className="font-semibold text-gray-600">{item.gramasi}gr</span>
-            {item.pcs ? <><span className="text-gray-400 mx-1">·</span><span className="font-semibold text-gray-600">{item.pcs} PCS</span></> : null}
+            <span className="text-slate-400 mx-1">·</span>
+            <span className="font-semibold text-slate-600">{item.gramasi}gr</span>
+            {item.pcs ? <><span className="text-slate-400 mx-1">·</span><span className="font-semibold text-slate-600">{item.pcs} PCS</span></> : null}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -936,9 +936,9 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
                 ))}
               </div>
             )}
-            <label className="flex items-center gap-2 h-11 px-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-violet-50 transition-colors border border-gray-200">
-              <Camera size={14} className="text-gray-400 flex-shrink-0" />
-              <span className="text-[12px] text-gray-400">{fotos.length > 0 ? `${fotos.length} foto baru` : (existingFotos.length > 0 ? 'Tambah foto lagi' : 'Tambah foto (opsional)')}</span>
+            <label className="flex items-center gap-2 h-11 px-4 bg-slate-50 rounded-xl cursor-pointer hover:bg-violet-50 transition-colors border border-slate-200">
+              <Camera size={14} className="text-slate-400 flex-shrink-0" />
+              <span className="text-[12px] text-slate-400">{fotos.length > 0 ? `${fotos.length} foto baru` : (existingFotos.length > 0 ? 'Tambah foto lagi' : 'Tambah foto (opsional)')}</span>
               <input type="file" accept="image/*" multiple className="hidden"
                 onChange={e => setFotos(p => [...p, ...Array.from(e.target.files ?? [])].slice(0, 10))} />
             </label>
@@ -1027,9 +1027,9 @@ function SerahStageModal({ item, tahap, tims, onClose, onSubmit, isPending, erro
           <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700">
             <p className="text-[9px] font-bold text-violet-500 uppercase mb-2">Data yang akan diserahkan</p>
             <div className="flex flex-wrap gap-3">
-              <div><p className="text-gray-400 text-[10px]">Total Berat</p><p className="font-bold text-violet-700">{serahGram.toFixed(3)} gr</p></div>
-              <div><p className="text-gray-400 text-[10px]">Gramasi</p><p className="font-bold text-gray-700">{item.gramasi} gr</p></div>
-              <div><p className="text-gray-400 text-[10px]">Jumlah PCS</p><p className="font-bold text-gray-700">{serahPcs > 0 ? `${serahPcs} PCS` : '—'}</p></div>
+              <div><p className="text-slate-400 text-[10px]">Total Berat</p><p className="font-bold text-violet-700">{serahGram.toFixed(3)} gr</p></div>
+              <div><p className="text-slate-400 text-[10px]">Gramasi</p><p className="font-bold text-slate-700">{item.gramasi} gr</p></div>
+              <div><p className="text-slate-400 text-[10px]">Jumlah PCS</p><p className="font-bold text-slate-700">{serahPcs > 0 ? `${serahPcs} PCS` : '—'}</p></div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -1144,9 +1144,9 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
           <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700">
             <p className="text-[9px] font-bold text-violet-500 uppercase mb-2">Diserahkan</p>
             <div className="flex flex-wrap gap-3">
-              <div><p className="text-gray-400 text-[10px]">Total Berat</p><p className="font-bold text-violet-700">{Number(serahGram).toFixed(3)} gr</p></div>
-              <div><p className="text-gray-400 text-[10px]">Gramasi</p><p className="font-bold text-gray-700">{item.gramasi} gr</p></div>
-              {(currentH?.serah_pcs ?? item.pcs_good ?? item.pcs) ? <div><p className="text-gray-400 text-[10px]">Jumlah PCS</p><p className="font-bold text-gray-700">{currentH?.serah_pcs ?? item.pcs_good ?? item.pcs} PCS</p></div> : null}
+              <div><p className="text-slate-400 text-[10px]">Total Berat</p><p className="font-bold text-violet-700">{Number(serahGram).toFixed(3)} gr</p></div>
+              <div><p className="text-slate-400 text-[10px]">Gramasi</p><p className="font-bold text-slate-700">{item.gramasi} gr</p></div>
+              {(currentH?.serah_pcs ?? item.pcs_good ?? item.pcs) ? <div><p className="text-slate-400 text-[10px]">Jumlah PCS</p><p className="font-bold text-slate-700">{currentH?.serah_pcs ?? item.pcs_good ?? item.pcs} PCS</p></div> : null}
             </div>
           </div>
 
@@ -1185,7 +1185,7 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
           <div>
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input type="checkbox" checked={adaReject} onChange={e=>setAdaReject(e.target.checked)} className="w-4 h-4 rounded accent-red-500"/>
-              <span className="text-[12px] font-semibold text-gray-600">Ada Reject</span>
+              <span className="text-[12px] font-semibold text-slate-600">Ada Reject</span>
             </label>
             {adaReject && (
               <div className="grid grid-cols-2 gap-3 mt-2">
@@ -1230,9 +1230,9 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
 
           <div>
             <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bukti</label>
-            <label className="flex items-center gap-2 h-11 px-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-violet-50 transition-colors border border-gray-200">
-              <Camera size={14} className="text-gray-400 flex-shrink-0"/>
-              <span className="text-[12px] text-gray-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto (opsional, max 5)'}</span>
+            <label className="flex items-center gap-2 h-11 px-4 bg-slate-50 rounded-xl cursor-pointer hover:bg-violet-50 transition-colors border border-slate-200">
+              <Camera size={14} className="text-slate-400 flex-shrink-0"/>
+              <span className="text-[12px] text-slate-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto (opsional, max 5)'}</span>
               <input type="file" accept="image/*" multiple className="hidden" onChange={e=>setFotos(p=>[...p,...Array.from(e.target.files??[])].slice(0,10))}/>
             </label>
             {fotos.length > 0 && (
@@ -1678,8 +1678,8 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                       <Trash2 size={12} className="text-red-400"/>
                     </button>}
                     <button onClick={()=>toggleExp(item.id)}
-                      className="w-7 h-7 rounded-xl bg-gray-100 flex items-center justify-center hover:bg-gray-200 hover:scale-110 transition-all">
-                      {isExp?<ChevronUp size={13} className="text-gray-500"/>:<ChevronDown size={13} className="text-gray-500"/>}
+                      className="w-7 h-7 rounded-xl bg-slate-100 flex items-center justify-center hover:bg-slate-200 hover:scale-110 transition-all">
+                      {isExp?<ChevronUp size={13} className="text-slate-500"/>:<ChevronDown size={13} className="text-slate-500"/>}
                     </button>
                   </div>
                 </div>
@@ -1771,7 +1771,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   <div/>
                                 </div>
                               )}
-                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='produksi_item'&&l.ref_id===item.id&&l.proses==='cutting');if(!_la)return null;return(<div className="mt-2 rounded-xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss Cutting</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-gray-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-gray-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
+                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='produksi_item'&&l.ref_id===item.id&&l.proses==='cutting');if(!_la)return null;return(<div className="mt-2 rounded-xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss Cutting</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-slate-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-slate-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-slate-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-slate-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
                             </div>
                           )
                         })()}
@@ -1853,7 +1853,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   <div/>
                                 </div>
                               )}
-                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='stage_handover'&&l.ref_id===h.id);if(!_la)return null;return(<div className="mt-2 rounded-xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss {(h.tahap as string).replace(/_/g,' ')}</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-gray-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-gray-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-gray-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
+                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='stage_handover'&&l.ref_id===h.id);if(!_la)return null;return(<div className="mt-2 rounded-xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss {(h.tahap as string).replace(/_/g,' ')}</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-slate-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-slate-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-slate-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-slate-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
                             </div>
                           )
                         })}

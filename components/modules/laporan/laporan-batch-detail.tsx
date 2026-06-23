@@ -141,7 +141,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
   }) => (
     <div className="rounded-xl p-4" style={{ background: bg, border: `1px solid ${accent}22` }}>
       <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: accent }}>{label}</p>
-      <p className="text-[18px] font-black text-slate-800 mt-0.5">{value}</p>
+      <p className="text-[18px] font-bold text-slate-800 mt-0.5">{value}</p>
       {sub && <p className="text-[11px] text-slate-400 mt-0.5">{sub}</p>}
     </div>
   )
@@ -155,7 +155,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
           <Link href="/laporan?tab=batch" className="inline-flex items-center gap-1.5 text-[12px] text-slate-400 hover:text-violet-600 mb-3 transition-colors">
             <ArrowLeft size={12} /> Kembali ke Laporan
           </Link>
-          <h1 className="text-[20px] font-black text-slate-800 font-mono">{batch.kode}</h1>
+          <h1 className="text-[20px] font-bold text-slate-800 font-mono">{batch.kode}</h1>
           <p className="text-[13px] text-slate-400 mt-0.5">
             {formatDate(batch.tanggal)}
             {batch.supplier && <> · {batch.supplier}</>}
@@ -259,9 +259,9 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
               <tfoot>
                 <tr className="bg-slate-50 border-t-2 border-slate-200">
                   <td className="px-4 py-3 text-[12px] font-bold text-slate-800" colSpan={3}>Total</td>
-                  <td className="px-4 py-3 text-[12px] font-black text-slate-800">{fg(totalDikasih)}</td>
-                  <td className="px-4 py-3 text-[12px] font-black text-green-700">{fg(totalDiterima)}</td>
-                  <td className="px-4 py-3 text-[12px] font-black text-red-500">{fg(lossLebur)}</td>
+                  <td className="px-4 py-3 text-[12px] font-bold text-slate-800">{fg(totalDikasih)}</td>
+                  <td className="px-4 py-3 text-[12px] font-bold text-green-700">{fg(totalDiterima)}</td>
+                  <td className="px-4 py-3 text-[12px] font-bold text-red-500">{fg(lossLebur)}</td>
                   <td className="px-4 py-3 text-[11px] font-bold text-red-500">{pct(lossLebur, totalDikasih)}</td>
                   <td />
                 </tr>
@@ -315,9 +315,9 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
               <tfoot>
                 <tr className="bg-slate-50 border-t-2 border-slate-200">
                   <td className="px-4 py-3 text-[12px] font-bold text-slate-800">Total</td>
-                  <td className="px-4 py-3 text-[12px] font-black text-slate-800">{totalPcs} pcs</td>
-                  <td className="px-4 py-3 text-[12px] font-black text-green-700">{fg(totalGramProduksi)} gr</td>
-                  <td className="px-4 py-3 text-[12px] font-black text-amber-600">{fg(totalSerbuk)} gr</td>
+                  <td className="px-4 py-3 text-[12px] font-bold text-slate-800">{totalPcs} pcs</td>
+                  <td className="px-4 py-3 text-[12px] font-bold text-green-700">{fg(totalGramProduksi)} gr</td>
+                  <td className="px-4 py-3 text-[12px] font-bold text-amber-600">{fg(totalSerbuk)} gr</td>
                   <td />
                 </tr>
               </tfoot>
@@ -375,7 +375,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
             ].map(s => (
               <div key={s.label} className="rounded-xl p-3 text-center"
                 style={{ background: `${s.color}10`, border: `1px solid ${s.color}20` }}>
-                <p className="text-[20px] font-black" style={{ color: s.color }}>{s.val}</p>
+                <p className="text-[20px] font-bold" style={{ color: s.color }}>{s.val}</p>
                 <p className="text-[10px] font-bold text-slate-500 mt-0.5">{s.label}</p>
               </div>
             ))}
@@ -388,7 +388,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
         <div className="rounded-xl p-4 bg-amber-50 border border-amber-100">
           <div className="flex items-center justify-between">
             <p className="text-[12px] font-bold text-amber-700">HPP / Gram</p>
-            <p className="text-[16px] font-black text-amber-800">{formatRupiah(batch.hpp_gr)}</p>
+            <p className="text-[16px] font-bold text-amber-800">{formatRupiah(batch.hpp_gr)}</p>
           </div>
           {batch.harga_beli != null && (
             <p className="text-[12px] text-amber-600 mt-1">Harga Beli: {formatRupiah(batch.harga_beli)}</p>

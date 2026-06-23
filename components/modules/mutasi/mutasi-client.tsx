@@ -288,7 +288,7 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-amber-50">
-                            <span className="text-[9px] font-black text-amber-600">AU</span>
+                            <span className="text-[9px] font-bold text-amber-600">AU</span>
                           </div>
                           <div>
                             <p className="font-semibold text-slate-800 text-[13px]">Emas {gramasi} gr</p>
@@ -535,8 +535,8 @@ function StokCabang({ cabangList, selectedCabang, setSelectedCabang }: {
           {cabangList.map(c => <option key={c.kode} value={c.kode}>{c.nama}</option>)}
         </select>
         <div className="flex gap-2 text-[12px]">
-          <span className="px-3 py-2 rounded-lg bg-green-50 text-green-700 font-semibold">Total Ready: {totalStok} pcs</span>
-          <span className="px-3 py-2 rounded-lg bg-amber-50 text-amber-700 font-semibold">Total PO: {totalPo} pcs</span>
+          <span className="px-3 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-green-500"/>Total Ready: <span className="tabular-nums text-slate-800">{totalStok} pcs</span></span>
+          <span className="px-3 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"/>Total PO: <span className="tabular-nums text-slate-800">{totalPo} pcs</span></span>
         </div>
       </div>
 

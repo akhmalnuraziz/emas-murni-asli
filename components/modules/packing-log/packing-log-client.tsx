@@ -100,7 +100,7 @@ function FotoPicker({files,existing=[],onAdd,onRemove,onRemoveExisting,label='Ta
       )}
       <label className="flex items-center gap-2 px-3.5 py-2.5 border border-dashed border-violet-200 rounded-xl cursor-pointer hover:border-violet-400 hover:bg-violet-50/50 bg-white/40 transition-all">
         <Camera size={13}className="text-violet-400 flex-shrink-0"/>
-        <span className={`text-gray-400 ${small?'text-[11px]':'text-[12px]'}`}>{files.length>0?`${files.length} foto baru — klik tambah`:label}</span>
+        <span className={`text-slate-400 ${small?'text-[11px]':'text-[12px]'}`}>{files.length>0?`${files.length} foto baru — klik tambah`:label}</span>
         <input type="file" accept="image/*" multiple className="hidden" onChange={e=>{onAdd(Array.from(e.target.files??[]));e.currentTarget.value=''}}/>
       </label>
       {files.length>0&&<button type="button"onClick={()=>onRemove(-1)}className="text-[11px] text-red-400 hover:underline">Hapus semua foto baru</button>}
@@ -300,25 +300,25 @@ function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint,onShieldtagC
         </div>
       </div>
       <div className="grid grid-cols-3 gap-2">
-        <div><p className="text-[10px] text-gray-400">BATCH</p><p className="text-[12px] font-bold text-gray-700">{p.batch_kode}</p></div>
-        <div><p className="text-[10px] text-gray-400">TANGGAL</p><p className="text-[12px] font-semibold text-gray-700">{formatDate(p.tanggal)}</p></div>
-        <div><p className="text-[10px] text-gray-400">GRAMASI</p><p className="text-[12px] font-bold text-gray-700">{p.gramasi} gr</p></div>
-        <div><p className="text-[10px] text-gray-400">DIPACK</p><p className="text-[13px] font-bold text-gray-800">{p.pcs_dipack} pcs</p></div>
-        <div><p className="text-[10px] text-gray-400">TOTAL GRAM</p><p className="text-[12px] font-semibold text-gray-700">{Number(p.total_gram_aktual).toFixed(3)} gr</p></div>
+        <div><p className="text-[10px] text-slate-400">BATCH</p><p className="text-[12px] font-bold text-slate-700">{p.batch_kode}</p></div>
+        <div><p className="text-[10px] text-slate-400">TANGGAL</p><p className="text-[12px] font-semibold text-slate-700">{formatDate(p.tanggal)}</p></div>
+        <div><p className="text-[10px] text-slate-400">GRAMASI</p><p className="text-[12px] font-bold text-slate-700">{p.gramasi} gr</p></div>
+        <div><p className="text-[10px] text-slate-400">DIPACK</p><p className="text-[13px] font-bold text-slate-800">{p.pcs_dipack} pcs</p></div>
+        <div><p className="text-[10px] text-slate-400">TOTAL GRAM</p><p className="text-[12px] font-semibold text-slate-700">{Number(p.total_gram_aktual).toFixed(3)} gr</p></div>
         <div>
-          <p className="text-[10px] text-gray-400">SHIELDTAG</p>
+          <p className="text-[10px] text-slate-400">SHIELDTAG</p>
           <button type="button" onClick={()=>{ if(stCount>0&&onShieldtagClick) onShieldtagClick() }} disabled={stCount===0}
-            className={cn('text-[12px] font-bold',stCount>0?'text-emerald-600 underline decoration-dotted cursor-pointer':'text-gray-400 cursor-default')}>🏷 {stCount}/{p.pcs_dipack}</button>
+            className={cn('text-[12px] font-bold',stCount>0?'text-emerald-600 underline decoration-dotted cursor-pointer':'text-slate-400 cursor-default')}>🏷 {stCount}/{p.pcs_dipack}</button>
         </div>
       </div>
-      <div className="flex items-center gap-3 pt-1 border-t border-gray-100 flex-wrap">
-        <span className="text-[12px] text-gray-500"><span className="font-semibold">Operator:</span> {p.pic_packing||p.pic||'—'}{p.admin_input?` · Admin: ${p.admin_input}`:''}</span>
+      <div className="flex items-center gap-3 pt-1 border-t border-slate-100 flex-wrap">
+        <span className="text-[12px] text-slate-500"><span className="font-semibold">Operator:</span> {p.pic_packing||p.pic||'—'}{p.admin_input?` · Admin: ${p.admin_input}`:''}</span>
         {fotos.length>0&&(
           <div className="flex gap-1.5">
             {fotos.slice(0,4).map((u:string,i:number)=>(
-              <img key={i} src={u} onClick={()=>setLightbox(u)} className="w-8 h-8 rounded-lg object-cover cursor-pointer border border-gray-200 hover:scale-110 transition-transform"/>
+              <img key={i} src={u} onClick={()=>setLightbox(u)} className="w-8 h-8 rounded-lg object-cover cursor-pointer border border-slate-200 hover:scale-110 transition-transform"/>
             ))}
-            {fotos.length>4&&<span className="text-[12px] text-gray-400 self-center">+{fotos.length-4}</span>}
+            {fotos.length>4&&<span className="text-[12px] text-slate-400 self-center">+{fotos.length-4}</span>}
           </div>
         )}
       </div>
@@ -459,10 +459,10 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
           {dateFilter==='custom'&&(
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
               <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)}
-                className="text-[12px] bg-white border border-gray-200 rounded-lg px-2 py-1 text-gray-700 focus:outline-none focus:border-violet-400"/>
-              <span className="text-[12px] text-gray-400 font-medium">s/d</span>
+                className="text-[12px] bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-violet-400"/>
+              <span className="text-[12px] text-slate-400 font-medium">s/d</span>
               <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)}
-                className="text-[12px] bg-white border border-gray-200 rounded-lg px-2 py-1 text-gray-700 focus:outline-none focus:border-violet-400"/>
+                className="text-[12px] bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-violet-400"/>
               {(dateFrom||dateTo)&&(
                 <button onClick={()=>{setDateFrom('');setDateTo('')}}
                   className="text-[12px] text-red-400 hover:text-red-600 font-semibold ml-1">✕</button>
@@ -492,7 +492,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
           {filteredByDate(filtered).length===0?(
             <div className="text-center py-12 rounded-xl bg-white border border-slate-200">
               <Package size={32}className="mx-auto text-violet-200 mb-3"/>
-              <p className="text-[13px] font-medium text-gray-400">Belum ada record packing</p>
+              <p className="text-[13px] font-medium text-slate-400">Belum ada record packing</p>
             </div>
           ):filteredByDate(filtered).map(p=>(
             <PackingCard key={p.id} p={p} canManage={canManage} canDelete={canDelete}
@@ -516,7 +516,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
                   )}
                 </th>
                 {([['KODE','left'],['TANGGAL','left'],['BATCH','center'],['GRAMASI','center'],['PCS TOTAL','left'],['DIPACK','left'],['TOTAL GRAM','left'],['ADMIN','left'],['OPERATOR','left'],['FOTO','left'],['SHIELDTAG','center'],['STATUS','center'],['AKSI','left']] as const).map(([h,al])=>(
-                  <th key={h}className={cn('px-4 py-3 text-[10px] font-bold text-gray-400 tracking-widest uppercase whitespace-nowrap align-middle',al==='center'?'text-center':'text-left')}>{h}</th>
+                  <th key={h}className={cn('px-4 py-3 text-[10px] font-bold text-slate-400 tracking-widest uppercase whitespace-nowrap align-middle',al==='center'?'text-center':'text-left')}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -524,7 +524,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
               {filtered.length===0?(
                 <tr><td colSpan={13}className="text-center py-16">
                   <Package size={28}className="mx-auto text-violet-200 mb-3"/>
-                  <p className="text-[13px] font-medium text-gray-400">Belum ada record packing</p>
+                  <p className="text-[13px] font-medium text-slate-400">Belum ada record packing</p>
                 </td></tr>
               ):filteredByDate(filtered).map((p,idx)=>{
                 const fotos=Array.isArray(p.fotos)?p.fotos:[]
@@ -539,34 +539,34 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
                         onChange={()=>toggleSelect(p.id)}/>
                     </td>
                     <td className="px-4 py-3 font-mono text-[12px] font-bold text-violet-600 whitespace-nowrap align-middle">{p.kode}</td>
-                    <td className="px-4 py-3 text-[12px] text-gray-600 whitespace-nowrap align-middle">{formatDate(p.tanggal)}</td>
+                    <td className="px-4 py-3 text-[12px] text-slate-600 whitespace-nowrap align-middle">{formatDate(p.tanggal)}</td>
                     <td className="px-4 py-3 align-middle text-center"><span className="inline-block text-[12px] font-bold px-2 py-0.5 rounded-full text-violet-700 whitespace-nowrap bg-violet-50">{p.batch_kode}</span></td>
                     <td className="px-4 py-3 align-middle text-center"><span className="inline-block text-[12px] font-bold px-2 py-0.5 rounded-full text-amber-700 whitespace-nowrap bg-amber-50">{p.gramasi} gr</span></td>
-                    <td className="px-4 py-3 text-[13px] font-semibold text-gray-600 whitespace-nowrap align-middle">{pcsGood}</td>
-                    <td className="px-4 py-3 text-[13px] font-bold text-gray-800 whitespace-nowrap align-middle">{p.pcs_dipack} pcs</td>
-                    <td className="px-4 py-3 text-[13px] font-semibold text-gray-700 whitespace-nowrap align-middle">{Number(p.total_gram_aktual).toFixed(3)} gr</td>
-                    <td className="px-4 py-3 text-[13px] text-gray-600 whitespace-nowrap align-middle">{p.admin_input||'—'}</td>
-                    <td className="px-4 py-3 text-[13px] text-gray-600 whitespace-nowrap align-middle">{p.pic_packing||p.pic||'—'}</td>
+                    <td className="px-4 py-3 text-[13px] font-semibold text-slate-600 whitespace-nowrap align-middle">{pcsGood}</td>
+                    <td className="px-4 py-3 text-[13px] font-bold text-slate-800 whitespace-nowrap align-middle">{p.pcs_dipack} pcs</td>
+                    <td className="px-4 py-3 text-[13px] font-semibold text-slate-700 whitespace-nowrap align-middle">{Number(p.total_gram_aktual).toFixed(3)} gr</td>
+                    <td className="px-4 py-3 text-[13px] text-slate-600 whitespace-nowrap align-middle">{p.admin_input||'—'}</td>
+                    <td className="px-4 py-3 text-[13px] text-slate-600 whitespace-nowrap align-middle">{p.pic_packing||p.pic||'—'}</td>
                     <td className="px-4 py-3 align-middle">
                       {fotos.length>0?(
                         <div className="flex gap-1">
                           {fotos.slice(0,3).map((u:string,i:number)=>(
-                            <img key={i} src={u} onClick={()=>setLightbox(u)} className="w-8 h-8 rounded-lg object-cover cursor-pointer border border-gray-200 hover:scale-110 transition-transform"/>
+                            <img key={i} src={u} onClick={()=>setLightbox(u)} className="w-8 h-8 rounded-lg object-cover cursor-pointer border border-slate-200 hover:scale-110 transition-transform"/>
                           ))}
-                          {fotos.length>3&&<span className="text-[12px] text-gray-400 self-center">+{fotos.length-3}</span>}
+                          {fotos.length>3&&<span className="text-[12px] text-slate-400 self-center">+{fotos.length-3}</span>}
                         </div>
-                      ):<span className="text-[12px] text-gray-300">—</span>}
+                      ):<span className="text-[12px] text-slate-300">—</span>}
                     </td>
                     <td className="px-4 py-3 align-middle text-center">
                       <button type="button"
                         onClick={()=>{ const list=shieldtagByPacking[p.id]??[]; if(list.length>0) setStModal({kode:p.kode,list}) }}
                         disabled={stCount===0}
-                        className={cn('inline-block text-[12px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap transition-all',stCount>0?'text-emerald-700 bg-emerald-50 hover:ring-2 hover:ring-emerald-300 cursor-pointer':'text-gray-400 bg-slate-100 cursor-default')}>
+                        className={cn('inline-block text-[12px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap transition-all',stCount>0?'text-emerald-700 bg-emerald-50 hover:ring-2 hover:ring-emerald-300 cursor-pointer':'text-slate-400 bg-slate-100 cursor-default')}>
                         🏷 {stCount}/{p.pcs_dipack}
                       </button>
                     </td>
                     <td className="px-4 py-3 align-middle text-center">
-                      <span className={cn('inline-block text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap',isPrinted?'text-emerald-700 bg-emerald-50':'text-gray-500 bg-slate-100')}>
+                      <span className={cn('inline-block text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap',isPrinted?'text-emerald-700 bg-emerald-50':'text-slate-500 bg-slate-100')}>
                         {isPrinted?'✓ Cetak':'Belum Cetak'}
                       </span>
                     </td>

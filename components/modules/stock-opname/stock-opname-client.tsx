@@ -25,10 +25,10 @@ const STATUS_CFG: Record<string, { bg: string; text: string; label: string }> = 
   selesai:          { bg: 'rgba(139,92,246,0.1)', text: '#7C3AED', label: 'Selesai' },
 }
 
-const inp = "w-full px-4 py-3 text-[13px] rounded-xl border border-gray-200/70 bg-white/80 focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all"
+const inp = "w-full px-4 py-3 text-[13px] rounded-xl border border-slate-200/70 bg-white/80 focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all"
 const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div className="flex flex-col gap-1.5">
-    <label className="text-[11px] font-bold text-gray-400 tracking-widest uppercase">{label}</label>
+    <label className="text-[11px] font-bold text-slate-400 tracking-widest uppercase">{label}</label>
     {children}
   </div>
 )
@@ -227,7 +227,7 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
                         min={0}
                         value={r.pcs_fisik}
                         onChange={e => setFisik(r.gramasi, parseInt(e.target.value))}
-                        className="w-24 text-right px-3 py-1.5 text-[13px] rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40"
+                        className="w-24 text-right px-3 py-1.5 text-[13px] rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40"
                       />
                     </td>
                     <td className={cn('px-4 py-2.5 text-right font-semibold text-[13px]',

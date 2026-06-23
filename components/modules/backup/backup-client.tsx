@@ -104,7 +104,7 @@ export default function BackupClient({ userRole }: { userRole: string }) {
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-[18px] font-black text-slate-800">Backup Data</h1>
+          <h1 className="text-[18px] font-bold text-slate-800">Backup Data</h1>
           <p className="text-[12px] text-slate-400 mt-0.5">Unduh data sebagai CSV — kompatibel dengan Excel</p>
         </div>
         <button onClick={downloadAll} disabled={isPending}

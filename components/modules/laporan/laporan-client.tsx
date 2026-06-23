@@ -240,7 +240,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
       {/* P&L Summary Card */}
       <div className={`border-0 rounded-xl p-6 text-white ${profitPositif ? 'bg-gradient-to-br from-green-600 to-green-700' : 'bg-gradient-to-br from-red-600 to-red-700'}`}>
         <p className="text-[12px] font-semibold opacity-80 mb-1">Laba Bersih — {periodLabel}</p>
-        <p className="text-4xl font-black">{formatRupiah(labaRugi.labaBersih)}</p>
+        <p className="text-4xl font-bold">{formatRupiah(labaRugi.labaBersih)}</p>
         <p className="text-[13px] opacity-70 mt-1">{profitPositif ? '▲ Profit' : '▼ Rugi'}</p>
       </div>
 
@@ -262,7 +262,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
           <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-emerald-50">
             <ShoppingCart size={15} className="text-green-600" />
           </div>
-          <p className="text-[18px] font-black text-slate-800">{formatRupiah(labaRugi.omzet)}</p>
+          <p className="text-[18px] font-bold text-slate-800">{formatRupiah(labaRugi.omzet)}</p>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Omzet</p>
           <p className="text-[12px] text-slate-400 mt-0.5">{labaRugi.penjualanCount} transaksi · tap detail</p>
         </button>
@@ -272,7 +272,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
           <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-amber-50">
             <Package size={15} className="text-amber-500" />
           </div>
-          <p className="text-[18px] font-black text-slate-800">{formatRupiah(labaRugi.hpp)}</p>
+          <p className="text-[18px] font-bold text-slate-800">{formatRupiah(labaRugi.hpp)}</p>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">HPP</p>
           <p className="text-[12px] text-slate-400 mt-0.5">
             Laba Kotor: <span className={labaRugi.labaKotor >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
@@ -287,7 +287,7 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
           <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 bg-red-50">
             <TrendingDown size={15} className="text-red-500" />
           </div>
-          <p className="text-[18px] font-black text-slate-800">{formatRupiah(labaRugi.pengeluaran)}</p>
+          <p className="text-[18px] font-bold text-slate-800">{formatRupiah(labaRugi.pengeluaran)}</p>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Pengeluaran</p>
           <p className="text-[12px] text-slate-400 mt-0.5">{pengeluaranList.length} item · tap detail</p>
         </button>
@@ -368,9 +368,9 @@ function LabaRugiTab({ labaRugi, channelBreakdown, penjualanList, pengeluaranLis
               <tfoot>
                 <tr className="bg-slate-50 border-t-2 border-slate-200">
                   <td className="px-4 py-3 text-[12px] font-bold text-slate-600" colSpan={5}>Total</td>
-                  <td className="px-4 py-3 text-[12px] font-black text-green-700 whitespace-nowrap">{formatRupiah(labaRugi.omzet)}</td>
+                  <td className="px-4 py-3 text-[12px] font-bold text-green-700 whitespace-nowrap">{formatRupiah(labaRugi.omzet)}</td>
                   <td className="px-4 py-3 text-[12px] font-bold text-amber-700 whitespace-nowrap">{formatRupiah(labaRugi.hpp)}</td>
-                  <td className={`px-4 py-3 text-[12px] font-black whitespace-nowrap ${labaRugi.labaKotor >= 0 ? 'text-green-700' : 'text-red-600'}`}>{formatRupiah(labaRugi.labaKotor)}</td>
+                  <td className={`px-4 py-3 text-[12px] font-bold whitespace-nowrap ${labaRugi.labaKotor >= 0 ? 'text-green-700' : 'text-red-600'}`}>{formatRupiah(labaRugi.labaKotor)}</td>
                   <td className="px-4 py-3 text-[12px] font-bold text-violet-700">{labaRugi.omzet > 0 ? (labaRugi.labaKotor / labaRugi.omzet * 100).toFixed(1) : '0.0'}%</td>
                 </tr>
               </tfoot>
@@ -432,7 +432,7 @@ function RingkasanTab({ summary }: { summary: Props['summary'] }) {
             <c.icon size={16} style={{ color: c.color }} />
           </div>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{c.label}</p>
-          <p className="text-[18px] font-black text-slate-800 mt-0.5">{c.value}</p>
+          <p className="text-[18px] font-bold text-slate-800 mt-0.5">{c.value}</p>
         </div>
       ))}
     </div>
@@ -502,7 +502,7 @@ function PenjualanTab({
             <tbody>
               {displayRows.map((r, i) => (
                 <tr key={r.gramasi} className={`hover:bg-violet-50/10 ${i > 0 ? 'border-t border-slate-200' : ''}`}>
-                  <td className="px-5 py-3.5 font-black text-slate-800">{r.gramasi}gr</td>
+                  <td className="px-5 py-3.5 font-bold text-slate-800">{r.gramasi}gr</td>
                   <td className="px-5 py-3.5 font-semibold text-slate-700">{r.pcs} pcs</td>
                   {showHpp && <>
                     <td className="px-5 py-3.5 font-semibold text-green-600 whitespace-nowrap">{formatRupiah(r.omzet)}</td>
@@ -523,10 +523,10 @@ function PenjualanTab({
               <tfoot>
                 <tr className="border-t-2 border-violet-500/20 bg-violet-50/20">
                   <td className="px-5 py-3.5 font-bold text-slate-800" colSpan={2}>Total</td>
-                  <td className="px-5 py-3.5 font-black text-green-700 whitespace-nowrap">{formatRupiah(totalOmzet)}</td>
+                  <td className="px-5 py-3.5 font-bold text-green-700 whitespace-nowrap">{formatRupiah(totalOmzet)}</td>
                   {view === 'periode' && <>
                     <td className="px-5 py-3.5 font-bold text-amber-700 whitespace-nowrap">{formatRupiah(totalHpp)}</td>
-                    <td className={`px-5 py-3.5 font-black whitespace-nowrap ${totalProfit >= 0 ? 'text-green-700' : 'text-red-600'}`}>{formatRupiah(totalProfit)}</td>
+                    <td className={`px-5 py-3.5 font-bold whitespace-nowrap ${totalProfit >= 0 ? 'text-green-700' : 'text-red-600'}`}>{formatRupiah(totalProfit)}</td>
                     <td className="px-5 py-3.5 font-bold text-violet-700">{totalMargin.toFixed(1)}%</td>
                   </>}
                 </tr>
@@ -653,7 +653,7 @@ function NeracaTab({ neraca }: { neraca: Props['neraca'] }) {
             : <AlertTriangle size={22} className="text-red-500" />}
         </div>
         <div>
-          <p className={`text-[14px] font-black ${selisihOk ? 'text-green-700' : 'text-red-700'}`}>
+          <p className={`text-[14px] font-bold ${selisihOk ? 'text-green-700' : 'text-red-700'}`}>
             {selisihOk ? 'Neraca Emas Seimbang ✅' : 'Ada Selisih Emas — Perlu Dicek! ⚠️'}
           </p>
           <p className={`text-[13px] font-semibold mt-0.5 ${selisihOk ? 'text-green-600' : 'text-red-600'}`}>
@@ -677,7 +677,7 @@ function NeracaTab({ neraca }: { neraca: Props['neraca'] }) {
         {/* Masuk */}
         <div className="rounded-xl p-4 mb-4 bg-violet-50/40 border border-violet-500/[0.12]">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Masuk</p>
-          <p className="text-[20px] font-black text-violet-700">{fmt(neraca.masukBatch)}</p>
+          <p className="text-[20px] font-bold text-violet-700">{fmt(neraca.masukBatch)}</p>
           <p className="text-[12px] text-slate-400 mt-0.5">dari semua batch bahan baku</p>
         </div>
 
@@ -693,7 +693,7 @@ function NeracaTab({ neraca }: { neraca: Props['neraca'] }) {
                 <p className="text-[13px] font-bold" style={{ color: r.color }}>{r.label}</p>
                 <p className="text-[10px] text-slate-400">{r.desc}</p>
               </div>
-              <p className="text-[13px] font-black text-slate-700 flex-shrink-0 ml-3">{fmt(r.value)}</p>
+              <p className="text-[13px] font-bold text-slate-700 flex-shrink-0 ml-3">{fmt(r.value)}</p>
             </a>
           ))}
         </div>
@@ -704,11 +704,11 @@ function NeracaTab({ neraca }: { neraca: Props['neraca'] }) {
             <p className="text-[12px] font-bold text-slate-500">Total Tertracking</p>
             <p className="text-[10px] text-slate-400">stok aktif + transit + WIP + terjual + reject belum dilebur</p>
           </div>
-          <p className="text-[14px] font-black text-slate-800">{fmt(neraca.totalTertracking)}</p>
+          <p className="text-[14px] font-bold text-slate-800">{fmt(neraca.totalTertracking)}</p>
         </div>
         <div className="mt-2 flex items-center justify-between">
           <p className="text-[12px] font-bold text-slate-500">Selisih (Masuk − Tertracking)</p>
-          <p className={`text-[14px] font-black ${selisihOk ? 'text-green-600' : 'text-red-600'}`}>
+          <p className={`text-[14px] font-bold ${selisihOk ? 'text-green-600' : 'text-red-600'}`}>
             {neraca.selisihGram >= 0 ? '+' : ''}{neraca.selisihGram.toFixed(3)} gr
           </p>
         </div>

@@ -73,7 +73,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-[18px] font-black text-slate-800">Scrap Inventory</h1>
+          <h1 className="text-[18px] font-bold text-slate-800">Scrap Inventory</h1>
           <p className="text-[12px] text-slate-400 mt-0.5">Sisa lebihan proses produksi</p>
         </div>
         {canManage && (
@@ -93,7 +93,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
         ].map(c => (
           <div key={c.label} className="rounded-xl px-4 py-3 bg-white border border-slate-200">
             <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">{c.label}</p>
-            <p className="text-[16px] font-extrabold mt-0.5" style={{ color: c.color }}>{c.val}</p>
+            <p className="text-[16px] font-bold mt-0.5" style={{ color: c.color }}>{c.val}</p>
           </div>
         ))}
       </div>
@@ -102,7 +102,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
       <div className="flex gap-2 flex-wrap items-center">
         {['semua','tersedia','terpakai','dilebur'].map(s => (
           <button key={s} onClick={() => setFilterStatus(s)}
-            className={`px-3 py-1.5 rounded-full text-[12px] font-semibold capitalize transition-all ${filterStatus === s ? 'text-white' : 'bg-white text-gray-500 border border-gray-300/50'}`}
+            className={`px-3 py-1.5 rounded-full text-[12px] font-semibold capitalize transition-all ${filterStatus === s ? 'text-white' : 'bg-white text-slate-500 border border-slate-300/50'}`}
             style={filterStatus === s
               ? { background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }
               : undefined}>
