@@ -130,7 +130,8 @@ function PrintView({p}:{p:any}){
               ['Gramasi', `${p.gramasi} gr`],
               ['PCS Dipack', `${p.pcs_dipack} PCS`],
               ['Total Gram Aktual', `${Number(p.total_gram_aktual).toFixed(3)} gr`],
-              ['PIC / Operator', p.pic_packing||'—'],
+              ['Admin yang Input', p.admin_input||'—'],
+              ['Operator Packing', p.pic_packing||p.pic||'—'],
               ['Catatan', p.catatan||'—'],
             ].map(([k,v])=>(
               <tr key={k}>
@@ -195,9 +196,10 @@ function CreateModal({items,onClose,onSubmit,isPending,error}:{
               <input name="total_gram_aktual" type="number" step="0.001" placeholder="0.000" className={inp} required/>
             </F>
           </div>
+          <F label="Tanggal" req><input name="tanggal" type="date" defaultValue={today} className={inp} required/></F>
           <div className="grid grid-cols-2 gap-3">
-            <F label="Tanggal" req><input name="tanggal" type="date" defaultValue={today} className={inp} required/></F>
-            <F label="PIC / Operator"><input name="pic" placeholder="Nama operator" className={inp}/></F>
+            <F label="Admin yang Input"><input name="admin_input" placeholder="Nama admin" className={inp}/></F>
+            <F label="Operator Packing"><input name="operator_packing" placeholder="Nama operator" className={inp}/></F>
           </div>
           <F label="Catatan"><input name="catatan" placeholder="Keterangan tambahan..." className={inp}/></F>
           <F label="Foto Packing (max 10)">
@@ -249,9 +251,10 @@ function EditModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;
             <F label="PCS Dipack" req><input name="pcs_dipack" type="number" min="1" defaultValue={p.pcs_dipack} className={inp} required/></F>
             <F label="Total Gram Aktual" req><input name="total_gram_aktual" type="number" step="0.001" defaultValue={p.total_gram_aktual} className={inp} required/></F>
           </div>
+          <F label="Tanggal" req><input name="tanggal" type="date" defaultValue={p.tanggal} className={inp} required/></F>
           <div className="grid grid-cols-2 gap-3">
-            <F label="Tanggal" req><input name="tanggal" type="date" defaultValue={p.tanggal} className={inp} required/></F>
-            <F label="PIC / Operator"><input name="pic" defaultValue={p.pic_packing??''} className={inp}/></F>
+            <F label="Admin yang Input"><input name="admin_input" defaultValue={p.admin_input??''} className={inp}/></F>
+            <F label="Operator Packing"><input name="operator_packing" defaultValue={p.pic_packing??p.pic??''} className={inp}/></F>
           </div>
           <F label="Catatan"><input name="catatan" defaultValue={p.catatan??''} className={inp}/></F>
           <F label="Foto Packing (max 10)">
@@ -309,7 +312,7 @@ function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint,onShieldtagC
         </div>
       </div>
       <div className="flex items-center gap-3 pt-1 border-t border-gray-100 flex-wrap">
-        <span className="text-[12px] text-gray-500"><span className="font-semibold">PIC:</span> {p.pic_packing||'—'}</span>
+        <span className="text-[12px] text-gray-500"><span className="font-semibold">Operator:</span> {p.pic_packing||p.pic||'—'}{p.admin_input?` · Admin: ${p.admin_input}`:''}</span>
         {fotos.length>0&&(
           <div className="flex gap-1.5">
             {fotos.slice(0,4).map((u:string,i:number)=>(
@@ -348,7 +351,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
 
   const filtered=packingList.filter(p=>{
     const q=search.toLowerCase()
-    return!q||p.kode?.toLowerCase().includes(q)||p.batch_kode?.toLowerCase().includes(q)||p.gramasi?.includes(q)||p.pic_packing?.toLowerCase().includes(q)
+    return!q||p.kode?.toLowerCase().includes(q)||p.batch_kode?.toLowerCase().includes(q)||p.gramasi?.includes(q)||p.pic_packing?.toLowerCase().includes(q)||p.admin_input?.toLowerCase().includes(q)
   })
 
   // Date filter
@@ -440,7 +443,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
         {/* Search */}
         <div className="relative">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cari kode PKG, batch, PIC..."
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cari kode PKG, batch, operator, admin..."
             className="w-full pl-9 pr-3 h-8 text-[12px] rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
         </div>
 
@@ -509,7 +512,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
                       onChange={()=>toggleSelectAll(filteredByDate(filtered))}/>
                   )}
                 </th>
-                {([['KODE','left'],['TANGGAL','left'],['BATCH','center'],['GRAMASI','center'],['PCS TOTAL','left'],['DIPACK','left'],['TOTAL GRAM','left'],['PIC','left'],['FOTO','left'],['SHIELDTAG','center'],['STATUS','center'],['AKSI','left']] as const).map(([h,al])=>(
+                {([['KODE','left'],['TANGGAL','left'],['BATCH','center'],['GRAMASI','center'],['PCS TOTAL','left'],['DIPACK','left'],['TOTAL GRAM','left'],['ADMIN','left'],['OPERATOR','left'],['FOTO','left'],['SHIELDTAG','center'],['STATUS','center'],['AKSI','left']] as const).map(([h,al])=>(
                   <th key={h}className={cn('px-4 py-3 text-[10px] font-bold text-gray-400 tracking-widest uppercase whitespace-nowrap align-middle',al==='center'?'text-center':'text-left')}>{h}</th>
                 ))}
               </tr>
@@ -539,7 +542,8 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
                     <td className="px-4 py-3 text-[13px] font-semibold text-gray-600 whitespace-nowrap align-middle">{pcsGood}</td>
                     <td className="px-4 py-3 text-[13px] font-bold text-gray-800 whitespace-nowrap align-middle">{p.pcs_dipack} pcs</td>
                     <td className="px-4 py-3 text-[13px] font-semibold text-gray-700 whitespace-nowrap align-middle">{Number(p.total_gram_aktual).toFixed(3)} gr</td>
-                    <td className="px-4 py-3 text-[13px] text-gray-600 whitespace-nowrap align-middle">{p.pic_packing||'—'}</td>
+                    <td className="px-4 py-3 text-[13px] text-gray-600 whitespace-nowrap align-middle">{p.admin_input||'—'}</td>
+                    <td className="px-4 py-3 text-[13px] text-gray-600 whitespace-nowrap align-middle">{p.pic_packing||p.pic||'—'}</td>
                     <td className="px-4 py-3 align-middle">
                       {fotos.length>0?(
                         <div className="flex gap-1">

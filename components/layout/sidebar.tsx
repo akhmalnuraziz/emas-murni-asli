@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Package, Hammer, Tag, Warehouse,
   ArrowLeftRight, ShoppingCart, FileText,
   ScrollText, Settings, LogOut, X,
-  TrendingUp, Star, Store, ClipboardList, RotateCcw, SearchCode, Truck, Wallet, Recycle, HardDrive, MapPin,
+  TrendingUp, Star, Store, ClipboardList, RotateCcw, Truck, Wallet, Recycle, HardDrive, MapPin,
   Users, RefreshCcw,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -22,7 +22,6 @@ const NAV_GROUPS = [
       { href: '/produksi',            label: 'Produksi',             icon: Hammer,          module: 'produksi'           },
       { href: '/packing-log',         label: 'Packing Log',          icon: Package,         module: 'packing-log'        },
       { href: '/shieldtag',           label: 'Shieldtag',            icon: Tag,             module: 'shieldtag'          },
-      { href: '/shieldtag-explorer',  label: 'Shieldtag Explorer',   icon: SearchCode,      module: 'shieldtag-explorer' },
     ],
   },
   {

@@ -23,6 +23,14 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
   const pathname = request.nextUrl.pathname
+
+  // Legacy redirect: /shieldtag-explorer merged into /shieldtag
+  if (pathname === '/shieldtag-explorer' || pathname.startsWith('/shieldtag-explorer/')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/shieldtag'
+    return NextResponse.redirect(url)
+  }
+
   const isAuthPage = pathname.startsWith('/login')
   const isPublicPath = pathname === '/' || isAuthPage
 

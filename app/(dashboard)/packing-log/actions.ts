@@ -42,7 +42,8 @@ export async function createPacking(formData: FormData) {
   const pcsDispack = parseInt(formData.get('pcs_dipack') as string)
   const totalGramAktual = parseFloat(formData.get('total_gram_aktual') as string)
   const tanggal = formData.get('tanggal') as string
-  const pic = formData.get('pic') as string
+  const operatorPacking = (formData.get('operator_packing') as string) || (formData.get('pic') as string) || ''
+  const adminInput = (formData.get('admin_input') as string) || ''
   const catatan = formData.get('catatan') as string
 
   if (!produksiItemId) return { error: 'Item produksi wajib dipilih' }
@@ -86,8 +87,9 @@ export async function createPacking(formData: FormData) {
     total_gram_aktual: totalGramAktual,
     selisih_gram: selisih,
     tanggal,
-    pic: pic || profile?.name || null,
-    pic_packing: pic || profile?.name || null,
+    pic: operatorPacking || profile?.name || null,
+    pic_packing: operatorPacking || profile?.name || null,
+    admin_input: adminInput || profile?.name || null,
     catatan: catatan || null,
     status_surat: 'belum_cetak',
     shieldtag_count: 0,
@@ -134,7 +136,8 @@ export async function editPacking(packingId: number, packingKode: string, formDa
   const pcsDispack = parseInt(formData.get('pcs_dipack') as string)
   const totalGramAktual = parseFloat(formData.get('total_gram_aktual') as string)
   const tanggal = formData.get('tanggal') as string
-  const pic = formData.get('pic') as string
+  const operatorPacking = (formData.get('operator_packing') as string) || (formData.get('pic') as string) || ''
+  const adminInput = (formData.get('admin_input') as string) || ''
   const catatan = formData.get('catatan') as string
 
   const gramasi = parseFloat(existing.gramasi)
@@ -145,7 +148,8 @@ export async function editPacking(packingId: number, packingKode: string, formDa
     pcs: pcsDispack, pcs_dipack: pcsDispack,
     total_gram: totalGramAktual, total_gram_aktual: totalGramAktual,
     selisih_gram: selisih, tanggal,
-    pic: pic || null, pic_packing: pic || null,
+    pic: operatorPacking || null, pic_packing: operatorPacking || null,
+    admin_input: adminInput || null,
     catatan: catatan || null,
     fotos: allFotosEdit,
   }).eq('id', packingId)
