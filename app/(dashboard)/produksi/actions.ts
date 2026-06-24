@@ -125,15 +125,22 @@ export async function createProduksi(formData: FormData) {
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
 
   const batchKode = formData.get('batch_kode') as string
-  const gramasi = formData.get('gramasi') as string
-  const pcs = parseInt(formData.get('pcs') as string)
   const beratAwal = parseFloat(formData.get('berat_awal') as string)
   const statusAwal = formData.get('status_awal') as string
   const tanggalProduksi = formData.get('tanggal_produksi') as string
   const peleburanId = parseInt(formData.get('peleburan_id') as string) || null
 
+  // Multi-gramasi: baca gramasi_list JSON, fallback ke field gramasi/pcs tunggal
+  type GramasiRow = { gramasi: string; pcs: number }
+  const gramasiListRaw = formData.get('gramasi_list') as string
+  const gramasiList: GramasiRow[] = gramasiListRaw
+    ? JSON.parse(gramasiListRaw)
+    : [{ gramasi: formData.get('gramasi') as string, pcs: parseInt(formData.get('pcs') as string) || 0 }]
+
   if (!batchKode) return { error: 'Batch wajib dipilih' }
-  if (!gramasi) return { error: 'Gramasi wajib dipilih' }
+  if (!gramasiList.length || gramasiList.some(r => !r.gramasi)) return { error: 'Gramasi wajib dipilih' }
+  const gramasisUsed = gramasiList.map(r => r.gramasi)
+  if (new Set(gramasisUsed).size !== gramasisUsed.length) return { error: 'Tidak boleh ada gramasi yang sama dalam satu sesi.' }
   if (!beratAwal || beratAwal <= 0) return { error: 'Total berat (serah gram) wajib diisi' }
   if (!statusAwal) return { error: 'Status awal wajib dipilih' }
   if (!tanggalProduksi) return { error: 'Tanggal produksi wajib diisi' }
@@ -160,83 +167,108 @@ export async function createProduksi(formData: FormData) {
     return { error: `Berat melebihi bahan siap cetak (${bahanSiapCetak.toFixed(2)} gr tersedia). Lebur bahan terlebih dahulu.` }
   }
 
-  const kode = await generateProduksiCode(supabase)
   const sisaSerbuk = statusAwal === 'Pas Berat' ? parseFloat(formData.get('sisa_serbuk') as string || '0') : 0
-
   const targetSelesai = (formData.get('target_selesai') as string) || null
-
   const jamMulai = (formData.get('jam_mulai') as string) || null
-  const pcsVal = pcs && pcs > 0 ? pcs : null   // PCS opsional saat create
-  const namaItemBaru = (formData.get('nama_item') as string) || `LM REI ${gramasi}GR`
-
-  const { data: produksi, error } = await supabase.from('produksi_item').insert({
-    kode, batch_kode: batchKode, gramasi, pcs: pcsVal, pcs_awal: pcsVal, pcs_good: pcsVal, pcs_reject: 0,
-    nama_item: namaItemBaru,
-    berat_awal: beratAwal, serah_gram: beratAwal, total_gram: beratAwal, current_status: statusAwal,
-    tanggal_produksi: tanggalProduksi, tanggal: tanggalProduksi,
-    tanggal_mulai: tanggalProduksi,
-    jam_mulai_cutting: jamMulai,
-    jam_mulai_produksi: jamMulai,
-    target_selesai: targetSelesai,
-    peleburan_id: peleburanId,
-    peleburan_kode: plb.kode,
-    tim_id: formData.get('tim_id') ? Number(formData.get('tim_id')) : null,
-    tim_nama: (formData.get('tim_nama') as string) || null,
-    tim_anggota_aktif: (formData.get('tim_anggota_aktif') as string) || null,
-    admin_input: (formData.get('admin_input') as string) || null,
-    memo: formData.get('memo') as string || null,
-    operator: formData.get('operator') as string || profile?.name || null,
-    catatan: formData.get('catatan') as string || null,
-    created_by: user.id,
-  }).select().single()
-
-  if (error) return { error: error.message }
+  const namaItemBase = (formData.get('nama_item') as string) || ''
+  const catatan = formData.get('catatan') as string || null
+  const operator = formData.get('operator') as string || profile?.name || null
 
   const fotosB64Raw = formData.get('fotos_b64') as string
   const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
-  const fotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, kode) : []
 
-  // Simpan foto serah ke item agar tampil di kartu alur serah-terima
-  if (fotoUrls.length > 0) {
-    await supabase.from('produksi_item').update({ foto_serahkan_cutting: fotoUrls }).eq('id', produksi.id)
+  // Generate semua kode sebelum insert
+  const allKodes: string[] = []
+  for (let i = 0; i < gramasiList.length; i++) allKodes.push(await generateProduksiCode(supabase))
+
+  // Upload foto sekali, pakai bersama oleh semua item
+  const fotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, allKodes[0]) : []
+
+  // Distribusi berat proporsional: berat_i = beratAwal × (gramasi_i × pcs_i) / totalWeight
+  const totalWeight = gramasiList.reduce((s, r) => s + parseFloat(r.gramasi) * (r.pcs || 1), 0)
+  const berats: number[] = []
+  let allocated = 0
+  for (let i = 0; i < gramasiList.length - 1; i++) {
+    const b = parseFloat((beratAwal * parseFloat(gramasiList[i].gramasi) * (gramasiList[i].pcs || 1) / totalWeight).toFixed(4))
+    berats.push(b); allocated += b
+  }
+  berats.push(parseFloat((beratAwal - allocated).toFixed(4)))
+
+  const createdItems: any[] = []
+  for (let i = 0; i < gramasiList.length; i++) {
+    const row = gramasiList[i]
+    const kode = allKodes[i]
+    const beratItem = berats[i]
+    const pcsVal = row.pcs > 0 ? row.pcs : null
+    const namaItem = namaItemBase
+      ? (gramasiList.length > 1 ? `${namaItemBase} ${row.gramasi}GR` : namaItemBase)
+      : `LM REI ${row.gramasi}GR`
+
+    const { data: produksi, error } = await supabase.from('produksi_item').insert({
+      kode, batch_kode: batchKode, gramasi: row.gramasi, pcs: pcsVal, pcs_awal: pcsVal, pcs_good: pcsVal, pcs_reject: 0,
+      nama_item: namaItem,
+      berat_awal: beratItem, serah_gram: beratItem, total_gram: beratItem, current_status: statusAwal,
+      tanggal_produksi: tanggalProduksi, tanggal: tanggalProduksi,
+      tanggal_mulai: tanggalProduksi,
+      jam_mulai_cutting: jamMulai,
+      jam_mulai_produksi: jamMulai,
+      target_selesai: targetSelesai,
+      peleburan_id: peleburanId,
+      peleburan_kode: plb.kode,
+      tim_id: formData.get('tim_id') ? Number(formData.get('tim_id')) : null,
+      tim_nama: (formData.get('tim_nama') as string) || null,
+      tim_anggota_aktif: (formData.get('tim_anggota_aktif') as string) || null,
+      admin_input: (formData.get('admin_input') as string) || null,
+      memo: formData.get('memo') as string || null,
+      operator, catatan, created_by: user.id,
+    }).select().single()
+
+    if (error) return { error: error.message }
+    createdItems.push(produksi)
+
+    if (fotoUrls.length > 0) {
+      await supabase.from('produksi_item').update({ foto_serahkan_cutting: fotoUrls }).eq('id', produksi.id)
+    }
+
+    await supabase.from('produksi_event').insert({
+      produksi_item_id: produksi.id, tanggal: tanggalProduksi,
+      status: statusAwal, total_gram: beratItem, berat_sebelumnya: beratItem,
+      sisa_serbuk: sisaSerbuk, losses: 0, catatan,
+      user_name: profile?.name || null, fotos: fotoUrls,
+    })
   }
 
-  await supabase.from('produksi_event').insert({
-    produksi_item_id: produksi.id, tanggal: tanggalProduksi,
-    status: statusAwal, total_gram: beratAwal, berat_sebelumnya: beratAwal,
-    sisa_serbuk: sisaSerbuk, losses: 0,
-    catatan: formData.get('catatan') as string || null,
-    user_name: profile?.name || null, fotos: fotoUrls,
-  })
-
-  // Kurangi bahan siap cetak (bahan yang dipakai untuk cetak ini)
+  // Kurangi bahan siap cetak & tambah terpakai peleburan — sekali untuk total beratAwal
   await supabase.from('batch').update({
     bahan_siap_cetak: Math.max(0, bahanSiapCetak - beratAwal)
   }).eq('kode', batchKode)
 
-  // Tambah jatah terpakai pada peleburan asal
   await supabase.from('peleburan').update({
     terpakai_cetak: Number(plb.terpakai_cetak ?? 0) + beratAwal
   }).eq('id', peleburanId)
 
   await updateBatchSisaSeharusnya(supabase, batchKode)
-  await supabase.from('audit_log').insert({
-    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
-    action: 'CREATE', module: 'PRODUKSI', record_key: kode, record_id: String(produksi.id), after_data: produksi,
-  })
+
+  for (const item of createdItems) {
+    await supabase.from('audit_log').insert({
+      user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+      action: 'CREATE', module: 'PRODUKSI', record_key: item.kode, record_id: String(item.id), after_data: item,
+    })
+  }
 
   revalidatePath('/produksi')
   revalidatePath('/bahan-baku')
 
+  const gramasiDesc = gramasiList.map(r => `${r.gramasi}gr`).join(', ')
   await createNotif({
-    judul: `Item Produksi Baru — ${kode}`,
-    pesan: `${formData.get('gramasi') ?? ''}gr dari batch ${batchKode} · ${beratAwal}gr`,
+    judul: `Item Produksi Baru — ${allKodes[0]}${gramasiList.length > 1 ? ` (+${gramasiList.length - 1} lagi)` : ''}`,
+    pesan: `${gramasiDesc} dari batch ${batchKode} · ${beratAwal}gr`,
     tipe: 'info',
     link: '/produksi',
     untuk_role: ['owner', 'admin_pusat', 'spv', 'operator_produksi'],
   })
 
-  return { success: true, kode }
+  return { success: true, kode: allKodes[0], count: gramasiList.length }
 }
 
 export async function updateStatusProduksi(produksiId: number, produksiKode: string, formData: FormData) {

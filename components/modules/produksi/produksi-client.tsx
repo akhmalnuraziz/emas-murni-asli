@@ -530,7 +530,8 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
   const nowTime = new Date().toTimeString().slice(0,5)
   const firstBatch = batches[0]?.kode ?? ''
   const firstPlb = (peleburanByBatch[firstBatch] ?? [])[0]
-  const [f, setF] = useState({ batch_kode: firstBatch, peleburan_id: firstPlb ? String(firstPlb.id) : '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime })
+  const [f, setF] = useState({ batch_kode: firstBatch, peleburan_id: firstPlb ? String(firstPlb.id) : '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime })
+  const [gramasiRows, setGramasiRows] = useState<Array<{gramasi: string; pcs: string}>>([{ gramasi: '1', pcs: '' }])
   const [fotos, setFotos] = useState<File[]>([])
   const [up, setUp] = useState(false)
   const s = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
@@ -546,7 +547,10 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
   async function submit(e: React.FormEvent) {
     e.preventDefault(); const el = e.currentTarget as HTMLFormElement
     setUp(true); const b64 = fotos.length > 0 ? await filesToBase64(fotos) : []; setUp(false)
-    const fd = new FormData(el); fd.set('fotos_b64', JSON.stringify(b64)); onSubmit(fd)
+    const fd = new FormData(el)
+    fd.set('fotos_b64', JSON.stringify(b64))
+    fd.set('gramasi_list', JSON.stringify(gramasiRows.map(r => ({ gramasi: r.gramasi, pcs: parseInt(r.pcs) || 0 }))))
+    onSubmit(fd)
   }
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
@@ -578,13 +582,40 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
               </>
             )}
           </F>
-          <div className="grid grid-cols-2 gap-3 items-end">
-            <F label="Pilih Gramasi yang ingin di cetak" req>
-              <select name="gramasi" value={f.gramasi} onChange={e => s('gramasi', e.target.value)} className={inp} required>
-                {GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} gr</option>)}
-              </select>
-            </F>
-            <F label="Jumlah PCS"><input name="pcs" type="number" min="1" value={f.pcs} onChange={e => s('pcs', e.target.value)} placeholder="50 — opsional" className={inp} /></F>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-[12px] font-semibold text-slate-600">Gramasi yang ingin dicetak</label>
+              <button type="button" onClick={() => setGramasiRows(r => [...r, { gramasi: '1', pcs: '' }])}
+                className="text-[11px] font-semibold text-violet-600 hover:text-violet-800 flex items-center gap-1">
+                <Plus size={12}/> Tambah Gramasi
+              </button>
+            </div>
+            <div className="space-y-1.5">
+              {gramasiRows.map((row, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <select value={row.gramasi}
+                    onChange={e => setGramasiRows(r => r.map((x, i) => i === idx ? { ...x, gramasi: e.target.value } : x))}
+                    className={`${inp} flex-1`}>
+                    {GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} gr</option>)}
+                  </select>
+                  <input type="number" min="1" value={row.pcs}
+                    onChange={e => setGramasiRows(r => r.map((x, i) => i === idx ? { ...x, pcs: e.target.value } : x))}
+                    placeholder="PCS" className={`${inp} w-24`} />
+                  {gramasiRows.length > 1 && (
+                    <button type="button" onClick={() => setGramasiRows(r => r.filter((_, i) => i !== idx))}
+                      className="text-red-400 hover:text-red-600 flex-shrink-0"><X size={14}/></button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {(() => {
+              const total = gramasiRows.reduce((s, r) => s + parseFloat(r.gramasi || '0') * (parseInt(r.pcs || '1') || 1), 0)
+              const hasDupe = gramasiRows.map(r => r.gramasi).some((g, i, arr) => arr.indexOf(g) !== i)
+              return <>
+                {total > 0 && <p className="text-[11px] text-violet-500 font-semibold px-1">Estimasi total: {total.toFixed(2)} gr</p>}
+                {hasDupe && <p className="text-[11px] text-red-500 font-semibold px-1">⚠ Gramasi tidak boleh sama</p>}
+              </>
+            })()}
           </div>
           <div className="grid grid-cols-2 gap-3 items-end">
             <F label="Total bahan yang di serahkan" req><input name="berat_awal" type="number" step="0.01" value={f.berat_awal} onChange={e => s('berat_awal', e.target.value)} placeholder="500.15" className={inp} required /></F>
@@ -1447,7 +1478,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
   function openDeleteHandover(item: any, h: any) { setActive(item); setActiveTahap(h.tahap); setActiveHandoverId(h.id); setActiveHandoverData(h); setErr(''); setModal('deleteHandover') }
   function toggleExp(id: number) { setExpanded(prev => { const n=new Set(prev); n.has(id)?n.delete(id):n.add(id); return n }) }
 
-  function handleCreate(fd: FormData) { setErr(''); start(async()=>{ const r=await createProduksi(fd); if(r?.error){setErr(r.error);return}; showToast(`✅ ${r.kode} dibuat`); setModal(null) }) }
+  function handleCreate(fd: FormData) { setErr(''); start(async()=>{ const r=await createProduksi(fd); if(r?.error){setErr(r.error);return}; showToast(r.count && r.count > 1 ? `✅ ${r.count} item produksi dibuat (${r.kode} dst)` : `✅ ${r.kode} dibuat`); setModal(null) }) }
   function handleTambahProduksi(fd: FormData) { setErr(''); start(async()=>{ const r=await createProduksi(fd); if(r?.error){setErr(r.error);return}; showToast(`✅ ${r.kode} ditambahkan`); setModal(null) }) }
   function handleEdit(fd: FormData)   { if(!active)return; setErr(''); start(async()=>{ const r=await editProduksi(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Diperbarui'); setModal(null) }) }
   function handleUpdate(fd: FormData) { if(!active)return; setErr(''); start(async()=>{ const r=await updateStatusProduksi(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Status diperbarui'); setModal(null) }) }
