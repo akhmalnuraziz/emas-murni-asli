@@ -142,7 +142,7 @@ function OfflineIndicator() {
   }, [])
   if (!offline) return null
   return (
-    <div className="fixed top-0 inset-x-0 z-[200] flex items-center justify-center gap-2 py-2 px-4 text-[12px] font-bold text-white"
+    <div className="fixed top-0 inset-x-0 z-[200] flex items-center justify-center gap-2 py-2 px-4 text-[12px] font-semibold text-white"
       style={{ background: 'linear-gradient(90deg,#F97316,#EF4444)' }}>
       <WifiOff size={13} /> Tidak ada koneksi — data belum tersimpan
     </div>
@@ -194,7 +194,7 @@ function TimPicker({ tims, timId, setTimId, anggota, setAnggota, label = 'Tim Ya
   const anggotaList = selectedTim?.anggota?.filter((a: any) => a.aktif) ?? []
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[11px] font-bold text-slate-400 tracking-widest uppercase">{label}{req && <span className="text-red-400 ml-0.5">*</span>}</label>
+      <label className="text-[11px] font-medium text-slate-500">{label}{req && <span className="text-red-400 ml-0.5">*</span>}</label>
       <div className="grid grid-cols-2 gap-2">
         <select name={`${namePrefix}tim_id`} value={timId} onChange={e => { setTimId(e.target.value); setAnggota('') }} className={inp} required={req}>
           <option value="">Pilih tim…</option>
@@ -215,7 +215,7 @@ function TimPicker({ tims, timId, setTimId, anggota, setAnggota, label = 'Tim Ya
 function Sbadge({ s }: { s: string }) {
   const c = STATUS_CFG[s] ?? { bg: 'rgba(148,163,184,0.12)', text: '#64748B' }
   return (
-    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap" style={{ background: c.bg, color: c.text }}>
+    <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap" style={{ background: c.bg, color: c.text }}>
       <span className="w-1.5 h-1.5 rounded-full" style={{ background: c.text }} />
       {s}
     </span>
@@ -437,7 +437,7 @@ function EventHistory({ events, item, stageHandovers = [], lossApprovals = [] }:
             </div>
             {/* Data row */}
             <div className="px-3 py-2 flex flex-wrap gap-3 items-center text-[12px]">
-              <div><span className="text-slate-400">Berat: </span><span className="font-bold text-slate-700">{ev.total_gram} gr</span></div>
+              <div><span className="text-slate-400">Berat: </span><span className="font-semibold text-slate-700">{ev.total_gram} gr</span></div>
               {Number(ev.sisa_serbuk) > 0 && <div><span className="text-slate-400">{serbukLabel}: </span><span className={`font-semibold ${serbukColor}`}>{fgr(Number(ev.sisa_serbuk))} gr</span></div>}
               {Number(ev.losses) > 0 && <div><span className="text-slate-400">losses: </span><span className="font-semibold text-orange-500">{fgr(Number(ev.losses))} gr</span></div>}
               {ev.kategori_losses && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">⚠ {ev.kategori_losses}</span>}
@@ -457,7 +457,7 @@ function EventHistory({ events, item, stageHandovers = [], lossApprovals = [] }:
                 {serbuk.map((u: string, fi: number) => (
                   <div key={`s${fi}`} className="relative">
                     <img src={u} onClick={() => setLightbox(u)} className="w-12 h-12 rounded-xl object-cover cursor-pointer border-2 border-violet-200 hover:scale-110 transition-transform" />
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-violet-500 rounded-full text-[8px] text-white flex items-center justify-center font-bold">S</div>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-violet-500 rounded-full text-[8px] text-white flex items-center justify-center font-semibold">S</div>
                   </div>
                 ))}
               </div>
@@ -472,7 +472,7 @@ function EventHistory({ events, item, stageHandovers = [], lossApprovals = [] }:
               return (
                 <div className="mx-3 mb-2 rounded-xl overflow-hidden border border-red-100">
                   <div className="px-3 py-1.5 flex items-center gap-2 bg-red-50">
-                    <span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss {ev.status}</span>
+                    <span className="text-[10px] font-semibold text-red-600">⚠ TTD loss {ev.status}</span>
                     <span className="text-[10px] text-red-400 ml-auto">{la.loss_gram ? `${Number(la.loss_gram).toFixed(2)} gr` : ''}</span>
                   </div>
                   <div className="px-3 py-2 space-y-1.5">
@@ -518,7 +518,7 @@ function EventHistory({ events, item, stageHandovers = [], lossApprovals = [] }:
 const inp = "w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"
 const F = ({ label, req, children }: { label: string; req?: boolean; children: React.ReactNode }) => (
   <div className="flex flex-col gap-1.5">
-    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{label}{req && <span className="text-red-400 ml-0.5">*</span>}</label>
+    <label className="block text-[11px] font-medium text-slate-500 mb-1.5">{label}{req && <span className="text-red-400 ml-0.5">*</span>}</label>
     {children}
   </div>
 )
@@ -611,7 +611,7 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
               <div className="rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
                 {gramasiRows.map((row, idx) => (
                   <div key={row.gramasi} className="flex items-center gap-3 px-3 py-2 bg-white">
-                    <span className="text-[13px] font-bold text-violet-700 w-14 flex-shrink-0">{row.gramasi} gr</span>
+                    <span className="text-[13px] font-semibold text-violet-700 w-14 flex-shrink-0">{row.gramasi} gr</span>
                     <input type="number" min="1" value={row.pcs}
                       onChange={e => setGramasiRows(r => r.map((x, i) => i === idx ? { ...x, pcs: e.target.value } : x))}
                       placeholder="Jml PCS (opsional)"
@@ -628,7 +628,7 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
             )}
             {gramasiRows.length > 0 && (() => {
               const total = gramasiRows.reduce((s, r) => s + parseFloat(r.gramasi) * (parseInt(r.pcs || '1') || 1), 0)
-              return <p className="text-[11px] text-violet-500 font-medium">Estimasi total: <span className="font-bold">{total.toFixed(2)} gr</span></p>
+              return <p className="text-[11px] text-violet-500 font-medium">Estimasi total: <span className="font-semibold">{total.toFixed(2)} gr</span></p>
             })()}
           </div>
           <div className="grid grid-cols-2 gap-3 items-end">
@@ -651,7 +651,7 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/>{error}</div>}
           <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0 -mx-5 -mb-4 mt-2">
             <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-            <button type="submit" disabled={isPending || up} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            <button type="submit" disabled={isPending || up} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {(isPending || up) && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
               {up ? 'Kompres foto…' : isPending ? 'Menyimpan…' : 'Mulai Alur'}
             </button>
@@ -744,7 +744,7 @@ function TambahProduksiModal({ item, peleburanByBatch, tims, adminList, onClose,
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/>{error}</div>}
           <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0 -mx-5 -mb-4 mt-2">
             <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-            <button type="submit" disabled={isPending || up || plbList.length === 0} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            <button type="submit" disabled={isPending || up || plbList.length === 0} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {(isPending || up) && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
               {up ? 'Kompres foto…' : isPending ? 'Menyimpan…' : 'Tambah Produksi'}
             </button>
@@ -807,7 +807,7 @@ function EditModal({ item, tims, adminList, onClose, onSubmit, isPending, error 
           <AdminPickerStd adminList={adminList} prefix="" initialValue={item.admin_input ?? item.operator ?? ''} label="Admin Yang Menyerahkan" />
           <F label="Catatan"><input name="catatan" value={f.catatan} onChange={e => s('catatan', e.target.value)} placeholder="Catatan tambahan…" className={inp} /></F>
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bahan Diserahkan (Max 10 Foto)</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Bahan Diserahkan (Max 10 Foto)</label>
             {existingFotos.length > 0 && (
               <div className="flex gap-2 mb-2 flex-wrap">
                 {existingFotos.map((url, i) => (
@@ -824,7 +824,7 @@ function EditModal({ item, tims, adminList, onClose, onSubmit, isPending, error 
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/>{error}</div>}
           <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0 -mx-5 -mb-4 mt-2">
             <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-            <button type="submit" disabled={isPending || uploading} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            <button type="submit" disabled={isPending || uploading} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {(isPending || uploading) && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
               {uploading ? 'Upload…' : isPending ? 'Menyimpan…' : 'Simpan Perubahan'}
             </button>
@@ -899,7 +899,7 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
           {/* Info Diserahkan */}
           <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700">
             <span className="text-slate-400">Diserahkan: </span>
-            <span className="font-bold text-violet-700">{fgr(serahGram)} gr</span>
+            <span className="font-semibold text-violet-700">{fgr(serahGram)} gr</span>
             <span className="text-slate-400 mx-1">·</span>
             <span className="font-semibold text-slate-600">{item.gramasi}gr</span>
             {item.pcs ? <><span className="text-slate-400 mx-1">·</span><span className="font-semibold text-slate-600">{item.pcs} PCS</span></> : null}
@@ -907,18 +907,18 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Selesai *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Selesai *</label>
               <input name="tanggal_selesai" type="date" defaultValue={isEdit&&item.tanggal_selesai?item.tanggal_selesai:new Date().toISOString().split('T')[0]}
                 className={inp} required />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jam Selesai *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Selesai *</label>
               <input name="jam_selesai" type="time" defaultValue={isEdit&&item.jam_selesai?String(item.jam_selesai).slice(0,5):undefined} className={inp} required />
             </div>
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Berat Diterima (gr) *</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Berat Diterima (gr) *</label>
             <input name="terima_gram" type="number" step="0.001"
               value={terimaVal} onChange={e => setTerimaVal(e.target.value)}
               placeholder={`Max ${fgr(serahGram)} gr`}
@@ -926,7 +926,7 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Reject Cutting (gr)</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Reject Cutting (gr)</label>
             <input name="reject_cutting_gram" type="number" step="0.001"
               value={rejectVal} onChange={e => setRejectVal(e.target.value)} className={inp} />
           </div>
@@ -950,7 +950,7 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
           )}
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">
               PCS Berhasil <span className="text-slate-400 font-normal normal-case">(opsional, isi jika sudah tahu)</span>
             </label>
             <input name="pcs_good" type="number" min="1"
@@ -959,7 +959,7 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">
               Catatan <span className="text-slate-400 font-normal normal-case">(alasan losses, kondisi bahan, dll)</span>
             </label>
             <input name="catatan" type="text" placeholder="Misal: losses karena serbuk tercecer..."
@@ -968,7 +968,7 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bahan Diterima (Max 10 Foto)</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Bahan Diterima (Max 10 Foto)</label>
             {existingFotos.length > 0 && (
               <div className="flex gap-2 mb-2 flex-wrap">
                 {existingFotos.map((url, i) => (
@@ -1008,7 +1008,7 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
           <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0 -mx-5 -mb-4 mt-2">
             <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
             <button type="submit" disabled={isPending || uploading}
-              className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+              className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {(isPending || uploading) && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
               {uploading ? 'Upload...' : isPending ? 'Menyimpan...' : 'Konfirmasi Diterima'}
             </button>
@@ -1069,41 +1069,41 @@ function SerahStageModal({ item, tahap, tims, onClose, onSubmit, isPending, erro
         <form onSubmit={submit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           {/* Info dari tahap sebelumnya */}
           <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700">
-            <p className="text-[9px] font-bold text-violet-500 uppercase mb-2">Data yang akan diserahkan</p>
+            <p className="text-[9px] font-medium text-violet-500 mb-2">Data yang akan diserahkan</p>
             <div className="flex flex-wrap gap-3">
-              <div><p className="text-slate-400 text-[10px]">Total Berat</p><p className="font-bold text-violet-700">{serahGram.toFixed(2)} gr</p></div>
-              <div><p className="text-slate-400 text-[10px]">Gramasi</p><p className="font-bold text-slate-700">{item.gramasi} gr</p></div>
-              <div><p className="text-slate-400 text-[10px]">Jumlah PCS</p><p className="font-bold text-slate-700">{serahPcs > 0 ? `${serahPcs} PCS` : '—'}</p></div>
+              <div><p className="text-slate-400 text-[10px]">Total Berat</p><p className="font-semibold text-violet-700">{serahGram.toFixed(2)} gr</p></div>
+              <div><p className="text-slate-400 text-[10px]">Gramasi</p><p className="font-semibold text-slate-700">{item.gramasi} gr</p></div>
+              <div><p className="text-slate-400 text-[10px]">Jumlah PCS</p><p className="font-semibold text-slate-700">{serahPcs > 0 ? `${serahPcs} PCS` : '—'}</p></div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Serah *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Serah *</label>
               <input name="serah_tanggal" type="date" defaultValue={new Date().toISOString().split('T')[0]} className={inp} required/>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jam Serah *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Serah *</label>
               <input name="serah_jam" type="time" className={inp} required/>
             </div>
           </div>
           <TimPicker tims={tims} timId={timId} setTimId={setTimId} anggota={timAnggota} setAnggota={setTimAnggota} label="Tim Yang Mengerjakan" namePrefix="serah_" />
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Operator (manual)</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Operator (manual)</label>
             <input name="serah_operator_manual" type="text" placeholder="Atau ketik manual" className={inp}/>
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan</label>
             <input name="serah_catatan" type="text" placeholder="Opsional" className={inp}/>
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bahan Diserahkan (Max 10 Foto)</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Bahan Diserahkan (Max 10 Foto)</label>
             <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto (opsional)" />
           </div>
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/><span>{error}</span></div>}
           <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0 -mx-5 -mb-4 mt-2">
             <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
             <button type="submit" disabled={isPending||uploading}
-              className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+              className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {(isPending||uploading)&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
               {uploading?'Upload...':isPending?'Menyimpan...':'Konfirmasi Serah'}
             </button>
@@ -1186,32 +1186,32 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
         <form onSubmit={submit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           {/* Info diserahkan */}
           <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700">
-            <p className="text-[9px] font-bold text-violet-500 uppercase mb-2">Diserahkan</p>
+            <p className="text-[9px] font-medium text-violet-500 mb-2">Diserahkan</p>
             <div className="flex flex-wrap gap-3">
-              <div><p className="text-slate-400 text-[10px]">Total Berat</p><p className="font-bold text-violet-700">{Number(serahGram).toFixed(2)} gr</p></div>
-              <div><p className="text-slate-400 text-[10px]">Gramasi</p><p className="font-bold text-slate-700">{item.gramasi} gr</p></div>
-              {(currentH?.serah_pcs ?? item.pcs_good ?? item.pcs) ? <div><p className="text-slate-400 text-[10px]">Jumlah PCS</p><p className="font-bold text-slate-700">{currentH?.serah_pcs ?? item.pcs_good ?? item.pcs} PCS</p></div> : null}
+              <div><p className="text-slate-400 text-[10px]">Total Berat</p><p className="font-semibold text-violet-700">{Number(serahGram).toFixed(2)} gr</p></div>
+              <div><p className="text-slate-400 text-[10px]">Gramasi</p><p className="font-semibold text-slate-700">{item.gramasi} gr</p></div>
+              {(currentH?.serah_pcs ?? item.pcs_good ?? item.pcs) ? <div><p className="text-slate-400 text-[10px]">Jumlah PCS</p><p className="font-semibold text-slate-700">{currentH?.serah_pcs ?? item.pcs_good ?? item.pcs} PCS</p></div> : null}
             </div>
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Total Berat Setelah Diproses (gr) *</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Total Berat Setelah Diproses (gr) *</label>
             <input name="terima_gram" type="number" step="0.001" placeholder={`Max ${Number(serahGram).toFixed(2)} gr`} value={terimaVal} onChange={e=>setTerimaVal(e.target.value)} className={inp} required/>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Terima *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Terima *</label>
               <input name="terima_tanggal" type="date" defaultValue={new Date().toISOString().split('T')[0]} className={inp} required/>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jam Terima *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Terima *</label>
               <input name="terima_jam" type="time" className={inp} required/>
             </div>
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">
               PCS Berhasil <span className="text-slate-400 font-normal normal-case">(opsional)</span>
             </label>
             <input name="terima_pcs" type="number" min="1" placeholder="Isi jika sudah dihitung" className={inp}/>
@@ -1220,7 +1220,7 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
           {/* Sisa Serbuk — hanya Pas Berat */}
           {isPasBerat && (
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Sisa Serbuk (gr)</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Sisa Serbuk (gr)</label>
               <input name="sisa_serbuk" type="number" step="0.001" value={serbukVal} onChange={e=>setSerbukVal(e.target.value)} className={inp}/>
             </div>
           )}
@@ -1234,11 +1234,11 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
             {adaReject && (
               <div className="grid grid-cols-2 gap-3 mt-2">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Berat Reject (gr)</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Berat Reject (gr)</label>
                   <input name="reject_gram" type="number" step="0.001" value={rejectVal} onChange={e=>setRejectVal(e.target.value)} className={inp}/>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">PCS Reject</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">PCS Reject</label>
                   <input name="reject_pcs" type="number" min="0" defaultValue="0" className={inp}/>
                 </div>
               </div>
@@ -1266,14 +1266,14 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
           <TimPicker tims={tims} timId={timId} setTimId={setTimId} anggota={timAnggota} setAnggota={setTimAnggota} label="Tim Yang Mengerjakan" namePrefix="terima_" />
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">
               Catatan <span className="text-slate-400 font-normal normal-case">(alasan losses, kondisi, dll)</span>
             </label>
             <input name="terima_catatan" type="text" placeholder="Opsional" className={inp}/>
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bahan Diserahkan (Max 10 Foto)</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Bahan Diserahkan (Max 10 Foto)</label>
             <label className="flex items-center gap-2 h-11 px-4 bg-slate-50 rounded-xl cursor-pointer hover:bg-violet-50 transition-colors border border-slate-200">
               <Camera size={14} className="text-slate-400 flex-shrink-0"/>
               <span className="text-[12px] text-slate-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto (opsional, max 5)'}</span>
@@ -1285,7 +1285,7 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
                   <div key={i} className="relative">
                     <img src={URL.createObjectURL(f)} alt="" className="w-16 h-16 rounded-xl object-cover border-2 border-emerald-200 shadow-sm"/>
                     <button type="button" onClick={() => setFotos(p => p.filter((_, j) => j !== i))}
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center font-bold shadow-md hover:bg-red-600 transition-colors">
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center font-semibold shadow-md hover:bg-red-600 transition-colors">
                       ×
                     </button>
                   </div>
@@ -1299,7 +1299,7 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
           <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0 -mx-5 -mb-4 mt-2">
             <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
             <button type="submit" disabled={isPending||uploading}
-              className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+              className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {(isPending||uploading)&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
               {uploading?'Upload...':isPending?'Menyimpan...':'Konfirmasi Diterima'}
             </button>
@@ -1388,7 +1388,7 @@ function UpdateModal({ item, onClose, onSubmit, isPending, error }: {
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/>{error}</div>}
           <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0 -mx-5 -mb-4 mt-2">
             <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-            <button type="submit" disabled={isPending || up} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            <button type="submit" disabled={isPending || up} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {(isPending || up) && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
               {up ? 'Kompres…' : isPending ? 'Menyimpan…' : 'Simpan Status'}
             </button>
@@ -1414,7 +1414,7 @@ function DelModal({ item, onClose, onConfirm, isPending, error }: { item: any; o
           </div>
         )}
         <div className="mt-5 mb-4">
-          <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Ketik kode batch untuk konfirmasi</label>
+          <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Ketik kode batch untuk konfirmasi</label>
           <input
             value={confirm} onChange={e => setConfirm(e.target.value)}
             placeholder={item.kode}
@@ -1424,7 +1424,7 @@ function DelModal({ item, onClose, onConfirm, isPending, error }: { item: any; o
         <div className="flex gap-2.5">
           <button onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
           <button onClick={onConfirm} disabled={!canConfirm || isPending}
-            className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
             {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
             {isPending ? 'Menghapus…' : 'Ya, Hapus'}
           </button>
@@ -1446,8 +1446,8 @@ function StatChip({ label, value, accent }: { label: string; value: React.ReactN
   const cls = accent ? (accentMap[accent] ?? 'bg-slate-50 text-slate-700') : 'bg-slate-50 text-slate-700'
   return (
     <div className={`rounded-xl px-3 py-2 overflow-hidden min-w-0 ${cls}`}>
-      <p className="text-[9.5px] font-bold tracking-widest uppercase mb-0.5 truncate opacity-70">{label}</p>
-      <div className="text-[13px] font-bold leading-tight min-w-0">{value}</div>
+      <p className="text-[9.5px] font-medium mb-0.5 truncate opacity-70">{label}</p>
+      <div className="text-[13px] font-semibold leading-tight min-w-0">{value}</div>
     </div>
   )
 }
@@ -1602,7 +1602,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                 <div key={gk} className="space-y-3">
                   {gk!=='__no_plb__' && (
                     <div className="flex items-center gap-2 px-3 py-2 rounded-xl mt-1 bg-violet-50 border border-violet-100">
-                      <span className="text-[11px] font-bold text-violet-700">🔥 {gk}</span>
+                      <span className="text-[11px] font-semibold text-violet-700">🔥 {gk}</span>
                       <span className="text-[10px] text-violet-400 font-semibold">{gItems.length} produksi · {plbTotal.toFixed(2)} gr dipakai</span>
                     </div>
                   )}
@@ -1660,73 +1660,73 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                   {canEdit&&!isVoided&&(()=>{
                     if(s==='Cutting'&&item.status_cutting==='proses')
                       return <button onClick={()=>openModal('cuttingTerima',item)}
-                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
+                        className="h-8 px-3 rounded-xl text-[11px] font-semibold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
                         <Check size={11}/> Diterima
                       </button>
                     if(s==='Cutting'&&item.status_cutting==='selesai'&&!pbH&&!annH&&!spH)
                       return <div className="flex items-center gap-1 flex-shrink-0">
                         <button onClick={()=>openSerahStage(item,'pas_berat')}
-                          className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all bg-amber-50 text-amber-700"
+                          className="h-8 px-3 rounded-xl text-[11px] font-semibold flex items-center gap-1 hover:scale-105 transition-all bg-amber-50 text-amber-700"
                           title="Lanjut ke Pas Berat">
                           <Plus size={11}/> Pas Berat
                         </button>
                         <button onClick={()=>openSerahStage(item,'annealing')}
-                          className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all bg-yellow-50 text-yellow-700"
+                          className="h-8 px-3 rounded-xl text-[11px] font-semibold flex items-center gap-1 hover:scale-105 transition-all bg-yellow-50 text-yellow-700"
                           title="Lanjut ke Annealing (skip Pas Berat)">
                           <Plus size={11}/> Annealing
                         </button>
                         <button onClick={()=>openSerahStage(item,'siap_packing')}
-                          className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all bg-violet-50 text-violet-700"
+                          className="h-8 px-3 rounded-xl text-[11px] font-semibold flex items-center gap-1 hover:scale-105 transition-all bg-violet-50 text-violet-700"
                           title="Langsung Siap Packing">
                           <Plus size={11}/> Siap Packing
                         </button>
                       </div>
                     if(s==='Pas Berat'&&pbH?.status==='proses')
                       return <button onClick={()=>openTerimaStage(item,'pas_berat',pbH.id)}
-                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
+                        className="h-8 px-3 rounded-xl text-[11px] font-semibold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
                         <Check size={11}/> Diterima
                       </button>
                     if(s==='Pas Berat'&&!pbH)
                       return <button onClick={()=>openTerimaStage(item,'pas_berat',0)}
-                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
+                        className="h-8 px-3 rounded-xl text-[11px] font-semibold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
                         <Check size={11}/> Terima
                       </button>
                     if(s==='Pas Berat'&&pbH?.status==='selesai'&&!annH&&!spH)
                       return <div className="flex items-center gap-1 flex-shrink-0">
                         <button onClick={()=>openSerahStage(item,'annealing')}
-                          className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all bg-amber-50 text-amber-700"
+                          className="h-8 px-3 rounded-xl text-[11px] font-semibold flex items-center gap-1 hover:scale-105 transition-all bg-amber-50 text-amber-700"
                           title="Lanjut ke Annealing">
                           <Plus size={11}/> Annealing
                         </button>
                         <button onClick={()=>openSerahStage(item,'siap_packing')}
-                          className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all bg-violet-50 text-violet-700"
+                          className="h-8 px-3 rounded-xl text-[11px] font-semibold flex items-center gap-1 hover:scale-105 transition-all bg-violet-50 text-violet-700"
                           title="Skip Annealing → langsung Siap Packing">
                           <Plus size={11}/> Siap Packing
                         </button>
                       </div>
                     if(s==='Annealing'&&annH?.status==='proses')
                       return <button onClick={()=>openTerimaStage(item,'annealing',annH.id)}
-                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
+                        className="h-8 px-3 rounded-xl text-[11px] font-semibold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
                         <Check size={11}/> Diterima
                       </button>
                     if(s==='Annealing'&&!annH)
                       return <button onClick={()=>openTerimaStage(item,'annealing',0)}
-                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
+                        className="h-8 px-3 rounded-xl text-[11px] font-semibold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
                         <Check size={11}/> Terima
                       </button>
                     if(s==='Annealing'&&annH?.status==='selesai'&&!spH)
                       return <button onClick={()=>openSerahStage(item,'siap_packing')}
-                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-violet-50 text-violet-700">
+                        className="h-8 px-3 rounded-xl text-[11px] font-semibold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-violet-50 text-violet-700">
                         <Plus size={11}/> Siap Packing
                       </button>
                     if(s==='Siap Packing'&&spH?.status==='proses')
                       return <button onClick={()=>openTerimaStage(item,'siap_packing',spH.id)}
-                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
+                        className="h-8 px-3 rounded-xl text-[11px] font-semibold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
                         <Check size={11}/> Diterima
                       </button>
                     if(s==='Siap Packing'&&!spH)
                       return <button onClick={()=>openTerimaStage(item,'siap_packing',0)}
-                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
+                        className="h-8 px-3 rounded-xl text-[11px] font-semibold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
                         <Check size={11}/> Terima
                       </button>
                     return null
@@ -1757,7 +1757,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                     {(item.serah_gram||item.terima_gram||handovers.length>0)&&(
                       <div className="rounded-lg overflow-hidden border border-slate-200 bg-white">
                         <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-200">
-                          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">📋 Riwayat Serah-Terima</p>
+                          <p className="text-[11px] font-medium text-slate-500">📋 Riwayat Serah-Terima</p>
                         </div>
 
                         {/* Cutting card — Peleburan-style: single card, inline gram row, foto row */}
@@ -1809,15 +1809,15 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                               {/* Gram row — inline like Peleburan */}
                               <div className="grid grid-cols-3 gap-3 mb-2">
                                 <div>
-                                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Diserahkan</p>
+                                  <p className="text-[10px] font-medium text-slate-400">Diserahkan</p>
                                   <p className="text-[13px] font-semibold text-slate-800 tabular-nums mt-0.5">{item.serah_gram?`${parseFloat(item.serah_gram).toFixed(2)} gr`:'—'}</p>
                                 </div>
                                 <div>
-                                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Diterima</p>
+                                  <p className="text-[10px] font-medium text-slate-400">Diterima</p>
                                   <p className="text-[13px] font-semibold text-slate-800 tabular-nums mt-0.5">{item.terima_gram?`${parseFloat(item.terima_gram).toFixed(2)} gr`:'—'}{item.terima_pcs?` · ${item.terima_pcs} pcs`:''}</p>
                                 </div>
                                 <div>
-                                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Reject Cutting</p>
+                                  <p className="text-[10px] font-medium text-slate-400">Reject Cutting</p>
                                   <p className={`text-[13px] font-semibold tabular-nums mt-0.5 ${(rejGram>0||lossCutting>0)?'text-red-500':'text-slate-400'}`}>
                                     {rejGram>0?`${rejGram.toFixed(2)} gr`:(lossCutting>0?`${lossCutting.toFixed(2)} gr`:'—')}
                                   </p>
@@ -1836,7 +1836,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   <div/>
                                 </div>
                               )}
-                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='produksi_item'&&l.ref_id===item.id&&l.proses==='cutting');if(!_la)return null;return(<div className="mt-2 rounded-xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss Cutting</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(2)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-slate-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-slate-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-slate-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-slate-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
+                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='produksi_item'&&l.ref_id===item.id&&l.proses==='cutting');if(!_la)return null;return(<div className="mt-2 rounded-xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-semibold text-red-600">⚠ TTD loss cutting</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(2)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-slate-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-slate-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-slate-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-slate-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
                             </div>
                           )
                         })()}
@@ -1890,16 +1890,16 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                               {/* Gram row — Sisa Serbuk sebagai sub-info di bawah Diterima */}
                               <div className="grid grid-cols-3 gap-3 mb-2">
                                 <div>
-                                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Diserahkan</p>
+                                  <p className="text-[10px] font-medium text-slate-400">Diserahkan</p>
                                   <p className="text-[13px] font-semibold text-slate-800 tabular-nums mt-0.5">{h.serah_gram?`${parseFloat(h.serah_gram).toFixed(2)} gr`:'—'}{h.serah_pcs?` · ${h.serah_pcs} pcs`:''}</p>
                                 </div>
                                 <div>
-                                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Diterima</p>
+                                  <p className="text-[10px] font-medium text-slate-400">Diterima</p>
                                   <p className="text-[13px] font-semibold text-slate-800 tabular-nums mt-0.5">{h.terima_gram?`${parseFloat(h.terima_gram).toFixed(2)} gr`:'—'}{h.terima_pcs?` · ${h.terima_pcs} pcs`:''}</p>
                                   {hSerbuk>0&&<p className="text-[10px] text-slate-500 mt-0.5">Sisa Serbuk: <span className="font-semibold text-slate-700 tabular-nums">{hSerbuk.toFixed(2)} gr</span></p>}
                                 </div>
                                 <div>
-                                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Reject {tl[h.tahap]??h.tahap}</p>
+                                  <p className="text-[10px] font-medium text-slate-400">Reject {tl[h.tahap]??h.tahap}</p>
                                   <p className={`text-[13px] font-semibold tabular-nums mt-0.5 ${(hReject>0||hLosses>0)?'text-red-500':'text-slate-400'}`}>
                                     {hReject>0?`${hReject.toFixed(2)} gr${h.reject_pcs?` · ${h.reject_pcs} pcs`:''}`:(hLosses>0?`${hLosses.toFixed(2)} gr`:'—')}
                                   </p>
@@ -1918,7 +1918,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   <div/>
                                 </div>
                               )}
-                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='stage_handover'&&l.ref_id===h.id);if(!_la)return null;return(<div className="mt-2 rounded-xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss {(h.tahap as string).replace(/_/g,' ')}</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(2)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-slate-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-slate-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-slate-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-slate-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
+                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='stage_handover'&&l.ref_id===h.id);if(!_la)return null;return(<div className="mt-2 rounded-xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-semibold text-red-600">⚠ TTD loss {(h.tahap as string).replace(/_/g,' ')}</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(2)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-slate-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-slate-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-slate-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-slate-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
                             </div>
                           )
                         })}
@@ -1928,7 +1928,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                     {/* + Cetak Gramasi / Tambah Produksi — lanjut cetak dari batch ini */}
                     {canEdit&&!isVoided&&(
                       <button onClick={()=>openTambahProduksi(item)}
-                        className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-bold text-violet-600 border border-dashed border-violet-300 transition-all hover:bg-violet-50">
+                        className="w-full mt-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-semibold text-violet-600 border border-dashed border-violet-300 transition-all hover:bg-violet-50">
                         <Plus size={14}/> Cetak Gramasi / Tambah Produksi
                       </button>
                     )}
@@ -2018,7 +2018,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
               {err&&<div className="mb-3 rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</div>}
               <div className="flex gap-2.5">
                 <button onClick={()=>setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-                <button onClick={handleDeleteHandover} disabled={isPending} className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+                <button onClick={handleDeleteHandover} disabled={isPending} className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
                   {isPending?'Menghapus…':'Ya, Hapus'}
                 </button>
               </div>
@@ -2036,7 +2036,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
             {err&&<div className="mb-3 rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</div>}
             <div className="flex gap-2.5">
               <button onClick={()=>setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-              <button onClick={handleDeleteCutting} disabled={isPending} className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+              <button onClick={handleDeleteCutting} disabled={isPending} className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
                 {isPending?'Menghapus…':'Ya, Hapus'}
               </button>
             </div>

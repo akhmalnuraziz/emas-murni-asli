@@ -142,7 +142,7 @@ function BatchRingkasModal({onSubmit,onClose,isPending,error}:{onSubmit:(fd:Form
           <form id="ringkas-form" onSubmit={e=>{e.preventDefault();onSubmit(new FormData(e.currentTarget))}} className="space-y-4">
             <div>
               <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Kode Batch *</label>
-              <input name="kode" required placeholder="mis. B-001 atau BATCH-001" className={`${inp} font-mono font-bold`} autoFocus/>
+              <input name="kode" required placeholder="mis. B-001 atau BATCH-001" className={`${inp} font-mono font-semibold`} autoFocus/>
             </div>
             <div>
               <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Masuk *</label>
@@ -514,7 +514,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
               <div key={batch.id} className="bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden transition-all">
                 {/* Card header */}
                 <div className="flex items-center gap-3 px-4 pt-4 pb-3">
-                  <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center flex-shrink-0 font-bold text-[13px] text-violet-600">
+                  <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center flex-shrink-0 font-semibold text-[13px] text-violet-600">
                     {(batch.nama_batch??batch.kode??'BA').slice(0,2).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -633,7 +633,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                       return (
                         <div className="rounded-lg overflow-hidden border border-red-200">
                           <div className="px-3 py-2 bg-red-50 border-b border-red-100">
-                            <p className="text-[11px] font-bold text-red-600">⚠ Selisih Timbangan — TTD Tersimpan</p>
+                            <p className="text-[11px] font-semibold text-red-600">⚠ Selisih timbangan — TTD tersimpan</p>
                           </div>
                           <div className="p-3 space-y-2 bg-white">
                             {bla.alasan&&<p className="text-[12px] text-slate-600"><span className="font-semibold">Catatan:</span> {bla.alasan}</p>}
@@ -718,7 +718,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                   <span className="w-1.5 h-1.5 rounded-full bg-green-500"/>
                                   <p className="text-[10px] font-medium text-slate-500">Sisa fisik</p>
                                   {selisihSisaFisik!=null&&(
-                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${selisihSisaFisik>0?'bg-blue-50 text-blue-600':selisihSisaFisik<0?'bg-red-50 text-red-500':'bg-green-50 text-green-600'}`}>
+                                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${selisihSisaFisik>0?'bg-blue-50 text-blue-600':selisihSisaFisik<0?'bg-red-50 text-red-500':'bg-green-50 text-green-600'}`}>
                                       {selisihSisaFisik>0?`+${formatGram(selisihSisaFisik)}`:selisihSisaFisik<0?`-${formatGram(Math.abs(selisihSisaFisik))}`:'✓ Sesuai'}
                                     </span>
                                   )}
@@ -726,12 +726,12 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                 {status==='aktif'&&!isEditSF&&(
                                   <div className="flex items-center gap-1.5">
                                     <button onClick={()=>{setEditingSF(batch.id);setSfInput(p=>({...p,[batch.id]:String(sisaFisik??'')}));setSfExisting(p=>({...p,[batch.id]:[...fotoSF]}))}}
-                                      className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-violet-600 rounded-xl bg-white border border-violet-200">
+                                      className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold text-violet-600 rounded-xl bg-white border border-violet-200">
                                       <Edit2 size={10}/>{sisaFisik!=null?'Edit':'Input'}
                                     </button>
                                     {sisaFisik!=null&&(
                                       <button onClick={()=>handleHapusSisaFisik(batch)}
-                                        className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold text-red-500 rounded-xl bg-white border border-red-200">
+                                        className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-semibold text-red-500 rounded-xl bg-white border border-red-200">
                                         <Trash2 size={10}/>Hapus
                                       </button>
                                     )}
@@ -748,7 +748,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                       placeholder="Berat sisa fisik (gram)"
                                       className="flex-1 px-3 py-2 text-[13px] rounded-xl border border-green-200 bg-white focus:outline-none focus:ring-2 focus:ring-green-400/30"/>
                                     <button onClick={()=>handleSisaFisik(batch,sisaSeharusnya,toleransiPeleburan)} disabled={sfUploading[batch.id]}
-                                      className="px-3 h-8 text-[12px] font-bold text-white rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-50 flex items-center gap-1 flex-shrink-0 transition-colors">
+                                      className="px-3 h-8 text-[12px] font-semibold text-white rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-50 flex items-center gap-1 flex-shrink-0 transition-colors">
                                       {sfUploading[batch.id]?<span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>:<Check size={13}/>}
                                       {sfUploading[batch.id]?'Simpan...':'Simpan'}
                                     </button>
@@ -795,7 +795,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                         <p className="text-[11px] font-medium text-slate-500">🔥 Riwayat peleburan</p>
                         {status==='aktif'&&(
                           <button type="button" onClick={()=>setPeleburanModalBatch(batch.kode)}
-                            className="flex items-center gap-1 px-2.5 h-7 rounded-lg text-[11px] font-bold text-white bg-violet-600 hover:bg-violet-700 transition-colors">
+                            className="flex items-center gap-1 px-2.5 h-7 rounded-lg text-[11px] font-semibold text-white bg-violet-600 hover:bg-violet-700 transition-colors">
                             + Buat Peleburan
                           </button>
                         )}
@@ -813,8 +813,8 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                             <div className="flex items-start justify-between gap-2 mb-2">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <p className="text-[12px] font-bold text-slate-800">{plb.kode}</p>
-                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${plb.status==='selesai'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>
+                                  <p className="text-[12px] font-semibold text-slate-800">{plb.kode}</p>
+                                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${plb.status==='selesai'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>
                                     {plb.status==='selesai'?'✓ Selesai':'⏳ Proses'}
                                   </span>
                                 </div>
@@ -844,7 +844,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                               <div className="flex items-center gap-1 flex-shrink-0">
                                 {plb.status!=='selesai'&&batch.status==='aktif'&&(
                                   <button type="button" onClick={()=>setSelesaiLeburItem(plb)}
-                                    className="flex-shrink-0 px-2.5 h-7 rounded-lg text-[11px] font-bold text-white bg-green-600 hover:bg-green-700 transition-colors">
+                                    className="flex-shrink-0 px-2.5 h-7 rounded-lg text-[11px] font-semibold text-white bg-green-600 hover:bg-green-700 transition-colors">
                                     Selesai Lebur
                                   </button>
                                 )}
@@ -855,7 +855,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                       <button type="button" onClick={async()=>{
                                         await voidPeleburan(plb.id,'Dihapus manual')
                                         setHapusPlbId(null); router.refresh()
-                                      }} className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-red-500 text-white">Ya</button>
+                                      }} className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-red-500 text-white">Ya</button>
                                       <button type="button" onClick={()=>setHapusPlbId(null)}
                                         className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-slate-200 text-slate-600">Batal</button>
                                     </div>
@@ -1227,7 +1227,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                         <label className="flex items-center gap-2 cursor-pointer select-none">
                           <input type="checkbox" checked={rejGram[rej.id]!==undefined} onChange={()=>toggleRej(rej.id,rej.berat_reject)} className="w-4 h-4 rounded accent-violet-600"/>
                           <span className="text-[12px] font-medium text-slate-700">{rej.kode??rej.nama_item}</span>
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">{prosesLabel}</span>
+                          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">{prosesLabel}</span>
                           <span className="text-[10px] text-slate-400">({rej.gramasi}gr)</span>
                           <span className="ml-auto text-[10px] text-red-400 font-semibold">{formatGram(rej.berat_reject)}{rej.pcs_reject?` · ${rej.pcs_reject} pcs`:''}</span>
                         </label>
@@ -1251,7 +1251,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
               {/* Total */}
               <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-violet-50 border border-violet-100">
                 <span className="text-[12px] text-slate-500 font-semibold">Total Diserahkan</span>
-                <span className={`text-[13px] font-bold ${totalDikasih>0?'text-violet-700':'text-slate-400'}`}>{(Math.round(totalDikasih*100)/100).toFixed(2).replace('.',',')} gr</span>
+                <span className={`text-[13px] font-semibold ${totalDikasih>0?'text-violet-700':'text-slate-400'}`}>{(Math.round(totalDikasih*100)/100).toFixed(2).replace('.',',')} gr</span>
               </div>
             </div>
           </div>
@@ -1371,7 +1371,7 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
         <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700 flex items-center gap-2">
             <span>Diserahkan:</span>
-            <span className="font-bold">{formatGram(peleburan.dikasih_gram)}</span>
+            <span className="font-semibold">{formatGram(peleburan.dikasih_gram)}</span>
           </div>
 
           <div className="rounded-lg overflow-hidden border border-slate-200">
@@ -1508,7 +1508,7 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
                   const sisa = Number(peleburan.sisa_tersedia ?? 0)
                   if (sisa > 0 && val > sisa) return (
                     <div className="flex items-center gap-2 mt-1.5 px-3 py-2 rounded-xl text-[12px] bg-amber-50 border border-amber-200">
-                      <span className="text-amber-600 font-bold">⚠</span>
+                      <span className="text-amber-600 font-semibold">⚠</span>
                       <span className="text-amber-700 font-semibold">Timbangan naik {(val - sisa).toFixed(2)} gr dari sisa ({sisa.toFixed(2)} gr)</span>
                     </div>
                   )
@@ -1553,7 +1553,7 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
           {err && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13} className="flex-shrink-0"/><span>{err}</span></div>}
           <div className="flex gap-2.5 pb-2">
             <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-            <button type="submit" disabled={pend} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+            <button type="submit" disabled={pend} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
               {pend ? 'Menyimpan…' : 'Simpan Perubahan'}
             </button>
           </div>
@@ -1642,7 +1642,7 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
           {/* Info serah */}
           <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700 flex items-center gap-2">
             <span>Diserahkan:</span>
-            <span className="font-bold">{formatGram(peleburan.dikasih_gram)}</span>
+            <span className="font-semibold">{formatGram(peleburan.dikasih_gram)}</span>
           </div>
 
           {/* Existing TTD notice */}
@@ -1737,7 +1737,7 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
           {err && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13} className="flex-shrink-0"/><span>{err}</span></div>}
           <div className="flex gap-2.5 pb-2">
             <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-            <button type="submit" disabled={pend} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+            <button type="submit" disabled={pend} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
               {pend ? 'Menyimpan…' : 'Simpan Perubahan'}
             </button>
           </div>
