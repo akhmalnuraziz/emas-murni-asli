@@ -83,7 +83,7 @@ const CAN_SEE_HPP: UserRole[] = ['admin_pusat']
 const inp = "w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"
 const F = ({label,req,children}:{label:string;req?:boolean;children:React.ReactNode}) => (
   <div className="flex flex-col gap-1.5">
-    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{label}{req&&<span className="text-red-400 ml-0.5">*</span>}</label>
+    <label className="block text-[11px] font-medium text-slate-500 mb-1.5">{label}{req&&<span className="text-red-400 ml-0.5">*</span>}</label>
     {children}
   </div>
 )
@@ -141,19 +141,19 @@ function BatchRingkasModal({onSubmit,onClose,isPending,error}:{onSubmit:(fd:Form
           </div>
           <form id="ringkas-form" onSubmit={e=>{e.preventDefault();onSubmit(new FormData(e.currentTarget))}} className="space-y-4">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Kode Batch *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Kode Batch *</label>
               <input name="kode" required placeholder="mis. B-001 atau BATCH-001" className={`${inp} font-mono font-bold`} autoFocus/>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Masuk *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Masuk *</label>
               <input name="tanggal" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Berat (gr) *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Berat (gr) *</label>
               <input name="berat" type="number" step="0.001" min="0.001" required placeholder="0.000" className={inp}/>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan</label>
               <input name="catatan" placeholder="opsional — mis. Emas 24K batch awal" className={inp}/>
             </div>
             {error&&<p className="text-[12px] text-red-500 font-semibold">{error}</p>}
@@ -163,7 +163,7 @@ function BatchRingkasModal({onSubmit,onClose,isPending,error}:{onSubmit:(fd:Form
           <button type="button" onClick={onClose}
             className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
           <button type="submit" form="ringkas-form" disabled={isPending}
-            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
             {isPending?'Menyimpan...':'Impor Batch'}
           </button>
         </div>
@@ -257,7 +257,7 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
           </F>
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Biaya Tambahan</label>
+              <label className="block text-[11px] font-medium text-slate-500">Biaya tambahan</label>
               <button type="button"onClick={()=>setBiaya(p=>[...p,{label:'',jumlah:0}])}className="text-[12px] text-violet-600 font-semibold hover:underline">+ Tambah</button>
             </div>
             {biaya.map((b,i)=>(
@@ -275,11 +275,11 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
                 {totalBiaya>0&&<div className="flex justify-between text-[12px]"><span className="text-slate-500">Biaya Tambahan</span><span className="font-semibold text-slate-700">{formatRupiah(totalBiaya)}</span></div>}
                 <div className="flex justify-between text-[12px] border-t border-slate-200 pt-1.5">
                   <span className="font-semibold text-slate-500">Total HPP</span>
-                  <span className="font-bold text-violet-700">{formatRupiah(totalHpp)}</span>
+                  <span className="font-semibold text-violet-700">{formatRupiah(totalHpp)}</span>
                 </div>
                 {hppGr>0&&<div className="flex justify-between text-[12px]">
                   <span className="font-semibold text-slate-500">HPP / gram</span>
-                  <span className="font-bold text-violet-700">{formatRupiah(hppGr)}/gr</span>
+                  <span className="font-semibold text-violet-700">{formatRupiah(hppGr)}/gr</span>
                 </div>}
               </div>
             </div>
@@ -320,7 +320,7 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
         <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
           <button type="button" onClick={onClose}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
           <button type="submit" form="batch-form" disabled={isPending||uploading}
-            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
             {(isPending||uploading)&&<span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
             {uploading?'Kompres foto...':isPending?'Menyimpan...':isEdit?'Simpan Perubahan':'Simpan & Rekonsiliasi'}
           </button>
@@ -511,7 +511,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
             const totalLosses = lossesLebur + lossesCutting
 
             return(
-              <div key={batch.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden transition-all">
+              <div key={batch.id} className="bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden transition-all">
                 {/* Card header */}
                 <div className="flex items-center gap-3 px-4 pt-4 pb-3">
                   <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center flex-shrink-0 font-bold text-[13px] text-violet-600">
@@ -523,9 +523,9 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                         {batch.nama_batch??batch.kode}
                       </span>
                       {/* FIX poin 2: hapus si.badge dari sini */}
-                      <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full',
+                      <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full',
                         status==='aktif'?'text-emerald-700 bg-emerald-50':'text-amber-700 bg-amber-50')}>
-                        {status==='aktif'?'AKTIF':'TERKUNCI 🔒'}
+                        {status==='aktif'?'Aktif':'Terkunci 🔒'}
                       </span>
                     </div>
                     <p className="text-[12px] text-slate-400 mt-0.5 font-medium truncate">{batch.kode} · {supplierLabel}</p>
@@ -534,17 +534,17 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                   {/* FIX poin 3: tampilkan pusat + gudang + sisa langsung di card */}
                   <div className="hidden sm:flex items-center gap-4 flex-shrink-0 mr-1">
                     <div className="text-right">
-                      <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">Pusat</p>
+                      <p className="text-[9px] font-medium text-slate-400">Pusat</p>
                       <p className="text-[12px] font-semibold text-slate-700 tabular-nums">{formatGram(batchPusat)}</p>
                     </div>
                     <div className="w-px h-7 bg-slate-200"/>
                     <div className="text-right">
-                      <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">Gudang</p>
+                      <p className="text-[9px] font-medium text-slate-400">Gudang</p>
                       <p className="text-[12px] font-semibold text-slate-700 tabular-nums">{formatGram(timbAkhir)}</p>
                     </div>
                     <div className="w-px h-7 bg-slate-200"/>
                     <div className="text-right">
-                      <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">Sisa</p>
+                      <p className="text-[9px] font-medium text-slate-400">Sisa</p>
                       <p className="text-[12px] font-semibold text-slate-700 tabular-nums">{formatGram(sisaSeharusnya)}</p>
                     </div>
                   </div>
@@ -612,7 +612,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                         {label:'Catatan',val:batch.catatan||'—'},
                       ].map(item=>(
                         <div key={item.label}className="rounded-lg p-3 bg-white border border-slate-200">
-                          <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">{item.label}</p>
+                          <p className="text-[10px] font-medium text-slate-400">{item.label}</p>
                           <p className="text-[13px] font-semibold text-slate-800 mt-1 break-words">{item.val}</p>
                         </div>
                       ))}
@@ -699,13 +699,13 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                       ]
                       return (
                         <div>
-                          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2.5 px-1">Rekonsiliasi Detail</p>
+                          <p className="text-[11px] font-medium text-slate-500 mb-2.5 px-1">Rekonsiliasi detail</p>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                             {cols.map(col=>(
                               <div key={col.label} className="rounded-lg px-3.5 py-3 bg-white border border-slate-200">
                                 <div className="flex items-center gap-1.5 mb-1.5">
                                   <span className="w-1.5 h-1.5 rounded-full" style={{background:col.dot}}/>
-                                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide leading-tight">{col.label}</p>
+                                  <p className="text-[10px] font-medium text-slate-500 leading-tight">{col.label}</p>
                                 </div>
                                 <p className={`text-[14px] font-semibold ${col.warn?'text-red-500':'text-slate-800'}`}>{col.val}</p>
                                 <p className="text-[9px] text-slate-400 mt-0.5">{col.sub}</p>
@@ -716,7 +716,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                               <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
                                 <div className="flex items-center gap-1.5">
                                   <span className="w-1.5 h-1.5 rounded-full bg-green-500"/>
-                                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Sisa Fisik</p>
+                                  <p className="text-[10px] font-medium text-slate-500">Sisa fisik</p>
                                   {selisihSisaFisik!=null&&(
                                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${selisihSisaFisik>0?'bg-blue-50 text-blue-600':selisihSisaFisik<0?'bg-red-50 text-red-500':'bg-green-50 text-green-600'}`}>
                                       {selisihSisaFisik>0?`+${formatGram(selisihSisaFisik)}`:selisihSisaFisik<0?`-${formatGram(Math.abs(selisihSisaFisik))}`:'✓ Sesuai'}
@@ -739,7 +739,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                 )}
                               </div>
                               {!isEditSF&&(
-                                <p className="text-[14px] font-bold text-green-600">{sisaFisik!=null?formatGram(sisaFisik):'—'}</p>
+                                <p className="text-[14px] font-semibold text-green-600">{sisaFisik!=null?formatGram(sisaFisik):'—'}</p>
                               )}
                               {isEditSF&&(
                                 <div className="space-y-2 mt-1">
@@ -792,7 +792,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                     {/* ─── Peleburan section ─────────────── */}
                     <div className="rounded-lg overflow-hidden border border-slate-200">
                       <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-200">
-                        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">🔥 Riwayat Peleburan</p>
+                        <p className="text-[11px] font-medium text-slate-500">🔥 Riwayat peleburan</p>
                         {status==='aktif'&&(
                           <button type="button" onClick={()=>setPeleburanModalBatch(batch.kode)}
                             className="flex items-center gap-1 px-2.5 h-7 rounded-lg text-[11px] font-bold text-white bg-violet-600 hover:bg-violet-700 transition-colors">
@@ -960,7 +960,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                             {plb.loss_approval&&(
                               <div className="mt-2 rounded-xl overflow-hidden border border-red-100">
                                 <div className="px-3 py-2 flex items-center gap-2 bg-red-50">
-                                  <span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss Peleburan</span>
+                                  <span className="text-[10px] font-semibold text-red-600">⚠ TTD loss peleburan</span>
                                   <span className="text-[10px] text-red-400 ml-auto">Loss disetujui</span>
                                 </div>
                                 <div className="px-3 py-2.5 space-y-1.5">
@@ -1057,7 +1057,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
             <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200">
               <button onClick={()=>setLockModal(null)}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
               <button onClick={()=>startTransition(async()=>{const r=await lockBatch(lockModal.id,lockModal.kode);if(r?.error)showToast(r.error,false);else{showToast('🔒 Batch dikunci');setLockModal(null)}})} disabled={isPending}
-                className="flex-1 h-9 rounded-lg bg-amber-500 hover:bg-amber-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                className="flex-1 h-9 rounded-lg bg-amber-500 hover:bg-amber-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                 {isPending&&<span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
                 {isPending?'Memproses...':'Kunci'}
               </button>
@@ -1086,7 +1086,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
             <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200">
               <button onClick={()=>setDelModal(null)}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
               <button onClick={()=>startTransition(async()=>{const r=await deleteBatch(delModal.id,delModal.kode);if(r?.error)showToast(r.error,false);else{showToast('🗑️ Batch dihapus');setDelModal(null)}})} disabled={isPending}
-                className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                 {isPending&&<span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
                 {isPending?'Menghapus...':'Ya, Hapus'}
               </button>
@@ -1173,7 +1173,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
           {/* SUMBER BAHAN — 3 pilihan */}
           <div className="rounded-lg overflow-hidden border border-slate-200">
             <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-200">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">🧱 Sumber Bahan</span>
+              <span className="text-[11px] font-medium text-slate-500">🧱 Sumber bahan</span>
             </div>
             <div className="p-4 space-y-4">
 
@@ -1259,26 +1259,26 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
           {/* DISERAHKAN */}
           <div className="rounded-lg overflow-hidden border border-slate-200">
             <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-200">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">📤 Diserahkan</span>
+              <span className="text-[11px] font-medium text-slate-500">📤 Diserahkan</span>
             </div>
             <div className="p-4 space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Mulai *</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Mulai *</label>
                   <input name="tanggal" type="date" defaultValue={new Date().toISOString().split('T')[0]} className={inp} required/>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jam Mulai *</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Mulai *</label>
                   <input name="jam_mulai" type="time" className={inp} required/>
                 </div>
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bahan Baku untuk di Lebur</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Bahan Baku untuk di Lebur</label>
                 <FotoPicker files={fotos} onAdd={ff=>setFotos(p=>[...p,...ff].slice(0,10))} onRemove={i=>i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))} label="Tambah foto" />
               </div>
               <AdminPickerStd adminList={adminList} prefix="" />
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">
                   Catatan {mentahNaik&&<span className="text-red-500">* (wajib — timbangan naik)</span>}
                 </label>
                 <input name="keterangan_serahkan" type="text"
@@ -1297,7 +1297,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
           <div className="flex gap-2.5 pb-2">
             <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
             <button type="submit" disabled={pend||totalDikasih<=0}
-              className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+              className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
               {pend?'Menyimpan…':`Mulai Peleburan (${formatGram(totalDikasih)})`}
             </button>
           </div>
@@ -1376,35 +1376,35 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
 
           <div className="rounded-lg overflow-hidden border border-slate-200">
             <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-200">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">📥 Diterima</span>
+              <span className="text-[11px] font-medium text-slate-500">📥 Diterima</span>
             </div>
             <div className="p-4 space-y-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Berat Diterima (gr) *</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Berat Diterima (gr) *</label>
                 <input name="diterima_gram" type="number" step="0.001"
                   value={diterimaVal} onChange={e=>setDiterimaVal(e.target.value)}
                   placeholder="cth: 499.980" className={inp} required/>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Selesai *</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Selesai *</label>
                   <input name="tanggal_diterima" type="date"
                     defaultValue={new Date().toISOString().split('T')[0]}
                     className={inp} required/>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jam Selesai *</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Selesai *</label>
                   <input name="jam_selesai" type="time" className={inp} required/>
                 </div>
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bukti</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Bukti</label>
                 <FotoPicker files={fotos} onAdd={ff=>setFotos(p=>[...p,...ff].slice(0,10))} onRemove={i=>i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))} label="Tambah foto bukti" />
               </div>
               <TimPickerStd tims={tims} prefix="terima_" />
               <AdminPickerStd adminList={adminList} prefix="terima_" label="Admin Yang Menerima" />
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan Selesai Lebur</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan Selesai Lebur</label>
                 <input name="keterangan_diterima" type="text" placeholder="Opsional" className={inp}/>
               </div>
             </div>
@@ -1439,7 +1439,7 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
               Batal
             </button>
             <button type="submit" disabled={pend}
-              className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+              className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
               {pend ? 'Menyimpan…' : 'Konfirmasi Selesai'}
             </button>
           </div>
@@ -1495,11 +1495,11 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
         <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           <div className="rounded-lg overflow-hidden border border-slate-200">
             <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-200">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">📤 Diserahkan</span>
+              <span className="text-[11px] font-medium text-slate-500">📤 Diserahkan</span>
             </div>
             <div className="p-4 space-y-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Berat Diserahkan (gr) *</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Berat Diserahkan (gr) *</label>
                 <input name="dikasih_gram" type="number" step="0.001"
                   defaultValue={peleburan.dikasih_gram} className={inp}
                   onChange={e => setEditDikasih(e.target.value)} required/>
@@ -1517,17 +1517,17 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Mulai *</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Mulai *</label>
                   <input name="tanggal" type="date" defaultValue={peleburan.tanggal} className={inp} required/>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jam Mulai *</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Mulai *</label>
                   <input name="jam_mulai" type="time" defaultValue={toTime(peleburan.jam_mulai)} className={inp} required/>
                 </div>
               </div>
               {existingFotos.length > 0 && (
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto saat ini</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto saat ini</label>
                   <div className="flex flex-wrap gap-2">
                     {existingFotos.map((url,i) => (
                       <div key={i} className="relative">
@@ -1540,12 +1540,12 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
                 </div>
               )}
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tambah Foto</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tambah Foto</label>
                 <FotoPicker files={newFotos} onAdd={ff=>setNewFotos(p=>[...p,...ff].slice(0,5))} onRemove={i=>i===-1?setNewFotos([]):setNewFotos(p=>p.filter((_,j)=>j!==i))} label="Tambah foto" />
               </div>
               <AdminPickerStd adminList={adminList} prefix="" initialValue={peleburan.admin_input??''} />
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan</label>
                 <input name="keterangan_serahkan" type="text" defaultValue={peleburan.keterangan_serahkan??''} placeholder="Opsional" className={inp}/>
               </div>
             </div>
@@ -1658,28 +1658,28 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
 
           <div className="rounded-lg overflow-hidden border border-slate-200">
             <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-200">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">📥 Diterima</span>
+              <span className="text-[11px] font-medium text-slate-500">📥 Diterima</span>
             </div>
             <div className="p-4 space-y-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Berat Diterima (gr) *</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Berat Diterima (gr) *</label>
                 <input name="diterima_gram" type="number" step="0.001"
                   value={diterimaVal} onChange={e => setDiterimaVal(e.target.value)}
                   className={inp} required/>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Selesai</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Selesai</label>
                   <input name="tanggal_diterima" type="date" defaultValue={peleburan.tanggal_diterima ?? ''} className={inp}/>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jam Selesai</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Selesai</label>
                   <input name="jam_selesai" type="time" defaultValue={toTime(peleburan.jam_selesai)} className={inp}/>
                 </div>
               </div>
               {existingFotosDiterima.length > 0 && (
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto diterima saat ini</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto diterima saat ini</label>
                   <div className="flex flex-wrap gap-2">
                     {existingFotosDiterima.map((url,i) => (
                       <div key={i} className="relative">
@@ -1692,7 +1692,7 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
                 </div>
               )}
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tambah Foto Diterima</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tambah Foto Diterima</label>
                 <FotoPicker files={newFotosDiterima} onAdd={ff=>setNewFotosDiterima(p=>[...p,...ff].slice(0,5))} onRemove={i=>i===-1?setNewFotosDiterima([]):setNewFotosDiterima(p=>p.filter((_,j)=>j!==i))} label="Tambah foto diterima" />
               </div>
               {/* Tim picker: pre-fill anggota dari tim saat ini jika tim_anggota_aktif belum terisi */}
@@ -1709,7 +1709,7 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
           })()}
               <AdminPickerStd adminList={adminList} prefix="terima_" initialValue={peleburan.admin_input??''} label="Admin Yang Menerima" />
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan Selesai Lebur</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan Selesai Lebur</label>
                 <input name="keterangan_diterima" type="text" defaultValue={peleburan.keterangan_diterima??''} placeholder="Opsional" className={inp}/>
               </div>
             </div>
