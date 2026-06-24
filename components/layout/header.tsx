@@ -11,7 +11,7 @@ interface HeaderProps {
 
 export default function Header({ title, subtitle, onMenuClick }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-slate-200 px-4 lg:px-6 h-[52px] flex items-center">
+    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-slate-200 px-4 lg:px-6 h-[64px] flex items-center">
       <div className="flex items-center gap-3 w-full">
 
         {/* Mobile menu */}
@@ -26,9 +26,9 @@ export default function Header({ title, subtitle, onMenuClick }: HeaderProps) {
 
         {/* Title */}
         <div className="flex-1 min-w-0">
-          <h1 className="text-[14px] font-semibold text-slate-900 tracking-tight truncate leading-none">{title}</h1>
+          <h1 className="text-[17px] font-bold text-slate-900 tracking-tight truncate leading-none">{title}</h1>
           {subtitle && (
-            <p className="text-[11px] text-slate-400 mt-0.5 hidden sm:block truncate leading-none font-normal">{subtitle}</p>
+            <p className="text-[12px] text-slate-400 mt-1 hidden sm:block truncate leading-none font-normal">{subtitle}</p>
           )}
         </div>
 
