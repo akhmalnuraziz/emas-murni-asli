@@ -10,7 +10,7 @@ interface CardProps {
 export function Card({ children, className, hoverable, padded = true }: CardProps) {
   return (
     <div className={cn(
-      'bg-white border border-slate-200 rounded-xl',
+      'bg-white border border-slate-200/80 rounded-xl shadow-sm',
       padded && 'p-5',
       hoverable && 'transition-all duration-150 hover:shadow-md hover:border-slate-300 cursor-pointer',
       className,
@@ -40,7 +40,7 @@ export function CardSection({ label, children, className }: { label?: string; ch
   return (
     <div className={cn('mb-4 last:mb-0', className)}>
       {label && (
-        <p className="text-[10.5px] font-semibold text-slate-400 uppercase tracking-widest mb-2">
+        <p className="text-[11px] font-medium text-slate-400 mb-2">
           {label}
         </p>
       )}
