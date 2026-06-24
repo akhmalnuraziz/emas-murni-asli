@@ -8,6 +8,7 @@ import {
   BoxSelect, TriangleAlert, Boxes, Wallet, Calendar, ChevronRight,
 } from 'lucide-react'
 import { cn, formatRupiah, formatDate } from '@/lib/utils'
+import { Badge, StatusBadge } from '@/components/ui/badge'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
@@ -109,10 +110,10 @@ function PeriodSelector({ period, dateFrom, dateTo }: { period: string; dateFrom
         <div className="flex items-center gap-2 flex-wrap bg-white rounded-xl px-3 py-2.5 border border-slate-200">
           <span className="text-[11px] text-slate-500 font-medium">Dari</span>
           <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
-            className="text-[12px] border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-violet-400 bg-slate-50" />
+            className="text-[12px] border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-violet-400 bg-white" />
           <span className="text-[11px] text-slate-500 font-medium">s/d</span>
           <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
-            className="text-[12px] border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-violet-400 bg-slate-50" />
+            className="text-[12px] border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-violet-400 bg-white" />
           <button
             onClick={() => router.push(`/dashboard?period=custom&from=${customFrom}&to=${customTo}`)}
             className="px-3 py-1 rounded-lg bg-violet-600 text-white text-[12px] font-semibold hover:bg-violet-700 transition-colors">
@@ -337,9 +338,7 @@ export default function DashboardClient({
                         <p className="text-[11px] text-slate-400 mt-1 font-normal">Target: {targetPackingHarian.toLocaleString('id-ID')} pcs/hari</p>
                       )}
                     </div>
-                    <span className="text-[11px] text-green-700 font-semibold bg-green-50 border border-green-100 px-2.5 py-1 rounded-lg">
-                      {packingHariIni.length} lot
-                    </span>
+                    <Badge variant="success">{packingHariIni.length} lot</Badge>
                   </div>
                   {targetPackingHarian > 0 && (
                     <div className="mb-4">
@@ -411,7 +410,7 @@ export default function DashboardClient({
                       <p className="text-[12px] font-mono font-semibold text-red-600">{item.kode}</p>
                       <p className="text-[11px] text-slate-400">Batch {item.batch_kode} · {item.gramasi}gr</p>
                     </div>
-                    <span className="text-[13px] font-bold text-red-500 tabular-nums">{Number(item.berat_reject).toFixed(2)} gr</span>
+                    <span className="text-[13px] font-semibold text-red-500 tabular-nums">{Number(item.berat_reject).toFixed(2)} gr</span>
                   </div>
                 ))}
                 {rejectList.length > 8 && (
@@ -484,12 +483,7 @@ export default function DashboardClient({
                     <p className="text-[12px] font-semibold text-slate-700 tabular-nums">
                       {b.timbangan_akhir ? `${Number(b.timbangan_akhir).toFixed(2)} gr` : '—'}
                     </p>
-                    <span className={cn(
-                      'text-[10px] font-semibold px-1.5 py-0.5 rounded-md border',
-                      b.status === 'Selesai'
-                        ? 'bg-green-50 text-green-700 border-green-100'
-                        : 'bg-amber-50 text-amber-700 border-amber-100'
-                    )}>{b.status ?? 'Proses'}</span>
+                    <StatusBadge status={b.status ?? 'Proses'} />
                   </div>
                 </div>
               ))}
@@ -509,7 +503,7 @@ function Section({ icon, label, children }: { icon: React.ReactNode; label: stri
     <div>
       <div className="flex items-center gap-1.5 mb-2.5">
         {icon}
-        <p className="text-[10.5px] font-semibold text-slate-400 uppercase tracking-widest">{label}</p>
+        <p className="text-[11px] font-medium text-slate-400">{label}</p>
       </div>
       {children}
     </div>
@@ -519,7 +513,7 @@ function Section({ icon, label, children }: { icon: React.ReactNode; label: stri
 function Card({ children, className, hoverable }: { children: React.ReactNode; className?: string; hoverable?: boolean }) {
   return (
     <div className={cn(
-      'bg-white border border-slate-200 rounded-xl p-5',
+      'bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm',
       hoverable && 'transition-all duration-150 hover:shadow-md hover:border-slate-300',
       className
     )}>
@@ -538,7 +532,7 @@ function KpiCard({ label, value, sub, sub2, icon: Icon, iconColor, iconBg, alert
       alert ? 'border-red-200' : 'border-slate-200'
     )}>
       <div className="flex items-start justify-between mb-3">
-        <p className="text-[10.5px] font-semibold text-slate-500 uppercase tracking-wide leading-tight">{label}</p>
+        <p className="text-[11px] font-medium text-slate-500 leading-tight">{label}</p>
         <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', iconBg)}>
           <Icon size={15} className={iconColor} />
         </div>
@@ -597,7 +591,7 @@ function TrendProduksi({ trend }: {
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <p className="text-[13px] font-bold text-slate-800 tabular-nums">{totalPcs.toLocaleString('id-ID')} pcs</p>
+            <p className="text-[13px] font-semibold text-slate-800 tabular-nums">{totalPcs.toLocaleString('id-ID')} pcs</p>
             <p className="text-[10px] text-slate-400">Ø {avgPerDay}/hari aktif</p>
           </div>
           <div className="flex rounded-lg overflow-hidden border border-slate-200">
@@ -689,7 +683,7 @@ function TrendProduksi({ trend }: {
                       </td>
                     )
                   })}
-                  <td className="px-4 py-2 text-right font-bold text-slate-700 border-l border-slate-200 tabular-nums">
+                  <td className="px-4 py-2 text-right font-semibold text-slate-700 border-l border-slate-200 tabular-nums">
                     {totalPerGramasi[g].toLocaleString('id-ID')}
                   </td>
                 </tr>
@@ -697,20 +691,20 @@ function TrendProduksi({ trend }: {
             </tbody>
             <tfoot>
               <tr className="bg-violet-50 border-t-2 border-violet-100">
-                <td className="sticky left-0 bg-violet-50 px-4 py-2.5 font-bold text-violet-700 border-r border-violet-100 text-[11px]">
+                <td className="sticky left-0 bg-violet-50 px-4 py-2.5 font-semibold text-violet-700 border-r border-violet-100 text-[11px]">
                   Total
                 </td>
                 {allDays.map(d => {
                   const v = dailyTotal[d] ?? 0
                   return (
-                    <td key={d} className="px-2 py-2.5 text-center font-bold tabular-nums">
+                    <td key={d} className="px-2 py-2.5 text-center font-semibold tabular-nums">
                       {v > 0
                         ? <span className="text-violet-700">{v}</span>
                         : <span className="text-slate-200">0</span>}
                     </td>
                   )
                 })}
-                <td className="px-4 py-2.5 text-right font-bold text-violet-800 border-l border-violet-100 text-[11px] tabular-nums">
+                <td className="px-4 py-2.5 text-right font-semibold text-violet-800 border-l border-violet-100 text-[11px] tabular-nums">
                   {totalPcs.toLocaleString('id-ID')}
                 </td>
               </tr>
