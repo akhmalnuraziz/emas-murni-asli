@@ -168,9 +168,8 @@ function FotoPicker({ files, onAdd, onRemove, label='Tambah foto', small=false }
         <div className="flex gap-2 flex-wrap">
           {prev.map((u, i) => (
             <div key={i} className={`relative ${s}`}>
-              <img src={u} onClick={() => setLightbox(u)} className="w-full h-full object-cover rounded-xl border-2 border-violet-300 cursor-pointer hover:scale-105 transition-transform" />
+              <img src={u} onClick={() => setLightbox(u)} className="w-full h-full object-cover rounded-xl border border-slate-200 cursor-pointer hover:scale-105 transition-transform" />
               <button type="button" onClick={() => onRemove(i)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center"><X size={9} /></button>
-              <div className="absolute bottom-0 inset-x-0 bg-violet-500/70 text-white text-[7px] text-center py-0.5 rounded-b-xl">BARU</div>
             </div>
           ))}
         </div>
@@ -601,8 +600,8 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
           </div>
           <AdminPickerStd adminList={adminList} prefix="" label="Admin Yang Menyerahkan" />
           <F label="Catatan"><input name="catatan" placeholder="Catatan tambahan..." className={inp} /></F>
-          <F label="Foto Proses (opsional, max 10)">
-            <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto proses awal" />
+          <F label="Foto Diserahkan (max 10 foto)">
+            <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto" />
           </F>
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/>{error}</div>}
           <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0 -mx-5 -mb-4 mt-2">
@@ -694,7 +693,7 @@ function TambahProduksiModal({ item, peleburanByBatch, tims, adminList, onClose,
           </div>
 
           <AdminPickerStd adminList={adminList} prefix="" label="Admin Yang Menyerahkan" />
-          <F label="Foto Proses (opsional, max 10)">
+          <F label="Foto Diserahkan (max 10 foto)">
             <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto" />
           </F>
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/>{error}</div>}
