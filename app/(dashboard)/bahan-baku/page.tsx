@@ -4,10 +4,17 @@ import BahanBakuClient from '@/components/modules/bahan-baku/bahan-baku-client'
 
 export const dynamic = 'force-dynamic'
 
-export default async function BahanBakuPage() {
+export default async function BahanBakuPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const sp = await searchParams
+  const q = sp.q?.trim() ?? ''
 
   const [
     { data: batches },
@@ -22,7 +29,11 @@ export default async function BahanBakuPage() {
     { data: lossApprovalRows },
     { data: batchLossRows },
   ] = await Promise.all([
-    supabase.from('batch').select('*').order('created_at', { ascending: false }).limit(200),
+    (() => {
+      let bq = supabase.from('batch').select('*').order('created_at', { ascending: false })
+      if (q) bq = bq.or(`kode.ilike.%${q}%,nama_batch.ilike.%${q}%,supplier.ilike.%${q}%`) as any
+      return bq.limit(200)
+    })(),
     supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
     supabase.from('peleburan')
       .select('id, kode, batch_kode, tanggal, jam_mulai, dikasih_gram, diterima_gram, losses_gram, sumber_batch_gram, operator, keterangan_serahkan, foto_serahkan, tanggal_diterima, jam_selesai, operator_diterima, keterangan_diterima, foto_diterima, status, tim_id, tim_nama, admin_input, tim_anggota_aktif')
@@ -101,6 +112,7 @@ export default async function BahanBakuPage() {
       userRole={profile?.role ?? 'operator_produksi'}
       userName={profile?.name ?? ''}
       batchLossMap={batchLossMap}
+      currentQ={q}
     />
   )
 }

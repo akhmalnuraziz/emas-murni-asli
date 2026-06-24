@@ -17,7 +17,7 @@ import type { UserRole } from '@/lib/types/database'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
 import { TimPickerStd, AdminPickerStd } from '@/components/modules/produksi/serah-terima-modal'
 
-interface Props { batches: any[]; peleburanList?: any[]; rejectItems?: any[]; produksiItems?: any[]; rejectCountMap: Record<string, number>; toleransiPeleburan?: number; tims?: any[]; adminList?: any[]; userRole: UserRole; userName: string; batchLossMap?: Record<number, any> }
+interface Props { batches: any[]; peleburanList?: any[]; rejectItems?: any[]; produksiItems?: any[]; rejectCountMap: Record<string, number>; toleransiPeleburan?: number; tims?: any[]; adminList?: any[]; userRole: UserRole; userName: string; batchLossMap?: Record<number, any>; currentQ?: string }
 
 // ─── Selisih helper ──────────────────────────────────────────────────────────
 function hitungSelisih(pusat: number, gudang: number) {
@@ -332,7 +332,7 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
-export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[],produksiItems=[],rejectCountMap,toleransiPeleburan=0.05,tims=[],adminList=[],userRole,userName,batchLossMap={}}:Props){
+export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[],produksiItems=[],rejectCountMap,toleransiPeleburan=0.05,tims=[],adminList=[],userRole,userName,batchLossMap={},currentQ=''}:Props){
   const [filter,setFilter]=useState<'semua'|'aktif'|'terkunci'>('semua')
   const router = useRouter()
   const [peleburanModalBatch,setPeleburanModalBatch]=useState<string|null>(null)
@@ -340,7 +340,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
   const [hapusPlbId,setHapusPlbId]=useState<number|null>(null)
   const [editPlbItem,setEditPlbItem]=useState<any>(null)
   const [editPlbMode,setEditPlbMode]=useState<'serah'|'terima'>('serah')
-  const [search,setSearch]=useState(()=>typeof window!=='undefined'?new URLSearchParams(window.location.search).get('q')??'':'')
+  const [search,setSearch]=useState(currentQ)
   const [expanded,setExpanded]=useState<number|null>(null)
   const [showCreate,setShowCreate]=useState(false)
   const [showRingkas,setShowRingkas]=useState(false)
@@ -367,13 +367,13 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
 
   function showToast(msg:string,ok=true){setToast({msg,ok});setTimeout(()=>setToast(null),3500)}
 
+  // search already applied server-side; only status filter is client-side
   const filtered = batches.filter(b=>{
     if(getBatchStatus(b)==='dihapus') return false
     const st=getBatchStatus(b)
     if(filter==='aktif'&&st!=='aktif') return false
     if(filter==='terkunci'&&st!=='terkunci') return false
-    const q=search.toLowerCase()
-    return!q||b.kode?.toLowerCase().includes(q)||b.nama_batch?.toLowerCase().includes(q)||b.supplier?.toLowerCase().includes(q)
+    return true
   })
 
   function handleCreate(fd:FormData){setFormError('');startTransition(async()=>{const r=await createBatch(fd);if(r?.error){setFormError(r.error);return}showToast('✅ Batch berhasil disimpan');setShowCreate(false)})}
@@ -471,11 +471,11 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
               {f==='semua'?`Semua (${batches.filter(b=>getBatchStatus(b)!=='dihapus').length})`:f==='aktif'?'Aktif':'Terkunci'}
             </button>
           ))}
-          <div className="relative flex-1 min-w-[200px]">
+          <form onSubmit={e=>{e.preventDefault();const sp=new URLSearchParams();if(search)sp.set('q',search);router.push(`/bahan-baku${search?'?'+sp.toString():''}`)}} className="relative flex-1 min-w-[200px]">
             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cari kode, nama, supplier..."
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Cari kode, nama, supplier… (Enter)"
               className="w-full pl-9 pr-3 h-8 text-[12px] rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
-          </div>
+          </form>
         </div>
 
         {/* Batch cards */}
