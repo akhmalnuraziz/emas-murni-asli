@@ -1270,23 +1270,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto</label>
-                <label className="flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-violet-50">
-                  <Camera size={14} className="text-slate-400 flex-shrink-0"/>
-                  <span className="text-[12px] text-slate-400">{fotos.length>0?`${fotos.length} foto dipilih`:'Tambah foto'}</span>
-                  <input type="file" accept="image/*" multiple className="hidden"
-                    onChange={e=>setFotos(p=>[...p,...Array.from(e.target.files??[])].slice(0,10))}/>
-                </label>
-                {fotos.length>0&&(
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {fotos.map((f,i)=>(
-                      <div key={i} className="relative">
-                        <img src={URL.createObjectURL(f)} alt="" className="w-14 h-14 rounded-xl object-cover border border-violet-200"/>
-                        <button type="button" onClick={()=>setFotos(p=>p.filter((_,j)=>j!==i))}
-                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[12px] flex items-center justify-center">×</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <FotoPicker files={fotos} onAdd={ff=>setFotos(p=>[...p,...ff].slice(0,10))} onRemove={i=>i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))} label="Tambah foto" />
               </div>
               <AdminPickerStd adminList={adminList} prefix="" />
               <div>
@@ -1411,23 +1395,7 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bukti</label>
-                <label className="flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-green-50 transition-colors">
-                  <Camera size={14} className="text-slate-400 flex-shrink-0"/>
-                  <span className="text-[12px] text-slate-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto'}</span>
-                  <input type="file" accept="image/*" multiple className="hidden"
-                    onChange={e => setFotos(p => [...p, ...Array.from(e.target.files??[])].slice(0,10))}/>
-                </label>
-                {fotos.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {fotos.map((f,i) => (
-                      <div key={i} className="relative">
-                        <img src={URL.createObjectURL(f)} alt="" className="w-14 h-14 rounded-xl object-cover border border-green-200"/>
-                        <button type="button" onClick={() => setFotos(p => p.filter((_,j) => j!==i))}
-                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[12px] flex items-center justify-center">×</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <FotoPicker files={fotos} onAdd={ff=>setFotos(p=>[...p,...ff].slice(0,10))} onRemove={i=>i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))} label="Tambah foto bukti" />
               </div>
               <TimPickerStd tims={tims} prefix="terima_" />
               <AdminPickerStd adminList={adminList} prefix="terima_" />
@@ -1569,23 +1537,7 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
               )}
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tambah Foto</label>
-                <label className="flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-violet-50">
-                  <Camera size={14} className="text-slate-400 flex-shrink-0"/>
-                  <span className="text-[12px] text-slate-400">{newFotos.length > 0 ? `${newFotos.length} foto baru — klik tambah` : 'Tambah foto'}</span>
-                  <input type="file" accept="image/*" multiple className="hidden"
-                    onChange={e => setNewFotos(p => [...p, ...Array.from(e.target.files??[])].slice(0,5))}/>
-                </label>
-                {newFotos.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {newFotos.map((f,i) => (
-                      <div key={i} className="relative">
-                        <img src={URL.createObjectURL(f)} alt="" className="w-14 h-14 rounded-xl object-cover border-2 border-violet-300 cursor-pointer hover:scale-105 transition-transform"/>
-                        <button type="button" onClick={() => setNewFotos(p => p.filter((_,j) => j!==i))}
-                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[12px] flex items-center justify-center"><X size={9}/></button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <FotoPicker files={newFotos} onAdd={ff=>setNewFotos(p=>[...p,...ff].slice(0,5))} onRemove={i=>i===-1?setNewFotos([]):setNewFotos(p=>p.filter((_,j)=>j!==i))} label="Tambah foto" />
               </div>
               <AdminPickerStd adminList={adminList} prefix="" initialValue={peleburan.admin_input??''} />
               <div>
@@ -1737,23 +1689,7 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
               )}
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tambah Foto Diterima</label>
-                <label className="flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-green-50">
-                  <Camera size={14} className="text-slate-400 flex-shrink-0"/>
-                  <span className="text-[12px] text-slate-400">{newFotosDiterima.length > 0 ? `${newFotosDiterima.length} foto baru — klik tambah` : 'Tambah foto'}</span>
-                  <input type="file" accept="image/*" multiple className="hidden"
-                    onChange={e => setNewFotosDiterima(p => [...p, ...Array.from(e.target.files??[])].slice(0,5))}/>
-                </label>
-                {newFotosDiterima.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {newFotosDiterima.map((f,i) => (
-                      <div key={i} className="relative">
-                        <img src={URL.createObjectURL(f)} alt="" className="w-14 h-14 rounded-xl object-cover border-2 border-green-300 cursor-pointer hover:scale-105 transition-transform"/>
-                        <button type="button" onClick={() => setNewFotosDiterima(p => p.filter((_,j) => j!==i))}
-                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[12px] flex items-center justify-center"><X size={9}/></button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <FotoPicker files={newFotosDiterima} onAdd={ff=>setNewFotosDiterima(p=>[...p,...ff].slice(0,5))} onRemove={i=>i===-1?setNewFotosDiterima([]):setNewFotosDiterima(p=>p.filter((_,j)=>j!==i))} label="Tambah foto diterima" />
               </div>
               {/* Tim picker: pre-fill anggota dari tim saat ini jika tim_anggota_aktif belum terisi */}
           {(()=>{
