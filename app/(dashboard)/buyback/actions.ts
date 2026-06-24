@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createNotif } from '@/app/(dashboard)/notifikasi/actions'
 
 async function generateBuybackCode(supabase: any): Promise<string> {
   const { data } = await supabase.rpc('increment_counter', { counter_name: 'buyback' })
@@ -87,6 +88,14 @@ export async function createBuyback(params: {
       after_data: { nama_customer: params.namaCustomer, hasil_inspeksi: params.hasilInspeksi },
     })
 
+    await createNotif({
+      judul: `Buyback Baru: ${kode}`,
+      pesan: `${params.namaCustomer} · ${params.gramasi}gr · Rp${params.hargaBeli.toLocaleString('id-ID')}`,
+      tipe: 'info',
+      link: '/buyback',
+      untuk_role: ['owner', 'admin_pusat', 'spv'],
+    })
+
     revalidatePath('/buyback')
     return { success: true, kode }
   } catch (e: any) {
@@ -134,6 +143,14 @@ export async function prossesBuyback(params: {
     record_key: params.kode,
     after_data: { aksi: params.aksi },
     reason: params.catatan,
+  })
+
+  await createNotif({
+    judul: `Buyback ${params.kode} Diproses`,
+    pesan: `Status: ${params.aksi} · oleh ${userName}`,
+    tipe: 'info',
+    link: '/buyback',
+    untuk_role: ['owner', 'admin_pusat', 'spv'],
   })
 
   revalidatePath('/buyback')

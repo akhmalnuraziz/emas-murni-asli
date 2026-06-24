@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createNotif } from '@/app/(dashboard)/notifikasi/actions'
 
 const GRAMASI_ORDER = ['0.1','0.5','1','2','5','10','20','25','50','100','250','500','1000']
 
@@ -176,6 +177,14 @@ export async function createStockAdjustment(params: {
     before_data: { qty: params.qtyBefore },
     after_data: { qty: params.qtyAfter },
     reason: params.alasan,
+  })
+
+  await createNotif({
+    judul: `Stok Cabang Disesuaikan`,
+    pesan: `${params.cabangNama} · ${params.gramasi}gr · ${params.qtyBefore} → ${params.qtyAfter} · ${params.alasan}`,
+    tipe: 'info',
+    link: '/stok-cabang',
+    untuk_role: ['owner', 'admin_pusat', 'spv'],
   })
 
   revalidatePath('/stok-cabang')

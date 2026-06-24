@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createNotif } from '@/app/(dashboard)/notifikasi/actions'
 
 // ── Kategori ─────────────────────────────────────────────────────────────────
 
@@ -100,6 +101,14 @@ export async function createPengeluaran(formData: FormData) {
   })
   if (error) return { error: error.message }
 
+  await createNotif({
+    judul: `Pengeluaran Baru: ${nama}`,
+    pesan: `Rp${nominal.toLocaleString('id-ID')} · ${lokasi}`,
+    tipe: 'info',
+    link: '/pengeluaran',
+    untuk_role: ['owner', 'admin_pusat', 'accounting'],
+  })
+
   revalidatePath('/pengeluaran')
   return { success: true }
 }
@@ -148,6 +157,14 @@ export async function voidPengeluaran(id: number, reason: string) {
     void_reason: reason.trim(),
   }).eq('id', id)
   if (error) return { error: error.message }
+
+  await createNotif({
+    judul: `Pengeluaran #${id} Di-VOID`,
+    pesan: `Alasan: ${reason.trim()}`,
+    tipe: 'warning',
+    link: '/pengeluaran',
+    untuk_role: ['owner', 'admin_pusat'],
+  })
 
   revalidatePath('/pengeluaran')
   return { success: true }

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createNotif } from '@/app/(dashboard)/notifikasi/actions'
 
 export async function createScrap(formData: FormData) {
   const supabase = await createClient()
@@ -34,6 +35,15 @@ export async function createScrap(formData: FormData) {
     created_by: user.id,
   })
   if (error) return { error: error.message }
+
+  await createNotif({
+    judul: `Scrap Baru: ${kode}`,
+    pesan: `${berat}gr · ${(formData.get('sumber_proses') as string) || 'manual'}`,
+    tipe: 'info',
+    link: '/scrap',
+    untuk_role: ['owner', 'admin_pusat', 'spv'],
+  })
+
   revalidatePath('/scrap')
   return { success: true, kode }
 }
@@ -71,6 +81,15 @@ export async function voidScrap(id: number, reason: string) {
     void_reason: reason,
   }).eq('id', id)
   if (error) return { error: error.message }
+
+  await createNotif({
+    judul: `Scrap #${id} Di-VOID`,
+    pesan: `Alasan: ${reason}`,
+    tipe: 'warning',
+    link: '/scrap',
+    untuk_role: ['owner', 'admin_pusat'],
+  })
+
   revalidatePath('/scrap')
   return { success: true }
 }

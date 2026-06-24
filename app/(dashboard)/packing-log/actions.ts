@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createNotif } from '@/app/(dashboard)/notifikasi/actions'
 
 const PCKG_PREFIX = 'PCKG.GDCJ'
 
@@ -120,6 +121,15 @@ export async function createPacking(formData: FormData) {
 
   revalidatePath('/packing-log')
   revalidatePath('/produksi')
+
+  await createNotif({
+    judul: `Packing Baru: ${kode}`,
+    pesan: `${produksi.gramasi}gr · ${pcsDispack} pcs · oleh ${profile?.name ?? 'Admin'}`,
+    tipe: 'success',
+    link: '/packing-log',
+    untuk_role: ['owner', 'admin_pusat', 'spv'],
+  })
+
   return { success: true, kode }
 }
 
@@ -177,6 +187,15 @@ export async function editPacking(packingId: number, packingKode: string, formDa
 
   revalidatePath('/packing-log')
   revalidatePath('/produksi')
+
+  await createNotif({
+    judul: `Packing ${packingKode} Diedit`,
+    pesan: `${pcsDispack} pcs · oleh ${profile?.name ?? 'Admin'}`,
+    tipe: 'info',
+    link: '/packing-log',
+    untuk_role: ['owner', 'admin_pusat'],
+  })
+
   return { success: true }
 }
 
@@ -217,6 +236,15 @@ export async function voidPacking(packingId: number, packingKode: string) {
 
   revalidatePath('/packing-log')
   revalidatePath('/produksi')
+
+  await createNotif({
+    judul: `Packing ${packingKode} Di-VOID`,
+    pesan: `Dihapus oleh ${profile?.name ?? 'Admin'}`,
+    tipe: 'warning',
+    link: '/packing-log',
+    untuk_role: ['owner', 'admin_pusat'],
+  })
+
   return { success: true }
 }
 
