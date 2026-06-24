@@ -4,6 +4,8 @@ import BuybackClient from '@/components/modules/buyback/buyback-client'
 import { getBuybackList } from './actions'
 import type { UserRole } from '@/lib/types/database'
 
+export const dynamic = 'force-dynamic'
+
 export default async function BuybackPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

@@ -7,13 +7,14 @@ export const dynamic = 'force-dynamic'
 export default async function PengeluaranPage({
   searchParams,
 }: {
-  searchParams?: { period?: string; from?: string; to?: string }
+  searchParams: Promise<{ period?: string; from?: string; to?: string }>
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const period   = searchParams?.period ?? 'month'
+  const sp = await searchParams
+  const period   = sp?.period ?? 'month'
   const todayStr = new Date().toISOString().split('T')[0]
   let dateFrom: string
   let dateTo: string = todayStr
@@ -24,8 +25,8 @@ export default async function PengeluaranPage({
     const d = new Date(); d.setDate(d.getDate() - 6)
     dateFrom = d.toISOString().split('T')[0]
   } else if (period === 'custom') {
-    dateFrom = searchParams?.from ?? todayStr.slice(0, 7) + '-01'
-    dateTo   = searchParams?.to ?? todayStr
+    dateFrom = sp?.from ?? todayStr.slice(0, 7) + '-01'
+    dateTo   = sp?.to ?? todayStr
   } else {
     dateFrom = todayStr.slice(0, 7) + '-01'
   }

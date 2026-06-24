@@ -24,14 +24,15 @@ export default async function PrioritasProduksiPage() {
       .select('id, kode, cabang_nama, status, items:po_cabang_item(gramasi, qty_diminta, qty_dikirim)')
       .in('status', ['pending', 'diproses']),
     // Stok aktif per gramasi
-    supabase.from('shieldtag').select('gramasi').eq('status', 'Aktif').is('voided_at', null),
+    supabase.from('shieldtag').select('gramasi').eq('status', 'Aktif').is('voided_at', null).limit(5000),
     // Stok transit per gramasi
-    supabase.from('shieldtag').select('gramasi').eq('status', 'Terdistribusi').is('voided_at', null),
+    supabase.from('shieldtag').select('gramasi').eq('status', 'Terdistribusi').is('voided_at', null).limit(5000),
     // WIP: produksi_item yang sedang berjalan (belum jadi shieldtag)
     supabase.from('produksi_item')
       .select('gramasi')
       .not('current_status', 'in', '("Sudah Packing","Reject")')
-      .is('voided_at', null),
+      .is('voided_at', null)
+      .limit(1000),
     // Semua gramasi yang ada di master
     supabase.from('gramasi_option').select('nilai').eq('aktif', true).order('urutan'),
     // Safety stock setting dari pengaturan (global + per-gramasi)

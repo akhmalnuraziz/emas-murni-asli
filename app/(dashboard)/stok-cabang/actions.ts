@@ -42,10 +42,12 @@ export async function getStokSemuaCabang(cabangKodeFilter?: string): Promise<{ d
     supabase.from('shieldtag')
       .select('gramasi, lokasi')
       .eq('status', 'Terdistribusi')
-      .is('voided_at', null),
+      .is('voided_at', null)
+      .limit(5000),
     supabase.from('stok_cabang_adjustment')
       .select('cabang_kode, gramasi, selisih, created_at')
-      .order('created_at', { ascending: false }),
+      .order('created_at', { ascending: false })
+      .limit(2000),
     supabase.from('po_cabang_item')
       .select('gramasi, qty_diminta, qty_diterima, po:po_cabang!inner(cabang_kode, status)')
       .not('po.status', 'in', '("selesai","ditolak")'),

@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import ScrapClient from '@/components/modules/scrap/scrap-client'
 
+export const dynamic = 'force-dynamic'
+
 export default async function ScrapPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -13,7 +15,7 @@ export default async function ScrapPage() {
     { data: timList },
     { data: adminList },
   ] = await Promise.all([
-    supabase.from('scrap_inventory').select('*').is('voided_at', null).order('created_at', { ascending: false }),
+    supabase.from('scrap_inventory').select('*').is('voided_at', null).order('created_at', { ascending: false }).limit(500),
     supabase.from('tim_produksi').select('id, nama').eq('aktif', true),
     supabase.from('admin_input').select('id, nama').eq('aktif', true).is('voided_at', null),
   ])

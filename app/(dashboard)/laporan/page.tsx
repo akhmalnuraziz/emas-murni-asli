@@ -45,9 +45,9 @@ export default async function LaporanPage({
     { data: batches },
     { data: pengeluaranPeriode },
   ] = await Promise.all([
-    supabase.from('produksi_item').select('total_gram, current_status, berat_reject, status_reject').is('voided_at', null),
-    supabase.from('packing').select('pcs').is('voided_at', null),
-    supabase.from('shieldtag').select('status, gramasi').is('voided_at', null),
+    supabase.from('produksi_item').select('total_gram, current_status, berat_reject, status_reject').is('voided_at', null).limit(5000),
+    supabase.from('packing').select('pcs').is('voided_at', null).limit(5000),
+    supabase.from('shieldtag').select('status, gramasi').is('voided_at', null).limit(5000),
     // All-time penjualan for ringkasan (filter cabang jika kepala_cabang)
     (() => {
       let q = supabase.from('penjualan').select('gramasi, pcs, harga_jual').is('voided_at' as any, null)
@@ -63,8 +63,8 @@ export default async function LaporanPage({
       return q
     })(),
     supabase.from('buyback').select('id, tanggal').gte('tanggal', dateFrom).lte('tanggal', dateTo).is('voided_at', null),
-    supabase.from('mutasi').select('pcs').eq('status_kirim', 'Sudah Dikirim'),
-    supabase.from('batch').select('kode, tanggal, supplier, timbangan_akhir, hpp_gr, status').is('voided_at', null).order('created_at', { ascending: false }),
+    supabase.from('mutasi').select('pcs').eq('status_kirim', 'Sudah Dikirim').limit(5000),
+    supabase.from('batch').select('kode, tanggal, supplier, timbangan_akhir, hpp_gr, status').is('voided_at', null).order('created_at', { ascending: false }).limit(500),
     supabase.from('pengeluaran')
       .select('id, tanggal, nama, nominal, kategori:kategori_pengeluaran(nama, warna)')
       .gte('tanggal', dateFrom)
