@@ -29,6 +29,18 @@
   --color-gold-800: #654814;
   --color-gold-900: #4A3412;
 
+  /* ─── Type Scale — Apple iOS-inspired ─── */
+  --text-caption2: 10px;   /* label kecil, uppercase tag */
+  --text-caption1: 11px;   /* metadata, timestamp */
+  --text-footnote: 12px;   /* label form, badge */
+  --text-subhead:  13px;   /* body tabel, deskripsi pendek */
+  --text-callout:  14px;   /* highlight, card value */
+  --text-body:     15px;   /* konten utama */
+  --text-headline: 16px;   /* section title */
+  --text-title3:   18px;   /* page subheading */
+  --text-title2:   20px;   /* page heading */
+  --text-title1:   24px;   /* large heading */
+
   /* ─── Warm Neutrals — slate override ─── */
   --color-slate-50:  #F8F8F6;
   --color-slate-100: #F2F2EF;
@@ -41,13 +53,6 @@
   --color-slate-800: #252523;
   --color-slate-900: #141412;
   --color-slate-950: #0A0A09;
-}
-
-/* ─── Base font ─── */
-*, body {
-  font-family: 'Inter', 'SF Pro Text', ui-sans-serif, system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ─── Tabular numbers for data ─── */
