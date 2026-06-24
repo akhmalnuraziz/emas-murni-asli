@@ -16,7 +16,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       <div className="w-full">
         {label && (
           <label htmlFor={inputId}
-            className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+            className="block text-[11px] font-medium text-slate-500 mb-1.5">
             {label}
           </label>
         )}
@@ -30,9 +30,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'w-full bg-slate-50 border rounded-lg text-[13px] text-slate-900',
+              'w-full bg-white border rounded-lg text-[13px] text-slate-900',
               'placeholder:text-slate-400 placeholder:font-normal font-normal',
-              'focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100',
+              'focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100/60',
               'disabled:opacity-50 disabled:cursor-not-allowed',
               'transition-all duration-150',
               error
@@ -70,7 +70,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
       <div className="w-full">
         {label && (
           <label htmlFor={inputId}
-            className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+            className="block text-[11px] font-medium text-slate-500 mb-1.5">
             {label}
           </label>
         )}
@@ -79,7 +79,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           id={inputId}
           className={cn(
             'w-full bg-slate-50 border rounded-lg text-[13px] text-slate-900 px-3 py-2',
-            'focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100',
+            'focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100/60',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             'transition-all duration-150',
             error ? 'border-red-300' : 'border-slate-200',
@@ -112,7 +112,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
       <div className="w-full">
         {label && (
           <label htmlFor={inputId}
-            className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+            className="block text-[11px] font-medium text-slate-500 mb-1.5">
             {label}
           </label>
         )}
@@ -122,7 +122,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           className={cn(
             'w-full bg-slate-50 border rounded-lg text-[13px] text-slate-900 px-3 py-2',
             'placeholder:text-slate-400 font-normal',
-            'focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100',
+            'focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100/60',
             'disabled:opacity-50 disabled:cursor-not-allowed resize-y',
             'transition-all duration-150',
             error ? 'border-red-300' : 'border-slate-200',
