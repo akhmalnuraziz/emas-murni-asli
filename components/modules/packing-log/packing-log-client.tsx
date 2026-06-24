@@ -21,7 +21,7 @@ const today = new Date().toISOString().split('T')[0]
 const inp = "w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"
 const F = ({label,req,children}:{label:string;req?:boolean;children:React.ReactNode}) => (
   <div className="flex flex-col gap-1.5">
-    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{label}{req&&<span className="text-red-400 ml-0.5">*</span>}</label>
+    <label className="block text-[11px] font-medium text-slate-500 mb-1.5">{label}{req&&<span className="text-red-400 ml-0.5">*</span>}</label>
     {children}
   </div>
 )
@@ -209,7 +209,7 @@ function CreateModal({items,onClose,onSubmit,isPending,error}:{
           </div>
           <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
             <button type="button"onClick={onClose}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-            <button type="submit" disabled={isPending||up}className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            <button type="submit" disabled={isPending||up}className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {(isPending||up)&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
               {up?'Kompres foto...':isPending?'Menyimpan...':'Simpan Packing'}
             </button>
@@ -268,7 +268,7 @@ function EditModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;
           </div>
           <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
             <button type="button"onClick={onClose}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-            <button type="submit"disabled={isPending||up}className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            <button type="submit"disabled={isPending||up}className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {(isPending||up)&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
               {up?'Kompres...':isPending?'Menyimpan...':'Simpan'}
             </button>
@@ -291,24 +291,24 @@ function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint,onShieldtagC
     <div className="rounded-xl p-4 space-y-3 bg-white border border-slate-200">
       {lightbox&&<Lightbox url={lightbox} onClose={()=>setLightbox(null)}/>}
       <div className="flex items-center justify-between">
-        <span className="text-[12px] font-mono font-bold text-violet-600">{p.kode}</span>
+        <span className="text-[12px] font-mono font-semibold text-violet-600">{p.kode}</span>
         <div className="flex items-center gap-1.5">
-          {isPrinted&&<span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-emerald-700 bg-emerald-50">✓ Cetak</span>}
+          {isPrinted&&<span className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-emerald-700 bg-emerald-50">✓ Cetak</span>}
           <button onClick={onPrint}className="w-7 h-7 rounded-xl bg-violet-50 text-violet-500 flex items-center justify-center hover:bg-violet-100"title="Print"><Printer size={12}/></button>
           {canManage&&<button onClick={onEdit}className="w-7 h-7 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-100"title="Edit"><Edit2 size={11}/></button>}
           {canDelete&&<button onClick={onDelete}className="w-7 h-7 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100"title="Hapus"><Trash2 size={11}/></button>}
         </div>
       </div>
       <div className="grid grid-cols-3 gap-2">
-        <div><p className="text-[10px] text-slate-400">BATCH</p><p className="text-[12px] font-bold text-slate-700">{p.batch_kode}</p></div>
+        <div><p className="text-[10px] text-slate-400">Batch</p><p className="text-[12px] font-semibold text-slate-700">{p.batch_kode}</p></div>
         <div><p className="text-[10px] text-slate-400">TANGGAL</p><p className="text-[12px] font-semibold text-slate-700">{formatDate(p.tanggal)}</p></div>
-        <div><p className="text-[10px] text-slate-400">GRAMASI</p><p className="text-[12px] font-bold text-slate-700">{p.gramasi} gr</p></div>
-        <div><p className="text-[10px] text-slate-400">DIPACK</p><p className="text-[13px] font-bold text-slate-800">{p.pcs_dipack} pcs</p></div>
+        <div><p className="text-[10px] text-slate-400">Gramasi</p><p className="text-[12px] font-semibold text-slate-700">{p.gramasi} gr</p></div>
+        <div><p className="text-[10px] text-slate-400">Dipack</p><p className="text-[13px] font-semibold text-slate-800">{p.pcs_dipack} pcs</p></div>
         <div><p className="text-[10px] text-slate-400">TOTAL GRAM</p><p className="text-[12px] font-semibold text-slate-700">{Number(p.total_gram_aktual).toFixed(3)} gr</p></div>
         <div>
           <p className="text-[10px] text-slate-400">SHIELDTAG</p>
           <button type="button" onClick={()=>{ if(stCount>0&&onShieldtagClick) onShieldtagClick() }} disabled={stCount===0}
-            className={cn('text-[12px] font-bold',stCount>0?'text-emerald-600 underline decoration-dotted cursor-pointer':'text-slate-400 cursor-default')}>🏷 {stCount}/{p.pcs_dipack}</button>
+            className={cn('text-[12px] font-semibold',stCount>0?'text-emerald-600 underline decoration-dotted cursor-pointer':'text-slate-400 cursor-default')}>🏷 {stCount}/{p.pcs_dipack}</button>
         </div>
       </div>
       <div className="flex items-center gap-3 pt-1 border-t border-slate-100 flex-wrap">
@@ -480,7 +480,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
             <div key={c.label}className="rounded-xl p-4 bg-white border border-slate-200">
               <div className="flex items-center gap-1.5 mb-1">
                 <span className="w-1.5 h-1.5 rounded-full" style={{background:c.dot}}/>
-                <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">{c.label}</p>
+                <p className="text-[10px] text-slate-500 font-medium">{c.label}</p>
               </div>
               <p className="text-[18px] font-semibold text-slate-800 tabular-nums">{c.val}</p>
             </div>
@@ -516,7 +516,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
                   )}
                 </th>
                 {([['KODE','left'],['TANGGAL','left'],['BATCH','center'],['GRAMASI','center'],['PCS TOTAL','left'],['DIPACK','left'],['TOTAL GRAM','left'],['ADMIN','left'],['OPERATOR','left'],['FOTO','left'],['SHIELDTAG','center'],['STATUS','center'],['AKSI','left']] as const).map(([h,al])=>(
-                  <th key={h}className={cn('px-4 py-3 text-[10px] font-bold text-slate-400 tracking-widest uppercase whitespace-nowrap align-middle',al==='center'?'text-center':'text-left')}>{h}</th>
+                  <th key={h}className={cn('px-4 py-3 text-[10px] font-medium text-slate-400 whitespace-nowrap align-middle',al==='center'?'text-center':'text-left')}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -538,12 +538,12 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
                         checked={selectedIds.has(p.id)}
                         onChange={()=>toggleSelect(p.id)}/>
                     </td>
-                    <td className="px-4 py-3 font-mono text-[12px] font-bold text-violet-600 whitespace-nowrap align-middle">{p.kode}</td>
+                    <td className="px-4 py-3 font-mono text-[12px] font-semibold text-violet-600 whitespace-nowrap align-middle">{p.kode}</td>
                     <td className="px-4 py-3 text-[12px] text-slate-600 whitespace-nowrap align-middle">{formatDate(p.tanggal)}</td>
-                    <td className="px-4 py-3 align-middle text-center"><span className="inline-block text-[12px] font-bold px-2 py-0.5 rounded-full text-violet-700 whitespace-nowrap bg-violet-50">{p.batch_kode}</span></td>
-                    <td className="px-4 py-3 align-middle text-center"><span className="inline-block text-[12px] font-bold px-2 py-0.5 rounded-full text-amber-700 whitespace-nowrap bg-amber-50">{p.gramasi} gr</span></td>
+                    <td className="px-4 py-3 align-middle text-center"><span className="inline-block text-[12px] font-semibold px-2 py-0.5 rounded-full text-violet-700 whitespace-nowrap bg-violet-50">{p.batch_kode}</span></td>
+                    <td className="px-4 py-3 align-middle text-center"><span className="inline-block text-[12px] font-semibold px-2 py-0.5 rounded-full text-amber-700 whitespace-nowrap bg-amber-50">{p.gramasi} gr</span></td>
                     <td className="px-4 py-3 text-[13px] font-semibold text-slate-600 whitespace-nowrap align-middle">{pcsGood}</td>
-                    <td className="px-4 py-3 text-[13px] font-bold text-slate-800 whitespace-nowrap align-middle">{p.pcs_dipack} pcs</td>
+                    <td className="px-4 py-3 text-[13px] font-semibold text-slate-800 whitespace-nowrap align-middle">{p.pcs_dipack} pcs</td>
                     <td className="px-4 py-3 text-[13px] font-semibold text-slate-700 whitespace-nowrap align-middle">{Number(p.total_gram_aktual).toFixed(3)} gr</td>
                     <td className="px-4 py-3 text-[13px] text-slate-600 whitespace-nowrap align-middle">{p.admin_input||'—'}</td>
                     <td className="px-4 py-3 text-[13px] text-slate-600 whitespace-nowrap align-middle">{p.pic_packing||p.pic||'—'}</td>
@@ -561,12 +561,12 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
                       <button type="button"
                         onClick={()=>{ const list=shieldtagByPacking[p.id]??[]; if(list.length>0) setStModal({kode:p.kode,list}) }}
                         disabled={stCount===0}
-                        className={cn('inline-block text-[12px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap transition-all',stCount>0?'text-emerald-700 bg-emerald-50 hover:ring-2 hover:ring-emerald-300 cursor-pointer':'text-slate-400 bg-slate-100 cursor-default')}>
+                        className={cn('inline-block text-[12px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap transition-all',stCount>0?'text-emerald-700 bg-emerald-50 hover:ring-2 hover:ring-emerald-300 cursor-pointer':'text-slate-400 bg-slate-100 cursor-default')}>
                         🏷 {stCount}/{p.pcs_dipack}
                       </button>
                     </td>
                     <td className="px-4 py-3 align-middle text-center">
-                      <span className={cn('inline-block text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap',isPrinted?'text-emerald-700 bg-emerald-50':'text-slate-500 bg-slate-100')}>
+                      <span className={cn('inline-block text-[10px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap',isPrinted?'text-emerald-700 bg-emerald-50':'text-slate-500 bg-slate-100')}>
                         {isPrinted?'✓ Cetak':'Belum Cetak'}
                       </span>
                     </td>
@@ -605,7 +605,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
             </div>
             <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
               <button onClick={()=>setModal(null)}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-              <button onClick={handleDelete}disabled={isPending}className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+              <button onClick={handleDelete}disabled={isPending}className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                 {isPending&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
                 {isPending?'Menghapus...':'Ya, Hapus'}
               </button>
@@ -645,12 +645,12 @@ function ShieldtagListModal({kode,list,onClose}:{kode:string;list:{kode:string;s
             return (
               <div key={st.kode} className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50 border border-slate-200">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="text-[10px] font-bold text-slate-300 w-5 flex-shrink-0">{i+1}</span>
-                  <span className="text-[13px] font-mono font-bold text-slate-800 truncate">{st.kode}</span>
+                  <span className="text-[10px] font-medium text-slate-300 w-5 flex-shrink-0">{i+1}</span>
+                  <span className="text-[13px] font-mono font-semibold text-slate-800 truncate">{st.kode}</span>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {st.lokasi && <span className="text-[10px] text-slate-400">{st.lokasi}</span>}
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{background:sc.bg,color:sc.text}}>{st.status}</span>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{background:sc.bg,color:sc.text}}>{st.status}</span>
                 </div>
               </div>
             )
