@@ -94,21 +94,23 @@ export function TimPickerStd({ tims, prefix, initialTimId, initialAnggota }: { t
 }
 
 // ─── Admin Input Picker: dropdown + manual ──────────────────────────────────────
-export function AdminPickerStd({ adminList, prefix, initialValue, label }: { adminList: { id: number; nama: string }[]; prefix: string; initialValue?: string; label?: string }) {
+export function AdminPickerStd({ adminList, prefix, initialValue, label, placeholder }: { adminList: { id: number; nama: string }[]; prefix: string; initialValue?: string; label?: string; placeholder?: string }) {
   const knownNames = adminList.map(a => a.nama)
   const startManual = !!initialValue && !knownNames.includes(initialValue)
   const [manual, setManual] = useState(startManual)
   const [value, setValue] = useState(initialValue ?? '')
+  const resolvedLabel = label ?? 'Admin Yang Menyerahkan'
+  const resolvedPlaceholder = placeholder ?? `Pilih ${resolvedLabel}…`
   return (
     <div>
-      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{label ?? 'Admin Yang Input'}</label>
+      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{resolvedLabel}</label>
       {manual ? (
         <input name={`${prefix}admin_input`} value={value} onChange={e => setValue(e.target.value)} placeholder="Ketik nama admin" className={inp} autoFocus />
       ) : (
         <select name={`${prefix}admin_input`} value={value} onChange={e => {
           if (e.target.value === '__manual__') { setManual(true); setValue('') } else setValue(e.target.value)
         }} className={inp}>
-          <option value="">Pilih admin…</option>
+          <option value="">{resolvedPlaceholder}</option>
           {adminList.map(a => <option key={a.id} value={a.nama}>{a.nama}</option>)}
           <option value="__manual__">+ Ketik manual…</option>
         </select>

@@ -1402,7 +1402,7 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
                 <FotoPicker files={fotos} onAdd={ff=>setFotos(p=>[...p,...ff].slice(0,10))} onRemove={i=>i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))} label="Tambah foto bukti" />
               </div>
               <TimPickerStd tims={tims} prefix="terima_" />
-              <AdminPickerStd adminList={adminList} prefix="terima_" />
+              <AdminPickerStd adminList={adminList} prefix="terima_" label="Admin Yang Menerima" />
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan Selesai Lebur</label>
                 <input name="keterangan_diterima" type="text" placeholder="Opsional" className={inp}/>
@@ -1707,7 +1707,7 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
               initialTimId={peleburan.tim_id!=null?String(peleburan.tim_id):''}
               initialAnggota={savedAnggota??timAnggotaFallback} />
           })()}
-              <AdminPickerStd adminList={adminList} prefix="terima_" initialValue={peleburan.admin_input??''} />
+              <AdminPickerStd adminList={adminList} prefix="terima_" initialValue={peleburan.admin_input??''} label="Admin Yang Menerima" />
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan Selesai Lebur</label>
                 <input name="keterangan_diterima" type="text" defaultValue={peleburan.keterangan_diterima??''} placeholder="Opsional" className={inp}/>
