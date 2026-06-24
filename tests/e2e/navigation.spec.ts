@@ -18,6 +18,8 @@ const PROTECTED_ROUTES = [
   '/inventory',
   '/pengeluaran',
   '/prioritas-produksi',
+  '/kpi-tim',
+  '/retur-penjualan',
 ]
 
 for (const route of PROTECTED_ROUTES) {
