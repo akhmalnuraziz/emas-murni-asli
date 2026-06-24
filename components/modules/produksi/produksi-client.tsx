@@ -1499,7 +1499,6 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-[18px] font-bold text-slate-900 tracking-tight">Produksi</h1>
-            <p className="text-[12px] text-slate-400 mt-0.5">{produksiList.length} item total</p>
           </div>
           {canEdit&&(
             <button onClick={()=>openModal('create')}
