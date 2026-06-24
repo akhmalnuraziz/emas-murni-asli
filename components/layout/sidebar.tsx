@@ -130,7 +130,7 @@ export default function Sidebar({ mobileOpen, onClose, serverProfile }: SidebarP
       )}>
 
         {/* ── Logo ── */}
-        <div className="flex items-center justify-between px-4 h-[52px] flex-shrink-0 border-b border-slate-200">
+        <div className="flex items-center justify-between px-4 h-[64px] flex-shrink-0 border-b border-slate-200">
           <div className="flex items-center gap-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain flex-shrink-0"/>
