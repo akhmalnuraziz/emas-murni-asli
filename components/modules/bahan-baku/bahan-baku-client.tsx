@@ -592,7 +592,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                     {/* FIX poin 4: Foto Bukti di ATAS selisih description */}
                     {fotos.length>0&&(
                       <div className="pt-4">
-                        <p className="text-[12px] font-semibold text-slate-400 mb-2">📷 Foto Bukti / Sertifikat ({fotos.length})</p>
+                        <p className="text-[12px] font-semibold text-slate-400 mb-2">📷 Foto Bahan Baku ({fotos.length})</p>
                         <div className="flex gap-2 flex-wrap">
                           {fotos.map((url:string,i:number)=>(
                             <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="w-14 h-14 rounded-xl overflow-hidden border border-slate-200 block hover:opacity-80 hover:scale-105 transition-transform">
