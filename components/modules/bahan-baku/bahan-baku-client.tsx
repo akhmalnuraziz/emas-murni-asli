@@ -153,7 +153,7 @@ function BatchRingkasModal({onSubmit,onClose,isPending,error}:{onSubmit:(fd:Form
               <input name="berat" type="number" step="0.001" min="0.001" required placeholder="0.000" className={inp}/>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan</label>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
               <input name="catatan" placeholder="opsional — mis. Emas 24K batch awal" className={inp}/>
             </div>
             {error&&<p className="text-[12px] text-red-500 font-semibold">{error}</p>}
@@ -199,10 +199,9 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
   async function submit(e:React.FormEvent<HTMLFormElement>){
     e.preventDefault()
     const formEl=e.currentTarget
-    // Validasi TTD jika selisih warn
-    if(si?.warn){
+    // Validasi TTD hanya jika selisih warn DAN catatan belum diisi
+    if(si?.warn&&!catatan.trim()){
       if(!ttdOpSelisih||!ttdAdminSelisih){
-        // error ditangani di parent lewat error prop, set via alert sederhana
         alert('Selisih timbangan melebihi toleransi — TTD Operator dan Admin wajib diisi')
         return
       }
@@ -246,7 +245,7 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
             <F label="Berat Pusat / Supplier (gr)" req><input name="bahan_dari_pusat" type="number" step="0.001" value={pusat} onChange={e=>setPusat(e.target.value)} placeholder="1000.000" className={inp} required/></F>
             <F label="Berat Timbangan Gudang (gr)" req><input name="timbangan_akhir" type="number" step="0.001" value={gudang} onChange={e=>setGudang(e.target.value)} placeholder="999.890" className={inp} required/></F>
           </div>
-          {si&&(
+          {si&&(!si.warn||!catatan.trim())&&(
             <div className={cn('flex items-start gap-3 px-4 py-3 rounded-lg border',si.warn?'bg-red-50 border-red-100':'bg-amber-50 border-amber-100')}>
               <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0"style={{background:si.dot}}/>
               <p className={cn('text-[12px] font-medium',si.color)}>{si.desc}</p>
@@ -287,11 +286,11 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
           )}
           <F label={`Catatan${si?.warn?' *':''}`}>
             <input name="catatan" value={catatan} onChange={e=>setCatatan(e.target.value)}
-              placeholder={si?.warn?'Wajib — jelaskan alasan selisih berat':'Keterangan tambahan...'}
+              placeholder={si?.warn?'Wajib — jelaskan alasan selisih berat':'Catatan tambahan...'}
               className={cn(inp,si?.warn&&'border-red-300')} required={!!si?.warn}/>
           </F>
-          {/* Poin 3: TTD wajib jika selisih melebihi toleransi */}
-          {si?.warn&&(
+          {/* TTD wajib jika selisih melebihi toleransi DAN catatan belum diisi */}
+          {si?.warn&&!catatan.trim()&&(
             <LossApprovalPanel
               lossGram={Math.abs(parseFloat(pusat)-parseFloat(gudang))}
               toleransiGram={0.05}
@@ -1185,7 +1184,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                   <div className="mt-2 pl-6">
                     <input type="number" step="0.001" placeholder={`cth: ${sisaMentahBelumLebur.toFixed(2)}`}
                       value={mentahGram} onChange={e=>setMentahGram(e.target.value)} className={inp}/>
-                    {mentahNaik&&<p className="text-[11px] text-amber-600 font-semibold mt-1">⚠ Timbangan naik {((Number(mentahGram)||0)-sisaMentahBelumLebur).toFixed(2)} gr — wajib isi Keterangan</p>}
+                    {mentahNaik&&<p className="text-[11px] text-amber-600 font-semibold mt-1">⚠ Timbangan naik {((Number(mentahGram)||0)-sisaMentahBelumLebur).toFixed(2)} gr — wajib isi Catatan</p>}
                   </div>
                 )}
               </div>
@@ -1289,11 +1288,10 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                   </div>
                 )}
               </div>
-              <TimPickerStd tims={tims} prefix="" />
               <AdminPickerStd adminList={adminList} prefix="" />
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
-                  Keterangan {mentahNaik&&<span className="text-red-500">* (wajib — timbangan naik)</span>}
+                  Catatan {mentahNaik&&<span className="text-red-500">* (wajib — timbangan naik)</span>}
                 </label>
                 <input name="keterangan_serahkan" type="text"
                   placeholder={mentahNaik?'Jelaskan alasan timbangan naik...':'Opsional'}
@@ -1573,15 +1571,25 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tambah Foto</label>
                 <label className="flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-violet-50">
                   <Camera size={14} className="text-slate-400 flex-shrink-0"/>
-                  <span className="text-[12px] text-slate-400">{newFotos.length > 0 ? `${newFotos.length} foto baru` : 'Tambah foto'}</span>
+                  <span className="text-[12px] text-slate-400">{newFotos.length > 0 ? `${newFotos.length} foto baru — klik tambah` : 'Tambah foto'}</span>
                   <input type="file" accept="image/*" multiple className="hidden"
                     onChange={e => setNewFotos(p => [...p, ...Array.from(e.target.files??[])].slice(0,5))}/>
                 </label>
+                {newFotos.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {newFotos.map((f,i) => (
+                      <div key={i} className="relative">
+                        <img src={URL.createObjectURL(f)} alt="" className="w-14 h-14 rounded-xl object-cover border-2 border-violet-300 cursor-pointer hover:scale-105 transition-transform"/>
+                        <button type="button" onClick={() => setNewFotos(p => p.filter((_,j) => j!==i))}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[12px] flex items-center justify-center"><X size={9}/></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <TimPickerStd tims={tims} prefix="" initialTimId={peleburan.tim_id!=null?String(peleburan.tim_id):''} initialAnggota={peleburan.tim_anggota_aktif?String(peleburan.tim_anggota_aktif).split(',').map((x:string)=>x.trim()).filter(Boolean):undefined} />
               <AdminPickerStd adminList={adminList} prefix="" initialValue={peleburan.admin_input??''} />
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan</label>
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
                 <input name="keterangan_serahkan" type="text" defaultValue={peleburan.keterangan_serahkan??''} placeholder="Opsional" className={inp}/>
               </div>
             </div>
@@ -1731,10 +1739,21 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tambah Foto Diterima</label>
                 <label className="flex items-center gap-2 h-10 px-3 bg-[#F2F2F7] rounded-xl cursor-pointer hover:bg-green-50">
                   <Camera size={14} className="text-slate-400 flex-shrink-0"/>
-                  <span className="text-[12px] text-slate-400">{newFotosDiterima.length > 0 ? `${newFotosDiterima.length} foto baru` : 'Tambah foto'}</span>
+                  <span className="text-[12px] text-slate-400">{newFotosDiterima.length > 0 ? `${newFotosDiterima.length} foto baru — klik tambah` : 'Tambah foto'}</span>
                   <input type="file" accept="image/*" multiple className="hidden"
                     onChange={e => setNewFotosDiterima(p => [...p, ...Array.from(e.target.files??[])].slice(0,5))}/>
                 </label>
+                {newFotosDiterima.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {newFotosDiterima.map((f,i) => (
+                      <div key={i} className="relative">
+                        <img src={URL.createObjectURL(f)} alt="" className="w-14 h-14 rounded-xl object-cover border-2 border-green-300 cursor-pointer hover:scale-105 transition-transform"/>
+                        <button type="button" onClick={() => setNewFotosDiterima(p => p.filter((_,j) => j!==i))}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[12px] flex items-center justify-center"><X size={9}/></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               {/* Tim picker: pre-fill anggota dari tim saat ini jika tim_anggota_aktif belum terisi */}
           {(()=>{

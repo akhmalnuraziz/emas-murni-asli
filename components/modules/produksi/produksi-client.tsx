@@ -186,7 +186,7 @@ function FotoPicker({ files, onAdd, onRemove, label='Tambah foto', small=false }
 }
 
 // ─── Tim Picker (dropdown tim + anggota PIC) ────────────────────────────────────
-function TimPicker({ tims, timId, setTimId, anggota, setAnggota, label = 'Tim Pengerjaan', req = false, namePrefix = '' }: {
+function TimPicker({ tims, timId, setTimId, anggota, setAnggota, label = 'Tim Yang Mengerjakan', req = false, namePrefix = '' }: {
   tims: any[]; timId: string; setTimId: (v: string) => void
   anggota: string; setAnggota: (v: string) => void
   label?: string; req?: boolean; namePrefix?: string
@@ -600,7 +600,7 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
             <F label="Jam Mulai" req><input name="jam_mulai" type="time" value={f.jam_mulai ?? ''} onChange={e => s('jam_mulai', e.target.value)} className={inp} required /></F>
           </div>
           <AdminPickerStd adminList={adminList} prefix="" label="Admin Yang Menyerahkan" />
-          <F label="Catatan"><input name="catatan" placeholder="Keterangan tambahan..." className={inp} /></F>
+          <F label="Catatan"><input name="catatan" placeholder="Catatan tambahan..." className={inp} /></F>
           <F label="Foto Proses (opsional, max 10)">
             <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto proses awal" />
           </F>
@@ -1042,7 +1042,7 @@ function SerahStageModal({ item, tahap, tims, onClose, onSubmit, isPending, erro
               <input name="serah_jam" type="time" className={inp} required/>
             </div>
           </div>
-          <TimPicker tims={tims} timId={timId} setTimId={setTimId} anggota={timAnggota} setAnggota={setTimAnggota} label="Tim Pengerjaan" namePrefix="serah_" />
+          <TimPicker tims={tims} timId={timId} setTimId={setTimId} anggota={timAnggota} setAnggota={setTimAnggota} label="Tim Yang Mengerjakan" namePrefix="serah_" />
           <div>
             <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Operator (manual)</label>
             <input name="serah_operator_manual" type="text" placeholder="Atau ketik manual" className={inp}/>
@@ -1219,7 +1219,7 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
             />
           )}
 
-          <TimPicker tims={tims} timId={timId} setTimId={setTimId} anggota={timAnggota} setAnggota={setTimAnggota} label="Tim Pengerjaan" namePrefix="terima_" />
+          <TimPicker tims={tims} timId={timId} setTimId={setTimId} anggota={timAnggota} setAnggota={setTimAnggota} label="Tim Yang Mengerjakan" namePrefix="terima_" />
 
           <div>
             <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
@@ -1340,7 +1340,7 @@ function UpdateModal({ item, onClose, onSubmit, isPending, error }: {
               </select>
             </F>
           )}
-          <F label="Catatan"><input name="catatan" className={inp} placeholder="Keterangan…" /></F>
+          <F label="Catatan"><input name="catatan" className={inp} placeholder="Catatan…" /></F>
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/>{error}</div>}
           <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0 -mx-5 -mb-4 mt-2">
             <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>

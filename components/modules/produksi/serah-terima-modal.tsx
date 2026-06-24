@@ -60,7 +60,7 @@ export function TimPickerStd({ tims, prefix, initialTimId, initialAnggota }: { t
 
   return (
     <div>
-      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tim Pengerjaan</label>
+      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tim Yang Mengerjakan</label>
       <select name={`${prefix}tim_id`} value={timId} onChange={e => pilih(e.target.value)} className={inp}>
         <option value="">Pilih tim…</option>
         {tims.map(t => <option key={t.id} value={t.id}>{t.nama}</option>)}
