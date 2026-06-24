@@ -195,7 +195,8 @@ export async function editShieldtagKode(shieldtagId: number, newKode: string) {
     oleh: profile?.name || 'System',
   })
 
-  await supabase.from('shieldtag').update({ kode: newKodeUp, shieldtag_history: history }).eq('id', shieldtagId)
+  const { error: updateErr } = await supabase.from('shieldtag').update({ kode: newKodeUp, shieldtag_history: history }).eq('id', shieldtagId)
+  if (updateErr) return { error: updateErr.message }
 
   revalidatePath('/shieldtag')
 

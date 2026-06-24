@@ -3,8 +3,8 @@
 import { useState, useTransition, useEffect, useRef } from 'react'
 import {
   Plus, Search, X, Check, AlertTriangle, Tag,
-  Edit2, Trash2, ChevronDown, ChevronUp, ExternalLink,
-  MapPin, Package, Clock, ArrowRight, Loader2, Printer,
+  Edit2, Trash2,
+  MapPin, Package, Clock, Loader2,
 } from 'lucide-react'
 import { cn, formatDate, formatRupiah } from '@/lib/utils'
 import { registerShieldtags, editShieldtagKode, voidShieldtag, bulkVoidShieldtag, searchShieldtag } from '@/app/(dashboard)/shieldtag/actions'
@@ -596,18 +596,10 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
                 <button key={v} onClick={() => setView(v)}
                   className={cn('px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all',
                     view === v ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-400 hover:text-slate-600')}>
-                  {v === 'list' ? 'Daftar' : 'Cari Kode'}
+                  {v === 'list' ? 'Daftar' : 'Shieldtag Explorer'}
                 </button>
               ))}
             </div>
-            {selected.size > 0 && view === 'list' && (
-              <a
-                href={`/shieldtag/print?kodes=${filtered.filter(st => selected.has(st.id)).map(st => st.kode).join(',')}`}
-                target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1.5 h-8 px-3 text-[12px] font-semibold text-white rounded-lg bg-violet-600 hover:bg-violet-700 transition-colors">
-                <Printer size={13}/> Print {selected.size} Label
-              </a>
-            )}
             {selected.size > 0 && canVoid && view === 'list' && (
               <button onClick={() => { setModal('bulk_void'); setBulkVoidReason('') }}
                 className="flex items-center gap-1.5 h-8 px-3 text-[12px] font-semibold text-white rounded-lg bg-red-600 hover:bg-red-700 transition-colors">
@@ -706,16 +698,6 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
                     <td className="px-4 py-3 text-[12px] text-slate-400 whitespace-nowrap">{formatDate(st.tgl_regis)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5">
-                        <a href={`/shieldtag/print?kodes=${st.kode}`} target="_blank" rel="noopener noreferrer"
-                          className="w-8 h-8 rounded-xl bg-purple-50 text-purple-500 flex items-center justify-center hover:bg-purple-100 hover:scale-110 transition-all"
-                          title="Print label QR">
-                          <Printer size={12}/>
-                        </a>
-                        <a href={`/shieldtag-explorer?q=${st.kode}`}
-                          className="w-8 h-8 rounded-xl bg-violet-50 text-violet-500 flex items-center justify-center hover:bg-violet-100 hover:scale-110 transition-all"
-                          title="Lihat riwayat di Explorer">
-                          <ExternalLink size={12}/>
-                        </a>
                         {canEdit && st.status === 'Aktif' && (
                           <button onClick={() => { setActiveItem(st); setErr(''); setModal('edit') }}
                             className="w-8 h-8 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-100 hover:scale-110 transition-all"
@@ -726,7 +708,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
                         {canVoid && st.status !== 'VOID' && (
                           <button onClick={() => { setActiveItem(st); setVoidReason(''); setModal('void') }}
                             className="w-8 h-8 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 hover:scale-110 transition-all"
-                            title="VOID">
+                            title="Hapus (VOID)">
                             <Trash2 size={12}/>
                           </button>
                         )}
