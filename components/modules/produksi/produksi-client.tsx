@@ -168,7 +168,7 @@ function FotoPicker({ files, onAdd, onRemove, label='Tambah foto', small=false }
         <div className="flex gap-2 flex-wrap">
           {prev.map((u, i) => (
             <div key={i} className={`relative ${s}`}>
-              <img src={u} onClick={() => setLightbox(u)} className="w-full h-full object-cover rounded-xl border border-slate-200 cursor-pointer hover:scale-105 transition-transform" />
+              <img src={u} onClick={() => setLightbox(u)} className="w-full h-full object-cover rounded-xl border-2 border-violet-300 cursor-pointer hover:scale-105 transition-transform" />
               <button type="button" onClick={() => onRemove(i)} className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center"><X size={9} /></button>
             </div>
           ))}
