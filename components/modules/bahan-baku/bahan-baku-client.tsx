@@ -832,7 +832,11 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                     <span className="text-[10px] text-slate-400">→ <span className="text-green-600 font-semibold">{String(plb.jam_selesai).slice(0,5)}</span></span>
                                   )}
                                   {durasi&&<span className="text-[10px] text-slate-400 italic">({durasi})</span>}
-                                  {(plb.tim_nama||plb.operator)&&<span className="text-[10px] text-slate-400">· 👥 {plb.tim_nama||plb.operator}{plb.tim_anggota_aktif?` (${plb.tim_anggota_aktif})`:''}</span>}
+                                  {(plb.tim_nama||plb.operator)&&(()=>{
+                                    const anggota = plb.tim_anggota_aktif
+                                      || (tims.find((t:any)=>t.id===plb.tim_id)?.anggota??[]).filter((a:any)=>a.aktif).map((a:any)=>a.nama).join(', ')
+                                    return <span className="text-[10px] text-slate-400">· 👥 {plb.tim_nama||plb.operator}{anggota?` · ${anggota}`:''}</span>
+                                  })()}
                                   {plb.admin_input&&<span className="text-[10px] text-slate-400">· ✍️ {plb.admin_input}</span>}
                                 </div>
                               </div>
