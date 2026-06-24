@@ -20,8 +20,9 @@ export default async function BahanBakuPage() {
     { data: tims },
     { data: adminRows },
     { data: lossApprovalRows },
+    { data: batchLossRows },
   ] = await Promise.all([
-    supabase.from('batch').select('*').order('created_at', { ascending: false }),
+    supabase.from('batch').select('*').order('created_at', { ascending: false }).limit(200),
     supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
     supabase.from('peleburan')
       .select('id, kode, batch_kode, tanggal, jam_mulai, dikasih_gram, diterima_gram, losses_gram, sumber_batch_gram, operator, keterangan_serahkan, foto_serahkan, tanggal_diterima, jam_selesai, operator_diterima, keterangan_diterima, foto_diterima, status, tim_id, tim_nama, admin_input, tim_anggota_aktif')
@@ -50,6 +51,11 @@ export default async function BahanBakuPage() {
       .eq('proses', 'peleburan')
       .eq('ref_table', 'peleburan')
       .order('created_at', { ascending: false }),
+    supabase.from('loss_approval')
+      .select('ref_id, alasan, operator_nama, admin_nama, ttd_operator_url, ttd_admin_url, created_at')
+      .eq('proses', 'batch_selisih')
+      .eq('ref_table', 'batch')
+      .order('created_at', { ascending: false }),
   ])
 
   const usageMap: Record<number, number> = {}
@@ -72,6 +78,11 @@ export default async function BahanBakuPage() {
     loss_approval: lossMap[p.id] ?? null,
   }))
 
+  const batchLossMap: Record<number, any> = {}
+  for (const bla of batchLossRows ?? []) {
+    if (bla.ref_id != null && !batchLossMap[bla.ref_id]) batchLossMap[bla.ref_id] = bla
+  }
+
   const rejectCountMap: Record<string, number> = {}
   for (const r of rejectItems ?? []) {
     if (r.batch_kode) rejectCountMap[r.batch_kode] = (rejectCountMap[r.batch_kode] ?? 0) + 1
@@ -89,6 +100,7 @@ export default async function BahanBakuPage() {
       adminList={adminRows ?? []}
       userRole={profile?.role ?? 'operator_produksi'}
       userName={profile?.name ?? ''}
+      batchLossMap={batchLossMap}
     />
   )
 }

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { createNotif } from '@/app/(dashboard)/notifikasi/actions'
 
 // ─── Charset & Range Algorithm ────────────────────────────────────────────────
 const CHARSET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -156,6 +157,15 @@ export async function registerShieldtags(formData: FormData) {
 
   revalidatePath('/shieldtag')
   revalidatePath('/packing-log')
+
+  await createNotif({
+    judul: `${allCodes.length} Shieldtag Didaftarkan`,
+    pesan: `Packing ${packing.kode} · ${allCodes[0]}${allCodes.length > 1 ? ` s/d ${allCodes[allCodes.length - 1]}` : ''} · ${packing.gramasi}gr`,
+    tipe: 'success',
+    link: '/shieldtag',
+    untuk_role: ['owner', 'admin_pusat', 'spv'],
+  })
+
   return { success: true, count: allCodes.length }
 }
 
@@ -188,6 +198,15 @@ export async function editShieldtagKode(shieldtagId: number, newKode: string) {
   await supabase.from('shieldtag').update({ kode: newKodeUp, shieldtag_history: history }).eq('id', shieldtagId)
 
   revalidatePath('/shieldtag')
+
+  await createNotif({
+    judul: `Kode Shieldtag Diubah`,
+    pesan: `${st.kode} → ${newKodeUp} · diubah oleh ${profile?.name ?? 'Admin'}`,
+    tipe: 'info',
+    link: '/shieldtag',
+    untuk_role: ['owner', 'admin_pusat'],
+  })
+
   return { success: true }
 }
 
@@ -226,6 +245,15 @@ export async function voidShieldtag(shieldtagId: number, reason: string) {
 
   revalidatePath('/shieldtag')
   revalidatePath('/packing-log')
+
+  await createNotif({
+    judul: `Shieldtag ${st.kode} Di-VOID`,
+    pesan: `Alasan: ${reason} · oleh ${profile?.name ?? 'Admin'}`,
+    tipe: 'warning',
+    link: '/shieldtag',
+    untuk_role: ['owner', 'admin_pusat'],
+  })
+
   return { success: true }
 }
 

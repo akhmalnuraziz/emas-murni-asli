@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import PackingLogClient from '@/components/modules/packing-log/packing-log-client'
 
+export const dynamic = 'force-dynamic'
+
 export default async function PackingLogPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -17,7 +19,8 @@ export default async function PackingLogPage() {
     supabase.from('packing')
       .select('*, produksi_item(id, kode, nama_item, gramasi, pcs_good, pcs, current_status, batch_kode)')
       .is('voided_at', null)
-      .order('created_at', { ascending: false }),
+      .order('created_at', { ascending: false })
+      .limit(150),
     supabase.from('produksi_item')
       .select('id, kode, nama_item, gramasi, pcs_good, pcs, batch_kode, current_status, packing!left(pcs_dipack, voided_at)')
       .eq('current_status', 'Siap Packing')
@@ -26,7 +29,8 @@ export default async function PackingLogPage() {
       .select('kode, status, packing_id, lokasi')
       .not('packing_id', 'is', null)
       .is('voided_at', null)
-      .order('kode'),
+      .order('kode')
+      .limit(5000),
   ])
 
   // Kelompokkan shieldtag per packing_id untuk tracking

@@ -57,7 +57,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
       type: 'shieldtag',
       label: s.kode,
       sub: `${s.gramasi}gr · ${s.batch_kode} · ${s.status}`,
-      href: '/shieldtag',
+      href: `/shieldtag?q=${encodeURIComponent(s.kode)}`,
       status: s.status,
     })
   }
@@ -66,7 +66,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
       type: 'batch',
       label: b.kode,
       sub: `Batch · ${b.gramasi}gr · ${b.status ?? '—'}`,
-      href: '/bahan-baku',
+      href: `/bahan-baku?q=${encodeURIComponent(b.kode)}`,
     })
   }
   for (const p of poList ?? []) {
@@ -74,7 +74,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
       type: 'po_cabang',
       label: p.nomor_po ?? p.cabang_kode,
       sub: `PO Cabang · ${p.cabang_kode} · ${p.status}`,
-      href: '/po-cabang',
+      href: `/po-cabang?q=${encodeURIComponent(p.nomor_po ?? p.cabang_kode)}`,
       status: p.status,
     })
   }
@@ -83,7 +83,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
       type: 'mutasi',
       label: m.kode,
       sub: `Mutasi → ${m.ke_lokasi} · ${m.status}`,
-      href: '/mutasi',
+      href: `/mutasi?q=${encodeURIComponent(m.kode)}`,
       status: m.status,
     })
   }
@@ -92,7 +92,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
       type: 'produksi',
       label: pr.kode,
       sub: `${pr.nama_item ?? '—'} · ${pr.gramasi}gr`,
-      href: '/produksi',
+      href: `/produksi?q=${encodeURIComponent(pr.kode)}`,
     })
   }
 

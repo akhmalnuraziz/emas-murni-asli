@@ -101,10 +101,12 @@ export default function NotificationBell({ userId, userRole }: Props) {
     return () => { supabase.removeChannel(channel) }
   }, [userRole])
 
-  // Poll unread count every 60s
+  // Poll unread count every 60s (only when tab is visible)
   useEffect(() => {
     fetchNotifs()
-    const timer = setInterval(fetchNotifs, 60000)
+    const timer = setInterval(() => {
+      if (document.visibilityState === 'visible') fetchNotifs()
+    }, 60000)
     return () => clearInterval(timer)
   }, [])
 

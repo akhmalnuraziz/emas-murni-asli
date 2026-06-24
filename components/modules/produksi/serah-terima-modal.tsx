@@ -121,8 +121,15 @@ export function AdminPickerStd({ adminList, prefix, initialValue, label }: { adm
 // ─── Foto picker seragam (pola Peleburan) ───────────────────────────────────────
 function FotoPickerStd({ fotos, setFotos, accent }: { fotos: File[]; setFotos: (f: File[]) => void; accent: 'violet' | 'green' }) {
   const border = accent === 'green' ? 'border-green-200' : 'border-violet-200'
+  const [lb, setLb] = useState<string | null>(null)
   return (
     <div>
+      {lb && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/85 p-4" onClick={() => setLb(null)}>
+          <img src={lb} className="max-w-[95vw] max-h-[90vh] object-contain rounded-xl shadow-2xl" onClick={e => e.stopPropagation()} />
+          <button onClick={() => setLb(null)} className="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center backdrop-blur-sm"><X size={18} /></button>
+        </div>
+      )}
       <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bukti (max 10)</label>
       <label className="flex items-center gap-2 h-10 px-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
         <Camera size={14} className="text-slate-400 flex-shrink-0" />
@@ -136,9 +143,8 @@ function FotoPickerStd({ fotos, setFotos, accent }: { fotos: File[]; setFotos: (
             const url = URL.createObjectURL(f)
             return (
               <div key={i} className="relative">
-                <a href={url} target="_blank" rel="noopener noreferrer" title="Klik untuk lihat ukuran penuh">
-                  <img src={url} alt="" className={`w-14 h-14 rounded-lg object-cover border cursor-zoom-in hover:scale-110 transition-transform ${border}`} />
-                </a>
+                <img src={url} alt="" onClick={() => setLb(url)}
+                  className={`w-14 h-14 rounded-lg object-cover border cursor-zoom-in hover:scale-110 transition-transform ${border}`} />
                 <button type="button" onClick={() => setFotos(fotos.filter((_, j) => j !== i))}
                   className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[12px] flex items-center justify-center">×</button>
               </div>

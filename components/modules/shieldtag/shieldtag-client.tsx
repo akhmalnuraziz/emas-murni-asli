@@ -9,12 +9,18 @@ import {
 import { cn, formatDate, formatRupiah } from '@/lib/utils'
 import { registerShieldtags, editShieldtagKode, voidShieldtag, bulkVoidShieldtag, searchShieldtag } from '@/app/(dashboard)/shieldtag/actions'
 import type { UserRole } from '@/lib/types/database'
+import { useRouter } from 'next/navigation'
 
 interface Props {
   shieldtags: any[]
   packingsWithSlots: any[]
   userRole: UserRole
   userName: string
+  total?: number
+  page?: number
+  pageSize?: number
+  currentQ?: string
+  currentStatus?: string
 }
 
 
@@ -472,7 +478,8 @@ function ExplorerPanel() {
   )
 }
 
-export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRole, userName }: Props) {
+export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRole, userName, total = 0, page = 1, pageSize = 25, currentQ = '', currentStatus = 'Semua' }: Props) {
+  const router = useRouter()
   const [view, setView] = useState<'list' | 'explorer'>('list')
   const [isPending, startTransition] = useTransition()
   const [modal, setModal] = useState<'register' | 'edit' | 'void' | 'bulk_void' | null>(null)
@@ -480,10 +487,32 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
   const [bulkVoidReason, setBulkVoidReason] = useState('')
   const [activeItem, setActiveItem] = useState<any | null>(null)
   const [err, setErr] = useState('')
-  const [search, setSearch] = useState('')
-  const [filterStatus, setFilterStatus] = useState('Semua')
+  const [search, setSearch] = useState(currentQ)
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
   const [voidReason, setVoidReason] = useState('')
+
+  // Server-side pagination helpers
+  const filterStatus = currentStatus
+  const filtered = shieldtags // already filtered by server
+  const totalPages = Math.ceil(total / pageSize)
+
+  function navigate(params: Record<string, string>) {
+    const sp = new URLSearchParams()
+    if (search) sp.set('q', search)
+    if (filterStatus !== 'Semua') sp.set('status', filterStatus)
+    sp.set('page', String(page))
+    Object.entries(params).forEach(([k, v]) => { if (v) sp.set(k, v); else sp.delete(k) })
+    router.push(`/shieldtag?${sp.toString()}`)
+  }
+
+  function handleSearchSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    navigate({ q: search, page: '1' })
+  }
+
+  function handleStatusFilter(s: string) {
+    navigate({ status: s === 'Semua' ? '' : s, page: '1' })
+  }
 
   function showToast(msg: string, ok = true) { setToast({ msg, ok }); setTimeout(() => setToast(null), 3500) }
 
@@ -498,14 +527,6 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
   const canRegister = ['owner', 'admin_pusat', 'spv', 'operator_produksi'].includes(userRole)
   const canVoid = ['owner', 'admin_pusat', 'spv'].includes(userRole)
   const canEdit = ['owner', 'admin_pusat', 'spv'].includes(userRole)
-
-  const filtered = shieldtags.filter(st => {
-    if (filterStatus !== 'Semua' && st.status !== filterStatus) return false
-    const q = search.toLowerCase()
-    return !q || st.kode?.toLowerCase().includes(q) || st.batch_kode?.toLowerCase().includes(q)
-  })
-
-  const counts = shieldtags.reduce((a, st) => { a[st.status] = (a[st.status] ?? 0) + 1; return a }, {} as Record<string, number>)
   const tabs = ['Semua', 'Aktif', 'Terdistribusi', 'Terjual', 'VOID']
 
   function handleRegister(fd: FormData) {
@@ -526,6 +547,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
       if (r?.error) { setErr(r.error); return }
       showToast('✅ Kode Shieldtag diperbarui')
       setModal(null)
+      router.refresh()
     })
   }
 
@@ -536,6 +558,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
       if (r?.error) { showToast(r.error, false); return }
       showToast('🚫 ' + r?.count + ' Shieldtag di-VOID')
       setModal(null); setSelected(new Set()); setBulkVoidReason('')
+      router.refresh()
     })
   }
 
@@ -546,6 +569,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
       if (r?.error) { showToast(r.error, false); return }
       showToast('🚫 Shieldtag di-VOID')
       setModal(null); setVoidReason('')
+      router.refresh()
     })
   }
 
@@ -601,46 +625,28 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
 
         {view === 'explorer' && <ExplorerPanel/>}
         {view === 'list' && <>
-        {/* Summary cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { label: 'Aktif', val: counts['Aktif'] ?? 0, dot: '#22C55E' },
-            { label: 'Terdistribusi', val: counts['Terdistribusi'] ?? 0, dot: '#3B82F6' },
-            { label: 'Terjual', val: counts['Terjual'] ?? 0, dot: '#8B5CF6' },
-            { label: 'VOID', val: counts['VOID'] ?? 0, dot: '#EF4444', warn: true },
-          ].map(c => (
-            <div key={c.label} className="bg-white border border-slate-200 rounded-xl p-4">
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="w-1.5 h-1.5 rounded-full" style={{background: c.dot}}/>
-                <p className="text-[10.5px] font-semibold text-slate-500 uppercase tracking-wide">{c.label}</p>
-              </div>
-              <p className={`text-[20px] font-semibold mt-0.5 tabular-nums leading-none ${c.warn && c.val>0 ? 'text-red-500' : 'text-slate-800'}`}>{c.val}</p>
-            </div>
-          ))}
-        </div>
-
         {/* Search + Filter */}
         <div className="flex gap-3 flex-wrap items-center">
-          <div className="relative flex-1 min-w-[200px]">
+          <form onSubmit={handleSearchSubmit} className="relative flex-1 min-w-[200px]">
             <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"/>
             <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Cari kode Shieldtag, batch..."
+              placeholder="Cari kode Shieldtag, batch… (Enter)"
               className="w-full pl-10 pr-4 py-2.5 text-[13px] rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400/40 transition-all bg-white/80 border border-slate-300/50"/>
-          </div>
+          </form>
           <div className="flex gap-2 flex-wrap">
             {tabs.map(t => {
               const isAct = filterStatus === t
               const cfg = STATUS_CFG[t]
-              const cnt = t === 'Semua' ? shieldtags.length : (counts[t] ?? 0)
               return (
-                <button key={t} onClick={() => setFilterStatus(t)}
+                <button key={t} onClick={() => handleStatusFilter(t)}
                   className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-semibold transition-all ${isAct ? 'text-white' : 'bg-white/80 text-slate-500 border border-slate-200'}`}
                   style={isAct ? { background: cfg?.dot ?? '#8B5CF6', boxShadow: `0 4px 12px ${cfg?.dot ?? '#8B5CF6'}40` } : undefined}>
-                  {t} {cnt > 0 && <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${isAct ? 'bg-white/25' : 'bg-slate-100'}`}>{cnt}</span>}
+                  {t}
                 </button>
               )
             })}
           </div>
+          <span className="text-[12px] text-slate-400">{total} total</span>
         </div>
 
         {/* Table */}
@@ -732,6 +738,25 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-1">
+            <span className="text-[12px] text-slate-400">
+              Hal {page} dari {totalPages} · {total} item
+            </span>
+            <div className="flex gap-2">
+              <button disabled={page <= 1} onClick={() => navigate({ page: String(page - 1) })}
+                className="px-3 py-1.5 text-[12px] font-semibold rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                ← Prev
+              </button>
+              <button disabled={page >= totalPages} onClick={() => navigate({ page: String(page + 1) })}
+                className="px-3 py-1.5 text-[12px] font-semibold rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                Next →
+              </button>
+            </div>
+          </div>
+        )}
 
         </>}
       </div>

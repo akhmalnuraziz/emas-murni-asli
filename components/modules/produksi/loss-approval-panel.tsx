@@ -11,6 +11,7 @@ export default function LossApprovalPanel({
   operatorNama, setOperatorNama,
   adminNama, setAdminNama,
   setTtdOperator, setTtdAdmin,
+  hideAlasan,
 }: {
   lossGram: number; toleransiGram: number; proses: string
   alasan: string; setAlasan: (v: string) => void
@@ -18,6 +19,7 @@ export default function LossApprovalPanel({
   adminNama: string; setAdminNama: (v: string) => void
   setTtdOperator: (v: string | null) => void
   setTtdAdmin: (v: string | null) => void
+  hideAlasan?: boolean
 }) {
   return (
     <div className="rounded-lg overflow-hidden border border-red-200">
@@ -32,12 +34,14 @@ export default function LossApprovalPanel({
         </div>
       </div>
       <div className="p-4 space-y-3 bg-white">
-        <div>
-          <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Alasan Loss <span className="text-red-400">*</span></label>
-          <textarea value={alasan} onChange={e => setAlasan(e.target.value)} rows={2}
-            placeholder="Cth: Sudah dicari namun tidak ditemukan, kemungkinan serbuk tercecer saat proses..."
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all resize-none" />
-        </div>
+        {!hideAlasan && (
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Alasan Loss <span className="text-red-400">*</span></label>
+            <textarea value={alasan} onChange={e => setAlasan(e.target.value)} rows={2}
+              placeholder="Cth: Sudah dicari namun tidak ditemukan, kemungkinan serbuk tercecer saat proses..."
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all resize-none" />
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>

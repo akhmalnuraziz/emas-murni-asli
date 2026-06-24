@@ -17,7 +17,7 @@ import type { UserRole } from '@/lib/types/database'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
 import { TimPickerStd, AdminPickerStd } from '@/components/modules/produksi/serah-terima-modal'
 
-interface Props { batches: any[]; peleburanList?: any[]; rejectItems?: any[]; produksiItems?: any[]; rejectCountMap: Record<string, number>; toleransiPeleburan?: number; tims?: any[]; adminList?: any[]; userRole: UserRole; userName: string }
+interface Props { batches: any[]; peleburanList?: any[]; rejectItems?: any[]; produksiItems?: any[]; rejectCountMap: Record<string, number>; toleransiPeleburan?: number; tims?: any[]; adminList?: any[]; userRole: UserRole; userName: string; batchLossMap?: Record<number, any> }
 
 // ─── Selisih helper ──────────────────────────────────────────────────────────
 function hitungSelisih(pusat: number, gudang: number) {
@@ -34,7 +34,7 @@ function hitungSelisih(pusat: number, gudang: number) {
     badge: `${direction === 'kurang' ? '-' : '+'}${formatGram(abs)}`,
     desc: withinTol
       ? `Timbangan gudang berbeda dengan timbangan pusat, ${direction} ${formatGram(abs)} dan masih dalam toleransi`
-      : `Timbangan gudang berbeda dengan timbangan pusat, selisih ${formatGram(abs)} melebihi batas toleransi — catatan wajib diisi`,
+      : `Timbangan gudang berbeda dengan timbangan pusat, selisih ${formatGram(abs)} melebihi batas toleransi — wajib isi Catatan dan TTD`,
     color: withinTol ? 'text-amber-700' : 'text-red-700',
     bg: withinTol ? 'rgba(245,158,11,0.08)' : 'rgba(239,68,68,0.08)',
     dot: withinTol ? '#F59E0B' : '#EF4444',
@@ -300,9 +300,10 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
               operatorNama={opNamaSelisih} setOperatorNama={setOpNamaSelisih}
               adminNama={adminNamaSelisih} setAdminNama={setAdminNamaSelisih}
               setTtdOperator={setTtdOpSelisih} setTtdAdmin={setTtdAdminSelisih}
+              hideAlasan
             />
           )}
-          <F label="Foto Bukti / Sertifikat">
+          <F label="Foto Bahan Baku">
             {existingFotos.length>0&&(
               <div className="flex gap-2 flex-wrap mb-2">
                 {existingFotos.map((url,i)=>(
@@ -331,7 +332,7 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
-export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[],produksiItems=[],rejectCountMap,toleransiPeleburan=0.05,tims=[],adminList=[],userRole,userName}:Props){
+export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[],produksiItems=[],rejectCountMap,toleransiPeleburan=0.05,tims=[],adminList=[],userRole,userName,batchLossMap={}}:Props){
   const [filter,setFilter]=useState<'semua'|'aktif'|'terkunci'>('semua')
   const router = useRouter()
   const [peleburanModalBatch,setPeleburanModalBatch]=useState<string|null>(null)
@@ -339,7 +340,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
   const [hapusPlbId,setHapusPlbId]=useState<number|null>(null)
   const [editPlbItem,setEditPlbItem]=useState<any>(null)
   const [editPlbMode,setEditPlbMode]=useState<'serah'|'terima'>('serah')
-  const [search,setSearch]=useState('')
+  const [search,setSearch]=useState(()=>typeof window!=='undefined'?new URLSearchParams(window.location.search).get('q')??'':'')
   const [expanded,setExpanded]=useState<number|null>(null)
   const [showCreate,setShowCreate]=useState(false)
   const [showRingkas,setShowRingkas]=useState(false)
@@ -626,6 +627,46 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                       </div>
                     )}
 
+                    {/* TTD Selisih Timbangan Batch */}
+                    {(()=>{
+                      const bla = batchLossMap[batch.id]
+                      if (!bla) return null
+                      return (
+                        <div className="rounded-lg overflow-hidden border border-red-200">
+                          <div className="px-3 py-2 bg-red-50 border-b border-red-100">
+                            <p className="text-[11px] font-bold text-red-600">⚠ Selisih Timbangan — TTD Tersimpan</p>
+                          </div>
+                          <div className="p-3 space-y-2 bg-white">
+                            {bla.alasan&&<p className="text-[12px] text-slate-600"><span className="font-semibold">Catatan:</span> {bla.alasan}</p>}
+                            <div className="flex items-center gap-2 text-[11px] text-slate-500 flex-wrap">
+                              {bla.operator_nama&&<span>👷 Operator: <b className="text-slate-700">{bla.operator_nama}</b></span>}
+                              {bla.admin_nama&&<span>✍️ Admin: <b className="text-slate-700">{bla.admin_nama}</b></span>}
+                            </div>
+                            {(bla.ttd_operator_url||bla.ttd_admin_url)&&(
+                              <div className="flex gap-4 flex-wrap">
+                                {bla.ttd_operator_url&&(
+                                  <div>
+                                    <p className="text-[10px] text-slate-400 mb-1">TTD Operator</p>
+                                    <a href={bla.ttd_operator_url} target="_blank" rel="noopener noreferrer">
+                                      <img src={bla.ttd_operator_url} alt="TTD Operator" className="h-12 rounded-lg border border-slate-200 hover:opacity-80"/>
+                                    </a>
+                                  </div>
+                                )}
+                                {bla.ttd_admin_url&&(
+                                  <div>
+                                    <p className="text-[10px] text-slate-400 mb-1">TTD Admin</p>
+                                    <a href={bla.ttd_admin_url} target="_blank" rel="noopener noreferrer">
+                                      <img src={bla.ttd_admin_url} alt="TTD Admin" className="h-12 rounded-lg border border-slate-200 hover:opacity-80"/>
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })()}
+
                     {/* Reject alert */}
                     {(()=>{
                       const rCount = rejectCountMap[batch.kode] ?? 0
@@ -792,7 +833,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                     <span className="text-[10px] text-slate-400">→ <span className="text-green-600 font-semibold">{String(plb.jam_selesai).slice(0,5)}</span></span>
                                   )}
                                   {durasi&&<span className="text-[10px] text-slate-400 italic">({durasi})</span>}
-                                  {(plb.tim_nama||plb.operator)&&<span className="text-[10px] text-slate-400">· 👥 {plb.tim_nama||plb.operator}</span>}
+                                  {(plb.tim_nama||plb.operator)&&<span className="text-[10px] text-slate-400">· 👥 {plb.tim_nama||plb.operator}{plb.tim_anggota_aktif?` (${plb.tim_anggota_aktif})`:''}</span>}
                                   {plb.admin_input&&<span className="text-[10px] text-slate-400">· ✍️ {plb.admin_input}</span>}
                                 </div>
                               </div>
@@ -841,7 +882,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                             </div>
                             {/* Gram info */}
                             <div className="flex gap-4 text-[12px]">
-                              <div><p className="text-[10px] text-slate-400">Dikasih</p><p className="font-semibold text-slate-700">{formatGram(plb.dikasih_gram)}</p></div>
+                              <div><p className="text-[10px] text-slate-400">Diserahkan</p><p className="font-semibold text-slate-700">{formatGram(plb.dikasih_gram)}</p></div>
                               <div><p className="text-[10px] text-slate-400">Diterima</p><p className="font-semibold text-slate-700">{plb.diterima_gram!=null?formatGram(plb.diterima_gram):'—'}</p></div>
                               <div><p className="text-[10px] text-slate-400">Losses</p><p className={`font-semibold ${plb.losses_gram>0?'text-red-500':'text-slate-500'}`}>{plb.losses_gram!=null?formatGram(plb.losses_gram):'—'}</p></div>
                             </div>
@@ -1072,7 +1113,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
   const router = useRouter()
 
   function toggleRej(id: number, berat: number) {
-    setRejGram(prev => { const n={...prev}; if(n[id]!==undefined){delete n[id]}else{n[id]=Number(berat).toFixed(3)}; return n })
+    setRejGram(prev => { const n={...prev}; if(n[id]!==undefined){delete n[id]}else{n[id]=Number(berat).toFixed(2)}; return n })
   }
 
   const totalDikasih =
@@ -1142,9 +1183,9 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                 </label>
                 {mentahChecked&&(
                   <div className="mt-2 pl-6">
-                    <input type="number" step="0.001" placeholder={`cth: ${sisaMentahBelumLebur.toFixed(3)}`}
+                    <input type="number" step="0.001" placeholder={`cth: ${sisaMentahBelumLebur.toFixed(2)}`}
                       value={mentahGram} onChange={e=>setMentahGram(e.target.value)} className={inp}/>
-                    {mentahNaik&&<p className="text-[11px] text-amber-600 font-semibold mt-1">⚠ Timbangan naik {((Number(mentahGram)||0)-sisaMentahBelumLebur).toFixed(3)} gr — wajib isi Keterangan</p>}
+                    {mentahNaik&&<p className="text-[11px] text-amber-600 font-semibold mt-1">⚠ Timbangan naik {((Number(mentahGram)||0)-sisaMentahBelumLebur).toFixed(2)} gr — wajib isi Keterangan</p>}
                   </div>
                 )}
               </div>
@@ -1158,7 +1199,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                 </label>
                 {leburChecked&&(
                   <div className="mt-2 pl-6">
-                    <input type="number" step="0.001" max={hasilLeburBelumCetak} placeholder={`Max ${hasilLeburBelumCetak.toFixed(3)}`}
+                    <input type="number" step="0.001" max={hasilLeburBelumCetak} placeholder={`Max ${hasilLeburBelumCetak.toFixed(2)}`}
                       value={leburGram} onChange={e=>setLeburGram(e.target.value)} className={inp}/>
                   </div>
                 )}
@@ -1206,7 +1247,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
 
               {/* Total */}
               <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-violet-50 border border-violet-100">
-                <span className="text-[12px] text-slate-500 font-semibold">Total Dikasih</span>
+                <span className="text-[12px] text-slate-500 font-semibold">Total Diserahkan</span>
                 <span className={`text-[13px] font-bold ${totalDikasih>0?'text-violet-700':'text-slate-400'}`}>{(Math.round(totalDikasih*100)/100).toFixed(2).replace('.',',')} gr</span>
               </div>
             </div>
@@ -1343,7 +1384,7 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
         </div>
         <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700 flex items-center gap-2">
-            <span>Dikasih:</span>
+            <span>Diserahkan:</span>
             <span className="font-bold">{formatGram(peleburan.dikasih_gram)}</span>
           </div>
 
@@ -1402,7 +1443,7 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
           {/* Loss indicator realtime */}
           {diterimaVal !== '' && (
             <div className={`rounded-lg px-3 py-2 text-[12px] font-semibold flex items-center justify-between ${overTol?'bg-red-50 border border-red-100 text-red-600':'bg-green-50 border border-green-100 text-green-700'}`}>
-              <span>Loss: {lossNow.toFixed(3)} gr</span>
+              <span>Loss: {lossNow.toFixed(2)} gr</span>
               <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
             </div>
           )}
@@ -1498,7 +1539,7 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
                   if (sisa > 0 && val > sisa) return (
                     <div className="flex items-center gap-2 mt-1.5 px-3 py-2 rounded-xl text-[12px] bg-amber-50 border border-amber-200">
                       <span className="text-amber-600 font-bold">⚠</span>
-                      <span className="text-amber-700 font-semibold">Timbangan naik {(val - sisa).toFixed(3)} gr dari sisa ({sisa.toFixed(3)} gr)</span>
+                      <span className="text-amber-700 font-semibold">Timbangan naik {(val - sisa).toFixed(2)} gr dari sisa ({sisa.toFixed(2)} gr)</span>
                     </div>
                   )
                   return null
@@ -1718,7 +1759,7 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
           {/* Loss realtime indicator */}
           {diterimaVal !== '' && (
             <div className={`rounded-lg px-3 py-2 text-[12px] font-semibold flex items-center justify-between ${overTol?'bg-red-50 border border-red-100 text-red-600':'bg-green-50 border border-green-100 text-green-700'}`}>
-              <span>Loss: {lossNow.toFixed(3)} gr</span>
+              <span>Loss: {lossNow.toFixed(2)} gr</span>
               <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
             </div>
           )}

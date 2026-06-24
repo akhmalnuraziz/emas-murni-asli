@@ -69,7 +69,7 @@ export default async function DashboardPage({
   ] = await Promise.all([
     supabase.from('users_profile').select('name, role').eq('id', user?.id ?? '').single(),
     supabase.from('shieldtag').select('gramasi, hpp').eq('status', 'Aktif').is('voided_at', null),
-    supabase.from('shieldtag').select('gramasi').eq('status', 'Terdistribusi').is('voided_at', null),
+    Promise.resolve({ data: null, error: null }), // transit handled by get_balance_summary RPC
     supabase.from('penjualan').select('gramasi, pcs, harga_jual, tanggal')
       .gte('tanggal', dateFrom).lte('tanggal', dateTo).is('voided_at' as any, null),
     supabase.from('buyback').select('id, tanggal')
@@ -128,11 +128,11 @@ export default async function DashboardPage({
       .limit(30),
     // Target packing harian
     supabase.from('pengaturan').select('value').eq('key', 'target_packing_harian').single(),
-    // Balance Engine — untuk alert dashboard
-    supabase.from('batch').select('timbangan_akhir').is('voided_at', null),
-    supabase.from('produksi_item').select('total_gram, current_status, berat_reject, status_reject').is('voided_at', null),
-    supabase.from('shieldtag').select('status, gramasi').is('voided_at', null),
-    supabase.from('penjualan').select('gramasi, pcs').is('voided_at' as any, null),
+    // Balance Engine — single RPC replaces 4 full table scans
+    supabase.rpc('get_balance_summary'),
+    Promise.resolve({ data: null, error: null }),
+    Promise.resolve({ data: null, error: null }),
+    Promise.resolve({ data: null, error: null }),
   ])
 
   // ── Build stats ──────────────────────────────────────────────────────────
@@ -140,8 +140,10 @@ export default async function DashboardPage({
   const stokAktifPcs  = (shieldtagAktif ?? []).length
   const stokAktifGram = (shieldtagAktif ?? []).reduce((s, t) => s + parseFloat(t.gramasi ?? '0'), 0)
   const nilaiStok     = (shieldtagAktif ?? []).reduce((s, t) => s + Number(t.hpp ?? 0), 0)
-  const transitPcs    = (shieldtagTransit ?? []).length
-  const transitGram   = (shieldtagTransit ?? []).reduce((s, t) => s + parseFloat(t.gramasi ?? '0'), 0)
+  // Transit stats from RPC (balanceBatches is now the get_balance_summary result)
+  const balanceSummary = balanceBatches as any
+  const transitPcs    = Number(balanceSummary?.transit_pcs ?? 0)
+  const transitGram   = Number(balanceSummary?.transit_gram ?? 0)
 
   const terjualPcs    = (penjualanPeriode ?? []).reduce((s, p) => s + (Number(p.pcs) || 0), 0)
   const omzetPeriode  = (penjualanPeriode ?? []).reduce((s, p) => s + (Number(p.harga_jual) || 0), 0)
@@ -182,13 +184,13 @@ export default async function DashboardPage({
   // Pengeluaran stats
   const totalPengeluaran = (pengeluaranPeriode ?? []).reduce((s: number, p: any) => s + Number(p.nominal ?? 0), 0)
 
-  // Balance Engine — selisih emas
-  const balanceMasuk = (balanceBatches ?? []).reduce((s: number, b: any) => s + Number(b.timbangan_akhir ?? 0), 0)
-  const balanceStokAktif = (balanceShieldtag ?? []).filter((t: any) => t.status === 'Aktif').reduce((s: number, t: any) => s + parseFloat(t.gramasi ?? '0'), 0)
-  const balanceTransit   = (balanceShieldtag ?? []).filter((t: any) => t.status === 'Terdistribusi').reduce((s: number, t: any) => s + parseFloat(t.gramasi ?? '0'), 0)
-  const balanceTerjual   = (balancePenjualan ?? []).reduce((s: number, p: any) => s + parseFloat(p.gramasi ?? '0') * (Number(p.pcs) || 1), 0)
-  const balanceWIP       = (balanceProduksi ?? []).filter((r: any) => !['Sudah Packing','Reject'].includes(r.current_status ?? '')).reduce((s: number, r: any) => s + Number(r.total_gram ?? 0), 0)
-  const balanceReject    = (balanceProduksi ?? []).filter((r: any) => r.status_reject === 'belum_dilebur').reduce((s: number, r: any) => s + Number(r.berat_reject ?? 0), 0)
+  // Balance Engine — from single RPC (replaces 4 full table scans)
+  const balanceMasuk     = Number(balanceSummary?.balance_masuk ?? 0)
+  const balanceStokAktif = Number(balanceSummary?.balance_stok_aktif ?? 0)
+  const balanceTransit   = Number(balanceSummary?.balance_transit ?? 0)
+  const balanceTerjual   = Number(balanceSummary?.balance_terjual ?? 0)
+  const balanceWIP       = Number(balanceSummary?.balance_wip ?? 0)
+  const balanceReject    = Number(balanceSummary?.balance_reject ?? 0)
   const balanceSelisih   = balanceMasuk - (balanceStokAktif + balanceTransit + balanceTerjual + balanceWIP + balanceReject)
 
   // Trend produksi harian

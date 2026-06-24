@@ -130,7 +130,7 @@ function PrintView({p}:{p:any}){
               ['Gramasi', `${p.gramasi} gr`],
               ['PCS Dipack', `${p.pcs_dipack} PCS`],
               ['Total Gram Aktual', `${Number(p.total_gram_aktual).toFixed(3)} gr`],
-              ['Admin yang Input', p.admin_input||'—'],
+              ['Admin Yang Menyerahkan', p.admin_input||'—'],
               ['Operator Packing', p.pic_packing||p.pic||'—'],
               ['Catatan', p.catatan||'—'],
             ].map(([k,v])=>(
@@ -198,7 +198,7 @@ function CreateModal({items,onClose,onSubmit,isPending,error}:{
           </div>
           <F label="Tanggal" req><input name="tanggal" type="date" defaultValue={today} className={inp} required/></F>
           <div className="grid grid-cols-2 gap-3">
-            <F label="Admin yang Input"><input name="admin_input" placeholder="Nama admin" className={inp}/></F>
+            <F label="Admin Yang Menyerahkan"><input name="admin_input" placeholder="Nama admin" className={inp}/></F>
             <F label="Operator Packing"><input name="operator_packing" placeholder="Nama operator" className={inp}/></F>
           </div>
           <F label="Catatan"><input name="catatan" placeholder="Keterangan tambahan..." className={inp}/></F>
@@ -253,7 +253,7 @@ function EditModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;
           </div>
           <F label="Tanggal" req><input name="tanggal" type="date" defaultValue={p.tanggal} className={inp} required/></F>
           <div className="grid grid-cols-2 gap-3">
-            <F label="Admin yang Input"><input name="admin_input" defaultValue={p.admin_input??''} className={inp}/></F>
+            <F label="Admin Yang Menyerahkan"><input name="admin_input" defaultValue={p.admin_input??''} className={inp}/></F>
             <F label="Operator Packing"><input name="operator_packing" defaultValue={p.pic_packing??p.pic??''} className={inp}/></F>
           </div>
           <F label="Catatan"><input name="catatan" defaultValue={p.catatan??''} className={inp}/></F>

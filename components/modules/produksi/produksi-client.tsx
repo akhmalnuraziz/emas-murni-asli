@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState, useEffect, useTransition, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { createPortal } from 'react-dom'
 import {
   Plus, Search, Edit2, Trash2, Check, AlertTriangle,
@@ -17,9 +18,9 @@ import type { UserRole } from '@/lib/types/database'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
 import { SerahModalStd, TerimaModalStd, AdminPickerStd } from '@/components/modules/produksi/serah-terima-modal'
 
-interface Props { produksiList: any[]; batches: any[]; peleburanByBatch: Record<string, any[]>; tims: any[]; toleransi: Record<string, number>; adminList: any[]; userRole: UserRole; userName: string; lossApprovals?: any[] }
+interface Props { produksiList: any[]; batches: any[]; peleburanByBatch: Record<string, any[]>; tims: any[]; toleransi: Record<string, number>; adminList: any[]; userRole: UserRole; userName: string; lossApprovals?: any[]; total?: number; page?: number; pageSize?: number; currentQ?: string; currentStatus?: string }
 
-function fgr(n: number | null | undefined, dec = 3): string {
+function fgr(n: number | null | undefined, dec = 2): string {
   if (n === null || n === undefined || isNaN(Number(n))) return '—'
   return parseFloat(Number(n).toFixed(dec)).toLocaleString('id-ID', {
     minimumFractionDigits: dec, maximumFractionDigits: dec,
@@ -473,7 +474,7 @@ function EventHistory({ events, item, stageHandovers = [], lossApprovals = [] }:
                 <div className="mx-3 mb-2 rounded-xl overflow-hidden border border-red-100">
                   <div className="px-3 py-1.5 flex items-center gap-2 bg-red-50">
                     <span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss {ev.status}</span>
-                    <span className="text-[10px] text-red-400 ml-auto">{la.loss_gram ? `${Number(la.loss_gram).toFixed(3)} gr` : ''}</span>
+                    <span className="text-[10px] text-red-400 ml-auto">{la.loss_gram ? `${Number(la.loss_gram).toFixed(2)} gr` : ''}</span>
                   </div>
                   <div className="px-3 py-2 space-y-1.5">
                     {la.alasan && <p className="text-[11px] text-slate-600"><span className="font-semibold">Alasan:</span> {la.alasan}</p>}
@@ -572,9 +573,9 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
             ) : (
               <>
                 <select name="peleburan_id" value={f.peleburan_id} onChange={e => s('peleburan_id', e.target.value)} className={inp} required>
-                  {plbList.map(p => <option key={p.id} value={p.id}>{p.kode} — sisa {p.sisa.toFixed(3)} gr</option>)}
+                  {plbList.map(p => <option key={p.id} value={p.id}>{p.kode} — sisa {p.sisa.toFixed(2)} gr</option>)}
                 </select>
-                {selectedPlb && <p className="text-[11px] text-violet-500 font-semibold mt-1 px-1">Tersedia dari peleburan ini: {selectedPlb.sisa.toFixed(3)} gr</p>}
+                {selectedPlb && <p className="text-[11px] text-violet-500 font-semibold mt-1 px-1">Tersedia dari peleburan ini: {selectedPlb.sisa.toFixed(2)} gr</p>}
               </>
             )}
           </F>
@@ -594,10 +595,9 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
               </select>
             </F>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <F label="Tanggal Mulai" req><input name="tanggal_produksi" type="date" value={f.tanggal_produksi} onChange={e => s('tanggal_produksi', e.target.value)} className={inp} required /></F>
             <F label="Jam Mulai" req><input name="jam_mulai" type="time" value={f.jam_mulai ?? ''} onChange={e => s('jam_mulai', e.target.value)} className={inp} required /></F>
-  
           </div>
           <AdminPickerStd adminList={adminList} prefix="" label="Admin Yang Menyerahkan" />
           <F label="Catatan"><input name="catatan" placeholder="Keterangan tambahan..." className={inp} /></F>
@@ -662,9 +662,9 @@ function TambahProduksiModal({ item, peleburanByBatch, tims, adminList, onClose,
             ) : (
               <>
                 <select name="peleburan_id" value={f.peleburan_id} onChange={e => s('peleburan_id', e.target.value)} className={inp} required>
-                  {plbList.map(p => <option key={p.id} value={p.id}>{p.kode} — sisa {p.sisa.toFixed(3)} gr</option>)}
+                  {plbList.map(p => <option key={p.id} value={p.id}>{p.kode} — sisa {p.sisa.toFixed(2)} gr</option>)}
                 </select>
-                {selectedPlb && <p className="text-[11px] text-violet-500 font-semibold mt-1 px-1">Tersedia: {selectedPlb.sisa.toFixed(3)} gr</p>}
+                {selectedPlb && <p className="text-[11px] text-violet-500 font-semibold mt-1 px-1">Tersedia: {selectedPlb.sisa.toFixed(2)} gr</p>}
               </>
             )}
           </F>
@@ -890,7 +890,7 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
           {/* Loss indicator realtime */}
           {(terimaVal !== '') && (
             <div className={cn('px-3 py-2 rounded-xl text-[12px] font-semibold flex items-center justify-between', overTol ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700')}>
-              <span>Loss: {lossNow.toFixed(3)} gr</span>
+              <span>Loss: {lossNow.toFixed(2)} gr</span>
               <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
             </div>
           )}
@@ -1027,7 +1027,7 @@ function SerahStageModal({ item, tahap, tims, onClose, onSubmit, isPending, erro
           <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700">
             <p className="text-[9px] font-bold text-violet-500 uppercase mb-2">Data yang akan diserahkan</p>
             <div className="flex flex-wrap gap-3">
-              <div><p className="text-slate-400 text-[10px]">Total Berat</p><p className="font-bold text-violet-700">{serahGram.toFixed(3)} gr</p></div>
+              <div><p className="text-slate-400 text-[10px]">Total Berat</p><p className="font-bold text-violet-700">{serahGram.toFixed(2)} gr</p></div>
               <div><p className="text-slate-400 text-[10px]">Gramasi</p><p className="font-bold text-slate-700">{item.gramasi} gr</p></div>
               <div><p className="text-slate-400 text-[10px]">Jumlah PCS</p><p className="font-bold text-slate-700">{serahPcs > 0 ? `${serahPcs} PCS` : '—'}</p></div>
             </div>
@@ -1144,7 +1144,7 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
           <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700">
             <p className="text-[9px] font-bold text-violet-500 uppercase mb-2">Diserahkan</p>
             <div className="flex flex-wrap gap-3">
-              <div><p className="text-slate-400 text-[10px]">Total Berat</p><p className="font-bold text-violet-700">{Number(serahGram).toFixed(3)} gr</p></div>
+              <div><p className="text-slate-400 text-[10px]">Total Berat</p><p className="font-bold text-violet-700">{Number(serahGram).toFixed(2)} gr</p></div>
               <div><p className="text-slate-400 text-[10px]">Gramasi</p><p className="font-bold text-slate-700">{item.gramasi} gr</p></div>
               {(currentH?.serah_pcs ?? item.pcs_good ?? item.pcs) ? <div><p className="text-slate-400 text-[10px]">Jumlah PCS</p><p className="font-bold text-slate-700">{currentH?.serah_pcs ?? item.pcs_good ?? item.pcs} PCS</p></div> : null}
             </div>
@@ -1152,7 +1152,7 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
 
           <div>
             <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Total Berat Setelah Diproses (gr) *</label>
-            <input name="terima_gram" type="number" step="0.001" placeholder={`Max ${Number(serahGram).toFixed(3)} gr`} value={terimaVal} onChange={e=>setTerimaVal(e.target.value)} className={inp} required/>
+            <input name="terima_gram" type="number" step="0.001" placeholder={`Max ${Number(serahGram).toFixed(2)} gr`} value={terimaVal} onChange={e=>setTerimaVal(e.target.value)} className={inp} required/>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -1204,7 +1204,7 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
           {/* Loss indicator realtime */}
           {(terimaVal !== '') && (
             <div className={cn('px-3 py-2 rounded-xl text-[12px] font-semibold flex items-center justify-between', overTol ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700')}>
-              <span>Loss: {lossNow.toFixed(3)} gr</span>
+              <span>Loss: {lossNow.toFixed(2)} gr</span>
               <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
             </div>
           )}
@@ -1409,9 +1409,22 @@ function StatChip({ label, value, accent }: { label: string; value: React.ReactN
 }
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
-export default function ProduksiClient({ produksiList, batches, peleburanByBatch, tims, toleransi, adminList, userRole, userName, lossApprovals = [] }: Props) {
-  const [search, setSearch]     = useState('')
-  const [filterStatus, setFilter] = useState<string>('Semua')
+export default function ProduksiClient({ produksiList, batches, peleburanByBatch, tims, toleransi, adminList, userRole, userName, lossApprovals = [], total = 0, page = 1, pageSize = 20, currentQ = '', currentStatus = 'Semua' }: Props) {
+  const router = useRouter()
+  const [search, setSearch]     = useState(currentQ)
+  const filterStatus = currentStatus
+  const totalPages = Math.ceil(total / pageSize)
+
+  function navigateProd(params: Record<string, string>) {
+    const sp = new URLSearchParams()
+    if (search) sp.set('q', search)
+    if (filterStatus !== 'Semua') sp.set('status', filterStatus)
+    sp.set('page', String(page))
+    Object.entries(params).forEach(([k, v]) => { if (v) sp.set(k, v); else sp.delete(k) })
+    router.push(`/produksi?${sp.toString()}`)
+  }
+
+  function setFilter(tab: string) { navigateProd({ status: tab === 'Semua' ? '' : tab, page: '1' }) }
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const [modal, setModal]       = useState<'create'|'tambahProduksi'|'edit'|'update'|'delete'|'cuttingTerima'|'editCutting'|'serahStage'|'terimaStage'|'editHandover'|'editSerahStage'|'deleteHandover'|'deleteCutting'|null>(null)
   const [active, setActive]     = useState<any>(null)
@@ -1461,12 +1474,8 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
 
   // ── Filter ────────────────────────────────────────────────────────────────
   const STATUS_TABS = ['Semua','Cutting','Pas Berat','Annealing','Siap Packing','Sudah Packing','Reject']
-  const filtered = produksiList.filter(i=>{
-    if(filterStatus!=='Semua' && i.current_status!==filterStatus) return false
-    if(!search) return true
-    const q=search.toLowerCase()
-    return i.kode?.toLowerCase().includes(q)||i.nama_item?.toLowerCase().includes(q)||i.batch_kode?.toLowerCase().includes(q)||i.gramasi?.toString().includes(q)
-  })
+  // Data already filtered server-side
+  const filtered = produksiList
 
   const STATUS_COLOR: Record<string,{bg:string;text:string;dot:string}> = {
     'Cutting':      {bg:'rgba(59,130,246,0.1)',   text:'#2563EB', dot:'#3B82F6'},
@@ -1502,25 +1511,25 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
         </div>
 
         {/* ── Search ──────────────────────────────────────────────────────── */}
-        <div className="relative">
+        <form onSubmit={e=>{e.preventDefault();navigateProd({q:search,page:'1'})}} className="relative">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
           <input value={search} onChange={e=>setSearch(e.target.value)}
-            placeholder="Cari kode, nama item, gramasi, batch..."
+            placeholder="Cari kode, nama item, gramasi, batch… (Enter)"
             className="w-full pl-9 pr-3 h-8 text-[12px] rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
-        </div>
+        </form>
 
         {/* ── Filter tabs ─────────────────────────────────────────────────── */}
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
           {STATUS_TABS.map(tab=>{
-            const count = tab==='Semua' ? produksiList.length : produksiList.filter(i=>i.current_status===tab).length
             const isActive = filterStatus===tab
             return (
               <button key={tab} onClick={()=>setFilter(tab)}
                 className={`flex items-center gap-1.5 h-7 px-3 rounded-full text-[11px] font-semibold whitespace-nowrap flex-shrink-0 transition-colors ${isActive?'bg-violet-600 text-white':'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'}`}>
-                {tab} <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${isActive?'bg-white/25':'bg-slate-100'}`}>{count}</span>
+                {tab}
               </button>
             )
           })}
+          <span className="text-[11px] text-slate-400 self-center ml-2">{total} item</span>
         </div>
 
         {/* ── Item cards ──────────────────────────────────────────────────── */}
@@ -1611,11 +1620,24 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                         className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
                         <Check size={11}/> Diterima
                       </button>
-                    if(s==='Cutting'&&item.status_cutting==='selesai'&&!pbH)
-                      return <button onClick={()=>openSerahStage(item,'pas_berat')}
-                        className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-amber-50 text-amber-700">
-                        <Plus size={11}/> Pas Berat
-                      </button>
+                    if(s==='Cutting'&&item.status_cutting==='selesai'&&!pbH&&!annH&&!spH)
+                      return <div className="flex items-center gap-1 flex-shrink-0">
+                        <button onClick={()=>openSerahStage(item,'pas_berat')}
+                          className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all bg-amber-50 text-amber-700"
+                          title="Lanjut ke Pas Berat">
+                          <Plus size={11}/> Pas Berat
+                        </button>
+                        <button onClick={()=>openSerahStage(item,'annealing')}
+                          className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all bg-yellow-50 text-yellow-700"
+                          title="Lanjut ke Annealing (skip Pas Berat)">
+                          <Plus size={11}/> Annealing
+                        </button>
+                        <button onClick={()=>openSerahStage(item,'siap_packing')}
+                          className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 hover:scale-105 transition-all bg-violet-50 text-violet-700"
+                          title="Langsung Siap Packing">
+                          <Plus size={11}/> Siap Packing
+                        </button>
+                      </div>
                     if(s==='Pas Berat'&&pbH?.status==='proses')
                       return <button onClick={()=>openTerimaStage(item,'pas_berat',pbH.id)}
                         className="h-8 px-3 rounded-xl text-[11px] font-bold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-emerald-50 text-emerald-700">
@@ -1745,16 +1767,16 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                               <div className="grid grid-cols-3 gap-3 mb-2">
                                 <div>
                                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Diserahkan</p>
-                                  <p className="text-[13px] font-semibold text-slate-800 tabular-nums mt-0.5">{item.serah_gram?`${parseFloat(item.serah_gram).toFixed(3)} gr`:'—'}</p>
+                                  <p className="text-[13px] font-semibold text-slate-800 tabular-nums mt-0.5">{item.serah_gram?`${parseFloat(item.serah_gram).toFixed(2)} gr`:'—'}</p>
                                 </div>
                                 <div>
                                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Diterima</p>
-                                  <p className="text-[13px] font-semibold text-slate-800 tabular-nums mt-0.5">{item.terima_gram?`${parseFloat(item.terima_gram).toFixed(3)} gr`:'—'}{item.terima_pcs?` · ${item.terima_pcs} pcs`:''}</p>
+                                  <p className="text-[13px] font-semibold text-slate-800 tabular-nums mt-0.5">{item.terima_gram?`${parseFloat(item.terima_gram).toFixed(2)} gr`:'—'}{item.terima_pcs?` · ${item.terima_pcs} pcs`:''}</p>
                                 </div>
                                 <div>
-                                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Reject / Losses</p>
+                                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Reject Cutting</p>
                                   <p className={`text-[13px] font-semibold tabular-nums mt-0.5 ${(rejGram>0||lossCutting>0)?'text-red-500':'text-slate-400'}`}>
-                                    {rejGram>0?`${rejGram.toFixed(3)} gr`:(lossCutting>0?`${lossCutting.toFixed(3)} gr`:'—')}
+                                    {rejGram>0?`${rejGram.toFixed(2)} gr`:(lossCutting>0?`${lossCutting.toFixed(2)} gr`:'—')}
                                   </p>
                                 </div>
                               </div>
@@ -1771,7 +1793,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   <div/>
                                 </div>
                               )}
-                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='produksi_item'&&l.ref_id===item.id&&l.proses==='cutting');if(!_la)return null;return(<div className="mt-2 rounded-xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss Cutting</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-slate-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-slate-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-slate-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-slate-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
+                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='produksi_item'&&l.ref_id===item.id&&l.proses==='cutting');if(!_la)return null;return(<div className="mt-2 rounded-xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss Cutting</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(2)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-slate-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-slate-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-slate-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-slate-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
                             </div>
                           )
                         })()}
@@ -1826,17 +1848,17 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                               <div className="grid grid-cols-3 gap-3 mb-2">
                                 <div>
                                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Diserahkan</p>
-                                  <p className="text-[13px] font-semibold text-slate-800 tabular-nums mt-0.5">{h.serah_gram?`${parseFloat(h.serah_gram).toFixed(3)} gr`:'—'}{h.serah_pcs?` · ${h.serah_pcs} pcs`:''}</p>
+                                  <p className="text-[13px] font-semibold text-slate-800 tabular-nums mt-0.5">{h.serah_gram?`${parseFloat(h.serah_gram).toFixed(2)} gr`:'—'}{h.serah_pcs?` · ${h.serah_pcs} pcs`:''}</p>
                                 </div>
                                 <div>
                                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Diterima</p>
-                                  <p className="text-[13px] font-semibold text-slate-800 tabular-nums mt-0.5">{h.terima_gram?`${parseFloat(h.terima_gram).toFixed(3)} gr`:'—'}{h.terima_pcs?` · ${h.terima_pcs} pcs`:''}</p>
-                                  {hSerbuk>0&&<p className="text-[10px] text-slate-500 mt-0.5">Sisa Serbuk: <span className="font-semibold text-slate-700 tabular-nums">{hSerbuk.toFixed(3)} gr</span></p>}
+                                  <p className="text-[13px] font-semibold text-slate-800 tabular-nums mt-0.5">{h.terima_gram?`${parseFloat(h.terima_gram).toFixed(2)} gr`:'—'}{h.terima_pcs?` · ${h.terima_pcs} pcs`:''}</p>
+                                  {hSerbuk>0&&<p className="text-[10px] text-slate-500 mt-0.5">Sisa Serbuk: <span className="font-semibold text-slate-700 tabular-nums">{hSerbuk.toFixed(2)} gr</span></p>}
                                 </div>
                                 <div>
-                                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Reject / Losses</p>
+                                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Reject {tl[h.tahap]??h.tahap}</p>
                                   <p className={`text-[13px] font-semibold tabular-nums mt-0.5 ${(hReject>0||hLosses>0)?'text-red-500':'text-slate-400'}`}>
-                                    {hReject>0?`${hReject.toFixed(3)} gr${h.reject_pcs?` · ${h.reject_pcs} pcs`:''}`:(hLosses>0?`${hLosses.toFixed(3)} gr`:'—')}
+                                    {hReject>0?`${hReject.toFixed(2)} gr${h.reject_pcs?` · ${h.reject_pcs} pcs`:''}`:(hLosses>0?`${hLosses.toFixed(2)} gr`:'—')}
                                   </p>
                                 </div>
                               </div>
@@ -1853,7 +1875,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   <div/>
                                 </div>
                               )}
-                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='stage_handover'&&l.ref_id===h.id);if(!_la)return null;return(<div className="mt-2 rounded-xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss {(h.tahap as string).replace(/_/g,' ')}</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(3)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-slate-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-slate-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-slate-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-slate-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
+                          {(()=>{const _la=(lossApprovals as any[]).find((l:any)=>l.ref_table==='stage_handover'&&l.ref_id===h.id);if(!_la)return null;return(<div className="mt-2 rounded-xl overflow-hidden border border-red-100"><div className="px-3 py-2 flex items-center gap-2 bg-red-50"><span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">⚠ TTD Loss {(h.tahap as string).replace(/_/g,' ')}</span>{_la.loss_gram&&<span className="text-[10px] text-red-400 ml-1">{parseFloat(_la.loss_gram).toFixed(2)} gr</span>}</div><div className="px-3 py-2 space-y-1.5">{_la.alasan&&<p className="text-[12px] text-slate-600"><span className="font-semibold">Alasan:</span> {_la.alasan}</p>}<div className="flex gap-4 text-[12px] text-slate-500">{_la.operator_nama&&<span>👷 {_la.operator_nama}</span>}{_la.admin_nama&&<span>✍️ {_la.admin_nama}</span>}</div>{(_la.ttd_operator_url||_la.ttd_admin_url)&&<div className="flex gap-3 pt-1 flex-wrap">{_la.ttd_operator_url&&<div><p className="text-[10px] text-slate-400 mb-1">TTD Operator</p><a href={_la.ttd_operator_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_operator_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}{_la.ttd_admin_url&&<div><p className="text-[10px] text-slate-400 mb-1">TTD Admin</p><a href={_la.ttd_admin_url} target="_blank" rel="noopener noreferrer"><img src={_la.ttd_admin_url} alt="TTD" className="h-14 w-28 object-contain rounded-xl border border-red-100 bg-white"/></a></div>}</div>}</div></div>)})()}
                             </div>
                           )
                         })}
@@ -1878,6 +1900,23 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
             })
           })()}
         </div>
+
+        {/* ── Pagination ────────────────────────────────────────────────── */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-1 pt-2">
+            <span className="text-[12px] text-slate-400">Hal {page} dari {totalPages} · {total} item</span>
+            <div className="flex gap-2">
+              <button disabled={page<=1} onClick={()=>navigateProd({page:String(page-1)})}
+                className="px-3 py-1.5 text-[12px] font-semibold rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                ← Prev
+              </button>
+              <button disabled={page>=totalPages} onClick={()=>navigateProd({page:String(page+1)})}
+                className="px-3 py-1.5 text-[12px] font-semibold rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                Next →
+              </button>
+            </div>
+          </div>
+        )}
 
       {/* ── Modals ──────────────────────────────────────────────────────────── */}
       {modal==='create'        && batches.length>0 && <CreateModal batches={batches} peleburanByBatch={peleburanByBatch} tims={tims} adminList={adminList} onClose={()=>setModal(null)} onSubmit={handleCreate} isPending={isPending} error={err}/>}

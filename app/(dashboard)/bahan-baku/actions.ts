@@ -159,6 +159,13 @@ export async function createBatch(formData: FormData) {
       ttd_operator_url: ttdOpUrl, operator_nama: (formData.get('selisih_op_nama') as string) || null,
       ttd_admin_url: ttdAdminUrl, admin_user_id: user.id, admin_nama: (formData.get('selisih_admin_nama') as string) || profile?.name || null,
     })
+    await createNotif({
+      judul: `Selisih Timbangan Batch ${kode}`,
+      pesan: `Selisih ${Math.abs(selisih).toFixed(2)}gr melebihi toleransi ${toleransiBatch}gr · TTD tersimpan`,
+      tipe: 'warning',
+      link: '/bahan-baku',
+      untuk_role: ['owner', 'admin_pusat', 'spv'],
+    })
   }
 
   await supabase.from('audit_log').insert({

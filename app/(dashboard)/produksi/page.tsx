@@ -4,14 +4,40 @@ import ProduksiClient from '@/components/modules/produksi/produksi-client'
 
 export const dynamic = 'force-dynamic'
 
-export default async function ProduksiPage() {
+const PAGE_SIZE = 20
+
+export default async function ProduksiPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; status?: string; page?: string }>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const sp = await searchParams
+  const q = sp.q?.trim() ?? ''
+  const status = sp.status ?? 'Semua'
+  const page = Math.max(1, parseInt(sp.page ?? '1'))
+  const offset = (page - 1) * PAGE_SIZE
+
+  let prodQuery = supabase
+    .from('produksi_item')
+    .select(`*, produksi_event(*), packing!left(pcs_dipack, shieldtag_count, voided_at), batch!left(sisa_bahan_seharusnya, sisa_fisik, timbangan_akhir, bahan_dari_pusat), stage_handover(*)`, { count: 'exact' })
+    .is('voided_at', null)
+    .order('created_at', { ascending: false })
+
+  if (q) {
+    prodQuery = prodQuery.or(`kode.ilike.%${q}%,nama_item.ilike.%${q}%,batch_kode.ilike.%${q}%`)
+  }
+  if (status !== 'Semua') {
+    prodQuery = prodQuery.eq('current_status', status)
+  }
+  prodQuery = prodQuery.range(offset, offset + PAGE_SIZE - 1)
+
   const [
     { data: profile },
-    { data: produksiList },
+    { data: produksiList, count },
     { data: batches },
     { data: peleburanRaw },
     { data: tims },
@@ -19,12 +45,8 @@ export default async function ProduksiPage() {
     { data: adminRows },
     { data: lossApprovalRows },
   ] = await Promise.all([
-    supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
-    supabase.from('produksi_item')
-      .select(`*, produksi_event(*), packing!left(pcs_dipack, shieldtag_count, voided_at), batch!left(sisa_bahan_seharusnya, sisa_fisik, timbangan_akhir, bahan_dari_pusat), stage_handover(*)`)
-      .is('voided_at', null)
-      .order('created_at', { ascending: false })
-      .limit(80),
+    supabase.from('users_profile').select('role, name').eq('id', user.id).single(),
+    prodQuery,
     supabase.from('batch')
       .select('kode, nama_batch, sisa_bahan_seharusnya, timbangan_akhir, bahan_siap_cetak')
       .is('voided_at', null)
@@ -39,11 +61,11 @@ export default async function ProduksiPage() {
       .eq('aktif', true).is('voided_at', null).order('id'),
     supabase.from('pengaturan').select('key, value').like('key', 'toleransi_loss%'),
     supabase.from('admin_input').select('id, nama').is('voided_at', null).order('id'),
-    // TTD loss untuk SEMUA proses (cutting, pas_berat, annealing, siap_packing)
     supabase.from('loss_approval')
       .select('id, proses, ref_table, ref_id, alasan, operator_nama, admin_nama, ttd_operator_url, ttd_admin_url, loss_gram, created_at')
       .neq('proses', 'peleburan')
-      .order('created_at', { ascending: false }),
+      .order('created_at', { ascending: false })
+      .limit(300),
   ])
 
   const toleransi: Record<string, number> = {}
@@ -75,6 +97,11 @@ export default async function ProduksiPage() {
       userRole={profile?.role ?? 'operator_produksi'}
       userName={profile?.name ?? ''}
       lossApprovals={lossApprovalRows ?? []}
+      total={count ?? 0}
+      page={page}
+      pageSize={PAGE_SIZE}
+      currentQ={q}
+      currentStatus={status}
     />
   )
 }

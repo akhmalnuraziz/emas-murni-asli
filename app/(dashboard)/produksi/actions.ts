@@ -621,7 +621,6 @@ export async function selesaiCutting(produksiId: number, produksiKode: string, f
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
-  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
 
   const terimaGram    = parseFloat(formData.get('terima_gram') as string)
   const rejectGram    = parseFloat(formData.get('reject_cutting_gram') as string || '0')
@@ -636,19 +635,23 @@ export async function selesaiCutting(produksiId: number, produksiKode: string, f
 
   const fotosB64Raw = formData.get('fotos_b64') as string
   const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
-  const newFotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, `${produksiKode}-terima`) : []
-  // Gabung foto lama (yang dipertahankan saat edit) + foto baru
   const existingFotosRaw = formData.get('existing_fotos') as string
   const existingFotos: string[] = existingFotosRaw ? JSON.parse(existingFotosRaw) : []
-  const fotoUrls = [...existingFotos, ...newFotoUrls]
 
-  const { data: produksi } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
+  // Paralelkan: profile + produksi_item + toleransi + foto upload
+  const [{ data: profile }, { data: produksi }, tolMap, newFotoUrls] = await Promise.all([
+    supabase.from('users_profile').select('name, role').eq('id', user.id).single(),
+    supabase.from('produksi_item').select('*').eq('id', produksiId).single(),
+    getToleransiLoss(),
+    fotosB64.length > 0 ? uploadBase64Fotos(supabase, fotosB64, `${produksiKode}-terima`) : Promise.resolve([] as string[]),
+  ])
+
+  const fotoUrls = [...existingFotos, ...newFotoUrls]
   if (!produksi) return { error: 'Item tidak ditemukan' }
   const serahGram = produksi.serah_gram ?? produksi.berat_awal ?? 0
   const losses = Math.max(0, serahGram - terimaGram - rejectGram)
 
   // ── Validasi loss vs toleransi ──────────────────────────────────────────────
-  const tolMap = await getToleransiLoss()
   const toleransi = tolMap['cutting'] ?? 0.05
   const lossAlasan = (formData.get('loss_alasan') as string) || ''
   if (losses > toleransi + 0.0001) {
@@ -723,6 +726,15 @@ export async function selesaiCutting(produksiId: number, produksiKode: string, f
   await supabase.from('produksi_item').update(updateData).eq('id', produksiId)
 
   revalidatePath('/produksi')
+
+  await createNotif({
+    judul: `Cutting Selesai — ${produksiKode}`,
+    pesan: `Terima ${terimaGram}gr · Reject ${rejectGram}gr · Loss ${losses.toFixed(2)}gr`,
+    tipe: 'produksi',
+    link: '/produksi',
+    untuk_role: ['owner', 'admin_pusat', 'spv'],
+  })
+
   return { success: true }
 }
 
@@ -730,7 +742,6 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
-  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
 
   const gramasi        = formData.get('gramasi') as string
   const pcsRaw         = formData.get('pcs') as string
@@ -746,7 +757,14 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   if (!beratAwal || beratAwal <= 0) return { error: 'Total berat wajib diisi' }
   if (!tanggal) return { error: 'Tanggal wajib diisi' }
 
-  const { data: before } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
+  const newSerahRaw = formData.get('foto_serahkan_b64') as string
+  const newSerahB64 = newSerahRaw ? JSON.parse(newSerahRaw) : []
+
+  const [{ data: profile }, { data: before }, newSerahUrls] = await Promise.all([
+    supabase.from('users_profile').select('name, role').eq('id', user.id).single(),
+    supabase.from('produksi_item').select('*').eq('id', produksiId).single(),
+    newSerahB64.length > 0 ? uploadBase64Fotos(supabase, newSerahB64, `${produksiKode}-serah-edit`) : Promise.resolve([] as string[]),
+  ])
 
   // PCS wajib HANYA jika sudah Diterima (cutting selesai). Jika masih Diserahkan, PCS opsional.
   const sudahDiterima = before?.status_cutting === 'selesai' || (before?.terima_gram != null)
@@ -755,9 +773,6 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   // Foto serahkan: gabung existing yang dipertahankan + upload baru
   const existingSerahRaw = formData.get('existing_fotos_serah') as string
   const existingSerah: string[] = existingSerahRaw ? JSON.parse(existingSerahRaw) : (Array.isArray(before?.foto_serahkan_cutting) ? before.foto_serahkan_cutting : [])
-  const newSerahRaw = formData.get('foto_serahkan_b64') as string
-  const newSerahB64 = newSerahRaw ? JSON.parse(newSerahRaw) : []
-  const newSerahUrls = newSerahB64.length > 0 ? await uploadBase64Fotos(supabase, newSerahB64, `${produksiKode}-serah-edit`) : []
   const fotoSerahFinal = [...existingSerah, ...newSerahUrls]
 
   const namaItemBaru = (formData.get('nama_item') as string) || `LM REI ${gramasi}GR`
@@ -802,8 +817,11 @@ export async function serahStageProduksi(
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
-  const { data: profile } = await supabase.from('users_profile').select('name').eq('id', user.id).single()
-  const { data: item } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
+
+  const [{ data: profile }, { data: item }] = await Promise.all([
+    supabase.from('users_profile').select('name').eq('id', user.id).single(),
+    supabase.from('produksi_item').select('*').eq('id', produksiId).single(),
+  ])
   if (!item) return { error: 'Item tidak ditemukan' }
 
   // Ambil data serah dari tahap sebelumnya
@@ -872,14 +890,11 @@ export async function terimaStageProduksi(
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
-  const { data: profile } = await supabase.from('users_profile').select('name').eq('id', user.id).single()
-  const { data: item } = await supabase.from('produksi_item').select('total_gram, pcs_good, pcs').eq('id', produksiId).single()
 
   const terimaGram     = parseFloat(formData.get('terima_gram') as string)
   const terimaPcs      = parseInt(formData.get('terima_pcs') as string || '0') || null
   const terimaTanggal  = formData.get('terima_tanggal') as string
   const terimaJam      = (formData.get('terima_jam') as string) || null
-  const terimaOp       = (formData.get('terima_operator') as string) || profile?.name || null
   const terimaCatatan  = (formData.get('terima_catatan') as string) || null
   const terimaTimId    = formData.get('terima_tim_id') ? Number(formData.get('terima_tim_id')) : null
   const terimaTimNama  = (formData.get('terima_tim_nama') as string) || null
@@ -892,9 +907,18 @@ export async function terimaStageProduksi(
 
   const fotosB64Raw = formData.get('fotos_b64') as string
   const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
-  const newFotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, `${produksiKode}-terima-${tahap}`) : []
   const existingFotosRaw = formData.get('existing_fotos') as string
   const existingTerimaFotos: string[] = existingFotosRaw ? JSON.parse(existingFotosRaw) : []
+
+  // Paralelkan: profile + produksi_item + toleransi + foto upload
+  const [{ data: profile }, { data: item }, tolMap, newFotoUrls] = await Promise.all([
+    supabase.from('users_profile').select('name').eq('id', user.id).single(),
+    supabase.from('produksi_item').select('total_gram, pcs_good, pcs').eq('id', produksiId).single(),
+    getToleransiLoss(),
+    fotosB64.length > 0 ? uploadBase64Fotos(supabase, fotosB64, `${produksiKode}-terima-${tahap}`) : Promise.resolve([] as string[]),
+  ])
+
+  const terimaOp = (formData.get('terima_operator') as string) || profile?.name || null
   const fotoUrls = [...existingTerimaFotos, ...newFotoUrls]
 
   // Handle items without serah (old items) — create combined record
@@ -922,7 +946,6 @@ export async function terimaStageProduksi(
   const { data: hCur } = await supabase.from('stage_handover').select('serah_gram, produksi_item:produksi_item_id(batch_kode)').eq('id', targetHandoverId).single()
   const serahGramStage = Number(hCur?.serah_gram ?? 0)
   const lossStage = Math.max(0, serahGramStage - terimaGram - rejectGram - sisaSerbuk)
-  const tolMap = await getToleransiLoss()
   const toleransiStage = tolMap[tahap] ?? 0.05
   const lossAlasan = (formData.get('loss_alasan') as string) || ''
   if (lossStage > toleransiStage + 0.0001) {
@@ -968,6 +991,16 @@ export async function terimaStageProduksi(
   await supabase.from('produksi_item').update(updateData).eq('id', produksiId)
 
   revalidatePath('/produksi')
+
+  const TAHAP_LABEL: Record<string, string> = { pas_berat: 'Pas Berat', annealing: 'Annealing', siap_packing: 'Siap Packing' }
+  await createNotif({
+    judul: `${TAHAP_LABEL[tahap] ?? tahap} Selesai — ${produksiKode}`,
+    pesan: `Terima ${terimaGram}gr${rejectGram > 0 ? ` · Reject ${rejectGram}gr` : ''}`,
+    tipe: tahap === 'siap_packing' ? 'success' : 'produksi',
+    link: '/produksi',
+    untuk_role: ['owner', 'admin_pusat', 'spv'],
+  })
+
   return { success: true }
 }
 
@@ -1066,18 +1099,26 @@ export async function voidStageHandover(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
 
-  const prevStatusMap: Record<string,string> = {
-    pas_berat: 'Cutting', annealing: 'Pas Berat', siap_packing: 'Annealing'
-  }
   await supabase.from('stage_handover').update({
     voided_at: new Date().toISOString(), void_reason: alasan
   }).eq('id', handoverId)
 
-  // Revert produksi_item status
-  const prevStatus = prevStatusMap[tahap]
-  if (prevStatus) {
-    await supabase.from('produksi_item').update({ current_status: prevStatus }).eq('id', produksiId)
-  }
+  // Dynamically determine what to revert to based on remaining active handovers
+  const STAGE_ORDER = ['pas_berat', 'annealing', 'siap_packing']
+  const STAGE_STATUS: Record<string,string> = { pas_berat: 'Pas Berat', annealing: 'Annealing', siap_packing: 'Siap Packing' }
+  const { data: remaining } = await supabase.from('stage_handover')
+    .select('tahap, status').eq('produksi_item_id', produksiId).is('voided_at', null)
+  const lastDone = (remaining ?? [])
+    .filter(h => h.status === 'selesai')
+    .sort((a,b) => STAGE_ORDER.indexOf(b.tahap) - STAGE_ORDER.indexOf(a.tahap))[0]
+  // If there are handovers in proses (not selesai), stay at that stage's status
+  const inProses = (remaining ?? []).find(h => h.status === 'proses')
+  const prevStatus = inProses
+    ? STAGE_STATUS[inProses.tahap]
+    : lastDone
+      ? STAGE_STATUS[lastDone.tahap]
+      : 'Cutting' // fallback: revert to Cutting if no active handovers remain
+  await supabase.from('produksi_item').update({ current_status: prevStatus }).eq('id', produksiId)
 
   revalidatePath('/produksi')
   return { success: true }
