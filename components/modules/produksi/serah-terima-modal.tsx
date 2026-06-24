@@ -121,8 +121,7 @@ export function AdminPickerStd({ adminList, prefix, initialValue, label, placeho
 }
 
 // ─── Foto picker seragam (pola Peleburan) ───────────────────────────────────────
-function FotoPickerStd({ fotos, setFotos, accent }: { fotos: File[]; setFotos: (f: File[]) => void; accent: 'violet' | 'green' }) {
-  const border = accent === 'green' ? 'border-green-200' : 'border-violet-200'
+function FotoPickerStd({ fotos, setFotos, label = 'Foto Bahan Diterima (Max 10 Foto)' }: { fotos: File[]; setFotos: (f: File[]) => void; label?: string }) {
   const [lb, setLb] = useState<string | null>(null)
   return (
     <div>
@@ -132,8 +131,8 @@ function FotoPickerStd({ fotos, setFotos, accent }: { fotos: File[]; setFotos: (
           <button onClick={() => setLb(null)} className="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center backdrop-blur-sm"><X size={18} /></button>
         </div>
       )}
-      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bahan Diterima (Max 10 Foto)</label>
-      <label className="flex items-center gap-2 h-10 px-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
+      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{label}</label>
+      <label className="flex items-center gap-2 h-10 px-3 bg-white rounded-lg border border-dashed border-violet-200 cursor-pointer hover:border-violet-400 hover:bg-violet-50/50 transition-colors">
         <Camera size={14} className="text-slate-400 flex-shrink-0" />
         <span className="text-[13px] text-slate-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto'}</span>
         <input type="file" accept="image/*" multiple className="hidden"
@@ -146,7 +145,7 @@ function FotoPickerStd({ fotos, setFotos, accent }: { fotos: File[]; setFotos: (
             return (
               <div key={i} className="relative">
                 <img src={url} alt="" onClick={() => setLb(url)}
-                  className={`w-14 h-14 rounded-lg object-cover border cursor-zoom-in hover:scale-110 transition-transform ${border}`} />
+                  className="w-14 h-14 rounded-lg object-cover border-2 border-violet-300 cursor-zoom-in hover:scale-110 transition-transform" />
                 <button type="button" onClick={() => setFotos(fotos.filter((_, j) => j !== i))}
                   className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[12px] flex items-center justify-center">×</button>
               </div>
@@ -205,7 +204,7 @@ export function SerahModalStd({ judul, kode, tims, adminList, isPending, error, 
                 </div>
               </div>
               <AdminPickerStd adminList={adminList} prefix="serah_" initialValue={d.serah_admin_input ?? ''} label="Admin Yang Menyerahkan" />
-              <FotoPickerStd fotos={fotos} setFotos={setFotos} accent="violet" />
+              <FotoPickerStd fotos={fotos} setFotos={setFotos} label="Foto Bahan Diserahkan (Max 10 Foto)" />
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan Penyerahan</label>
                 <input name="serah_catatan" type="text" defaultValue={d.serah_catatan ?? ''} placeholder="Opsional" className={inp} />
@@ -387,7 +386,7 @@ export function TerimaModalStd({
                   </div>
                 </div>
               )}
-              <FotoPickerStd fotos={fotos} setFotos={setFotos} accent="green" />
+              <FotoPickerStd fotos={fotos} setFotos={setFotos} label="Foto Bahan Diterima (Max 10 Foto)" />
               <div>
                 <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan Penerimaan</label>
                 <input name="terima_catatan" type="text" defaultValue={d.terima_catatan ?? ''} placeholder="Opsional" className={inp} />
