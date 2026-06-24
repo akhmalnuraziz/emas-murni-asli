@@ -582,39 +582,53 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
               </>
             )}
           </F>
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             <div className="flex items-center justify-between">
-              <label className="text-[12px] font-semibold text-slate-600">Gramasi yang ingin dicetak</label>
-              <button type="button" onClick={() => setGramasiRows(r => [...r, { gramasi: '1', pcs: '' }])}
-                className="text-[11px] font-semibold text-violet-600 hover:text-violet-800 flex items-center gap-1">
-                <Plus size={12}/> Tambah Gramasi
-              </button>
+              <label className="text-[12px] font-semibold text-slate-600">Gramasi yang dicetak <span className="text-red-400">*</span></label>
+              {gramasiRows.length > 0 && (
+                <span className="text-[11px] font-medium text-violet-600">{gramasiRows.length} gramasi dipilih</span>
+              )}
             </div>
-            <div className="space-y-1.5">
-              {gramasiRows.map((row, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <select value={row.gramasi}
-                    onChange={e => setGramasiRows(r => r.map((x, i) => i === idx ? { ...x, gramasi: e.target.value } : x))}
-                    className={`${inp} flex-1`}>
-                    {GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} gr</option>)}
-                  </select>
-                  <input type="number" min="1" value={row.pcs}
-                    onChange={e => setGramasiRows(r => r.map((x, i) => i === idx ? { ...x, pcs: e.target.value } : x))}
-                    placeholder="PCS" className={`${inp} w-24`} />
-                  {gramasiRows.length > 1 && (
-                    <button type="button" onClick={() => setGramasiRows(r => r.filter((_, i) => i !== idx))}
-                      className="text-red-400 hover:text-red-600 flex-shrink-0"><X size={14}/></button>
-                  )}
-                </div>
-              ))}
+            {/* Pill chips — tap untuk pilih/batal */}
+            <div className="flex flex-wrap gap-1.5">
+              {GRAMASI_OPTIONS.map(g => {
+                const isSelected = gramasiRows.some(r => r.gramasi === g)
+                return (
+                  <button key={g} type="button"
+                    onClick={() => setGramasiRows(r => isSelected ? r.filter(x => x.gramasi !== g) : [...r, { gramasi: g, pcs: '' }])}
+                    className={`px-3 py-1 rounded-full text-[12px] font-semibold border transition-all ${
+                      isSelected
+                        ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
+                        : 'bg-white text-slate-500 border-slate-200 hover:border-violet-300 hover:text-violet-600'
+                    }`}>
+                    {g} gr
+                  </button>
+                )
+              })}
             </div>
-            {(() => {
-              const total = gramasiRows.reduce((s, r) => s + parseFloat(r.gramasi || '0') * (parseInt(r.pcs || '1') || 1), 0)
-              const hasDupe = gramasiRows.map(r => r.gramasi).some((g, i, arr) => arr.indexOf(g) !== i)
-              return <>
-                {total > 0 && <p className="text-[11px] text-violet-500 font-semibold px-1">Estimasi total: {total.toFixed(2)} gr</p>}
-                {hasDupe && <p className="text-[11px] text-red-500 font-semibold px-1">⚠ Gramasi tidak boleh sama</p>}
-              </>
+            {/* PCS per gramasi terpilih */}
+            {gramasiRows.length > 0 && (
+              <div className="rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
+                {gramasiRows.map((row, idx) => (
+                  <div key={row.gramasi} className="flex items-center gap-3 px-3 py-2 bg-white">
+                    <span className="text-[13px] font-bold text-violet-700 w-14 flex-shrink-0">{row.gramasi} gr</span>
+                    <input type="number" min="1" value={row.pcs}
+                      onChange={e => setGramasiRows(r => r.map((x, i) => i === idx ? { ...x, pcs: e.target.value } : x))}
+                      placeholder="Jml PCS (opsional)"
+                      className="flex-1 h-7 px-2.5 rounded-md border border-slate-200 bg-slate-50 text-[12px] text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400 transition-all" />
+                    <button type="button"
+                      onClick={() => setGramasiRows(r => r.filter(x => x.gramasi !== row.gramasi))}
+                      className="text-slate-300 hover:text-red-400 transition-colors flex-shrink-0"><X size={13}/></button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {gramasiRows.length === 0 && (
+              <p className="text-[11px] text-amber-600 font-medium">Pilih minimal 1 gramasi di atas</p>
+            )}
+            {gramasiRows.length > 0 && (() => {
+              const total = gramasiRows.reduce((s, r) => s + parseFloat(r.gramasi) * (parseInt(r.pcs || '1') || 1), 0)
+              return <p className="text-[11px] text-violet-500 font-medium">Estimasi total: <span className="font-bold">{total.toFixed(2)} gr</span></p>
             })()}
           </div>
           <div className="grid grid-cols-2 gap-3 items-end">
