@@ -600,7 +600,7 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
           </div>
           <AdminPickerStd adminList={adminList} prefix="" label="Admin Yang Menyerahkan" />
           <F label="Catatan"><input name="catatan" placeholder="Catatan tambahan..." className={inp} /></F>
-          <F label="Foto Diserahkan (max 10 foto)">
+          <F label="Foto Bahan Diserahkan (Max 10 Foto)">
             <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto" />
           </F>
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/>{error}</div>}
@@ -693,7 +693,7 @@ function TambahProduksiModal({ item, peleburanByBatch, tims, adminList, onClose,
           </div>
 
           <AdminPickerStd adminList={adminList} prefix="" label="Admin Yang Menyerahkan" />
-          <F label="Foto Diserahkan (max 10 foto)">
+          <F label="Foto Bahan Diserahkan (Max 10 Foto)">
             <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto" />
           </F>
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/>{error}</div>}
@@ -762,7 +762,7 @@ function EditModal({ item, tims, adminList, onClose, onSubmit, isPending, error 
           <AdminPickerStd adminList={adminList} prefix="" initialValue={item.admin_input ?? item.operator ?? ''} label="Admin Yang Menyerahkan" />
           <F label="Catatan"><input name="catatan" value={f.catatan} onChange={e => s('catatan', e.target.value)} placeholder="Catatan tambahan…" className={inp} /></F>
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Diserahkan</label>
+            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bahan Diserahkan (Max 10 Foto)</label>
             {existingFotos.length > 0 && (
               <div className="flex gap-2 mb-2 flex-wrap">
                 {existingFotos.map((url, i) => (
@@ -923,7 +923,7 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bukti Terima</label>
+            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bahan Diterima (Max 10 Foto)</label>
             {existingFotos.length > 0 && (
               <div className="flex gap-2 mb-2 flex-wrap">
                 {existingFotos.map((url, i) => (
@@ -1051,7 +1051,7 @@ function SerahStageModal({ item, tahap, tims, onClose, onSubmit, isPending, erro
             <input name="serah_catatan" type="text" placeholder="Opsional" className={inp}/>
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto</label>
+            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bahan Diserahkan (Max 10 Foto)</label>
             <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto (opsional)" />
           </div>
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/><span>{error}</span></div>}
@@ -1228,7 +1228,7 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bukti</label>
+            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bahan Diserahkan (Max 10 Foto)</label>
             <label className="flex items-center gap-2 h-11 px-4 bg-slate-50 rounded-xl cursor-pointer hover:bg-violet-50 transition-colors border border-slate-200">
               <Camera size={14} className="text-slate-400 flex-shrink-0"/>
               <span className="text-[12px] text-slate-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto (opsional, max 5)'}</span>
@@ -1321,7 +1321,7 @@ function UpdateModal({ item, onClose, onSubmit, isPending, error }: {
           </div>
           {status !== 'Reject' && (
             <>
-              <F label="Foto Proses (opsional)">
+              <F label="Foto Bahan Diserahkan (Max 10 Foto)">
                 <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Foto proses di status ini" small />
               </F>
               {isPB && (
