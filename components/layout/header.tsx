@@ -1,7 +1,6 @@
 'use client'
 
 import { Menu } from 'lucide-react'
-import NotificationBell from './notification-bell'
 
 interface HeaderProps {
   title: string
@@ -10,7 +9,7 @@ interface HeaderProps {
   serverProfile?: { id: string; name: string | null; role: string } | null
 }
 
-export default function Header({ title, subtitle, onMenuClick, serverProfile }: HeaderProps) {
+export default function Header({ title, subtitle, onMenuClick }: HeaderProps) {
   return (
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-slate-200 px-4 lg:px-6 h-[52px] flex items-center">
       <div className="flex items-center gap-3 w-full">
@@ -33,11 +32,6 @@ export default function Header({ title, subtitle, onMenuClick, serverProfile }: 
           )}
         </div>
 
-        {serverProfile ? (
-          <NotificationBell userId={serverProfile.id} userRole={serverProfile.role} />
-        ) : (
-          <div className="w-8 h-8" />
-        )}
       </div>
     </header>
   )
