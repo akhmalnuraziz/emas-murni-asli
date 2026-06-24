@@ -28,7 +28,7 @@ export default function Header({ title, subtitle, onMenuClick }: HeaderProps) {
         <div className="flex-1 min-w-0">
           <h1 className="text-[17px] font-bold text-slate-900 tracking-tight truncate leading-none">{title}</h1>
           {subtitle && (
-            <p className="text-[12px] text-slate-400 mt-1 hidden sm:block truncate leading-none font-normal">{subtitle}</p>
+            <p className="text-[12px] text-slate-400 mt-1 hidden sm:block truncate leading-normal font-normal">{subtitle}</p>
           )}
         </div>
 
