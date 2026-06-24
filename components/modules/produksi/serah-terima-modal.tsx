@@ -132,7 +132,7 @@ function FotoPickerStd({ fotos, setFotos, accent }: { fotos: File[]; setFotos: (
           <button onClick={() => setLb(null)} className="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center backdrop-blur-sm"><X size={18} /></button>
         </div>
       )}
-      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bukti (max 10)</label>
+      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bahan Diterima (Max 10 Foto)</label>
       <label className="flex items-center gap-2 h-10 px-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
         <Camera size={14} className="text-slate-400 flex-shrink-0" />
         <span className="text-[13px] text-slate-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto'}</span>
