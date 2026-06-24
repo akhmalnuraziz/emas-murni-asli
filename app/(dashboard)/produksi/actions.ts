@@ -59,11 +59,11 @@ async function uploadBase64Fotos(supabase: any, b64Array: string[], prefix: stri
 
 async function uploadSignature(supabase: any, dataUrl: string, prefix: string): Promise<string | null> {
   try {
-    const base64Data = dataUrl.replace(/^data:image\/[^;]+;base64,/, '')
-    const buffer = Buffer.from(base64Data, 'base64')
-    const safe = prefix.replace(/[^a-zA-Z0-9_-]/g, '_')
-    const path = `ttd/${safe}/${Date.now()}.png`
-    const { error } = await supabase.storage.from('emas-fotos').upload(path, buffer, { contentType: 'image/png', upsert: true })
+    const { decodeAndValidateBase64Image, sanitizePathSegment } = await import('@/lib/upload-validation')
+    const { buffer, ext } = decodeAndValidateBase64Image(dataUrl, { allow: ['png', 'jpeg', 'webp'], maxBytes: 500_000 })
+    const safe = sanitizePathSegment(prefix)
+    const path = `ttd/${safe}/${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('emas-fotos').upload(path, buffer, { contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}`, upsert: true })
     if (error) return null
     const { data } = supabase.storage.from('emas-fotos').getPublicUrl(path)
     return data.publicUrl
