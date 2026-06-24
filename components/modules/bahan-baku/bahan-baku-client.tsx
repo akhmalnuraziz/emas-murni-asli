@@ -1273,7 +1273,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                 </div>
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto</label>
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bahan Baku untuk di Lebur</label>
                 <FotoPicker files={fotos} onAdd={ff=>setFotos(p=>[...p,...ff].slice(0,10))} onRemove={i=>i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))} label="Tambah foto" />
               </div>
               <AdminPickerStd adminList={adminList} prefix="" />
