@@ -618,8 +618,8 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                       ))}
                     </div>
 
-                    {/* Selisih description */}
-                    {(si.warn || Math.abs((batchPusat)-(timbAkhir)) > 0) && (
+                    {/* Selisih description — sembunyikan jika warn sudah diselesaikan (catatan + TTD sudah ada) */}
+                    {(si.warn || Math.abs((batchPusat)-(timbAkhir)) > 0) && !(si.warn && batchLossMap[batch.id]) && (
                       <div className={cn('flex items-start gap-3 px-4 py-3 rounded-xl border',si.warn?'bg-red-50 border-red-200':'bg-amber-50 border-amber-200')}>
                         <div className="w-2 h-2 rounded-full mt-1 flex-shrink-0"style={{background:si.dot}}/>
                         <p className={cn('text-[12px] font-medium',si.color)}>{si.desc}</p>
