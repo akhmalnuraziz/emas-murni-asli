@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
@@ -265,7 +265,7 @@ export async function createProduksi(formData: FormData) {
     pesan: `${gramasiDesc} dari batch ${batchKode} · ${beratAwal}gr`,
     tipe: 'info',
     link: '/produksi',
-    untuk_role: ['owner', 'admin_pusat', 'spv', 'operator_produksi'],
+    untuk_role: ['owner', 'manager', 'spv', 'admin_produksi'],
   })
 
   return { success: true, kode: allKodes[0], count: gramasiList.length }
@@ -378,7 +378,7 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
       pesan: `${produksi.gramasi}gr dari batch ${produksi.batch_kode} · ${totalGramBaru}gr siap dipacking`,
       tipe: 'success',
       link: '/produksi',
-      untuk_role: ['owner', 'admin_pusat', 'spv', 'operator_produksi'],
+      untuk_role: ['owner', 'manager', 'spv', 'admin_produksi'],
     })
   } else if (statusBaru === 'Reject') {
     await createNotif({
@@ -386,7 +386,7 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
       pesan: `${produksi.gramasi}gr dari batch ${produksi.batch_kode} · belum dilebur`,
       tipe: 'warning',
       link: '/produksi',
-      untuk_role: ['owner', 'admin_pusat', 'spv'],
+      untuk_role: ['owner', 'manager', 'spv'],
     })
   }
 
@@ -454,7 +454,7 @@ export async function leburReject(produksiId: number, produksiKode: string, batc
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
+  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
 
   const { data: produksi } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
   if (!produksi || produksi.status_reject !== 'belum_dilebur') return { error: 'Tidak ada reject yang perlu dilebur' }
@@ -499,7 +499,7 @@ export async function deleteProduksi(produksiId: number, produksiKode: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
 
   const { data: existing } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
   if (!existing) return { error: 'Item produksi tidak ditemukan' }
@@ -603,7 +603,7 @@ export async function createPacking(formData: FormData) {
     pesan: `${pcsDispack} pcs ${produksi.gramasi}gr dari batch ${produksi.batch_kode} · ${totalGramAktual}gr`,
     tipe: 'success',
     link: '/packing-log',
-    untuk_role: ['owner', 'admin_pusat', 'spv'],
+    untuk_role: ['owner', 'manager', 'spv'],
   })
 
   revalidatePath('/produksi')
@@ -615,7 +615,7 @@ export async function voidPacking(packingId: number, packingKode: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
 
   await supabase.from('packing').update({
     voided_at: new Date().toISOString(), void_reason: 'VOIDED_BY_USER',
@@ -764,7 +764,7 @@ export async function selesaiCutting(produksiId: number, produksiKode: string, f
     pesan: `Terima ${terimaGram}gr · Reject ${rejectGram}gr · Loss ${losses.toFixed(2)}gr`,
     tipe: 'produksi',
     link: '/produksi',
-    untuk_role: ['owner', 'admin_pusat', 'spv'],
+    untuk_role: ['owner', 'manager', 'spv'],
   })
 
   return { success: true }
@@ -1030,7 +1030,7 @@ export async function terimaStageProduksi(
     pesan: `Terima ${terimaGram}gr${rejectGram > 0 ? ` · Reject ${rejectGram}gr` : ''}`,
     tipe: tahap === 'siap_packing' ? 'success' : 'produksi',
     link: '/produksi',
-    untuk_role: ['owner', 'admin_pusat', 'spv'],
+    untuk_role: ['owner', 'manager', 'spv'],
   })
 
   return { success: true }

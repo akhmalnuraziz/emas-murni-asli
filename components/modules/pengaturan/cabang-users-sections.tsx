@@ -103,16 +103,22 @@ export function CabangSection({ list, showToast, canManage }: {
 }
 
 // ═══ USERS SECTION ══════════════════════════════════════════════════════════
-const ROLES = ['owner','admin_pusat','spv','operator_produksi','gudang','kepala_cabang','accounting']
+const ROLES = ['owner','manager','spv','admin_produksi','admin_gudang','admin_accounting']
 const ROLE_LABEL: Record<string,string> = {
-  owner: 'Owner', admin_pusat: 'Admin Pusat', spv: 'SPV',
-  operator_produksi: 'Operator Produksi', gudang: 'Gudang',
-  kepala_cabang: 'Kepala Cabang', accounting: 'Accounting',
+  owner:            'Owner',
+  manager:          'Manager',
+  spv:              'SPV',
+  admin_produksi:   'Admin Produksi',
+  admin_gudang:     'Admin Gudang & Distribusi',
+  admin_accounting: 'Admin Accounting',
 }
 const ROLE_COLOR: Record<string,string> = {
-  owner: '#7C3AED', admin_pusat: '#2563EB', spv: '#D97706',
-  operator_produksi: '#16A34A', gudang: '#0891B2',
-  kepala_cabang: '#DC2626', accounting: '#9333EA',
+  owner:            '#7C3AED',
+  manager:          '#2563EB',
+  spv:              '#D97706',
+  admin_produksi:   '#16A34A',
+  admin_gudang:     '#0891B2',
+  admin_accounting: '#9333EA',
 }
 
 type Confirm = { type: 'aktif' | 'nonaktif' | 'hapus'; userId: string; userName: string }

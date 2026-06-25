@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 
@@ -7,7 +7,7 @@ export async function fetchBackupData(table: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized', data: null }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat', 'accounting'].includes(profile?.role ?? ''))
+  if (!['owner', 'manager', 'admin_accounting'].includes(profile?.role ?? ''))
     return { error: 'Tidak ada akses', data: null }
 
   const ALLOWED = [

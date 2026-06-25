@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
@@ -163,7 +163,7 @@ export async function registerShieldtags(formData: FormData) {
     pesan: `Packing ${packing.kode} · ${allCodes[0]}${allCodes.length > 1 ? ` s/d ${allCodes[allCodes.length - 1]}` : ''} · ${packing.gramasi}gr`,
     tipe: 'success',
     link: '/shieldtag',
-    untuk_role: ['owner', 'admin_pusat', 'spv'],
+    untuk_role: ['owner', 'manager', 'spv'],
   })
 
   return { success: true, count: allCodes.length }
@@ -174,8 +174,8 @@ export async function editShieldtagKode(shieldtagId: number, newKode: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? ''))
-    return { error: 'Hanya Owner/Admin Pusat/SPV yang bisa edit kode' }
+  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? ''))
+    return { error: 'Hanya Owner/Manager/SPV yang bisa edit kode' }
 
   const newKodeUp = newKode.toUpperCase().trim()
   if (!newKodeUp) return { error: 'Kode tidak boleh kosong' }
@@ -205,7 +205,7 @@ export async function editShieldtagKode(shieldtagId: number, newKode: string) {
     pesan: `${st.kode} → ${newKodeUp} · diubah oleh ${profile?.name ?? 'Admin'}`,
     tipe: 'info',
     link: '/shieldtag',
-    untuk_role: ['owner', 'admin_pusat'],
+    untuk_role: ['owner', 'manager'],
   })
 
   return { success: true }
@@ -216,7 +216,7 @@ export async function voidShieldtag(shieldtagId: number, reason: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner','admin_pusat','spv'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat/SPV' }
+  if (!['owner','manager','spv'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager/SPV' }
 
   const { data: st } = await supabase.from('shieldtag').select('*').eq('id', shieldtagId).single()
   if (!st) return { error: 'Shieldtag tidak ditemukan' }
@@ -252,7 +252,7 @@ export async function voidShieldtag(shieldtagId: number, reason: string) {
     pesan: `Alasan: ${reason} · oleh ${profile?.name ?? 'Admin'}`,
     tipe: 'warning',
     link: '/shieldtag',
-    untuk_role: ['owner', 'admin_pusat'],
+    untuk_role: ['owner', 'manager'],
   })
 
   return { success: true }
@@ -287,7 +287,7 @@ export async function bulkVoidShieldtag(ids: number[], reason: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner','admin_pusat','spv'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat/SPV' }
+  if (!['owner','manager','spv'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager/SPV' }
 
   const tanggal = new Date().toISOString().split('T')[0]
   const histEntry = { tanggal, action: 'VOID (Bulk)', alasan: reason, oleh: profile?.name || 'System' }

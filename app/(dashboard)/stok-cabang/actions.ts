@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
@@ -154,8 +154,8 @@ export async function createStockAdjustment(params: {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? ''))
-    return { success: false, error: 'Hanya Owner/Admin Pusat/SPV yang bisa adjust stok' }
+  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? ''))
+    return { success: false, error: 'Hanya Owner/Manager/SPV yang bisa adjust stok' }
   if (!params.alasan.trim()) return { success: false, error: 'Alasan wajib diisi' }
 
   const { error } = await supabase.from('stok_cabang_adjustment').insert({
@@ -184,7 +184,7 @@ export async function createStockAdjustment(params: {
     pesan: `${params.cabangNama} · ${params.gramasi}gr · ${params.qtyBefore} → ${params.qtyAfter} · ${params.alasan}`,
     tipe: 'info',
     link: '/stok-cabang',
-    untuk_role: ['owner', 'admin_pusat', 'spv'],
+    untuk_role: ['owner', 'manager', 'spv'],
   })
 
   revalidatePath('/stok-cabang')

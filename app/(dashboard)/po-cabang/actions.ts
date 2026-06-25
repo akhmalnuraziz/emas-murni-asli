@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
@@ -61,7 +61,7 @@ export async function createPO(formData: FormData) {
     pesan: `${kode} — ${itemSummary}`,
     tipe: 'info',
     link: '/po-cabang',
-    untuk_role: ['owner', 'admin_pusat', 'spv', 'gudang'],
+    untuk_role: ['owner', 'manager', 'spv', 'admin_gudang'],
   })
 
   return { success: true, kode }
@@ -72,7 +72,7 @@ export async function updateStatusPO(poId: number, status: 'diproses' | 'selesai
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
+  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
 
   const now = new Date().toISOString()
   const update: any = { status, catatan_admin: catatanAdmin || null, updated_at: now }
@@ -93,7 +93,7 @@ export async function updateStatusPO(poId: number, status: 'diproses' | 'selesai
       pesan: catatanAdmin ? `Catatan: ${catatanAdmin}` : `Status PO kamu dari ${po.cabang_nama} diperbarui`,
       tipe,
       link: '/po-cabang',
-      untuk_role: ['kepala_cabang'],
+      untuk_role: ['admin_gudang'],
     })
   }
 
@@ -106,7 +106,7 @@ export async function updateQtyDikirim(itemId: number, qtyDikirim: number) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat', 'spv', 'gudang'].includes(profile?.role ?? ''))
+  if (!['owner', 'manager', 'spv', 'admin_gudang'].includes(profile?.role ?? ''))
     return { error: 'Tidak memiliki akses' }
 
   const { error } = await supabase.from('po_cabang_item').update({ qty_dikirim: qtyDikirim }).eq('id', itemId)
@@ -120,7 +120,7 @@ export async function deletePO(poId: number) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
 
   const { data: po } = await supabase.from('po_cabang').select('status').eq('id', poId).single()
   if (po?.status === 'selesai') return { error: 'PO yang sudah selesai tidak bisa dihapus' }

@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
@@ -127,7 +127,7 @@ export async function createPacking(formData: FormData) {
     pesan: `${produksi.gramasi}gr · ${pcsDispack} pcs · oleh ${profile?.name ?? 'Admin'}`,
     tipe: 'success',
     link: '/packing-log',
-    untuk_role: ['owner', 'admin_pusat', 'spv'],
+    untuk_role: ['owner', 'manager', 'spv'],
   })
 
   return { success: true, kode }
@@ -193,7 +193,7 @@ export async function editPacking(packingId: number, packingKode: string, formDa
     pesan: `${pcsDispack} pcs · oleh ${profile?.name ?? 'Admin'}`,
     tipe: 'info',
     link: '/packing-log',
-    untuk_role: ['owner', 'admin_pusat'],
+    untuk_role: ['owner', 'manager'],
   })
 
   return { success: true }
@@ -204,7 +204,7 @@ export async function voidPacking(packingId: number, packingKode: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
 
   // Block if shieldtags already registered
   const { count: stCount } = await supabase.from('shieldtag')
@@ -242,7 +242,7 @@ export async function voidPacking(packingId: number, packingKode: string) {
     pesan: `Dihapus oleh ${profile?.name ?? 'Admin'}`,
     tipe: 'warning',
     link: '/packing-log',
-    untuk_role: ['owner', 'admin_pusat'],
+    untuk_role: ['owner', 'manager'],
   })
 
   return { success: true }

@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
@@ -11,7 +11,7 @@ export async function createKategori(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Tidak terautentikasi' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat', 'spv', 'accounting'].includes(profile?.role ?? ''))
+  if (!['owner', 'manager', 'spv', 'admin_accounting'].includes(profile?.role ?? ''))
     return { error: 'Tidak memiliki akses' }
 
   const nama  = (formData.get('nama') as string)?.trim()
@@ -32,7 +32,7 @@ export async function updateKategori(id: number, formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Tidak terautentikasi' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat', 'spv', 'accounting'].includes(profile?.role ?? ''))
+  if (!['owner', 'manager', 'spv', 'admin_accounting'].includes(profile?.role ?? ''))
     return { error: 'Tidak memiliki akses' }
 
   const nama  = (formData.get('nama') as string)?.trim()
@@ -106,7 +106,7 @@ export async function createPengeluaran(formData: FormData) {
     pesan: `Rp${nominal.toLocaleString('id-ID')} · ${lokasi}`,
     tipe: 'info',
     link: '/pengeluaran',
-    untuk_role: ['owner', 'admin_pusat', 'accounting'],
+    untuk_role: ['owner', 'manager', 'admin_accounting'],
   })
 
   revalidatePath('/pengeluaran')
@@ -147,7 +147,7 @@ export async function voidPengeluaran(id: number, reason: string) {
 
   const { data: profile } = await supabase.from('users_profile')
     .select('role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat', 'accounting'].includes(profile?.role ?? ''))
+  if (!['owner', 'manager', 'admin_accounting'].includes(profile?.role ?? ''))
     return { error: 'Tidak memiliki akses untuk menghapus pengeluaran' }
 
   if (!reason?.trim()) return { error: 'Alasan void wajib diisi' }
@@ -163,7 +163,7 @@ export async function voidPengeluaran(id: number, reason: string) {
     pesan: `Alasan: ${reason.trim()}`,
     tipe: 'warning',
     link: '/pengeluaran',
-    untuk_role: ['owner', 'admin_pusat'],
+    untuk_role: ['owner', 'manager'],
   })
 
   revalidatePath('/pengeluaran')

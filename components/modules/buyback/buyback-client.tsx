@@ -35,7 +35,7 @@ const F = ({ label, req, children }: { label: string; req?: boolean; children: R
   </div>
 )
 
-const CAN_PROSES: UserRole[] = ['owner', 'admin_pusat', 'spv']
+const CAN_PROSES: UserRole[] = ['owner', 'manager', 'spv']
 
 async function filesToBase64(files: File[]): Promise<string[]> {
   const results: string[] = []

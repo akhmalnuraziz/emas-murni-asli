@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
@@ -140,7 +140,7 @@ export async function kirimMutasiCabang(formData: FormData) {
     pesan: `${kode} — ${totalPcs} pcs dalam perjalanan`,
     tipe: 'info',
     link: '/mutasi',
-    untuk_role: ['kepala_cabang', 'gudang'],
+    untuk_role: ['admin_gudang', 'admin_gudang'],
   })
 
   // Cek stok rendah per gramasi setelah pengiriman
@@ -156,7 +156,7 @@ export async function kirimMutasiCabang(formData: FormData) {
         pesan: `Sisa ${count ?? 0} pcs di Gudang Pusat (min. ${SAFETY} pcs). Segera produksi.`,
         tipe: 'warning',
         link: '/prioritas-produksi',
-        untuk_role: ['owner', 'admin_pusat', 'spv'],
+        untuk_role: ['owner', 'manager', 'spv'],
       })
     }
   }
@@ -267,7 +267,7 @@ export async function terimaMutasiCabang(formData: FormData) {
     pesan: `${diterimaKodes.length} pcs dikonfirmasi diterima oleh ${profile?.name ?? 'penerima'}`,
     tipe: 'success',
     link: '/mutasi',
-    untuk_role: ['owner', 'admin_pusat', 'spv', 'gudang'],
+    untuk_role: ['owner', 'manager', 'spv', 'admin_gudang'],
   })
 
   // Notif short-shipment → owner + admin_pusat (lebih urgent)
@@ -277,7 +277,7 @@ export async function terimaMutasiCabang(formData: FormData) {
       pesan: `${hilangKodes.length} shieldtag tidak ditemukan saat penerimaan. Perlu investigasi.`,
       tipe: 'warning',
       link: '/mutasi',
-      untuk_role: ['owner', 'admin_pusat'],
+      untuk_role: ['owner', 'manager'],
     })
   }
 

@@ -1,11 +1,10 @@
 export type UserRole =
   | 'owner'
-  | 'admin_pusat'
+  | 'manager'
   | 'spv'
-  | 'operator_produksi'
-  | 'gudang'
-  | 'accounting'
-  | 'kepala_cabang'
+  | 'admin_produksi'
+  | 'admin_gudang'
+  | 'admin_accounting'
 
 export type StatusProduksi = 'Cutting' | 'Pas Berat' | 'Annealing' | 'Siap Packing' | 'Sudah Packing' | 'Reject'
 export type StatusShieldtag = 'Aktif' | 'Terdistribusi' | 'Transit' | 'Terjual' | 'VOID' | 'RETURNED'
@@ -277,23 +276,26 @@ export interface BarangMasuk {
 
 // Role permissions helper
 export const ROLE_LABELS: Record<UserRole, string> = {
-  owner: 'Owner',
-  admin_pusat: 'Admin Pusat',
-  spv: 'Supervisor',
-  operator_produksi: 'Operator Produksi',
-  gudang: 'Gudang',
-  accounting: 'Accounting',
-  kepala_cabang: 'Kepala Cabang',
+  owner:             'Owner',
+  manager:           'Manager',
+  spv:               'SPV',
+  admin_produksi:    'Admin Produksi',
+  admin_gudang:      'Admin Gudang & Distribusi',
+  admin_accounting:  'Admin Accounting',
 }
 
+const ALL = ['dashboard', 'bahan-baku', 'produksi', 'packing-log', 'shieldtag', 'kpi-tim', 'scrap',
+  'inventory', 'mutasi', 'stock-opname', 'stok-cabang', 'po-cabang', 'po-vendor-packaging', 'prioritas-produksi',
+  'penjualan', 'retur-penjualan', 'pelanggan', 'buyback', 'pengeluaran', 'laporan',
+  'pengaturan', 'audit-log', 'backup']
+
 export const ROLE_ACCESS: Record<UserRole, string[]> = {
-  owner: ['*'],
-  admin_pusat: ['dashboard', 'bahan-baku', 'produksi', 'shieldtag', 'inventory', 'mutasi', 'stock-opname', 'stok-cabang', 'penjualan', 'retur-penjualan', 'pelanggan', 'buyback', 'po-cabang', 'po-vendor-packaging', 'prioritas-produksi', 'pengeluaran', 'laporan', 'scrap', 'backup', 'kpi-tim', 'pengaturan', 'audit-log'],
-  spv: ['dashboard', 'bahan-baku', 'produksi', 'shieldtag', 'inventory', 'mutasi', 'stock-opname', 'stok-cabang', 'penjualan', 'retur-penjualan', 'pelanggan', 'buyback', 'po-cabang', 'po-vendor-packaging', 'prioritas-produksi', 'laporan', 'scrap', 'kpi-tim'],
-  operator_produksi: ['dashboard', 'produksi', 'bahan-baku', 'shieldtag'],
-  gudang: ['dashboard', 'inventory', 'mutasi', 'stock-opname', 'stok-cabang', 'shieldtag', 'po-cabang', 'po-vendor-packaging', 'scrap'],
-  accounting: ['dashboard', 'penjualan', 'retur-penjualan', 'pelanggan', 'buyback', 'pengeluaran', 'laporan', 'backup'],
-  kepala_cabang: ['dashboard', 'inventory', 'mutasi', 'stock-opname', 'stok-cabang', 'shieldtag', 'penjualan', 'retur-penjualan', 'buyback', 'po-cabang', 'prioritas-produksi', 'laporan'],
+  owner:            ['*'],
+  manager:          ALL,
+  spv:              ALL,
+  admin_produksi:   ['dashboard', 'bahan-baku', 'produksi', 'packing-log', 'shieldtag', 'kpi-tim', 'scrap'],
+  admin_gudang:     ['dashboard', 'inventory', 'mutasi', 'stock-opname', 'stok-cabang', 'po-cabang', 'po-vendor-packaging', 'prioritas-produksi'],
+  admin_accounting: ['dashboard', 'penjualan', 'retur-penjualan', 'pelanggan', 'buyback', 'pengeluaran', 'laporan'],
 }
 
 export const GRAMASI_OPTIONS = [

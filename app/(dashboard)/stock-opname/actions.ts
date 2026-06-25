@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
@@ -168,7 +168,7 @@ export async function approveStockOpname(params: {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? ''))
+  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? ''))
     return { success: false, error: 'Hanya SPV/Admin yang bisa approve' }
   const userName = profile?.name ?? 'Unknown'
 

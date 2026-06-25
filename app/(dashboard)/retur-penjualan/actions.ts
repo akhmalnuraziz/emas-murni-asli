@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
@@ -66,7 +66,7 @@ export async function createRetur(formData: FormData) {
     pesan: `${namaCustomer ?? 'Customer'} · ${kondisi} · ${alasan.slice(0, 60)}`,
     tipe: 'warning',
     link: '/retur-penjualan',
-    untuk_role: ['owner', 'admin_pusat', 'spv'],
+    untuk_role: ['owner', 'manager', 'spv'],
   })
 
   revalidatePath('/retur-penjualan')
@@ -82,7 +82,7 @@ export async function updateStatusRetur(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
+  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
 
   const { error } = await supabase.from('retur_penjualan').update({
     status, catatan_admin: catatanAdmin || null, updated_at: new Date().toISOString(),
@@ -98,7 +98,7 @@ export async function deleteRetur(returId: number) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
 
   await supabase.from('retur_penjualan').update({ voided_at: new Date().toISOString() }).eq('id', returId)
   revalidatePath('/retur-penjualan')

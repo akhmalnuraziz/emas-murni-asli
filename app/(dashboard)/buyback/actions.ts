@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
@@ -93,7 +93,7 @@ export async function createBuyback(params: {
       pesan: `${params.namaCustomer} · ${params.gramasi}gr · Rp${params.hargaBeli.toLocaleString('id-ID')}`,
       tipe: 'info',
       link: '/buyback',
-      untuk_role: ['owner', 'admin_pusat', 'spv'],
+      untuk_role: ['owner', 'manager', 'spv'],
     })
 
     revalidatePath('/buyback')
@@ -114,7 +114,7 @@ export async function prossesBuyback(params: {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? ''))
+  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? ''))
     return { success: false, error: 'Tidak ada akses' }
   const userName = profile?.name ?? 'Unknown'
 
@@ -150,7 +150,7 @@ export async function prossesBuyback(params: {
     pesan: `Status: ${params.aksi} · oleh ${userName}`,
     tipe: 'info',
     link: '/buyback',
-    untuk_role: ['owner', 'admin_pusat', 'spv'],
+    untuk_role: ['owner', 'manager', 'spv'],
   })
 
   revalidatePath('/buyback')

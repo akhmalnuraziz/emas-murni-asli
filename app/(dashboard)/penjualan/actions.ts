@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
@@ -144,7 +144,7 @@ export async function createPenjualan(formData: FormData) {
     pesan: `${items.length} pcs (${itemSummary}) via ${channelLabel} · Rp ${totalHargaJual.toLocaleString('id-ID')}`,
     tipe: 'success',
     link: '/penjualan',
-    untuk_role: ['owner', 'admin_pusat', 'spv'],
+    untuk_role: ['owner', 'manager', 'spv'],
   })
 
   return { success: true, noFaktur, id: pj.id as number }
@@ -156,7 +156,7 @@ export async function voidPenjualan(penjualanId: number, reason: string) {
   if (!user) return { error: 'Unauthorized' }
 
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
   if (!reason) return { error: 'Alasan void wajib diisi' }
 
   const { data: pj } = await supabase.from('penjualan').select('id, shieldtag_kodes, voided_at').eq('id', penjualanId).single()
@@ -179,7 +179,7 @@ export async function voidPenjualan(penjualanId: number, reason: string) {
     pesan: `ID ${penjualanId} · alasan: ${reason}`,
     tipe: 'warning',
     link: '/penjualan',
-    untuk_role: ['owner', 'admin_pusat'],
+    untuk_role: ['owner', 'manager'],
   })
 
   return { success: true }

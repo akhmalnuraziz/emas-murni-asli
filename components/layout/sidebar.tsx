@@ -22,6 +22,8 @@ const NAV_GROUPS = [
       { href: '/produksi',            label: 'Produksi',             icon: Hammer,          module: 'produksi'           },
       { href: '/packing-log',         label: 'Packing Log',          icon: Package,         module: 'packing-log'        },
       { href: '/shieldtag',           label: 'Shieldtag',            icon: Tag,             module: 'shieldtag'          },
+      { href: '/kpi-tim',             label: 'KPI Tim',              icon: Star,            module: 'kpi-tim'            },
+      { href: '/scrap',               label: 'Scrap Inventory',      icon: Recycle,         module: 'scrap'              },
     ],
   },
   {
@@ -45,8 +47,6 @@ const NAV_GROUPS = [
       { href: '/buyback',         label: 'Buyback',             icon: RotateCcw,    module: 'buyback'         },
       { href: '/pengeluaran',     label: 'Pengeluaran',         icon: Wallet,       module: 'pengeluaran'     },
       { href: '/laporan',         label: 'Laporan',             icon: FileText,     module: 'laporan'         },
-      { href: '/scrap',           label: 'Scrap Inventory',     icon: Recycle,      module: 'scrap'           },
-      { href: '/kpi-tim',         label: 'KPI Tim',             icon: Star,         module: 'kpi-tim'         },
     ],
   },
 ]

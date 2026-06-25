@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
@@ -9,7 +9,7 @@ export async function createScrap(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat', 'spv', 'gudang'].includes(profile?.role ?? ''))
+  if (!['owner', 'manager', 'spv', 'admin_gudang'].includes(profile?.role ?? ''))
     return { error: 'Tidak ada akses' }
 
   const berat = parseFloat(formData.get('berat_gram') as string)
@@ -41,7 +41,7 @@ export async function createScrap(formData: FormData) {
     pesan: `${berat}gr · ${(formData.get('sumber_proses') as string) || 'manual'}`,
     tipe: 'info',
     link: '/scrap',
-    untuk_role: ['owner', 'admin_pusat', 'spv'],
+    untuk_role: ['owner', 'manager', 'spv'],
   })
 
   revalidatePath('/scrap')
@@ -73,8 +73,8 @@ export async function voidScrap(id: number, reason: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat'].includes(profile?.role ?? ''))
-    return { error: 'Hanya Owner/Admin Pusat yang bisa void' }
+  if (!['owner', 'manager'].includes(profile?.role ?? ''))
+    return { error: 'Hanya Owner/Manager yang bisa void' }
 
   const { error } = await supabase.from('scrap_inventory').update({
     voided_at: new Date().toISOString(),
@@ -87,7 +87,7 @@ export async function voidScrap(id: number, reason: string) {
     pesan: `Alasan: ${reason}`,
     tipe: 'warning',
     link: '/scrap',
-    untuk_role: ['owner', 'admin_pusat'],
+    untuk_role: ['owner', 'manager'],
   })
 
   revalidatePath('/scrap')

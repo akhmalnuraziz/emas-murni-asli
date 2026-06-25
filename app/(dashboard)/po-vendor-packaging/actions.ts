@@ -1,4 +1,4 @@
-'use server'
+﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
@@ -150,7 +150,7 @@ export async function deleteKategoriReject(id: number) {
   if (!user) return { error: 'Unauthorized' }
 
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
 
   // Soft delete kalau sudah pernah dipakai, hard delete kalau belum
   const { count } = await supabase.from('po_packaging_reject')
@@ -336,7 +336,7 @@ export async function deletePO(id: number) {
   if (!user) return { error: 'Unauthorized' }
 
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat yang bisa menghapus PO' }
+  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager yang bisa menghapus PO' }
 
   // 1. Cari semua batch terkait PO ini (batch awal + batch pengganti yang link ke PO ini)
   const { data: allBatches } = await supabase.from('po_batch_penerimaan')
@@ -383,7 +383,7 @@ export async function voidPO(id: number, reason: string) {
   if (!user) return { error: 'Unauthorized' }
 
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
   if (!reason) return { error: 'Alasan void wajib diisi' }
 
   const { count } = await supabase.from('po_batch_penerimaan').select('*', { count: 'exact', head: true }).eq('po_id', id)
@@ -732,7 +732,7 @@ export async function deleteBatch(id: number) {
   if (!user) return { error: 'Unauthorized' }
 
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
 
   const { data: batch } = await supabase.from('po_batch_penerimaan').select('*').eq('id', id).single()
   if (!batch) return { error: 'Batch tidak ditemukan' }
@@ -845,7 +845,7 @@ export async function editQCResult(formData: FormData) {
   if (!user) return { error: 'Unauthorized' }
 
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
 
   const batchId  = parseInt(formData.get('batch_id') as string)
   const itemsRaw = formData.get('items') as string
@@ -1165,7 +1165,7 @@ export async function deleteRejectItem(id: number) {
   if (!user) return { error: 'Unauthorized' }
 
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
 
   // Ambil sj_retur_id sebelum delete, biar bisa cleanup SJ items + SJ kosong setelahnya
   const { data: reject } = await supabase.from('po_packaging_reject')
@@ -1377,7 +1377,7 @@ export async function updateSJRetur(id: number, formData: FormData) {
   if (!user) return { error: 'Unauthorized' }
 
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin/SPV' }
+  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager/SPV' }
 
   const tanggal = formData.get('tanggal_retur') as string
   const tglJatuhTempo = (formData.get('tanggal_jatuh_tempo_ganti') as string) || null
@@ -1403,7 +1403,7 @@ export async function deleteSJRetur(id: number) {
   if (!user) return { error: 'Unauthorized' }
 
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
 
   // 1. Reset rejects yang masih hidup balik ke pending
   await supabase.from('po_packaging_reject').update({

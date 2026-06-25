@@ -33,7 +33,7 @@ const F = ({ label, children }: { label: string; children: React.ReactNode }) =>
   </div>
 )
 
-const CAN_APPROVE: UserRole[] = ['owner', 'admin_pusat', 'spv']
+const CAN_APPROVE: UserRole[] = ['owner', 'manager', 'spv']
 
 export default function StockOpnameClient({ initialList, cabangList, userRole, userName }: Props) {
   const [list, setList] = useState<any[]>(initialList)

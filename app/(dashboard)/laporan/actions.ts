@@ -1,7 +1,7 @@
-'use server'
+﻿'use server'
 import { createClient } from '@/lib/supabase/server'
 
-const PRIVILEGED = ['owner', 'admin_pusat', 'accounting', 'spv']
+const PRIVILEGED = ['owner', 'manager', 'admin_accounting', 'spv']
 
 export async function fetchBatchReport(batchKode: string) {
   if (!batchKode) return { error: 'Kode batch kosong' }

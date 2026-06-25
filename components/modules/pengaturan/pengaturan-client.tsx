@@ -35,8 +35,8 @@ export default function PengaturanClient({
   const [toast, setToast] = useState('')
   const [tab, setTab] = useState<'tim' | 'admin' | 'umum' | 'packaging' | 'cabang' | 'users' | 'gramasi'>('tim')
   const showToast = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500) }
-  const canManage = ['owner','admin_pusat','spv'].includes(userRole)
-  const isOwnerAdmin = ['owner','admin_pusat'].includes(userRole)
+  const canManage = userRole === 'owner'
+  const isOwnerAdmin = userRole === 'owner'
 
   const TABS = [
     { id: 'tim'       as const, label: 'Master Tim',        icon: Users     },

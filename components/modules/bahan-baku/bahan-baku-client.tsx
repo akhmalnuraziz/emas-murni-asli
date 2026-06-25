@@ -77,7 +77,7 @@ async function filesToBase64(files: File[]): Promise<string[]> {
 }
 
 const today = new Date().toISOString().split('T')[0]
-const CAN_SEE_HPP: UserRole[] = ['admin_pusat']
+const CAN_SEE_HPP: UserRole[] = ['manager']
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 const inp = "w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"
@@ -553,10 +553,10 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                       <button onClick={()=>{setEditItem(batch);setFormError('')}}className="w-8 h-8 rounded-xl bg-blue-50 text-blue-400 flex items-center justify-center hover:bg-blue-100 hover:scale-110 transition-all"title="Edit"><Edit2 size={13}/></button>
                       <button onClick={()=>setLockModal(batch)}className="w-8 h-8 rounded-xl bg-amber-50 text-amber-400 flex items-center justify-center hover:bg-amber-100 hover:scale-110 transition-all"title="Kunci"><Lock size={13}/></button>
                     </>}
-                    {status==='terkunci'&&['owner','admin_pusat'].includes(userRole)&&(
+                    {status==='terkunci'&&['owner','manager'].includes(userRole)&&(
                       <button onClick={()=>startTransition(async()=>{await unlockBatch(batch.id,batch.kode);showToast('🔓 Batch dibuka')})}className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center hover:bg-emerald-100 hover:scale-110 transition-all"title="Buka"><Unlock size={13}/></button>
                     )}
-                    {['owner','admin_pusat'].includes(userRole)&&(
+                    {['owner','manager'].includes(userRole)&&(
                       <button onClick={()=>setDelModal(batch)}className="w-8 h-8 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 hover:scale-110 transition-all"title="Hapus"><Trash2 size={13}/></button>
                     )}
                     <button onClick={()=>setExpanded(isExp?null:batch.id)}className="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200 hover:scale-110 transition-all">
