@@ -74,7 +74,7 @@ export default function StokCabangClient({ stokData, canAdjust, isCabangView }: 
             <Store size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="text-[16px] font-bold text-slate-900">Stok Cabang</h1>
+            <h1 className="text-[16px] font-semibold text-slate-900">Stok Cabang</h1>
             <p className="text-[12px] text-slate-400">Ready stock + outstanding PO per cabang</p>
           </div>
         </div>
@@ -165,21 +165,21 @@ function CabangCard({ cabang, expanded, onToggle, canAdjust, onAdjust, onHistory
           <Store size={15} className="text-violet-600" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-slate-800 text-[13px] truncate">{cabang.nama}</p>
+          <p className="font-semibold text-slate-800 text-[13px] truncate">{cabang.nama}</p>
           <p className="text-[10px] text-slate-400 font-medium">{cabang.kode}</p>
         </div>
 
         {/* Summary badges */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-green-50 text-green-700">
+          <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-green-50 text-green-700">
             <CheckCircle2 size={10} /> {cabang.total_ready} ready
           </span>
           {hasOutstanding && (
-            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-orange-50 text-orange-600">
+            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-orange-50 text-orange-600">
               <Clock size={10} /> {cabang.total_outstanding} PO
             </span>
           )}
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-violet-50 text-violet-700">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-violet-50 text-violet-700">
             <Package size={10} /> {cabang.total_stok} total
           </span>
           {expanded ? <ChevronDown size={15} className="text-slate-400" /> : <ChevronRight size={15} className="text-slate-400" />}
@@ -218,7 +218,7 @@ function CabangCard({ cabang, expanded, onToggle, canAdjust, onAdjust, onHistory
             <div className="overflow-x-auto">
               <table className="w-full text-[13px]">
                 <thead>
-                  <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-wide bg-slate-50/80">
+                  <tr className="text-[10px] font-medium text-slate-400 bg-slate-50/80">
                     <th className="text-left px-5 py-2.5">Gramasi</th>
                     <th className="text-right px-4 py-2.5">Shieldtag</th>
                     <th className="text-right px-4 py-2.5">Adj Net</th>
@@ -232,11 +232,11 @@ function CabangCard({ cabang, expanded, onToggle, canAdjust, onAdjust, onHistory
                   {cabang.rows.map((row, i) => (
                     <tr key={row.gramasi}
                       className={cn('border-t border-slate-50', i % 2 === 1 ? 'bg-slate-50/30' : '')}>
-                      <td className="px-5 py-2.5 font-bold text-slate-800">{row.gramasi}gr</td>
+                      <td className="px-5 py-2.5 font-semibold text-slate-800">{row.gramasi}gr</td>
                       <td className="px-4 py-2.5 text-right text-slate-500 font-mono text-[12px]">{row.qty_shieldtag}</td>
                       <td className="px-4 py-2.5 text-right font-mono text-[12px]">
                         <span className={cn(
-                          'font-bold',
+                          'font-semibold',
                           row.net_adjustment > 0 ? 'text-green-600' :
                           row.net_adjustment < 0 ? 'text-red-500' : 'text-slate-300'
                         )}>
@@ -244,18 +244,18 @@ function CabangCard({ cabang, expanded, onToggle, canAdjust, onAdjust, onHistory
                         </span>
                       </td>
                       <td className="px-4 py-2.5 text-right">
-                        <span className="font-bold text-green-700">{row.ready_stock}</span>
+                        <span className="font-semibold text-green-700">{row.ready_stock}</span>
                         <span className="text-[10px] text-slate-400 ml-1">pcs</span>
                       </td>
                       <td className="px-4 py-2.5 text-right">
                         {row.outstanding_po > 0 ? (
-                          <span className="font-bold text-orange-600">{row.outstanding_po} pcs</span>
+                          <span className="font-semibold text-orange-600">{row.outstanding_po} pcs</span>
                         ) : (
                           <span className="text-slate-200 text-[12px]">—</span>
                         )}
                       </td>
                       <td className="px-4 py-2.5 text-right">
-                        <span className="font-bold text-violet-700">{row.total_stock}</span>
+                        <span className="font-semibold text-violet-700">{row.total_stock}</span>
                         <span className="text-[10px] text-slate-400 ml-1">pcs</span>
                       </td>
                       {canAdjust && (
@@ -271,14 +271,14 @@ function CabangCard({ cabang, expanded, onToggle, canAdjust, onAdjust, onHistory
                 </tbody>
                 <tfoot>
                   <tr className="border-t-2 border-slate-200 bg-slate-50/80">
-                    <td className="px-5 py-2.5 text-[12px] font-bold text-slate-600">TOTAL</td>
+                    <td className="px-5 py-2.5 text-[12px] font-semibold text-slate-600">TOTAL</td>
                     <td className="px-4 py-2.5" />
                     <td className="px-4 py-2.5" />
-                    <td className="px-4 py-2.5 text-right font-bold text-green-700">{cabang.total_ready} pcs</td>
-                    <td className="px-4 py-2.5 text-right font-bold text-orange-600">
+                    <td className="px-4 py-2.5 text-right font-semibold text-green-700">{cabang.total_ready} pcs</td>
+                    <td className="px-4 py-2.5 text-right font-semibold text-orange-600">
                       {cabang.total_outstanding > 0 ? `${cabang.total_outstanding} pcs` : '—'}
                     </td>
-                    <td className="px-4 py-2.5 text-right font-bold text-violet-700">{cabang.total_stok} pcs</td>
+                    <td className="px-4 py-2.5 text-right font-semibold text-violet-700">{cabang.total_stok} pcs</td>
                     {canAdjust && <td />}
                   </tr>
                 </tfoot>
@@ -309,11 +309,11 @@ function KpiCard({ label, value, sub, color, bg, icon }: {
   return (
     <div className="rounded-xl p-4 border border-slate-200 bg-white/80">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{label}</span>
+        <span className="text-[10px] font-medium text-slate-400">{label}</span>
         <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
           style={{ background: bg, color }}>{icon}</div>
       </div>
-      <p className="text-[20px] font-bold" style={{ color }}>{value.toLocaleString('id-ID')}</p>
+      <p className="text-[20px] font-semibold" style={{ color }}>{value.toLocaleString('id-ID')}</p>
       <p className="text-[10px] text-slate-400 mt-0.5">{sub}</p>
     </div>
   )
@@ -362,7 +362,7 @@ function AdjustmentModal({ cabang, defaultGramasi, onClose, onSuccess }: {
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
           <div>
-            <h2 className="font-bold text-slate-800">Adjust Ready Stock</h2>
+            <h2 className="font-semibold text-slate-800">Adjust Ready Stock</h2>
             <p className="text-[12px] text-slate-400">{cabang.nama} ({cabang.kode})</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100">
@@ -396,20 +396,20 @@ function AdjustmentModal({ cabang, defaultGramasi, onClose, onSuccess }: {
           {gramasi && (
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-xl p-3 bg-slate-50 border border-slate-200">
-                <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Stok Sekarang</p>
-                <p className="text-[20px] font-bold text-slate-700">{currentReady}</p>
+                <p className="text-[10px] font-medium text-slate-400 mb-1">Stok Sekarang</p>
+                <p className="text-[20px] font-semibold text-slate-700">{currentReady}</p>
                 <p className="text-[10px] text-slate-400">pcs</p>
               </div>
               <div className="rounded-xl p-3 bg-violet-50 border border-violet-100">
-                <p className="text-[10px] font-bold text-violet-500 uppercase mb-1">Stok Baru</p>
+                <p className="text-[10px] font-medium text-violet-500 uppercase mb-1">Stok Baru</p>
                 <input
                   type="number" min="0" value={qtyAfter}
                   onChange={e => setQtyAfter(e.target.value)}
                   placeholder="0"
-                  className="w-full text-[20px] font-bold text-violet-700 bg-transparent border-none outline-none"
+                  className="w-full text-[20px] font-semibold text-violet-700 bg-transparent border-none outline-none"
                 />
                 {selisih !== null && (
-                  <p className={cn('text-[10px] font-bold', selisih > 0 ? 'text-green-600' : selisih < 0 ? 'text-red-500' : 'text-slate-400')}>
+                  <p className={cn('text-[10px] font-semibold', selisih > 0 ? 'text-green-600' : selisih < 0 ? 'text-red-500' : 'text-slate-400')}>
                     {selisih > 0 ? `+${selisih}` : selisih} pcs
                   </p>
                 )}
@@ -440,7 +440,7 @@ function AdjustmentModal({ cabang, defaultGramasi, onClose, onSuccess }: {
             Batal
           </button>
           <button onClick={submit} disabled={loading}
-            className="flex-1 py-2.5 rounded-xl bg-violet-600 text-white text-[13px] font-bold hover:bg-violet-700 transition-colors disabled:opacity-50">
+            className="flex-1 py-2.5 rounded-xl bg-violet-600 text-white text-[13px] font-semibold hover:bg-violet-700 transition-colors disabled:opacity-50">
             {loading ? 'Menyimpan...' : 'Simpan Adjustment'}
           </button>
         </div>
@@ -460,7 +460,7 @@ function HistoryModal({ cabang, data, loading, onClose }: {
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 flex-shrink-0">
           <div>
-            <h2 className="font-bold text-slate-800">Riwayat Adjustment</h2>
+            <h2 className="font-semibold text-slate-800">Riwayat Adjustment</h2>
             <p className="text-[12px] text-slate-400">{cabang.nama}</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100">
@@ -482,9 +482,9 @@ function HistoryModal({ cabang, data, loading, onClose }: {
                 <div key={i} className="rounded-xl border border-slate-200 px-4 py-3">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-[12px] font-bold text-slate-700">{d.gramasi}gr</span>
+                      <span className="text-[12px] font-semibold text-slate-700">{d.gramasi}gr</span>
                       <span className={cn(
-                        'text-[10px] font-bold px-2 py-0.5 rounded-full',
+                        'text-[10px] font-semibold px-2 py-0.5 rounded-full',
                         d.selisih > 0 ? 'bg-green-50 text-green-700' :
                         d.selisih < 0 ? 'bg-red-50 text-red-600' : 'bg-slate-50 text-slate-500'
                       )}>
