@@ -298,7 +298,7 @@ export default function POVendorClient({
   const [sjModal, setSjModal]         = useState<number | null>(null)
   const [voidPoId, setVoidPoId]       = useState<number | null>(null)
   const [expandedPO, setExpandedPO]   = useState<number | null>(null)
-  const [masterSubtab, setMasterSubtab] = useState<'produk' | 'kategori_reject' | 'histori_harga'>('produk')
+  const [masterSubtab, setMasterSubtab] = useState<'produk' | 'kategori_reject'>('produk')
   const [kategoriRejectModal, setKategoriRejectModal] = useState<'create' | number | null>(null)
   const [penggantiModal, setPenggantiModal] = useState<any | null>(null)
   const [editSJModal, setEditSJModal] = useState<any | null>(null)
@@ -313,7 +313,7 @@ export default function POVendorClient({
     { key: 'reject',     label: 'Reject',           icon: AlertTriangle },
     { key: 'sj_retur',   label: 'SJ Retur',         icon: Printer },
     { key: 'stok',       label: 'Stok',             icon: Package2 },
-    { key: 'dashboard',  label: 'Dashboard Reject', icon: BoxSelect },
+    { key: 'dashboard',  label: 'Dashboard',         icon: BoxSelect },
     { key: 'master',     label: 'Master Data',      icon: BoxSelect },
     { key: 'vendor',     label: 'Vendor',           icon: Building2 },
   ]
@@ -626,13 +626,16 @@ export default function POVendorClient({
         </div>
       )}
 
-      {/* ── Tab: DASHBOARD REJECT ─────────────────────────────────────────── */}
+      {/* ── Tab: DASHBOARD ───────────────────────────────────────────────── */}
       {tab === 'dashboard' && (
-        <DashboardRejectPanel
+        <VendorPerformanceDashboard
           rejectList={rejectList}
           sjList={sjList}
           poItems={poItems}
           batchList={batchList}
+          poList={poList}
+          vendors={vendors}
+          produkList={produkList}
         />
       )}
 
@@ -823,7 +826,6 @@ export default function POVendorClient({
             {[
               { key: 'produk',          label: 'Produk' },
               { key: 'kategori_reject', label: 'Kategori Reject' },
-              { key: 'histori_harga',   label: 'Histori Harga' },
             ].map(({ key, label }) => (
               <button key={key} onClick={() => setMasterSubtab(key as any)}
                 className={`px-3 py-1.5 rounded-xl text-[11px] font-semibold whitespace-nowrap transition-all ${masterSubtab === key ? 'text-emerald-700 bg-emerald-50' : 'text-slate-500 bg-black/[0.03]'}`}>
@@ -917,9 +919,6 @@ export default function POVendorClient({
             </div>
           )}
 
-          {masterSubtab === 'histori_harga' && (
-            <HistoriHargaPanel produkList={produkList} poList={poList} poItems={poItems} vendors={vendors}/>
-          )}
         </div>
       )}
 
@@ -1831,198 +1830,333 @@ function EditSJReturModal({ sj, onClose, onSave }: { sj: any; onClose: () => voi
   )
 }
 
-function DashboardRejectPanel({ rejectList, sjList, poItems, batchList }: {
+function VendorPerformanceDashboard({ rejectList, sjList, poItems, batchList, poList, vendors, produkList }: {
   rejectList: any[]; sjList: any[]; poItems: any[]; batchList: any[]
+  poList: any[]; vendors: any[]; produkList: any[]
 }) {
-  const now = new Date()
-  const startMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  const todayStr = now.toISOString().split('T')[0]
+  const [dsTab, setDsTab] = useState<'overview' | 'reject' | 'kategori' | 'harga'>('overview')
+  const todayStr = new Date().toISOString().split('T')[0]
 
-  // Hanya reject (bukan lebihan)
   const onlyReject = rejectList.filter((r: any) => r.jenis !== 'lebihan')
 
-  // Lookup harga: po_id + produk_id → harga_satuan
   const hargaMap = new Map<string, number>()
   for (const it of poItems) {
     if (it.harga_satuan) hargaMap.set(`${it.po_id}_${it.produk_id}`, it.harga_satuan)
   }
-  const hargaReject = (r: any) => hargaMap.get(`${r.po_id}_${r.produk_id}`) ?? 0
 
-  // Reject bulan ini
-  const rejectThisMonth = onlyReject.filter((r: any) => r.created_at && new Date(r.created_at) >= startMonth)
-  const totalQtyMonth   = rejectThisMonth.reduce((s: number, r: any) => s + (r.qty || 0), 0)
-  const totalNilaiMonth = rejectThisMonth.reduce((s: number, r: any) => s + (r.qty * hargaReject(r)), 0)
-  const totalRejectAll  = onlyReject.length
+  const poMap = Object.fromEntries(poList.map((p: any) => [p.id, p]))
 
-  // Top vendor by reject qty
-  const vendorAgg: Record<number, { vendor_nama: string; qty: number; count: number }> = {}
-  for (const r of onlyReject) {
-    if (!vendorAgg[r.vendor_id]) vendorAgg[r.vendor_id] = { vendor_nama: r.vendor_nama, qty: 0, count: 0 }
-    vendorAgg[r.vendor_id].qty += r.qty || 0
-    vendorAgg[r.vendor_id].count += 1
+  // ── Per-vendor aggregation ─────────────────────────────────────────────
+  type VS = {
+    id: number; nama: string
+    total_diterima: number; total_acc: number; total_reject: number
+    total_kerugian: number; po_count: number
+    lead_times: number[]; avg_lead_time: number
+    harga_list: number[]; avg_harga: number
+    pending_sj: number; overdue_sj: number
+    acc_rate: number; reject_rate: number; score: number
   }
-  const topVendor = Object.values(vendorAgg).sort((a: any, b: any) => b.qty - a.qty).slice(0, 5)
-  const leastVendor = Object.values(vendorAgg).sort((a: any, b: any) => a.qty - b.qty).slice(0, 3)
+  const vstats: Record<number, VS> = {}
+  for (const v of vendors) {
+    vstats[v.id] = {
+      id: v.id, nama: v.nama,
+      total_diterima: 0, total_acc: 0, total_reject: 0,
+      total_kerugian: 0, po_count: 0,
+      lead_times: [], avg_lead_time: 0,
+      harga_list: [], avg_harga: 0,
+      pending_sj: 0, overdue_sj: 0,
+      acc_rate: 0, reject_rate: 0, score: 0,
+    }
+  }
 
-  // Top kategori
-  const kategoriAgg: Record<string, { qty: number; count: number }> = {}
+  // batch → diterima/acc/reject + lead time
+  const poFirstBatch: Record<number, string> = {}
+  for (const b of batchList) {
+    if (b.status_qc !== 'selesai') continue
+    if (!poFirstBatch[b.po_id] || b.tanggal_terima < poFirstBatch[b.po_id]) poFirstBatch[b.po_id] = b.tanggal_terima
+    const vs = vstats[b.vendor_id]; if (!vs) continue
+    vs.total_diterima += b.qty_diterima || 0
+    vs.total_acc      += b.qty_acc || 0
+    vs.total_reject   += b.qty_reject || 0
+  }
+  for (const [poId, tgl] of Object.entries(poFirstBatch)) {
+    const po = poMap[parseInt(poId)]; if (!po?.tanggal_po) continue
+    const days = Math.round((new Date(tgl).getTime() - new Date(po.tanggal_po).getTime()) / 86400000)
+    if (days >= 0 && days < 365 && vstats[po.vendor_id]) vstats[po.vendor_id].lead_times.push(days)
+  }
+  for (const po of poList) { if (vstats[po.vendor_id]) vstats[po.vendor_id].po_count++ }
+  for (const it of poItems) {
+    if (!it.harga_satuan) continue
+    const po = poMap[it.po_id]; if (!po) continue
+    if (vstats[po.vendor_id]) vstats[po.vendor_id].harga_list.push(it.harga_satuan)
+  }
+  for (const r of onlyReject) {
+    const vs = vstats[r.vendor_id]; if (!vs) continue
+    vs.total_kerugian += (r.qty || 0) * (hargaMap.get(`${r.po_id}_${r.produk_id}`) ?? 0)
+  }
+  for (const sj of sjList) {
+    const vs = vstats[sj.vendor_id]; if (!vs) continue
+    if (sj.status !== 'selesai_diganti') {
+      vs.pending_sj++
+      if (sj.tanggal_jatuh_tempo_ganti && sj.tanggal_jatuh_tempo_ganti < todayStr) vs.overdue_sj++
+    }
+  }
+  for (const vs of Object.values(vstats)) {
+    vs.avg_lead_time = vs.lead_times.length ? vs.lead_times.reduce((a, b) => a + b, 0) / vs.lead_times.length : 0
+    vs.avg_harga     = vs.harga_list.length  ? vs.harga_list.reduce((a, b) => a + b, 0)  / vs.harga_list.length  : 0
+    vs.acc_rate      = vs.total_diterima > 0 ? vs.total_acc    / vs.total_diterima : 0
+    vs.reject_rate   = vs.total_diterima > 0 ? vs.total_reject / vs.total_diterima : 0
+  }
+
+  const allVS = Object.values(vstats).filter(v => v.total_diterima > 0 || v.po_count > 0)
+  const maxLead  = Math.max(...allVS.map(v => v.avg_lead_time), 1)
+  const maxHarga = Math.max(...allVS.map(v => v.avg_harga), 1)
+  const scored = allVS.map(v => ({
+    ...v,
+    score: Math.max(0, (
+      v.acc_rate * 40 +
+      (1 - v.reject_rate) * 30 +
+      (v.avg_lead_time > 0 ? (1 - v.avg_lead_time / maxLead) : 0.5) * 20 +
+      (v.avg_harga > 0 ? (1 - v.avg_harga / maxHarga) : 0.5) * 10 -
+      Math.min(v.overdue_sj * 5, 30)
+    )),
+  })).sort((a, b) => b.score - a.score)
+
+  // ── Reject per PO ──────────────────────────────────────────────────────
+  const rejectPerPO = poList.map((po: any) => {
+    const batches = batchList.filter((b: any) => b.po_id === po.id && b.status_qc === 'selesai')
+    const td = batches.reduce((s: number, b: any) => s + (b.qty_diterima || 0), 0)
+    const tr = batches.reduce((s: number, b: any) => s + (b.qty_reject || 0), 0)
+    return { ...po, total_diterima: td, total_reject: tr, pct: td > 0 ? tr / td * 100 : 0 }
+  }).filter((po: any) => po.total_diterima > 0).sort((a: any, b: any) => b.pct - a.pct)
+
+  // ── Kategori per vendor ────────────────────────────────────────────────
+  const kategoriPerVendor: Record<number, Record<string, { qty: number; count: number }>> = {}
   for (const r of onlyReject) {
     const key = r.kategori_nama || r.alasan_manual || 'Tanpa Kategori'
-    if (!kategoriAgg[key]) kategoriAgg[key] = { qty: 0, count: 0 }
-    kategoriAgg[key].qty += r.qty || 0
-    kategoriAgg[key].count += 1
-  }
-  const topKategori = Object.entries(kategoriAgg)
-    .sort((a, b) => b[1].qty - a[1].qty).slice(0, 10)
-
-  // Status SJ Counts
-  const sjStatus = { menunggu_ganti: 0, sebagian_diganti: 0, selesai_diganti: 0 }
-  for (const sj of sjList) {
-    if (sj.status && sj.status in sjStatus) (sjStatus as any)[sj.status] += 1
+    if (!kategoriPerVendor[r.vendor_id]) kategoriPerVendor[r.vendor_id] = {}
+    if (!kategoriPerVendor[r.vendor_id][key]) kategoriPerVendor[r.vendor_id][key] = { qty: 0, count: 0 }
+    kategoriPerVendor[r.vendor_id][key].qty += r.qty || 0
+    kategoriPerVendor[r.vendor_id][key].count++
   }
 
-  // Alert: SJ overdue dan belum selesai
   const overdueSJ = sjList.filter((sj: any) =>
     sj.tanggal_jatuh_tempo_ganti && sj.status !== 'selesai_diganti' && sj.tanggal_jatuh_tempo_ganti < todayStr
+  )
+  const best = scored[0], worst = scored[scored.length - 1]
+
+  const TabBtn = ({ k, label }: { k: typeof dsTab; label: string }) => (
+    <button onClick={() => setDsTab(k)}
+      className={`px-3 py-1.5 rounded-xl text-[11px] font-semibold whitespace-nowrap transition-all ${dsTab === k ? 'text-violet-700 bg-violet-50' : 'text-slate-500 bg-black/[0.03]'}`}>
+      {label}
+    </button>
   )
 
   return (
     <div className="space-y-4">
-      {/* Alert overdue */}
       {overdueSJ.length > 0 && (
-        <div className="rounded-xl bg-red-50 border-2 border-red-200 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle size={16} className="text-red-600"/>
-            <p className="text-[13px] font-semibold text-red-700">
-              {overdueSJ.length} SJ Retur Lewat Tempo Penggantian!
-            </p>
-          </div>
-          <div className="space-y-1.5">
-            {overdueSJ.slice(0, 5).map((sj: any) => {
-              const sisa = (sj.total_qty ?? 0) - (sj.total_qty_diganti ?? 0)
-              return (
-                <div key={sj.id} className="flex items-center justify-between text-[11px]">
-                  <span>
-                    <span className="font-mono font-semibold text-red-700">{sj.nomor_sj}</span>
-                    <span className="text-slate-500"> · {sj.vendor_nama}</span>
-                  </span>
-                  <span className="text-red-600 font-semibold">{fmtNum(sisa)} pcs belum diganti</span>
-                </div>
-              )
-            })}
-          </div>
+        <div className="rounded-xl bg-red-50 border-2 border-red-200 px-3 py-2.5 flex items-center gap-2">
+          <AlertTriangle size={15} className="text-red-600 flex-shrink-0"/>
+          <p className="text-[12px] font-semibold text-red-700">{overdueSJ.length} SJ Retur lewat tempo — vendor belum kirim pengganti</p>
         </div>
       )}
 
-      {/* Ringkasan Bulan Ini */}
-      <div>
-        <p className="text-[12px] font-medium text-slate-400 mb-2">Ringkasan Reject Bulan Ini</p>
-        <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-xl bg-white border border-slate-200 p-3">
-            <p className="text-[10px] font-medium text-slate-400">Total Kejadian</p>
-            <p className="text-[20px] font-semibold text-slate-800 mt-1">{fmtNum(rejectThisMonth.length)}</p>
-            <p className="text-[10px] text-slate-400">{fmtNum(totalRejectAll)} all-time</p>
-          </div>
-          <div className="rounded-xl bg-white border border-slate-200 p-3">
-            <p className="text-[10px] font-medium text-slate-400">Total Qty</p>
-            <p className="text-[20px] font-semibold text-red-600 mt-1">{fmtNum(totalQtyMonth)}</p>
-            <p className="text-[10px] text-slate-400">pcs reject</p>
-          </div>
-          <div className="rounded-xl bg-white border border-slate-200 p-3">
-            <p className="text-[10px] font-medium text-slate-400">Total Nilai</p>
-            <p className="text-[14px] font-semibold text-amber-700 mt-1">{fmtRp(totalNilaiMonth)}</p>
-            <p className="text-[10px] text-slate-400">kerugian potensial</p>
-          </div>
-        </div>
+      <div className="flex gap-1 overflow-x-auto pb-0.5 hide-scrollbar">
+        <TabBtn k="overview"  label="Overview" />
+        <TabBtn k="reject"    label="Reject per PO" />
+        <TabBtn k="kategori"  label="Kategori Reject" />
+        <TabBtn k="harga"     label="Histori Harga" />
       </div>
 
-      {/* Status SJ */}
-      <div>
-        <p className="text-[12px] font-medium text-slate-400 mb-2">Status SJ Retur</p>
-        <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-xl bg-white border border-slate-200 p-3">
-            <div className="flex items-center gap-1.5 mb-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"/><p className="text-[10px] font-medium text-slate-500">Menunggu Ganti</p></div>
-            <p className="text-[18px] font-semibold text-slate-800 tabular-nums">{sjStatus.menunggu_ganti}</p>
-          </div>
-          <div className="rounded-xl bg-white border border-slate-200 p-3">
-            <div className="flex items-center gap-1.5 mb-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"/><p className="text-[10px] font-medium text-slate-500">Sebagian Diganti</p></div>
-            <p className="text-[18px] font-semibold text-slate-800 tabular-nums">{sjStatus.sebagian_diganti}</p>
-          </div>
-          <div className="rounded-xl bg-white border border-slate-200 p-3">
-            <div className="flex items-center gap-1.5 mb-1"><span className="w-1.5 h-1.5 rounded-full bg-green-500"/><p className="text-[10px] font-medium text-slate-500">Selesai Diganti</p></div>
-            <p className="text-[18px] font-semibold text-slate-800 tabular-nums">{sjStatus.selesai_diganti}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Top Vendor */}
-      <div>
-        <p className="text-[12px] font-medium text-slate-400 mb-2">Top 5 Vendor dengan Reject Terbanyak</p>
-        {topVendor.length === 0 ? (
-          <Empty text="Belum ada data reject" icon="📊"/>
-        ) : (
-          <div className="space-y-1.5">
-            {topVendor.map((v: any, i: number) => {
-              const max = topVendor[0].qty
-              const pct = max > 0 ? (v.qty / max) * 100 : 0
-              return (
-                <div key={i} className="rounded-xl bg-white border border-slate-200 p-2.5">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-[12px] font-semibold text-slate-700">{i + 1}. {v.vendor_nama}</p>
-                    <p className="text-[12px] font-semibold text-red-600">{fmtNum(v.qty)} pcs</p>
+      {/* ── Overview ── */}
+      {dsTab === 'overview' && (
+        <div className="space-y-4">
+          {scored.length === 0 ? <Empty text="Belum ada data transaksi" icon="📊"/> : (<>
+            {/* Best / Worst */}
+            <div className="grid grid-cols-2 gap-2">
+              {best && (
+                <div className="rounded-xl bg-green-50 border border-green-200 p-3">
+                  <p className="text-[10px] font-semibold text-green-600 mb-1">🏆 Vendor Terbaik</p>
+                  <p className="text-[13px] font-semibold text-slate-800 truncate">{best.nama}</p>
+                  <p className="text-[12px] font-semibold text-green-700 mt-1">Score {best.score.toFixed(0)}/100</p>
+                  <div className="mt-1.5 space-y-0.5">
+                    <p className="text-[10px] text-slate-500">ACC {(best.acc_rate * 100).toFixed(1)}%</p>
+                    {best.avg_harga > 0 && <p className="text-[10px] text-slate-500">Avg harga {fmtRp(best.avg_harga)}</p>}
+                    {best.avg_lead_time > 0 && <p className="text-[10px] text-slate-500">Lead time {best.avg_lead_time.toFixed(1)} hari</p>}
                   </div>
-                  <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                    <div className="h-full bg-red-400" style={{ width: `${pct}%` }}/>
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-1">{v.count} kejadian reject</p>
                 </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
+              )}
+              {worst && worst.id !== best?.id && (
+                <div className="rounded-xl bg-red-50 border border-red-200 p-3">
+                  <p className="text-[10px] font-semibold text-red-600 mb-1">⚠️ Perlu Evaluasi</p>
+                  <p className="text-[13px] font-semibold text-slate-800 truncate">{worst.nama}</p>
+                  <p className="text-[12px] font-semibold text-red-700 mt-1">Score {worst.score.toFixed(0)}/100</p>
+                  <div className="mt-1.5 space-y-0.5">
+                    <p className="text-[10px] text-slate-500">Reject {(worst.reject_rate * 100).toFixed(1)}%</p>
+                    {worst.avg_lead_time > 0 && <p className="text-[10px] text-slate-500">Lead time {worst.avg_lead_time.toFixed(1)} hari</p>}
+                    {worst.overdue_sj > 0 && <p className="text-[10px] text-red-500">{worst.overdue_sj} SJ overdue</p>}
+                  </div>
+                </div>
+              )}
+            </div>
 
-      {/* Vendor dengan Reject Paling Sedikit */}
-      {leastVendor.length > 0 && (
-        <div>
-          <p className="text-[12px] font-medium text-slate-400 mb-2">Vendor Terbaik (Reject Paling Sedikit)</p>
-          <div className="space-y-1.5">
-            {leastVendor.map((v: any, i: number) => (
-              <div key={i} className="rounded-xl bg-green-50 border border-green-100 p-2.5 flex justify-between">
-                <p className="text-[12px] font-semibold text-slate-700">{i + 1}. {v.vendor_nama}</p>
-                <p className="text-[12px] font-semibold text-green-700">{fmtNum(v.qty)} pcs · {v.count}×</p>
+            {/* Ranking table */}
+            <div className="rounded-xl bg-white border border-slate-200 overflow-hidden">
+              <div className="px-4 py-2.5 border-b border-slate-100">
+                <p className="text-[12px] font-semibold text-slate-700">Ranking Performa Vendor</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">Skor: ACC 40% + reject rate 30% + lead time 20% + harga 10%</p>
               </div>
-            ))}
-          </div>
+              <div className="divide-y divide-slate-100">
+                {scored.map((v, i) => (
+                  <div key={v.id} className="px-4 py-3 grid grid-cols-[24px_1fr_auto] gap-2 items-center">
+                    <span className={`text-[11px] font-semibold ${i === 0 ? 'text-green-600' : i === scored.length - 1 ? 'text-red-500' : 'text-slate-400'}`}>
+                      #{i + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-semibold text-slate-800 truncate">{v.nama}</p>
+                      <div className="flex flex-wrap gap-x-2 mt-0.5">
+                        <span className="text-[10px] text-green-600">ACC {(v.acc_rate * 100).toFixed(1)}%</span>
+                        <span className="text-[10px] text-red-500">Reject {(v.reject_rate * 100).toFixed(1)}%</span>
+                        {v.avg_lead_time > 0 && <span className="text-[10px] text-blue-500">{v.avg_lead_time.toFixed(0)} hr lead</span>}
+                        {v.overdue_sj > 0 && <span className="text-[10px] text-red-400">{v.overdue_sj} SJ OD</span>}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-[14px] font-semibold ${i === 0 ? 'text-green-600' : i === scored.length - 1 ? 'text-red-500' : 'text-slate-700'}`}>
+                        {v.score.toFixed(0)}
+                      </p>
+                      <p className="text-[10px] text-slate-400">/100</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Per-vendor KPI cards */}
+            <div className="space-y-2">
+              <p className="text-[12px] font-medium text-slate-400 px-1">Detail per Vendor</p>
+              {scored.map(v => (
+                <div key={v.id} className="rounded-xl bg-white border border-slate-200 p-3 space-y-2">
+                  <p className="text-[13px] font-semibold text-slate-800">{v.nama}</p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div className="rounded-lg bg-slate-50 px-2.5 py-2">
+                      <p className="text-[10px] font-medium text-slate-400">Total Diterima</p>
+                      <p className="text-[14px] font-semibold text-slate-700">{fmtNum(v.total_diterima)} pcs</p>
+                      <p className="text-[10px] text-slate-400">{v.po_count} PO</p>
+                    </div>
+                    <div className="rounded-lg bg-red-50 px-2.5 py-2">
+                      <p className="text-[10px] font-medium text-slate-400">Total Reject</p>
+                      <p className="text-[14px] font-semibold text-red-600">{fmtNum(v.total_reject)} pcs</p>
+                      <p className="text-[10px] text-red-400">{(v.reject_rate * 100).toFixed(1)}% dari diterima</p>
+                    </div>
+                    <div className="rounded-lg bg-amber-50 px-2.5 py-2">
+                      <p className="text-[10px] font-medium text-slate-400">Total Kerugian</p>
+                      <p className="text-[13px] font-semibold text-amber-700">{v.total_kerugian > 0 ? fmtRp(v.total_kerugian) : '—'}</p>
+                      <p className="text-[10px] text-slate-400">reject × harga</p>
+                    </div>
+                    <div className="rounded-lg bg-blue-50 px-2.5 py-2">
+                      <p className="text-[10px] font-medium text-slate-400">Avg Lead Time</p>
+                      <p className="text-[14px] font-semibold text-blue-700">{v.avg_lead_time > 0 ? `${v.avg_lead_time.toFixed(1)} hari` : '—'}</p>
+                      <p className="text-[10px] text-slate-400">PO → terima pertama</p>
+                    </div>
+                  </div>
+                  {v.avg_harga > 0 && (
+                    <div className="rounded-lg bg-violet-50 px-2.5 py-2 flex justify-between items-center">
+                      <div>
+                        <p className="text-[10px] font-medium text-slate-400">Avg Harga</p>
+                        <p className="text-[13px] font-semibold text-violet-700">{fmtRp(v.avg_harga)}</p>
+                      </div>
+                      <p className="text-[10px] text-slate-400">{v.harga_list.length}× PO</p>
+                    </div>
+                  )}
+                  {(v.pending_sj > 0 || v.overdue_sj > 0) && (
+                    <div className="rounded-lg bg-orange-50 border border-orange-100 px-2.5 py-1.5 flex justify-between">
+                      <span className="text-[11px] text-orange-700">SJ pending tukar guling: <b>{v.pending_sj}</b></span>
+                      {v.overdue_sj > 0 && <span className="text-[11px] text-red-600 font-semibold">{v.overdue_sj} overdue!</span>}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>)}
         </div>
       )}
 
-      {/* Top Kategori */}
-      <div>
-        <p className="text-[12px] font-medium text-slate-400 mb-2">Top 10 Kategori Reject</p>
-        {topKategori.length === 0 ? (
-          <Empty text="Belum ada data kategori" icon="🏷️"/>
-        ) : (
-          <div className="space-y-1.5">
-            {topKategori.map(([nama, agg], i) => {
-              const max = topKategori[0][1].qty
-              const pct = max > 0 ? (agg.qty / max) * 100 : 0
+      {/* ── Reject per PO ── */}
+      {dsTab === 'reject' && (
+        <div className="space-y-2">
+          <p className="text-[12px] text-slate-400 px-1">
+            {rejectPerPO.length} PO · diurutkan dari reject % tertinggi · hijau &lt;5%, kuning 5-10%, merah &gt;10%
+          </p>
+          {rejectPerPO.length === 0 ? <Empty text="Belum ada QC selesai" icon="📋"/> : (
+            rejectPerPO.map((po: any) => (
+              <div key={po.id} className="rounded-xl bg-white border border-slate-200 p-3">
+                <div className="flex items-start justify-between gap-2 mb-1.5">
+                  <div className="min-w-0">
+                    <p className="text-[12px] font-semibold text-slate-700 font-mono">{po.nomor_po}</p>
+                    <p className="text-[11px] text-slate-400">{po.vendor_nama} · {fmtDate(po.tanggal_po)}</p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className={`text-[14px] font-semibold ${po.pct > 10 ? 'text-red-600' : po.pct > 5 ? 'text-amber-600' : 'text-green-600'}`}>
+                      {po.pct.toFixed(1)}%
+                    </p>
+                    <p className="text-[10px] text-slate-400">{fmtNum(po.total_reject)} / {fmtNum(po.total_diterima)} pcs</p>
+                  </div>
+                </div>
+                <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                  <div className={`h-full rounded-full ${po.pct > 10 ? 'bg-red-400' : po.pct > 5 ? 'bg-amber-400' : 'bg-green-400'}`}
+                    style={{ width: `${Math.min(po.pct * 4, 100)}%` }}/>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* ── Kategori Reject per Vendor ── */}
+      {dsTab === 'kategori' && (
+        <div className="space-y-4">
+          {Object.entries(kategoriPerVendor).length === 0 ? <Empty text="Belum ada data reject" icon="🏷️"/> : (
+            Object.entries(kategoriPerVendor).map(([vid, kat]) => {
+              const vs = vstats[parseInt(vid)]; if (!vs) return null
+              const sorted = Object.entries(kat).sort((a, b) => b[1].qty - a[1].qty)
+              const totalQty = sorted.reduce((s, [, v]) => s + v.qty, 0)
               return (
-                <div key={nama} className="rounded-xl bg-white border border-slate-200 p-2.5">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-[12px] font-semibold text-slate-700 truncate">{i + 1}. 🏷️ {nama}</p>
-                    <p className="text-[12px] font-semibold text-orange-600">{fmtNum(agg.qty)} pcs</p>
+                <div key={vid} className="rounded-xl bg-white border border-slate-200 overflow-hidden">
+                  <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                    <p className="text-[12px] font-semibold text-slate-700">{vs.nama}</p>
+                    <p className="text-[11px] text-red-500 font-semibold">{fmtNum(totalQty)} pcs reject</p>
                   </div>
-                  <div className="h-1 rounded-full bg-slate-100 overflow-hidden">
-                    <div className="h-full bg-orange-400" style={{ width: `${pct}%` }}/>
+                  <div className="divide-y divide-slate-100">
+                    {sorted.slice(0, 8).map(([nama, agg]) => {
+                      const pct = totalQty > 0 ? agg.qty / totalQty * 100 : 0
+                      return (
+                        <div key={nama} className="px-4 py-2.5 flex items-center justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-semibold text-slate-700 truncate">🏷️ {nama}</p>
+                            <div className="mt-1 h-1 rounded-full bg-slate-100 overflow-hidden">
+                              <div className="h-full bg-orange-400 rounded-full" style={{ width: `${pct}%` }}/>
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-[11px] font-semibold text-orange-600">{fmtNum(agg.qty)} pcs</p>
+                            <p className="text-[10px] text-slate-400">{pct.toFixed(1)}% · {agg.count}×</p>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-0.5">{agg.count}× reject</p>
                 </div>
               )
-            })}
-          </div>
-        )}
-      </div>
+            })
+          )}
+        </div>
+      )}
+
+      {/* ── Histori Harga ── */}
+      {dsTab === 'harga' && (
+        <HistoriHargaPanel produkList={produkList} poList={poList} poItems={poItems} vendors={vendors}/>
+      )}
     </div>
   )
 }
