@@ -60,14 +60,14 @@ export function TimPickerStd({ tims, prefix, initialTimId, initialAnggota }: { t
 
   return (
     <div>
-      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tim Yang Mengerjakan</label>
+      <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tim Yang Mengerjakan</label>
       <select name={`${prefix}tim_id`} value={timId} onChange={e => pilih(e.target.value)} className={inp}>
         <option value="">Pilih tim…</option>
         {tims.map(t => <option key={t.id} value={t.id}>{t.nama}</option>)}
       </select>
       {(selected || anggotaAktif.length > 0) && (
         <div className="mt-1.5 p-2.5 rounded-lg bg-violet-50 border border-violet-100">
-          <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wide mb-1.5">Anggota yang mengerjakan</p>
+          <p className="text-[10px] font-medium text-violet-400 mb-1.5">Anggota yang mengerjakan</p>
           <div className="flex flex-wrap gap-1.5 mb-2">
             {anggotaAktif.length === 0 && <span className="text-[11px] text-slate-300 italic">Tidak ada anggota</span>}
             {anggotaAktif.map(n => (
@@ -82,7 +82,7 @@ export function TimPickerStd({ tims, prefix, initialTimId, initialAnggota }: { t
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
               placeholder="Tambah anggota (cth: Pak Nendi)"
               className="flex-1 h-8 px-2.5 bg-white rounded-lg text-[12px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-300 border border-slate-200" />
-            <button type="button" onClick={add} className="px-2.5 h-8 rounded-lg text-[12px] font-bold text-violet-600 bg-white border border-violet-200">+ Tambah</button>
+            <button type="button" onClick={add} className="px-2.5 h-8 rounded-lg text-[12px] font-semibold text-violet-600 bg-white border border-violet-200">+ Tambah</button>
           </div>
         </div>
       )}
@@ -103,7 +103,7 @@ export function AdminPickerStd({ adminList, prefix, initialValue, label, placeho
   const resolvedPlaceholder = placeholder ?? `Pilih ${resolvedLabel}…`
   return (
     <div>
-      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{resolvedLabel}</label>
+      <label className="block text-[11px] font-medium text-slate-500 mb-1.5">{resolvedLabel}</label>
       {manual ? (
         <input name={`${prefix}admin_input`} value={value} onChange={e => setValue(e.target.value)} placeholder="Ketik nama admin" className={inp} autoFocus />
       ) : (
@@ -131,7 +131,7 @@ function FotoPickerStd({ fotos, setFotos, label = 'Foto Bahan Diterima (Max 10 F
           <button onClick={() => setLb(null)} className="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center backdrop-blur-sm"><X size={18} /></button>
         </div>
       )}
-      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{label}</label>
+      <label className="block text-[11px] font-medium text-slate-500 mb-1.5">{label}</label>
       <label className="flex items-center gap-2 h-10 px-3 bg-white rounded-lg border border-dashed border-violet-200 cursor-pointer hover:border-violet-400 hover:bg-violet-50/50 transition-colors">
         <Camera size={14} className="text-slate-400 flex-shrink-0" />
         <span className="text-[13px] text-slate-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto'}</span>
@@ -186,27 +186,27 @@ export function SerahModalStd({ judul, kode, tims, adminList, isPending, error, 
           {/* Section box: Diserahkan (violet) */}
           <div className="rounded-lg overflow-hidden border border-violet-100">
             <div className="flex items-center gap-2 px-3 py-2 bg-violet-50 border-b border-violet-100">
-              <span className="text-[11px] font-bold text-violet-700 uppercase tracking-wide">📤 Diserahkan</span>
+              <span className="text-[11px] font-medium text-violet-700">📤 Diserahkan</span>
             </div>
             <div className="p-4 space-y-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Berat Diserahkan (gr) *</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Berat Diserahkan (gr) *</label>
                 <input name="serah_gram" type="number" step="0.001" defaultValue={d.serah_gram ?? serahGramDefault ?? ''} placeholder="cth: 100,000" className={inp} required />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Serah *</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Serah *</label>
                   <input name="serah_tanggal" type="date" defaultValue={d.serah_tanggal ?? new Date().toISOString().split('T')[0]} className={inp} required />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jam Serah *</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Serah *</label>
                   <input name="serah_jam" type="time" defaultValue={d.serah_jam ? String(d.serah_jam).slice(0,5) : undefined} className={inp} required />
                 </div>
               </div>
               <AdminPickerStd adminList={adminList} prefix="serah_" initialValue={d.serah_admin_input ?? ''} label="Admin Yang Menyerahkan" />
               <FotoPickerStd fotos={fotos} setFotos={setFotos} label="Foto Bahan Diserahkan (Max 10 Foto)" />
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan Penyerahan</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan Penyerahan</label>
                 <input name="serah_catatan" type="text" defaultValue={d.serah_catatan ?? ''} placeholder="Opsional" className={inp} />
               </div>
             </div>
@@ -220,7 +220,7 @@ export function SerahModalStd({ judul, kode, tims, adminList, isPending, error, 
         </div>
         <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
           <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-          <button type="submit" disabled={isPending || up} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+          <button type="submit" disabled={isPending || up} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
             {up ? 'Upload foto…' : isPending ? 'Menyimpan…' : isEdit ? 'Simpan Perubahan' : 'Serahkan'}
           </button>
         </div>
@@ -291,39 +291,39 @@ export function TerimaModalStd({
           {/* Info chip serah gram */}
           <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700">
             <span>Diserahkan: </span>
-            <span className="font-bold">{Number(serahGram).toFixed(3)} gr</span>
+            <span className="font-semibold">{Number(serahGram).toFixed(3)} gr</span>
           </div>
 
           {/* Section box: Diterima (green) */}
           <div className="rounded-lg overflow-hidden border border-green-100">
             <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border-b border-green-100">
-              <span className="text-[11px] font-bold text-green-700 uppercase tracking-wide">📥 Diterima</span>
+              <span className="text-[11px] font-medium text-green-700">📥 Diterima</span>
             </div>
             <div className="p-4 space-y-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Berat Diterima (gr) *</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Berat Diterima (gr) *</label>
                 <input name="terima_gram" type="number" step="0.001" placeholder={`Max ${Number(serahGram).toFixed(3)} gr`}
                   value={terimaVal} onChange={e => setTerimaVal(e.target.value)} className={inp} required />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Terima *</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Terima *</label>
                   <input name="terima_tanggal" type="date" defaultValue={d.terima_tanggal ?? new Date().toISOString().split('T')[0]} className={inp} required />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jam Terima *</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Terima *</label>
                   <input name="terima_jam" type="time" defaultValue={d.terima_jam ? String(d.terima_jam).slice(0,5) : undefined} className={inp} required />
                 </div>
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jumlah PCS {prosesLabel === 'Cutting' ? '(ACC)' : ''}</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jumlah PCS {prosesLabel === 'Cutting' ? '(ACC)' : ''}</label>
                 <input name="terima_pcs" type="number" min="1" defaultValue={d.terima_pcs ?? ''} placeholder="Isi jika sudah dihitung" className={inp} />
               </div>
 
               {/* Khusus Pas Berat: Sisa Serbuk */}
               {showSerbuk && (
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Sisa Serbuk (gr)</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Sisa Serbuk (gr)</label>
                   <input name="sisa_serbuk" type="number" step="0.001" value={serbukVal} onChange={e => setSerbukVal(e.target.value)} className={inp} />
                 </div>
               )}
@@ -332,13 +332,13 @@ export function TerimaModalStd({
               {prosesLabel === 'Cutting' ? (
                 <div className="rounded-lg p-3 bg-red-50 border border-red-100">
                   <div className="flex items-center gap-1.5 mb-2">
-                    <span className="text-[10px] font-bold text-red-500 uppercase tracking-wide">⚠ Reject Cutting</span>
+                    <span className="text-[10px] font-medium text-red-500">⚠ Reject cutting</span>
                   </div>
                   <p className="text-[10px] text-slate-400 mb-2 leading-relaxed">
                     Reject cutting dilebur ulang → kembali jadi bahan baku batch. Isi 0 jika tidak ada reject.
                   </p>
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Berat Reject Cutting (gr)</label>
+                    <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Berat Reject Cutting (gr)</label>
                     <input name="reject_gram" type="number" step="0.001" min="0"
                       value={rejectVal} onChange={e => setRejectVal(e.target.value)}
                       className={inp} placeholder="0.000" />
@@ -356,11 +356,11 @@ export function TerimaModalStd({
                   {adaReject && (
                     <div className="grid grid-cols-2 gap-3 mt-2">
                       <div>
-                        <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Reject (gr)</label>
+                        <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Reject (gr)</label>
                         <input name="reject_gram" type="number" step="0.001" value={rejectVal} onChange={e => setRejectVal(e.target.value)} className={inp} />
                       </div>
                       <div>
-                        <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Reject (pcs)</label>
+                        <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Reject (pcs)</label>
                         <input name="reject_pcs" type="number" min="0" defaultValue={d.reject_pcs ?? 0} className={inp} />
                       </div>
                     </div>
@@ -372,7 +372,7 @@ export function TerimaModalStd({
               <AdminPickerStd adminList={adminList} prefix="terima_" initialValue={d.terima_admin_input ?? ''} label="Admin Yang Menerima" />
               {existingFotos.length > 0 && (
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Sebelumnya</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Sebelumnya</label>
                   <div className="flex flex-wrap gap-2">
                     {existingFotos.map((u, i) => (
                       <div key={i} className="relative">
@@ -388,7 +388,7 @@ export function TerimaModalStd({
               )}
               <FotoPickerStd fotos={fotos} setFotos={setFotos} label="Foto Bahan Diterima (Max 10 Foto)" />
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan Penerimaan</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan Penerimaan</label>
                 <input name="terima_catatan" type="text" defaultValue={d.terima_catatan ?? ''} placeholder="Opsional" className={inp} />
               </div>
             </div>
@@ -420,7 +420,7 @@ export function TerimaModalStd({
         </div>
         <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
           <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-          <button type="submit" disabled={isPending || up} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+          <button type="submit" disabled={isPending || up} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
             {up ? 'Upload foto…' : isPending ? 'Menyimpan…' : isEdit ? 'Simpan Perubahan' : 'Terima'}
           </button>
         </div>
