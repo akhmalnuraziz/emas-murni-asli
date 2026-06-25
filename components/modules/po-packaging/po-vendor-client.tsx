@@ -82,7 +82,7 @@ function StatusBadge({ status }: { status: string }) {
     overdue:          { label: 'Lewat Tempo',      cls: 'bg-red-50 text-red-600' },
   }
   const { label, cls } = map[status] ?? { label: status, cls: 'bg-slate-50 text-slate-500' }
-  return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cls}`}>{label}</span>
+  return <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${cls}`}>{label}</span>
 }
 
 // Group per-item monitoring rows into per-PO groups
@@ -116,7 +116,7 @@ function MonitoringCard({ po }: { po: any }) {
         onClick={() => setOpen(p => !p)}>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[12px] font-mono font-bold text-violet-700">{po.nomor_po}</span>
+            <span className="text-[12px] font-mono font-semibold text-violet-700">{po.nomor_po}</span>
             <StatusBadge status={po.status} />
           </div>
           <p className="text-[11px] text-slate-500 mt-0.5">{po.vendor_nama} · {po.items.length} produk</p>
@@ -139,7 +139,7 @@ function MonitoringCard({ po }: { po: any }) {
             const itemRatio = it.qty_po > 0 ? ((it.qty_po - Math.max(0, it.sisa_belum_datang)) / it.qty_po) * 100 : 0
             return (
               <div key={it.item_id} className="rounded-xl bg-white border border-slate-200 px-3 py-2.5">
-                <p className="text-[12px] font-bold text-slate-700">{it.produk_nama}</p>
+                <p className="text-[12px] font-semibold text-slate-700">{it.produk_nama}</p>
                 <div className="mt-1.5 h-1 rounded-full bg-slate-100 overflow-hidden">
                   <div className="h-full rounded-full bg-violet-400"
                     style={{ width: `${Math.min(100, itemRatio)}%` }} />
@@ -153,7 +153,7 @@ function MonitoringCard({ po }: { po: any }) {
                     { label: 'Sisa', val: fmtNum(Math.max(0, it.sisa_belum_datang)), color: '#A855F7' },
                   ].map(({ label, val, color }) => (
                     <span key={label} className="text-[10px]" style={{ color }}>
-                      <span className="font-bold">{val}</span> <span className="text-slate-400">{label}</span>
+                      <span className="font-semibold">{val}</span> <span className="text-slate-400">{label}</span>
                     </span>
                   ))}
                 </div>
@@ -270,7 +270,7 @@ function SignaturePad({ onSave, label, initial }: { onSave: (b64: string) => voi
             <button type="button" onClick={clear}
               className="flex-1 py-1.5 text-[10px] font-semibold rounded-lg border border-slate-200 text-slate-500">Hapus</button>
             <button type="button" onClick={save} disabled={empty}
-              className="flex-1 py-1.5 text-[10px] font-bold rounded-lg bg-violet-600 text-white disabled:opacity-50">Simpan TTD</button>
+              className="flex-1 py-1.5 text-[10px] font-semibold rounded-lg bg-violet-600 text-white disabled:opacity-50">Simpan TTD</button>
           </div>
         </>
       )}
@@ -333,37 +333,37 @@ export default function POVendorClient({
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-[18px] font-bold text-slate-800">PO Vendor Packaging</h1>
+          <h1 className="text-[18px] font-semibold text-slate-800">PO Vendor Packaging</h1>
           <p className="text-[12px] text-slate-400 mt-0.5">{poList.length} PO aktif · {pendingReject > 0 ? `${pendingReject} reject pending` : 'semua reject tertangani'}</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           {canManage && tab === 'po' && (
             <button onClick={() => setPoModal('create')}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-xl bg-violet-600 hover:bg-violet-700">
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-semibold text-white rounded-xl bg-violet-600 hover:bg-violet-700">
               <Plus size={13}/> Buat PO
             </button>
           )}
           {canManage && tab === 'vendor' && (
             <button onClick={() => setVendorModal('create')}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-xl bg-violet-600 hover:bg-violet-700">
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-semibold text-white rounded-xl bg-violet-600 hover:bg-violet-700">
               <Plus size={13}/> Tambah Vendor
             </button>
           )}
           {canManage && tab === 'master' && masterSubtab === 'produk' && (
             <button onClick={() => setProdukModal('create')}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-xl bg-emerald-600 hover:bg-emerald-700">
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-semibold text-white rounded-xl bg-emerald-600 hover:bg-emerald-700">
               <Plus size={13}/> Tambah Produk
             </button>
           )}
           {canManage && tab === 'master' && masterSubtab === 'kategori_reject' && (
             <button onClick={() => setKategoriRejectModal('create')}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-xl bg-emerald-600 hover:bg-emerald-700">
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-semibold text-white rounded-xl bg-emerald-600 hover:bg-emerald-700">
               <Plus size={13}/> Tambah Kategori
             </button>
           )}
           {canManage && tab === 'reject' && (
             <button onClick={() => setSjModal(-1)}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-bold text-white rounded-xl bg-orange-500 hover:bg-orange-600">
+              className="flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-semibold text-white rounded-xl bg-orange-500 hover:bg-orange-600">
               <Printer size={13}/> Buat SJ Retur
             </button>
           )}
@@ -374,11 +374,11 @@ export default function POVendorClient({
       <div className="flex gap-1 overflow-x-auto pb-0.5 hide-scrollbar">
         {tabs.map(({ key, label, icon: Icon }) => (
           <button key={key} onClick={() => setTab(key)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-bold whitespace-nowrap transition-all flex-shrink-0 ${tab === key ? 'text-violet-700 bg-violet-50' : 'text-slate-500 bg-black/[0.03]'}`}>
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold whitespace-nowrap transition-all flex-shrink-0 ${tab === key ? 'text-violet-700 bg-violet-50' : 'text-slate-500 bg-black/[0.03]'}`}>
             <Icon size={12}/>
             {label}
             {key === 'reject' && pendingReject > 0 && (
-              <span className="min-w-[16px] h-4 px-1 bg-red-500 text-white rounded-full text-[9px] flex items-center justify-center font-bold">
+              <span className="min-w-[16px] h-4 px-1 bg-red-500 text-white rounded-full text-[9px] flex items-center justify-center font-semibold">
                 {pendingReject > 9 ? '9+' : pendingReject}
               </span>
             )}
@@ -425,10 +425,10 @@ export default function POVendorClient({
                   <div className="px-4 py-3 flex items-center justify-between gap-3 bg-white">
                     <button className="flex-1 text-left" onClick={() => setExpandedPO(isOpen ? null : po.id)}>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[12px] font-mono font-bold text-violet-700">{po.nomor_po}</span>
+                        <span className="text-[12px] font-mono font-semibold text-violet-700">{po.nomor_po}</span>
                         <StatusBadge status={po.status} />
                         {hasHarga && (
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+                          <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full">
                             {fmtRp(totalNilai)}
                           </span>
                         )}
@@ -452,11 +452,11 @@ export default function POVendorClient({
                       {canManage && po.status !== 'void' && (
                         <>
                           <button onClick={() => setBatchModal(po.id)}
-                            className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100">
+                            className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100">
                             <Truck size={11}/> Terima
                           </button>
                           <button onClick={() => { setEditPoId(po.id); setPoModal(po.id) }}
-                            className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-bold text-violet-600 bg-violet-50 hover:bg-violet-100">
+                            className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold text-violet-600 bg-violet-50 hover:bg-violet-100">
                             <Edit2 size={11}/> Edit
                           </button>
                           <button onClick={() => askConfirm({
@@ -471,7 +471,7 @@ export default function POVendorClient({
                               if (r?.error) showToast(r.error, false)
                               else showToast('✅ PO dihapus')
                             },
-                          })} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-bold text-red-500 bg-red-50 hover:bg-red-100">
+                          })} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold text-red-500 bg-red-50 hover:bg-red-100">
                             <Trash2 size={11}/> Hapus
                           </button>
                         </>
@@ -482,7 +482,7 @@ export default function POVendorClient({
                     <div className="px-4 pb-3 pt-1 bg-slate-50">
                       {hasHarga && (
                         <div className="rounded-xl bg-white border border-emerald-100 p-2.5 mb-2">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1.5">Rincian Harga</p>
+                          <p className="text-[10px] font-medium text-slate-400 mb-1.5">Rincian Harga</p>
                           {items.map((it: any) => (
                             <div key={it.id} className="flex justify-between gap-2 text-[11px] py-0.5">
                               <span className="text-slate-600">{it.produk_nama}</span>
@@ -492,8 +492,8 @@ export default function POVendorClient({
                             </div>
                           ))}
                           <div className="flex justify-between gap-2 mt-1.5 pt-1.5 border-t border-emerald-100 text-[12px]">
-                            <span className="font-bold text-slate-700">Total Nilai PO</span>
-                            <span className="font-bold text-emerald-700">{fmtRp(totalNilai)}</span>
+                            <span className="font-semibold text-slate-700">Total Nilai PO</span>
+                            <span className="font-semibold text-emerald-700">{fmtRp(totalNilai)}</span>
                           </div>
                         </div>
                       )}
@@ -511,7 +511,7 @@ export default function POVendorClient({
                             return (
                               <div key={b.id} className="rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 bg-white border border-slate-200">
                                 <div>
-                                  <p className="text-[12px] font-mono font-bold text-slate-700">{b.nomor_batch}</p>
+                                  <p className="text-[12px] font-mono font-semibold text-slate-700">{b.nomor_batch}</p>
                                   <p className="text-[10px] text-slate-400">
                                     {desc} · {fmtDate(b.tanggal_terima)}
                                     {b.status_qc === 'selesai' ? ` · ✅ ACC ${fmtNum(b.qty_acc ?? 0)} / Reject ${fmtNum(b.qty_reject ?? 0)}` : ' · ⏳ Pending QC'}
@@ -519,7 +519,7 @@ export default function POVendorClient({
                                 </div>
                                 {canManage && b.status_qc === 'pending' && (
                                   <button onClick={() => setQcModal(b)}
-                                    className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-white rounded-lg bg-green-500 hover:bg-green-600">
+                                    className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-white rounded-lg bg-green-500 hover:bg-green-600">
                                     <ClipboardCheck size={10}/> QC
                                   </button>
                                 )}
@@ -547,10 +547,10 @@ export default function POVendorClient({
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[12px] font-mono font-bold text-slate-700">{b.nomor_batch}</span>
+                      <span className="text-[12px] font-mono font-semibold text-slate-700">{b.nomor_batch}</span>
                       <StatusBadge status={b.status_qc === 'selesai' ? 'selesai' : 'pending_qc'} />
                       {b.is_pengganti && (
-                        <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-full">
+                        <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-full">
                           🔄 Pengganti (siklus {b.siklus_ke})
                         </span>
                       )}
@@ -574,9 +574,9 @@ export default function POVendorClient({
                     {b.status_qc === 'selesai' && (
                       <>
                         <div className="flex gap-3 mt-1.5 flex-wrap">
-                          <span className="text-[10px] font-bold text-green-600">✅ ACC: {fmtNum(b.qty_acc ?? 0)}</span>
-                          <span className="text-[10px] font-bold text-red-500">❌ Reject: {fmtNum(b.qty_reject ?? 0)}</span>
-                          {(b.qty_lebih ?? 0) > 0 && <span className="text-[10px] font-bold text-orange-500">➕ Lebih: {fmtNum(b.qty_lebih)}</span>}
+                          <span className="text-[10px] font-semibold text-green-600">✅ ACC: {fmtNum(b.qty_acc ?? 0)}</span>
+                          <span className="text-[10px] font-semibold text-red-500">❌ Reject: {fmtNum(b.qty_reject ?? 0)}</span>
+                          {(b.qty_lebih ?? 0) > 0 && <span className="text-[10px] font-semibold text-orange-500">➕ Lebih: {fmtNum(b.qty_lebih)}</span>}
                         </div>
                         {(b.qc_operator_nama || b.qc_admin_nama) && (
                           <p className="text-[10px] text-slate-400 mt-0.5">
@@ -592,13 +592,13 @@ export default function POVendorClient({
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       {b.status_qc === 'pending' && (
                         <button onClick={() => setQcModal(b)}
-                          className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-bold text-white rounded-lg bg-green-500 hover:bg-green-600">
+                          className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-white rounded-lg bg-green-500 hover:bg-green-600">
                           <ClipboardCheck size={11}/> Input QC
                         </button>
                       )}
                       {b.status_qc === 'selesai' && (
                         <button onClick={() => setEditQcModal(b)}
-                          className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-bold text-violet-600 rounded-lg bg-violet-50 hover:bg-violet-100">
+                          className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-violet-600 rounded-lg bg-violet-50 hover:bg-violet-100">
                           <Edit2 size={11}/> Edit QC
                         </button>
                       )}
@@ -614,7 +614,7 @@ export default function POVendorClient({
                           if (r?.error) showToast(r.error, false)
                           else showToast('✅ Batch dihapus')
                         },
-                      })} className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-bold text-red-500 rounded-lg bg-red-50 hover:bg-red-100">
+                      })} className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-red-500 rounded-lg bg-red-50 hover:bg-red-100">
                         <Trash2 size={11}/> Hapus
                       </button>
                     </div>
@@ -646,17 +646,17 @@ export default function POVendorClient({
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${r.jenis === 'lebihan' ? 'bg-orange-50 text-orange-600' : 'bg-red-50 text-red-600'}`}>
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${r.jenis === 'lebihan' ? 'bg-orange-50 text-orange-600' : 'bg-red-50 text-red-600'}`}>
                         {r.jenis === 'lebihan' ? '➕ Lebihan' : '❌ Reject'}
                       </span>
                       <StatusBadge status={r.status_penanganan} />
                     </div>
-                    <p className="text-[13px] font-bold text-slate-800 mt-1">{fmtNum(r.qty)} pcs</p>
+                    <p className="text-[13px] font-semibold text-slate-800 mt-1">{fmtNum(r.qty)} pcs</p>
                     <p className="text-[11px] text-slate-500">{r.produk_nama} · PO {r.po_nomor} · {r.vendor_nama}</p>
                     <p className="text-[10px] text-slate-400">Batch {r.nomor_batch} · {fmtDate(r.tanggal_terima)}</p>
                     {(r.kategori_nama || r.alasan_manual) && (
                       <p className="text-[10px] mt-0.5">
-                        {r.kategori_nama && <span className="font-bold text-red-600">🏷️ {r.kategori_nama}</span>}
+                        {r.kategori_nama && <span className="font-semibold text-red-600">🏷️ {r.kategori_nama}</span>}
                         {r.kategori_nama && r.alasan_manual && <span className="text-slate-400"> · </span>}
                         {r.alasan_manual && <span className="text-slate-600">{r.alasan_manual}</span>}
                       </p>
@@ -674,7 +674,7 @@ export default function POVendorClient({
                             if (res?.error) showToast(res.error, false)
                             else showToast('✅ Status direset ke pending')
                           },
-                        })} className="px-2 py-1 text-[10px] font-bold text-amber-600 rounded-lg bg-amber-50 hover:bg-amber-100">
+                        })} className="px-2 py-1 text-[10px] font-semibold text-amber-600 rounded-lg bg-amber-50 hover:bg-amber-100">
                           Reset
                         </button>
                       )}
@@ -703,12 +703,12 @@ export default function POVendorClient({
       {/* ── Tab: STOK ──────────────────────────────────────────────────────── */}
       {tab === 'stok' && (
         <div className="space-y-3">
-          <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider">Stok Packaging</p>
+          <p className="text-[12px] font-medium text-slate-400">Stok Packaging</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {stokList.map((s: any) => (
               <div key={s.id} className="rounded-xl px-4 py-3.5 text-center bg-white border border-slate-200">
-                <p className="text-[20px] font-bold text-slate-800">{fmtNum(s.stok_qty)}</p>
-                <p className="text-[12px] font-bold text-slate-500 mt-0.5">pcs</p>
+                <p className="text-[20px] font-semibold text-slate-800">{fmtNum(s.stok_qty)}</p>
+                <p className="text-[12px] font-semibold text-slate-500 mt-0.5">pcs</p>
                 <div className="w-6 h-0.5 rounded-full mx-auto my-2" style={{ background: s.stok_qty > 0 ? '#7C3AED' : '#e2e8f0' }}/>
                 <p className="text-[11px] font-semibold text-slate-600">{s.produk_nama}</p>
               </div>
@@ -741,12 +741,12 @@ export default function POVendorClient({
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-[12px] font-mono font-bold text-orange-600">{sj.nomor_sj}</p>
+                          <p className="text-[12px] font-mono font-semibold text-orange-600">{sj.nomor_sj}</p>
                           <StatusBadge status={displayStatus} />
                         </div>
                         <p className="text-[11px] text-slate-500 mt-0.5">{sj.vendor_nama} · Dikirim {fmtDate(sj.tanggal_retur)}</p>
                         {sj.tanggal_jatuh_tempo_ganti && (
-                          <p className={`text-[10px] ${overdue ? 'font-bold text-red-600' : 'text-amber-600'}`}>
+                          <p className={`text-[10px] ${overdue ? 'font-semibold text-red-600' : 'text-amber-600'}`}>
                             ⏰ Jatuh tempo ganti: {fmtDate(sj.tanggal_jatuh_tempo_ganti)}
                             {overdue && ' · LEWAT TEMPO'}
                           </p>
@@ -764,7 +764,7 @@ export default function POVendorClient({
                         <div className="mt-2">
                           <div className="flex justify-between mb-0.5">
                             <span className="text-[10px] font-semibold text-slate-500">{fmtNum(totalGanti)} / {fmtNum(totalRetur)} pcs diganti</span>
-                            <span className="text-[10px] font-bold text-orange-600">{progress.toFixed(0)}%</span>
+                            <span className="text-[10px] font-semibold text-orange-600">{progress.toFixed(0)}%</span>
                           </div>
                           <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
                             <div className="h-full rounded-full bg-green-500 transition-all"
@@ -775,18 +775,18 @@ export default function POVendorClient({
                       <div className="flex flex-col gap-1.5 flex-shrink-0">
                         {canManage && sj.status !== 'selesai_diganti' && (
                           <button onClick={() => setPenggantiModal(sj)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-blue-600 rounded-xl bg-blue-50 hover:bg-blue-100">
+                            className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-semibold text-blue-600 rounded-xl bg-blue-50 hover:bg-blue-100">
                             <Truck size={11}/> Terima Pengganti
                           </button>
                         )}
                         <a href={`/po-vendor-packaging/sj-retur/${sj.id}`} target="_blank"
-                          className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-orange-600 rounded-xl bg-orange-50 hover:bg-orange-100">
+                          className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-semibold text-orange-600 rounded-xl bg-orange-50 hover:bg-orange-100">
                           <Printer size={11}/> Cetak
                         </a>
                         {canManage && (
                           <>
                             <button onClick={() => setEditSJModal(sj)}
-                              className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-violet-600 rounded-xl bg-violet-50 hover:bg-violet-100">
+                              className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-semibold text-violet-600 rounded-xl bg-violet-50 hover:bg-violet-100">
                               <Edit2 size={11}/> Edit
                             </button>
                             <button onClick={() => askConfirm({
@@ -800,7 +800,7 @@ export default function POVendorClient({
                                 else showToast('✅ SJ Retur dihapus')
                               },
                             })}
-                              className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-bold text-red-500 rounded-xl bg-red-50 hover:bg-red-100">
+                              className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-semibold text-red-500 rounded-xl bg-red-50 hover:bg-red-100">
                               <Trash2 size={11}/> Hapus
                             </button>
                           </>
@@ -826,7 +826,7 @@ export default function POVendorClient({
               { key: 'histori_harga',   label: 'Histori Harga' },
             ].map(({ key, label }) => (
               <button key={key} onClick={() => setMasterSubtab(key as any)}
-                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all ${masterSubtab === key ? 'text-emerald-700 bg-emerald-50' : 'text-slate-500 bg-black/[0.03]'}`}>
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-semibold whitespace-nowrap transition-all ${masterSubtab === key ? 'text-emerald-700 bg-emerald-50' : 'text-slate-500 bg-black/[0.03]'}`}>
                 {label}
               </button>
             ))}
@@ -839,10 +839,10 @@ export default function POVendorClient({
                 <div key={p.id} className="rounded-xl px-4 py-3 flex items-center justify-between gap-3 bg-white border border-slate-200">
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-[13px] font-bold text-slate-800">{p.nama}</p>
+                      <p className="text-[13px] font-semibold text-slate-800">{p.nama}</p>
                       <span className="text-[10px] font-mono text-slate-400">{p.kode}</span>
                       <span className="text-[10px] text-slate-400">· {p.satuan ?? 'pcs'}</span>
-                      {!p.aktif && <span className="text-[10px] font-bold text-red-400 bg-red-50 px-1.5 py-0.5 rounded-full">Nonaktif</span>}
+                      {!p.aktif && <span className="text-[10px] font-semibold text-red-400 bg-red-50 px-1.5 py-0.5 rounded-full">Nonaktif</span>}
                     </div>
                     {p.keterangan && <p className="text-[11px] text-slate-400 mt-0.5">{p.keterangan}</p>}
                   </div>
@@ -857,7 +857,7 @@ export default function POVendorClient({
                         if (r?.error) showToast(r.error, false)
                         else showToast(p.aktif ? 'Produk dinonaktifkan' : '✅ Produk diaktifkan')
                       }}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${p.aktif ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold ${p.aktif ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
                         {p.aktif ? 'Nonaktifkan' : 'Aktifkan'}
                       </button>
                     </div>
@@ -877,9 +877,9 @@ export default function POVendorClient({
                 <div key={k.id} className="rounded-xl px-4 py-3 flex items-center justify-between gap-3 bg-white border border-slate-200">
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-[13px] font-bold text-slate-800">{k.nama}</p>
+                      <p className="text-[13px] font-semibold text-slate-800">{k.nama}</p>
                       <span className="text-[10px] font-mono text-slate-400">{k.kode}</span>
-                      {!k.aktif && <span className="text-[10px] font-bold text-red-400 bg-red-50 px-1.5 py-0.5 rounded-full">Nonaktif</span>}
+                      {!k.aktif && <span className="text-[10px] font-semibold text-red-400 bg-red-50 px-1.5 py-0.5 rounded-full">Nonaktif</span>}
                     </div>
                   </div>
                   {canManage && (
@@ -893,7 +893,7 @@ export default function POVendorClient({
                         if (r?.error) showToast(r.error, false)
                         else showToast(k.aktif ? 'Kategori dinonaktifkan' : '✅ Kategori diaktifkan')
                       }}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${k.aktif ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold ${k.aktif ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
                         {k.aktif ? 'Nonaktifkan' : 'Aktifkan'}
                       </button>
                       <button onClick={() => askConfirm({
@@ -930,9 +930,9 @@ export default function POVendorClient({
             <div key={v.id} className="rounded-xl px-4 py-3 flex items-center justify-between gap-3 bg-white border border-slate-200">
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="text-[13px] font-bold text-slate-800">{v.nama}</p>
+                  <p className="text-[13px] font-semibold text-slate-800">{v.nama}</p>
                   <span className="text-[10px] font-mono text-slate-400">{v.kode}</span>
-                  {!v.aktif && <span className="text-[10px] font-bold text-red-400 bg-red-50 px-1.5 py-0.5 rounded-full">Nonaktif</span>}
+                  {!v.aktif && <span className="text-[10px] font-semibold text-red-400 bg-red-50 px-1.5 py-0.5 rounded-full">Nonaktif</span>}
                 </div>
                 {v.pic && <p className="text-[11px] text-slate-400">PIC: {v.pic}</p>}
                 {v.telepon && <p className="text-[11px] text-slate-400">{v.telepon}</p>}
@@ -1157,17 +1157,17 @@ function ProdukModal({ mode, produk, onClose, onSave }: { mode: string; produk?:
     <ModalShell title={mode === 'create' ? 'Tambah Produk Baru' : 'Edit Produk'} onClose={onClose}>
       <form onSubmit={async e => { e.preventDefault(); setLoading(true); await onSave(new FormData(e.currentTarget)); setLoading(false) }}
         className="space-y-3">
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Produk *</label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Nama Produk *</label>
           <input name="nama" defaultValue={produk?.nama} required placeholder="mis. Akrilik 2x3cm" className={inp}/></div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Satuan</label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Satuan</label>
           <select name="satuan" defaultValue={produk?.satuan ?? 'pcs'} className={inp}>
             <option value="pcs">pcs</option><option value="set">set</option>
             <option value="lusin">lusin</option><option value="box">box</option><option value="meter">meter</option>
           </select></div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan</label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Keterangan</label>
           <textarea name="keterangan" defaultValue={produk?.keterangan} rows={2} className={inp}/></div>
         <button type="submit" disabled={loading}
-          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white disabled:opacity-50">
           {loading ? 'Menyimpan...' : mode === 'create' ? 'Tambah Produk' : 'Simpan Perubahan'}
         </button>
       </form>
@@ -1181,15 +1181,15 @@ function VendorModal({ mode, vendor, onClose, onSave }: { mode: string; vendor?:
     <ModalShell title={mode === 'create' ? 'Tambah Vendor' : 'Edit Vendor'} onClose={onClose}>
       <form onSubmit={async e => { e.preventDefault(); setLoading(true); await onSave(new FormData(e.currentTarget)); setLoading(false) }}
         className="space-y-3">
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Vendor *</label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Nama Vendor *</label>
           <input name="nama" defaultValue={vendor?.nama} required className={inp}/></div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">PIC</label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">PIC</label>
           <input name="pic" defaultValue={vendor?.pic} className={inp}/></div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Telepon</label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Telepon</label>
           <input name="telepon" defaultValue={vendor?.telepon} className={inp}/></div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Email</label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Email</label>
           <input name="email" type="email" defaultValue={vendor?.email} className={inp}/></div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Alamat</label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Alamat</label>
           <textarea name="alamat" defaultValue={vendor?.alamat} rows={2} className={inp}/></div>
         {mode === 'edit' && (
           <div className="flex items-center gap-2">
@@ -1198,7 +1198,7 @@ function VendorModal({ mode, vendor, onClose, onSave }: { mode: string; vendor?:
           </div>
         )}
         <button type="submit" disabled={loading}
-          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white disabled:opacity-50">
           {loading ? 'Menyimpan...' : 'Simpan'}
         </button>
       </form>
@@ -1262,16 +1262,16 @@ function POModal({ mode, po, poItemsForEdit, vendors, produkList, allPoItems, al
       }} className="space-y-3">
         {/* Nomor PO */}
         {mode === 'create' && (
-          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nomor PO (kosongkan = auto)</label>
+          <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Nomor PO (kosongkan = auto)</label>
             <input name="nomor_po" placeholder="PO/2406/0001" className={inp}/></div>
         )}
         {mode === 'edit' && (
-          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nomor PO *</label>
+          <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Nomor PO *</label>
             <input name="nomor_po" defaultValue={po?.nomor_po} required className={inp}/></div>
         )}
 
         {/* Vendor */}
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Vendor *</label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Vendor *</label>
           <select name="vendor_id" value={vendorId || ''} onChange={e => setVendorId(parseInt(e.target.value) || 0)} required className={inp}>
             <option value="">— Pilih Vendor —</option>
             {vendors.map((v: any) => <option key={v.id} value={v.id}>{v.nama}</option>)}
@@ -1280,18 +1280,18 @@ function POModal({ mode, po, poItemsForEdit, vendors, produkList, allPoItems, al
 
         {/* Tanggal */}
         <div className="grid grid-cols-2 gap-2">
-          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal PO *</label>
+          <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal PO *</label>
             <input name="tanggal_po" type="date" defaultValue={po?.tanggal_po} required className={inp}/></div>
-          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jatuh Tempo</label>
+          <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jatuh Tempo</label>
             <input name="tanggal_jatuh_tempo" type="date" defaultValue={po?.tanggal_jatuh_tempo} className={inp}/></div>
         </div>
 
         {/* Item Rows */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Produk *</label>
+            <label className="text-[11px] font-medium text-slate-500">Produk *</label>
             <button type="button" onClick={addItem}
-              className="flex items-center gap-1 text-[11px] font-bold text-violet-600 hover:text-violet-700">
+              className="flex items-center gap-1 text-[11px] font-semibold text-violet-600 hover:text-violet-700">
               <Plus size={11}/> Tambah Produk
             </button>
           </div>
@@ -1302,7 +1302,7 @@ function POModal({ mode, po, poItemsForEdit, vendors, produkList, allPoItems, al
               return (
                 <div key={idx} className="rounded-xl border border-slate-200 p-3 space-y-2 bg-slate-50">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-500">Produk {idx + 1}</span>
+                    <span className="text-[11px] font-semibold text-slate-500">Produk {idx + 1}</span>
                     {items.length > 1 && (
                       <button type="button" onClick={() => removeItem(idx)}
                         className="text-red-400 hover:text-red-500">
@@ -1344,17 +1344,17 @@ function POModal({ mode, po, poItemsForEdit, vendors, produkList, allPoItems, al
           </div>
           {totalNilai > 0 && (
             <div className="mt-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 flex justify-between items-center">
-              <span className="text-[12px] font-bold text-emerald-700">Total Nilai PO</span>
-              <span className="text-[14px] font-bold text-emerald-700">{fmtRp(totalNilai)}</span>
+              <span className="text-[12px] font-semibold text-emerald-700">Total Nilai PO</span>
+              <span className="text-[14px] font-semibold text-emerald-700">{fmtRp(totalNilai)}</span>
             </div>
           )}
         </div>
 
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan</label>
           <textarea name="catatan" defaultValue={po?.catatan} rows={2} className={inp}/></div>
 
         <button type="submit" disabled={loading || !valid}
-          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white disabled:opacity-50">
           {loading ? 'Menyimpan...' : mode === 'create' ? 'Buat PO' : 'Simpan Perubahan'}
         </button>
       </form>
@@ -1388,7 +1388,7 @@ function BatchModal({ po, poItemsForPO, onClose, onSave }: {
   return (
     <ModalShell title="Input Penerimaan Barang" onClose={onClose}>
       <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700 mb-4">
-        <p className="font-bold">{po.nomor_po}</p>
+        <p className="font-semibold">{po.nomor_po}</p>
         <p className="text-violet-600 mt-0.5">{po.vendor_nama} · {poItemsForPO.length} produk di PO</p>
         <p className="text-violet-500 mt-0.5 text-[11px]">Centang produk yang diterima & isi qty. Bisa pilih lebih dari satu produk sekaligus.</p>
       </div>
@@ -1403,14 +1403,14 @@ function BatchModal({ po, poItemsForPO, onClose, onSave }: {
         setLoading(false)
       }} className="space-y-3">
         <div className="grid grid-cols-2 gap-2">
-          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nomor Batch <span className="normal-case text-slate-400 font-normal">(kosongkan = auto)</span></label>
+          <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Nomor Batch <span className="normal-case text-slate-400 font-normal">(kosongkan = auto)</span></label>
             <input name="nomor_batch" placeholder="auto: BATCH/001/MM/YY" className={inp}/></div>
-          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Terima *</label>
+          <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Terima *</label>
             <input name="tanggal_terima" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/></div>
         </div>
 
         <div>
-          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Produk yang Diterima ({selectedList.length} dipilih · {fmtNum(totalQty)} pcs)</p>
+          <p className="text-[11px] font-medium text-slate-500 mb-1.5">Produk yang Diterima ({selectedList.length} dipilih · {fmtNum(totalQty)} pcs)</p>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {poItemsForPO.map((it: any) => {
               const sisa = Math.max(0, it.qty_po - (it.qty_diterima ?? 0))
@@ -1427,7 +1427,7 @@ function BatchModal({ po, poItemsForPO, onClose, onSave }: {
                       <p className="text-[12px] font-semibold text-slate-700">{it.produk_nama}</p>
                       <p className="text-[10px] text-slate-400">
                         PO {fmtNum(it.qty_po)} pcs · diterima {fmtNum(it.qty_diterima ?? 0)} · sisa <b>{fmtNum(sisa)}</b>
-                        {sisa === 0 && <span className="text-green-600 font-bold"> · sudah terpenuhi (input = lebihan)</span>}
+                        {sisa === 0 && <span className="text-green-600 font-semibold"> · sudah terpenuhi (input = lebihan)</span>}
                       </p>
                     </div>
                   </button>
@@ -1436,7 +1436,7 @@ function BatchModal({ po, poItemsForPO, onClose, onSave }: {
                       <label className="text-[11px] text-slate-500 font-semibold whitespace-nowrap">Qty diterima:</label>
                       <input type="number" min="1" value={selected[it.id]}
                         onChange={e => setQty(it.id, Math.max(1, parseInt(e.target.value) || 1))}
-                        className="w-24 h-8 rounded-lg border border-violet-200 px-2 text-[13px] font-bold text-violet-700 bg-white focus:outline-none focus:ring-2 focus:ring-violet-300"/>
+                        className="w-24 h-8 rounded-lg border border-violet-200 px-2 text-[13px] font-semibold text-violet-700 bg-white focus:outline-none focus:ring-2 focus:ring-violet-300"/>
                       <span className="text-[11px] text-slate-400">pcs (sisa: {fmtNum(sisa)})</span>
                     </div>
                   )}
@@ -1446,10 +1446,10 @@ function BatchModal({ po, poItemsForPO, onClose, onSave }: {
           </div>
         </div>
 
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan</label>
           <textarea name="catatan" rows={2} className={inp}/></div>
         <button type="submit" disabled={loading || !valid}
-          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white disabled:opacity-50">
           {loading ? 'Menyimpan...' : `Simpan Penerimaan${totalQty > 0 ? ` (${fmtNum(totalQty)} pcs)` : ''}`}
         </button>
       </form>
@@ -1508,7 +1508,7 @@ function QCModal({ batch, batchItems, kategoriList, timAnggotaList, adminInputLi
   return (
     <ModalShell title={mode === 'edit' ? `Edit QC ${batch.nomor_batch}` : 'Input Hasil QC'} onClose={onClose}>
       <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700 mb-4">
-        <p className="font-bold">{batch.nomor_batch}</p>
+        <p className="font-semibold">{batch.nomor_batch}</p>
         <p className="text-violet-600 mt-0.5">{batch.vendor_nama} · {batchItems.length} produk</p>
         <p className="text-violet-500 text-[11px] mt-0.5">Isi ACC + reject per produk. Qty ACC bisa 0.</p>
       </div>
@@ -1525,16 +1525,16 @@ function QCModal({ batch, batchItems, kategoriList, timAnggotaList, adminInputLi
         setLoading(false)
       }} className="space-y-3">
         <div className="grid grid-cols-2 gap-2">
-          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal QC *</label>
+          <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal QC *</label>
             <input name="qc_tanggal" type="date" required defaultValue={(batch.qc_tanggal ?? new Date().toISOString().split('T')[0])} className={inp}/></div>
-          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Operator QC</label>
+          <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Operator QC</label>
             <select name="operator_nama" defaultValue={batch.qc_operator_nama ?? ''} className={inp}>
               <option value="">— Pilih operator —</option>
               {timAnggotaList.map((t: any) => <option key={t.id} value={t.nama}>{t.nama}</option>)}
             </select>
           </div>
         </div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Admin Input</label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Admin Input</label>
           <select name="admin_nama" defaultValue={batch.qc_admin_nama ?? ''} className={inp}>
             <option value="">— Pilih admin —</option>
             {adminInputList.map((a: any) => <option key={a.id} value={a.nama}>{a.nama}</option>)}
@@ -1545,7 +1545,7 @@ function QCModal({ batch, batchItems, kategoriList, timAnggotaList, adminInputLi
         {itemValidations.map(({ bi, itemQC, qtyR, maxChk, total, ok, rejectsOk }) => (
           <div key={bi.id} className="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[13px] font-bold text-slate-800">{bi.produk_nama}</p>
+              <p className="text-[13px] font-semibold text-slate-800">{bi.produk_nama}</p>
               <p className="text-[10px] text-slate-400">
                 Diterima {fmtNum(bi.qty_diterima)} · Lebihan {fmtNum(bi.qty_lebih ?? 0)} · Perlu QC <b>{fmtNum(maxChk)}</b>
               </p>
@@ -1554,15 +1554,15 @@ function QCModal({ batch, batchItems, kategoriList, timAnggotaList, adminInputLi
               <label className="text-[11px] font-semibold text-slate-500 whitespace-nowrap">Qty ACC:</label>
               <input type="number" min="0" max={maxChk} value={itemQC.qty_acc}
                 onChange={e => setItemAcc(bi.id, Math.max(0, parseInt(e.target.value) || 0))}
-                className="w-24 h-8 rounded-lg border border-green-300 px-2 text-[13px] font-bold text-green-700 bg-green-50"/>
+                className="w-24 h-8 rounded-lg border border-green-300 px-2 text-[13px] font-semibold text-green-700 bg-green-50"/>
               <span className="text-[11px] text-slate-400">+ {fmtNum(qtyR)} reject = <b className={ok ? 'text-green-700' : 'text-red-600'}>{fmtNum(total)} / {fmtNum(maxChk)}</b></span>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Reject ({fmtNum(qtyR)} pcs)</p>
+                <p className="text-[10px] font-medium text-slate-400">Reject ({fmtNum(qtyR)} pcs)</p>
                 <button type="button" onClick={() => addReject(bi.id)}
-                  className="text-[10px] font-bold text-violet-600 flex items-center gap-1">
+                  className="text-[10px] font-semibold text-violet-600 flex items-center gap-1">
                   <Plus size={11}/> Tambah Reject
                 </button>
               </div>
@@ -1577,7 +1577,7 @@ function QCModal({ batch, batchItems, kategoriList, timAnggotaList, adminInputLi
                       <div className="flex items-start gap-2">
                         <input type="number" min="1" placeholder="Qty" value={r.qty || ''}
                           onChange={e => updReject(bi.id, idx, { qty: parseInt(e.target.value) || 0 })}
-                          className="w-16 h-7 rounded-lg border border-red-200 px-2 text-[11px] font-bold text-red-700 bg-white"/>
+                          className="w-16 h-7 rounded-lg border border-red-200 px-2 text-[11px] font-semibold text-red-700 bg-white"/>
                         <select value={r.kategori_id ?? ''}
                           onChange={e => updReject(bi.id, idx, { kategori_id: e.target.value ? parseInt(e.target.value) : null })}
                           className="flex-1 h-7 rounded-lg border border-red-200 px-2 text-[11px] bg-white">
@@ -1611,7 +1611,7 @@ function QCModal({ batch, batchItems, kategoriList, timAnggotaList, adminInputLi
           </div>
         ))}
 
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan QC</label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan QC</label>
           <textarea name="catatan_qc" defaultValue={batch.catatan_qc ?? ''} rows={2} className={inp}/></div>
         <button type="button" onClick={() => setShowTtd(p => !p)}
           className="w-full py-2 text-[12px] font-semibold text-violet-600 rounded-xl border border-violet-200">
@@ -1624,7 +1624,7 @@ function QCModal({ batch, batchItems, kategoriList, timAnggotaList, adminInputLi
           </div>
         )}
         <button type="submit" disabled={loading || !allOk}
-          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white disabled:opacity-50">
           {loading ? 'Menyimpan...' : (mode === 'edit' ? 'Simpan Perubahan QC' : 'Simpan Hasil QC')}
         </button>
       </form>
@@ -1663,18 +1663,18 @@ function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]
   return (
     <ModalShell title="Buat Surat Jalan Retur" onClose={onClose}>
       <div className="space-y-3">
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nomor SJ <span className="normal-case text-slate-400 font-normal">(kosongkan = auto: SJ.RTR/001/MM/YY)</span></label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Nomor SJ <span className="normal-case text-slate-400 font-normal">(kosongkan = auto: SJ.RTR/001/MM/YY)</span></label>
           <input value={nomorSJ} onChange={e => setNomorSJ(e.target.value)} placeholder="auto-generate jika kosong" className={inp}/></div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Vendor *</label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Vendor *</label>
           <select value={vendorId ?? ''} onChange={e => { setVendorId(parseInt(e.target.value) || null); setSelectedQty({}) }} className={inp}>
             <option value="">— Pilih Vendor —</option>
             {vendors.map((v: any) => <option key={v.id} value={v.id}>{v.nama}</option>)}
           </select>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tgl Retur *</label>
+          <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tgl Retur *</label>
             <input type="date" value={tanggal} onChange={e => setTanggal(e.target.value)} className={inp}/></div>
-          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jatuh Tempo Ganti</label>
+          <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jatuh Tempo Ganti</label>
             <input type="date" value={tglJatuhTempo} onChange={e => setTglJatuhTempo(e.target.value)} className={inp}/></div>
         </div>
 
@@ -1686,7 +1686,7 @@ function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]
               </p>
               {vendorRejects.length > 0 && (
                 <button type="button" onClick={selectAll}
-                  className="text-[10px] font-bold text-violet-600">Pilih Semua</button>
+                  className="text-[10px] font-semibold text-violet-600">Pilih Semua</button>
               )}
             </div>
             <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -1716,7 +1716,7 @@ function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]
                       <label className="text-[11px] text-slate-500 font-semibold whitespace-nowrap">Qty diretur:</label>
                       <input type="number" min="1" max={r.qty} value={selectedQty[r.id] ?? r.qty}
                         onChange={e => setQty(r.id, Math.min(r.qty, Math.max(1, parseInt(e.target.value) || 1)))}
-                        className="w-24 h-8 rounded-lg border border-violet-200 px-2 text-[13px] font-bold text-violet-700 bg-white focus:outline-none focus:ring-2 focus:ring-violet-300"/>
+                        className="w-24 h-8 rounded-lg border border-violet-200 px-2 text-[13px] font-semibold text-violet-700 bg-white focus:outline-none focus:ring-2 focus:ring-violet-300"/>
                       <span className="text-[11px] text-slate-400">/ {fmtNum(r.qty)} pcs</span>
                     </div>
                   )}
@@ -1726,7 +1726,7 @@ function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]
           </div>
         )}
 
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan SJ</label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan SJ</label>
           <textarea value={catatan} onChange={e => setCatatan(e.target.value)} rows={2} className={inp}/></div>
 
         <button onClick={async () => {
@@ -1742,7 +1742,7 @@ function SJReturModal({ vendors, rejectList, onClose, onSave }: { vendors: any[]
           await onSave(fd)
           setLoading(false)
         }} disabled={loading || !vendorId || !hasItems}
-          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white disabled:opacity-50">
           {loading ? 'Membuat SJ...' : `Buat SJ Retur (${fmtNum(totalSelected)} pcs)`}
         </button>
       </div>
@@ -1759,11 +1759,11 @@ function VoidModal({ title, onClose, onConfirm }: { title: string; onClose: () =
         <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">
           <p className="font-semibold">⚠️ PO akan divoid dan tidak bisa diaktifkan kembali</p>
         </div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Alasan Void *</label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Alasan Void *</label>
           <textarea value={reason} onChange={e => setReason(e.target.value)} rows={3} required className={inp}/></div>
         <button onClick={async () => { setLoading(true); await onConfirm(reason); setLoading(false) }}
           disabled={loading || !reason.trim()}
-          className="w-full h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white disabled:opacity-50">
+          className="w-full h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-semibold text-white disabled:opacity-50">
           {loading ? 'Memproses...' : 'Void PO'}
         </button>
       </div>
@@ -1789,7 +1789,7 @@ function ConfirmModal({ state, onClose }: { state: ConfirmState; onClose: () => 
         </div>
         <div className="px-5 pb-5 pt-2 flex items-center gap-2 justify-end">
           <button type="button" onClick={onClose} disabled={loading}
-            className="px-4 h-9 rounded-lg text-[12px] font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 disabled:opacity-50">
+            className="px-4 h-9 rounded-lg text-[12px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 disabled:opacity-50">
             {state.cancelLabel ?? 'Batal'}
           </button>
           <button type="button" disabled={loading}
@@ -1797,7 +1797,7 @@ function ConfirmModal({ state, onClose }: { state: ConfirmState; onClose: () => 
               setLoading(true)
               try { await state.onConfirm() } finally { setLoading(false); onClose() }
             }}
-            className={`px-4 h-9 rounded-lg text-[12px] font-bold text-white disabled:opacity-50 ${danger ? 'bg-red-600 hover:bg-red-700' : 'bg-violet-600 hover:bg-violet-700'}`}>
+            className={`px-4 h-9 rounded-lg text-[12px] font-semibold text-white disabled:opacity-50 ${danger ? 'bg-red-600 hover:bg-red-700' : 'bg-violet-600 hover:bg-violet-700'}`}>
             {loading ? 'Memproses...' : (state.confirmLabel ?? 'Konfirmasi')}
           </button>
         </div>
@@ -1816,14 +1816,14 @@ function EditSJReturModal({ sj, onClose, onSave }: { sj: any; onClose: () => voi
           Vendor: <b className="text-slate-800">{sj.vendor_nama}</b><br/>
           Items SJ tidak bisa diubah (sudah disnapshot dari reject). Untuk ganti items, hapus SJ ini lalu buat baru.
         </div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Retur *</label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Retur *</label>
           <input name="tanggal_retur" type="date" required defaultValue={sj.tanggal_retur} className={inp}/></div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Jatuh Tempo Ganti</label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jatuh Tempo Ganti</label>
           <input name="tanggal_jatuh_tempo_ganti" type="date" defaultValue={sj.tanggal_jatuh_tempo_ganti ?? ''} className={inp}/></div>
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan</label>
           <textarea name="catatan" defaultValue={sj.catatan ?? ''} rows={2} className={inp}/></div>
         <button type="submit" disabled={loading}
-          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white disabled:opacity-50">
           {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
         </button>
       </form>
@@ -1893,7 +1893,7 @@ function DashboardRejectPanel({ rejectList, sjList, poItems, batchList }: {
         <div className="rounded-xl bg-red-50 border-2 border-red-200 p-4">
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle size={16} className="text-red-600"/>
-            <p className="text-[13px] font-bold text-red-700">
+            <p className="text-[13px] font-semibold text-red-700">
               {overdueSJ.length} SJ Retur Lewat Tempo Penggantian!
             </p>
           </div>
@@ -1903,10 +1903,10 @@ function DashboardRejectPanel({ rejectList, sjList, poItems, batchList }: {
               return (
                 <div key={sj.id} className="flex items-center justify-between text-[11px]">
                   <span>
-                    <span className="font-mono font-bold text-red-700">{sj.nomor_sj}</span>
+                    <span className="font-mono font-semibold text-red-700">{sj.nomor_sj}</span>
                     <span className="text-slate-500"> · {sj.vendor_nama}</span>
                   </span>
-                  <span className="text-red-600 font-bold">{fmtNum(sisa)} pcs belum diganti</span>
+                  <span className="text-red-600 font-semibold">{fmtNum(sisa)} pcs belum diganti</span>
                 </div>
               )
             })}
@@ -1916,21 +1916,21 @@ function DashboardRejectPanel({ rejectList, sjList, poItems, batchList }: {
 
       {/* Ringkasan Bulan Ini */}
       <div>
-        <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-2">Ringkasan Reject Bulan Ini</p>
+        <p className="text-[12px] font-medium text-slate-400 mb-2">Ringkasan Reject Bulan Ini</p>
         <div className="grid grid-cols-3 gap-2">
           <div className="rounded-xl bg-white border border-slate-200 p-3">
-            <p className="text-[10px] font-bold text-slate-400 uppercase">Total Kejadian</p>
-            <p className="text-[20px] font-bold text-slate-800 mt-1">{fmtNum(rejectThisMonth.length)}</p>
+            <p className="text-[10px] font-medium text-slate-400">Total Kejadian</p>
+            <p className="text-[20px] font-semibold text-slate-800 mt-1">{fmtNum(rejectThisMonth.length)}</p>
             <p className="text-[10px] text-slate-400">{fmtNum(totalRejectAll)} all-time</p>
           </div>
           <div className="rounded-xl bg-white border border-slate-200 p-3">
-            <p className="text-[10px] font-bold text-slate-400 uppercase">Total Qty</p>
-            <p className="text-[20px] font-bold text-red-600 mt-1">{fmtNum(totalQtyMonth)}</p>
+            <p className="text-[10px] font-medium text-slate-400">Total Qty</p>
+            <p className="text-[20px] font-semibold text-red-600 mt-1">{fmtNum(totalQtyMonth)}</p>
             <p className="text-[10px] text-slate-400">pcs reject</p>
           </div>
           <div className="rounded-xl bg-white border border-slate-200 p-3">
-            <p className="text-[10px] font-bold text-slate-400 uppercase">Total Nilai</p>
-            <p className="text-[14px] font-bold text-amber-700 mt-1">{fmtRp(totalNilaiMonth)}</p>
+            <p className="text-[10px] font-medium text-slate-400">Total Nilai</p>
+            <p className="text-[14px] font-semibold text-amber-700 mt-1">{fmtRp(totalNilaiMonth)}</p>
             <p className="text-[10px] text-slate-400">kerugian potensial</p>
           </div>
         </div>
@@ -1938,18 +1938,18 @@ function DashboardRejectPanel({ rejectList, sjList, poItems, batchList }: {
 
       {/* Status SJ */}
       <div>
-        <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-2">Status SJ Retur</p>
+        <p className="text-[12px] font-medium text-slate-400 mb-2">Status SJ Retur</p>
         <div className="grid grid-cols-3 gap-2">
           <div className="rounded-xl bg-white border border-slate-200 p-3">
-            <div className="flex items-center gap-1.5 mb-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"/><p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Menunggu Ganti</p></div>
+            <div className="flex items-center gap-1.5 mb-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"/><p className="text-[10px] font-medium text-slate-500">Menunggu Ganti</p></div>
             <p className="text-[18px] font-semibold text-slate-800 tabular-nums">{sjStatus.menunggu_ganti}</p>
           </div>
           <div className="rounded-xl bg-white border border-slate-200 p-3">
-            <div className="flex items-center gap-1.5 mb-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"/><p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Sebagian Diganti</p></div>
+            <div className="flex items-center gap-1.5 mb-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"/><p className="text-[10px] font-medium text-slate-500">Sebagian Diganti</p></div>
             <p className="text-[18px] font-semibold text-slate-800 tabular-nums">{sjStatus.sebagian_diganti}</p>
           </div>
           <div className="rounded-xl bg-white border border-slate-200 p-3">
-            <div className="flex items-center gap-1.5 mb-1"><span className="w-1.5 h-1.5 rounded-full bg-green-500"/><p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Selesai Diganti</p></div>
+            <div className="flex items-center gap-1.5 mb-1"><span className="w-1.5 h-1.5 rounded-full bg-green-500"/><p className="text-[10px] font-medium text-slate-500">Selesai Diganti</p></div>
             <p className="text-[18px] font-semibold text-slate-800 tabular-nums">{sjStatus.selesai_diganti}</p>
           </div>
         </div>
@@ -1957,7 +1957,7 @@ function DashboardRejectPanel({ rejectList, sjList, poItems, batchList }: {
 
       {/* Top Vendor */}
       <div>
-        <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-2">Top 5 Vendor dengan Reject Terbanyak</p>
+        <p className="text-[12px] font-medium text-slate-400 mb-2">Top 5 Vendor dengan Reject Terbanyak</p>
         {topVendor.length === 0 ? (
           <Empty text="Belum ada data reject" icon="📊"/>
         ) : (
@@ -1968,8 +1968,8 @@ function DashboardRejectPanel({ rejectList, sjList, poItems, batchList }: {
               return (
                 <div key={i} className="rounded-xl bg-white border border-slate-200 p-2.5">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-[12px] font-bold text-slate-700">{i + 1}. {v.vendor_nama}</p>
-                    <p className="text-[12px] font-bold text-red-600">{fmtNum(v.qty)} pcs</p>
+                    <p className="text-[12px] font-semibold text-slate-700">{i + 1}. {v.vendor_nama}</p>
+                    <p className="text-[12px] font-semibold text-red-600">{fmtNum(v.qty)} pcs</p>
                   </div>
                   <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
                     <div className="h-full bg-red-400" style={{ width: `${pct}%` }}/>
@@ -1985,12 +1985,12 @@ function DashboardRejectPanel({ rejectList, sjList, poItems, batchList }: {
       {/* Vendor dengan Reject Paling Sedikit */}
       {leastVendor.length > 0 && (
         <div>
-          <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-2">Vendor Terbaik (Reject Paling Sedikit)</p>
+          <p className="text-[12px] font-medium text-slate-400 mb-2">Vendor Terbaik (Reject Paling Sedikit)</p>
           <div className="space-y-1.5">
             {leastVendor.map((v: any, i: number) => (
               <div key={i} className="rounded-xl bg-green-50 border border-green-100 p-2.5 flex justify-between">
-                <p className="text-[12px] font-bold text-slate-700">{i + 1}. {v.vendor_nama}</p>
-                <p className="text-[12px] font-bold text-green-700">{fmtNum(v.qty)} pcs · {v.count}×</p>
+                <p className="text-[12px] font-semibold text-slate-700">{i + 1}. {v.vendor_nama}</p>
+                <p className="text-[12px] font-semibold text-green-700">{fmtNum(v.qty)} pcs · {v.count}×</p>
               </div>
             ))}
           </div>
@@ -1999,7 +1999,7 @@ function DashboardRejectPanel({ rejectList, sjList, poItems, batchList }: {
 
       {/* Top Kategori */}
       <div>
-        <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-2">Top 10 Kategori Reject</p>
+        <p className="text-[12px] font-medium text-slate-400 mb-2">Top 10 Kategori Reject</p>
         {topKategori.length === 0 ? (
           <Empty text="Belum ada data kategori" icon="🏷️"/>
         ) : (
@@ -2011,7 +2011,7 @@ function DashboardRejectPanel({ rejectList, sjList, poItems, batchList }: {
                 <div key={nama} className="rounded-xl bg-white border border-slate-200 p-2.5">
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-[12px] font-semibold text-slate-700 truncate">{i + 1}. 🏷️ {nama}</p>
-                    <p className="text-[12px] font-bold text-orange-600">{fmtNum(agg.qty)} pcs</p>
+                    <p className="text-[12px] font-semibold text-orange-600">{fmtNum(agg.qty)} pcs</p>
                   </div>
                   <div className="h-1 rounded-full bg-slate-100 overflow-hidden">
                     <div className="h-full bg-orange-400" style={{ width: `${pct}%` }}/>
@@ -2066,7 +2066,7 @@ function PenggantiModal({ sj, onClose, onSave }: { sj: any; onClose: () => void;
   return (
     <ModalShell title="Terima Barang Pengganti dari Vendor" onClose={onClose}>
       <div className="rounded-lg px-3 py-2 text-[12px] bg-blue-50 border border-blue-100 text-blue-700 mb-4">
-        <p className="font-bold">{sj.nomor_sj}</p>
+        <p className="font-semibold">{sj.nomor_sj}</p>
         <p className="text-blue-600 mt-0.5">{sj.vendor_nama} · {availableItems.length} produk masih perlu diganti</p>
         <p className="text-blue-500 mt-0.5 text-[11px]">Bisa pilih lebih dari satu produk sekaligus. Produk yang sudah penuh diganti tidak muncul di daftar.</p>
       </div>
@@ -2084,14 +2084,14 @@ function PenggantiModal({ sj, onClose, onSave }: { sj: any; onClose: () => void;
           setLoading(false)
         }} className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
-            <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nomor Batch <span className="normal-case text-slate-400 font-normal">(kosongkan = auto)</span></label>
+            <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Nomor Batch <span className="normal-case text-slate-400 font-normal">(kosongkan = auto)</span></label>
               <input name="nomor_batch" placeholder="auto: SJ.TBP/001/MM/YY" className={inp}/></div>
-            <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal Terima *</label>
+            <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Terima *</label>
               <input name="tanggal_terima" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/></div>
           </div>
 
           <div>
-            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+            <p className="text-[11px] font-medium text-slate-500 mb-1.5">
               Produk yang Diterima ({selectedList.length} dipilih · {fmtNum(totalQty)} pcs)
             </p>
             <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -2119,7 +2119,7 @@ function PenggantiModal({ sj, onClose, onSave }: { sj: any; onClose: () => void;
                         <label className="text-[11px] text-slate-500 font-semibold whitespace-nowrap">Qty diterima:</label>
                         <input type="number" min="1" max={sisa} value={selectedQty[it.id]}
                           onChange={e => setQty(it.id, Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-24 h-8 rounded-lg border border-blue-200 px-2 text-[13px] font-bold text-blue-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"/>
+                          className="w-24 h-8 rounded-lg border border-blue-200 px-2 text-[13px] font-semibold text-blue-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"/>
                         <span className="text-[11px] text-slate-400">/ max {fmtNum(sisa)} pcs</span>
                       </div>
                     )}
@@ -2129,7 +2129,7 @@ function PenggantiModal({ sj, onClose, onSave }: { sj: any; onClose: () => void;
             </div>
           </div>
 
-          <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
+          <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan</label>
             <textarea name="catatan" rows={2} className={inp}/></div>
 
           {overQty && (
@@ -2140,7 +2140,7 @@ function PenggantiModal({ sj, onClose, onSave }: { sj: any; onClose: () => void;
           </p>
 
           <button type="submit" disabled={loading || !valid}
-            className="w-full h-9 rounded-lg bg-blue-600 hover:bg-blue-700 text-[13px] font-bold text-white disabled:opacity-50">
+            className="w-full h-9 rounded-lg bg-blue-600 hover:bg-blue-700 text-[13px] font-semibold text-white disabled:opacity-50">
             {loading ? 'Menyimpan...' : `Simpan Penerimaan Pengganti${totalQty > 0 ? ` (${fmtNum(totalQty)} pcs)` : ''}`}
           </button>
         </form>
@@ -2157,10 +2157,10 @@ function KategoriRejectModal({ mode, kategori, onClose, onSave }: {
     <ModalShell title={mode === 'create' ? 'Tambah Kategori Reject' : 'Edit Kategori Reject'} onClose={onClose}>
       <form onSubmit={async e => { e.preventDefault(); setLoading(true); await onSave(new FormData(e.currentTarget)); setLoading(false) }}
         className="space-y-3">
-        <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Kategori *</label>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Nama Kategori *</label>
           <input name="nama" defaultValue={kategori?.nama} required placeholder="mis. Cover Baret" className={inp}/></div>
         <button type="submit" disabled={loading}
-          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white disabled:opacity-50">
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white disabled:opacity-50">
           {loading ? 'Menyimpan...' : mode === 'create' ? 'Tambah Kategori' : 'Simpan Perubahan'}
         </button>
       </form>
@@ -2195,7 +2195,7 @@ function HistoriHargaPanel({ produkList, poList, poItems, vendors }: { produkLis
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Pilih Produk</label>
+        <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Pilih Produk</label>
         <select value={produkId ?? ''} onChange={e => setProdukId(parseInt(e.target.value) || null)} className={inp}>
           <option value="">— Pilih produk untuk lihat histori harga —</option>
           {produkList.map((p: any) => <option key={p.id} value={p.id}>{p.nama}</option>)}
@@ -2210,7 +2210,7 @@ function HistoriHargaPanel({ produkList, poList, poItems, vendors }: { produkLis
         <>
           {/* Ringkasan per-vendor */}
           <div className="rounded-xl bg-white border border-slate-200 p-3">
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-2">Perbandingan Vendor</p>
+            <p className="text-[11px] font-medium text-slate-500 mb-2">Perbandingan Vendor</p>
             <div className="space-y-2">
               {(perVendor as any[])
                 .sort((a, b) => a.last.harga - b.last.harga)
@@ -2221,11 +2221,11 @@ function HistoriHargaPanel({ produkList, poList, poItems, vendors }: { produkLis
                   return (
                     <div key={v.vendor_id} className="flex items-center justify-between gap-2 py-1.5 border-b border-slate-200 last:border-0">
                       <div className="min-w-0">
-                        <p className="text-[12px] font-bold text-slate-700 truncate">{v.vendor_nama}</p>
+                        <p className="text-[12px] font-semibold text-slate-700 truncate">{v.vendor_nama}</p>
                         <p className="text-[10px] text-slate-400">{v.prices.length}× PO · rata2 {fmtRp(avg)}</p>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className={`text-[13px] font-bold ${isMin ? 'text-green-600' : isMax ? 'text-red-500' : 'text-slate-700'}`}>
+                        <p className={`text-[13px] font-semibold ${isMin ? 'text-green-600' : isMax ? 'text-red-500' : 'text-slate-700'}`}>
                           {fmtRp(v.last.harga)}
                           {isMin && <span className="ml-1 text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">Termurah</span>}
                           {isMax && !isMin && <span className="ml-1 text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">Termahal</span>}
@@ -2240,16 +2240,16 @@ function HistoriHargaPanel({ produkList, poList, poItems, vendors }: { produkLis
 
           {/* Timeline semua PO */}
           <div>
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-2 px-1">Timeline Harga</p>
+            <p className="text-[11px] font-medium text-slate-500 mb-2 px-1">Timeline Harga</p>
             <div className="space-y-1.5">
               {rows.map((r: any) => (
                 <div key={r.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200">
                   <div className="min-w-0">
-                    <p className="text-[12px] font-bold text-slate-700">{r.po.vendor_nama}</p>
+                    <p className="text-[12px] font-semibold text-slate-700">{r.po.vendor_nama}</p>
                     <p className="text-[10px] text-slate-400 font-mono">{r.po.nomor_po} · {fmtDate(r.po.tanggal_po)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[12px] font-bold text-violet-700">{fmtRp(r.harga_satuan)}</p>
+                    <p className="text-[12px] font-semibold text-violet-700">{fmtRp(r.harga_satuan)}</p>
                     <p className="text-[10px] text-slate-400">{fmtNum(r.qty_po)} pcs</p>
                   </div>
                 </div>
