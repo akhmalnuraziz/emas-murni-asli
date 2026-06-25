@@ -200,7 +200,7 @@ export default function AuditLogClient({ logs }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-[18px] font-bold text-slate-900 tracking-tight">Audit Center</h1>
+            <h1 className="text-[18px] font-semibold text-slate-900 tracking-tight">Audit Center</h1>
             <p className="text-[12px] text-slate-400 mt-0.5">{logs.length} aktivitas tercatat (500 terbaru)</p>
           </div>
         </div>

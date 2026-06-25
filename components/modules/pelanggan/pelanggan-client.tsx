@@ -55,7 +55,7 @@ export default function PelangganClient({ pelangganList, canSeeRp }: Props) {
 
         {/* Header */}
         <div>
-          <h1 className="text-[18px] font-bold text-slate-900 tracking-tight">Database Pelanggan</h1>
+          <h1 className="text-[18px] font-semibold text-slate-900 tracking-tight">Database Pelanggan</h1>
           <p className="text-[12px] text-slate-400 mt-0.5">Agregasi dari riwayat penjualan · {totalCustomer} pelanggan unik</p>
         </div>
 

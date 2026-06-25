@@ -32,7 +32,7 @@ export default function InventoryClient() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-[18px] font-bold text-slate-900 tracking-tight">Gudang Pusat</h1>
+          <h1 className="text-[18px] font-semibold text-slate-900 tracking-tight">Gudang Pusat</h1>
           <p className="text-[12px] text-slate-400 mt-0.5">Semua barang dari packing masuk sini otomatis</p>
         </div>
         <button onClick={load}

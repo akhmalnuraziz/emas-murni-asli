@@ -62,7 +62,7 @@ export default function PrioritasProduksiClient({
             <ArrowUp size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-[16px] font-bold text-slate-900">Prioritas Produksi</h1>
+            <h1 className="text-[16px] font-semibold text-slate-900">Prioritas Produksi</h1>
             <p className="text-[12px] text-slate-400">
               Auto-ranking · Safety stock default: {safetyStockGlobal} pcs · {p1.length} urgent · {p2.length} perlu produksi
             </p>

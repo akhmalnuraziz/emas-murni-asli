@@ -82,7 +82,7 @@ export default function BuybackClient({ initialList, userRole, userName }: Props
             <RotateCcw size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-[16px] font-bold text-slate-900">Buyback</h1>
+            <h1 className="text-[16px] font-semibold text-slate-900">Buyback</h1>
             <p className="text-[12px] text-slate-400">Terima buyback, inspeksi, dan tentukan tindakan</p>
           </div>
         </div>
