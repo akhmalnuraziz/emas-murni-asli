@@ -89,7 +89,7 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-[18px] font-bold text-slate-900 tracking-tight">Retur Penjualan</h1>
+            <h1 className="text-[18px] font-semibold text-slate-900 tracking-tight">Retur Penjualan</h1>
             <p className="text-[12px] text-slate-400 mt-0.5">{returList.length} retur tercatat</p>
           </div>
           {canManage && (
@@ -140,7 +140,7 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono font-bold text-violet-700 text-[13px]">{r.kode}</span>
+                      <span className="font-mono font-semibold text-violet-700 text-[13px]">{r.kode}</span>
                       {r.no_faktur_asal && <span className="text-[12px] text-slate-400">← {r.no_faktur_asal}</span>}
                     </div>
                     <p className="text-[13px] font-semibold text-slate-800 mt-0.5">{r.nama_customer ?? 'Customer tidak diketahui'}</p>
@@ -151,11 +151,11 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
                         <span className="text-[10px] text-violet-500">{r.shieldtag_kodes.length} shieldtag</span>
                       )}
                       {canSeeRp && r.total_nilai > 0 && (
-                        <span className="text-[10px] font-bold text-slate-600">{formatRupiah(r.total_nilai)}</span>
+                        <span className="text-[10px] font-semibold text-slate-600">{formatRupiah(r.total_nilai)}</span>
                       )}
                     </div>
                   </div>
-                  <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-bold flex-shrink-0"
+                  <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-semibold flex-shrink-0"
                     style={{ background: cfg.bg, color: cfg.text }}>
                     <Icon size={11}/> {cfg.label}
                   </span>
@@ -183,12 +183,12 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
               <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal *</label>
+                    <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal *</label>
                     <input name="tanggal" type="date" defaultValue={today} required
                       className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Kondisi *</label>
+                    <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Kondisi *</label>
                     <select name="kondisi" required
                       className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all">
                       <option value="rusak">Rusak / Cacat</option>
@@ -198,29 +198,29 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">No. Faktur Asal</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">No. Faktur Asal</label>
                   <input name="no_faktur_asal" placeholder="INV/202X/XXXX (opsional)"
                     className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Customer</label>
+                    <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Nama Customer</label>
                     <input name="nama_customer" placeholder="Opsional"
                       className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">No. HP</label>
+                    <label className="block text-[11px] font-medium text-slate-500 mb-1.5">No. HP</label>
                     <input name="hp_customer" placeholder="08xx…"
                       className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Kode ShieldTag</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Kode ShieldTag</label>
                   <input name="shieldtag_kodes" placeholder="A1B2C3, D4E5F6 (pisah koma)"
                     className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Alasan Retur *</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Alasan Retur *</label>
                   <textarea name="alasan" required rows={3} placeholder="Jelaskan alasan retur..."
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all resize-none"/>
                 </div>
@@ -234,7 +234,7 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
                   Batal
                 </button>
                 <button type="submit" disabled={isPending}
-                  className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+                  className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
                   {isPending ? 'Menyimpan...' : 'Simpan Retur'}
                 </button>
               </div>
@@ -273,7 +273,7 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
               {canManage && active.status !== 'selesai' && active.status !== 'ditolak' && (
                 <div className="space-y-3 pt-2">
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan Admin</label>
+                    <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan Admin</label>
                     <textarea value={catatanInput} onChange={e => setCatatanInput(e.target.value)} rows={2}
                       className="w-full rounded-lg border border-slate-200 px-3 py-2 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all resize-none"
                       placeholder="Opsional…"/>
@@ -285,16 +285,16 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
               <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
                 {active.status === 'pending' && (
                   <button onClick={() => handleStatus('diproses')} disabled={isPending}
-                    className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+                    className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
                     Proses
                   </button>
                 )}
                 <button onClick={() => handleStatus('selesai')} disabled={isPending}
-                  className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+                  className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
                   Selesai
                 </button>
                 <button onClick={() => handleStatus('ditolak')} disabled={isPending}
-                  className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+                  className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
                   Tolak
                 </button>
               </div>
@@ -309,7 +309,7 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-3">
-      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider w-24 flex-shrink-0 mt-0.5">{label}</span>
+      <span className="text-[11px] font-medium text-slate-400 w-24 flex-shrink-0 mt-0.5">{label}</span>
       <span className="text-[13px] text-slate-700 flex-1">{value}</span>
     </div>
   )
