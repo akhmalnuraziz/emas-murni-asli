@@ -15,12 +15,23 @@ function ResetPasswordForm() {
   const searchParams = useSearchParams()
   const supabase     = createClient()
 
-  // Session already established by /auth/confirm server route
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setReady(true)
-      else setError('Link tidak valid atau sudah kedaluwarsa.')
-    })
+    const token_hash = searchParams.get('token_hash')
+    const type = searchParams.get('type') as 'recovery' | 'invite' | null
+
+    if (token_hash && type) {
+      // Client-side verify for invite/recovery from email link
+      supabase.auth.verifyOtp({ token_hash, type }).then(({ error }) => {
+        if (error) setError('Link sudah kedaluwarsa. Minta ulang.')
+        else setReady(true)
+      })
+    } else {
+      // Fallback: session already set by /auth/confirm server route
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) setReady(true)
+        else setError('Link tidak valid atau sudah kedaluwarsa.')
+      })
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
