@@ -2021,11 +2021,11 @@ function VendorPerformanceDashboard({ rejectList, sjList, poItems, batchList, po
                         {v.overdue_sj > 0 && <span className="text-[10px] text-red-400">{v.overdue_sj} SJ OD</span>}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className={`text-[14px] font-semibold ${i === 0 ? 'text-green-600' : i === scored.length - 1 ? 'text-red-500' : 'text-slate-700'}`}>
+                    <div className="text-right flex-shrink-0">
+                      <span className={`text-[14px] font-semibold ${i === 0 ? 'text-green-600' : i === scored.length - 1 ? 'text-red-500' : 'text-slate-700'}`}>
                         {v.score.toFixed(0)}
-                      </p>
-                      <p className="text-[10px] text-slate-400">/100</p>
+                      </span>
+                      <span className="text-[11px] text-slate-400 ml-0.5">/100</span>
                     </div>
                   </div>
                 ))}
