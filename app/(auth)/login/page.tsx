@@ -131,6 +131,7 @@ function LoginForm() {
                 <p className="text-[24px]">📧</p>
                 <p className="text-[13px] font-semibold text-green-700">Link reset dikirim!</p>
                 <p className="text-[12px] text-slate-500">Cek email <b>{email}</b> dan klik link untuk buat password baru.</p>
+                <p className="text-[11px] text-slate-400 mt-1">Tidak ada di kotak masuk? Cek folder <b>Spam</b>.</p>
                 <button onClick={() => { setMode('login'); setSentReset(false) }}
                   className="mt-2 text-[12px] text-violet-600 hover:text-violet-700 font-medium">
                   ← Kembali ke login

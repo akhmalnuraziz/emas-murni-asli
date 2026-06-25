@@ -15,13 +15,11 @@ function ResetPasswordForm() {
   const searchParams = useSearchParams()
   const supabase     = createClient()
 
-  // Exchange code for session when page loads
+  // Session already established by /auth/confirm server route
   useEffect(() => {
-    const code = searchParams.get('code')
-    if (!code) { setError('Link tidak valid atau sudah kedaluwarsa.'); return }
-    supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-      if (error) setError('Link sudah kedaluwarsa. Minta ulang reset password.')
-      else setReady(true)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setReady(true)
+      else setError('Link tidak valid atau sudah kedaluwarsa.')
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
