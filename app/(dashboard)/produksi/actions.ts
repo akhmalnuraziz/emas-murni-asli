@@ -181,6 +181,9 @@ export async function createProduksi(formData: FormData) {
   const allKodes: string[] = []
   for (let i = 0; i < gramasiList.length; i++) allKodes.push(await generateProduksiCode(supabase))
 
+  // sesi_id: shared UUID untuk multi-gramasi agar bisa diproses bersama
+  const sesiId = gramasiList.length > 1 ? crypto.randomUUID() : null
+
   // Upload foto sekali, pakai bersama oleh semua item
   const fotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, allKodes[0]) : []
 
@@ -215,6 +218,7 @@ export async function createProduksi(formData: FormData) {
       target_selesai: targetSelesai,
       peleburan_id: peleburanId,
       peleburan_kode: plb.kode,
+      sesi_id: sesiId,
       tim_id: formData.get('tim_id') ? Number(formData.get('tim_id')) : null,
       tim_nama: (formData.get('tim_nama') as string) || null,
       tim_anggota_aktif: (formData.get('tim_anggota_aktif') as string) || null,
@@ -1156,9 +1160,220 @@ export async function voidStageHandover(
   return { success: true }
 }
 
+// ─── Sesi: Terima Cutting (multi-gramasi bersama) ────────────────────────────
+export async function terimaCuttingSesi(sesiId: string, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
 
+  const { data: items } = await supabase.from('produksi_item')
+    .select('*').eq('sesi_id', sesiId).is('voided_at', null)
+  if (!items?.length) return { error: 'Sesi tidak ditemukan' }
 
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  const tanggalSelesai = formData.get('tanggal_selesai') as string
+  const jamSelesai = (formData.get('jam_selesai') as string) || null
+  const catatan = (formData.get('catatan') as string) || null
+  const rejectTotal = parseFloat(formData.get('reject_cutting_gram') as string || '0')
 
+  if (!tanggalSelesai) return { error: 'Tanggal selesai wajib diisi' }
+
+  const fotosB64Raw = formData.get('fotos_b64') as string
+  const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
+  const fotoUrls = fotosB64.length > 0
+    ? await uploadBase64Fotos(supabase, fotosB64, `sesi-${sesiId}-cutting`)
+    : []
+
+  const totalBeratAwal = items.reduce((s, it) => s + Number(it.berat_awal ?? 0), 0)
+
+  for (const item of items) {
+    const accGram = parseFloat(formData.get(`acc_gram_${item.id}`) as string || '0')
+    if (!accGram || accGram <= 0) return { error: `Berat ACC untuk ${item.gramasi}gr wajib diisi` }
+
+    // Reject proporsional per item
+    const rejectItem = totalBeratAwal > 0
+      ? parseFloat((rejectTotal * Number(item.berat_awal ?? 0) / totalBeratAwal).toFixed(4))
+      : 0
+
+    const serahGram = Number(item.serah_gram ?? item.berat_awal ?? 0)
+    const losses = Math.max(0, serahGram - accGram - rejectItem)
+
+    await supabase.from('produksi_event').insert({
+      produksi_item_id: item.id,
+      tanggal: tanggalSelesai,
+      status: 'Cutting',
+      total_gram: accGram,
+      berat_sebelumnya: serahGram,
+      sisa_serbuk: rejectItem,
+      losses,
+      jam_mulai: jamSelesai,
+      catatan: catatan
+        ? `Serah: ${serahGram}gr | Terima: ${accGram}gr | Reject: ${rejectItem}gr | ${catatan}`
+        : `Serah: ${serahGram}gr | Terima: ${accGram}gr | Reject: ${rejectItem}gr`,
+      user_name: profile?.name || null,
+      fotos: fotoUrls,
+    })
+
+    const pcsGood = parseInt(formData.get(`pcs_${item.id}`) as string || '0') || null
+    const updateData: any = {
+      terima_gram: accGram,
+      reject_cutting_gram: rejectItem,
+      tanggal_selesai: tanggalSelesai,
+      jam_selesai: jamSelesai,
+      status_cutting: 'selesai',
+      total_gram: accGram,
+      foto_diterima_cutting: fotoUrls,
+    }
+    if (catatan) updateData.catatan_terima = catatan
+    if (pcsGood && pcsGood > 0) { updateData.pcs_good = pcsGood; updateData.pcs = pcsGood }
+    if (rejectItem > 0) {
+      updateData.berat_reject = Number(item.berat_reject ?? 0) + rejectItem
+      updateData.status_reject = 'belum_dilebur'
+    }
+    if (formData.get('terima_tim_id')) { updateData.tim_id = Number(formData.get('terima_tim_id')); updateData.tim_nama = (formData.get('terima_tim_nama') as string) || null }
+    if (formData.get('terima_admin_input')) updateData.admin_input = formData.get('terima_admin_input') as string
+    await supabase.from('produksi_item').update(updateData).eq('id', item.id)
+  }
+
+  revalidatePath('/produksi')
+  return { success: true }
+}
+
+// ─── Sesi: Serah tahap berikutnya (Pas Berat / Annealing / Siap Packing) ─────
+export async function serahSesiStage(sesiId: string, tahap: string, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: items } = await supabase.from('produksi_item')
+    .select('*, stage_handover(*)').eq('sesi_id', sesiId).is('voided_at', null)
+  if (!items?.length) return { error: 'Sesi tidak ditemukan' }
+
+  const { data: profile } = await supabase.from('users_profile').select('name').eq('id', user.id).single()
+  const serahTanggal = (formData.get('serah_tanggal') as string) || new Date().toISOString().split('T')[0]
+  const serahJam = (formData.get('serah_jam') as string) || null
+  const serahCatatan = (formData.get('serah_catatan') as string) || null
+  const serahTimId = formData.get('serah_tim_id') ? Number(formData.get('serah_tim_id')) : null
+  const serahTimNama = (formData.get('serah_tim_nama') as string) || null
+  const serahAdmin = (formData.get('serah_admin_input') as string) || null
+
+  const fotosB64Raw = formData.get('fotos_b64') as string
+  const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
+  const fotoUrls = fotosB64.length > 0
+    ? await uploadBase64Fotos(supabase, fotosB64, `sesi-${sesiId}-serah-${tahap}`)
+    : []
+
+  const nextStatusMap: Record<string,string> = { pas_berat: 'Pas Berat', annealing: 'Annealing', siap_packing: 'Siap Packing' }
+
+  for (const item of items) {
+    const handovers = (item.stage_handover ?? []).filter((h: any) => !h.voided_at)
+    const existing = handovers.find((h: any) => h.tahap === tahap)
+    if (existing) continue // sudah ada, skip
+
+    // Ambil berat serah dari per-item form field atau fallback ke current
+    const serahGramOverride = parseFloat(formData.get(`serah_gram_${item.id}`) as string || '0')
+    let serahGram = serahGramOverride > 0 ? serahGramOverride : 0
+    if (!serahGram) {
+      if (tahap === 'pas_berat') {
+        serahGram = Number(item.terima_gram ?? item.total_gram ?? 0)
+      } else {
+        const prevTahapMap: Record<string,string> = { annealing: 'pas_berat', siap_packing: 'annealing' }
+        const prevH = handovers.find((h: any) => h.tahap === prevTahapMap[tahap] && h.status === 'selesai')
+        serahGram = Number(prevH?.terima_gram ?? item.total_gram ?? 0)
+      }
+    }
+    const serahPcs = item.pcs_good ?? item.pcs ?? 0
+
+    await supabase.from('stage_handover').insert({
+      produksi_item_id: item.id, tahap,
+      serah_gram: serahGram, serah_pcs: serahPcs,
+      serah_tanggal: serahTanggal, serah_jam: serahJam,
+      serah_operator: (formData.get('serah_operator') as string) || profile?.name || null,
+      serah_catatan: serahCatatan, serah_fotos: fotoUrls, status: 'proses',
+      tim_id: serahTimId, tim_nama: serahTimNama,
+      serah_admin_input: serahAdmin,
+      tim_anggota_aktif: (formData.get('serah_tim_anggota_aktif') as string) || null,
+    })
+
+    const nextStatus = nextStatusMap[tahap]
+    if (nextStatus) await supabase.from('produksi_item').update({ current_status: nextStatus }).eq('id', item.id)
+  }
+
+  revalidatePath('/produksi')
+  return { success: true }
+}
+
+// ─── Sesi: Terima tahap (Pas Berat / Annealing) ───────────────────────────────
+export async function terimaSesiStage(sesiId: string, tahap: string, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: items } = await supabase.from('produksi_item')
+    .select('*, stage_handover(*)').eq('sesi_id', sesiId).is('voided_at', null)
+  if (!items?.length) return { error: 'Sesi tidak ditemukan' }
+
+  const { data: profile } = await supabase.from('users_profile').select('name').eq('id', user.id).single()
+  const terimaTanggal = formData.get('terima_tanggal') as string
+  const terimaJam = (formData.get('terima_jam') as string) || null
+  const terimaCatatan = (formData.get('terima_catatan') as string) || null
+
+  if (!terimaTanggal) return { error: 'Tanggal diterima wajib diisi' }
+
+  const fotosB64Raw = formData.get('fotos_b64') as string
+  const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
+  const fotoUrls = fotosB64.length > 0
+    ? await uploadBase64Fotos(supabase, fotosB64, `sesi-${sesiId}-terima-${tahap}`)
+    : []
+
+  const nextStatusMap: Record<string,string> = { pas_berat: 'Annealing', annealing: 'Siap Packing', siap_packing: 'Siap Packing' }
+
+  for (const item of items) {
+    const handovers = (item.stage_handover ?? []).filter((h: any) => !h.voided_at)
+    const handover = handovers.find((h: any) => h.tahap === tahap && h.status === 'proses')
+    if (!handover) continue
+
+    const terimaGram = parseFloat(formData.get(`terima_gram_${item.id}`) as string || '0')
+    if (!terimaGram || terimaGram <= 0) return { error: `Berat terima untuk ${item.gramasi}gr wajib diisi` }
+
+    const sisaSerbuk = tahap === 'pas_berat'
+      ? parseFloat(formData.get(`sisa_serbuk_${item.id}`) as string || '0')
+      : 0
+    const rejectGram = parseFloat(formData.get(`reject_gram_${item.id}`) as string || '0') || 0
+    const terimaPcs = parseInt(formData.get(`terima_pcs_${item.id}`) as string || '0') || null
+
+    const serahGram = Number(handover.serah_gram ?? 0)
+    const losses = Math.max(0, serahGram - terimaGram - sisaSerbuk - rejectGram)
+
+    await supabase.from('stage_handover').update({
+      terima_gram: terimaGram, terima_pcs: terimaPcs,
+      terima_tanggal: terimaTanggal, terima_jam: terimaJam,
+      terima_catatan: terimaCatatan, terima_fotos: fotoUrls,
+      sisa_serbuk: sisaSerbuk, losses, status: 'selesai',
+      terima_operator: (formData.get('terima_operator') as string) || profile?.name || null,
+      tim_id: formData.get('terima_tim_id') ? Number(formData.get('terima_tim_id')) : handover.tim_id,
+      tim_nama: (formData.get('terima_tim_nama') as string) || handover.tim_nama,
+    }).eq('id', handover.id)
+
+    const updateItem: any = { total_gram: terimaGram, terima_gram: terimaGram }
+    if (terimaPcs) { updateItem.pcs_good = terimaPcs; updateItem.pcs = terimaPcs }
+    if (rejectGram > 0) { updateItem.berat_reject = Number(item.berat_reject ?? 0) + rejectGram; updateItem.status_reject = 'belum_dilebur' }
+    if (sisaSerbuk > 0) updateItem.sisa_serbuk = sisaSerbuk
+
+    // Tentukan status berikutnya
+    const STAGE_ORDER = ['pas_berat', 'annealing', 'siap_packing']
+    const nextStageDone = STAGE_ORDER.slice(STAGE_ORDER.indexOf(tahap) + 1)
+    const anyNext = handovers.find((h: any) => nextStageDone.includes(h.tahap) && h.status !== 'voided')
+    if (!anyNext) {
+      const STAGE_STATUS: Record<string,string> = { pas_berat: 'Pas Berat', annealing: 'Annealing', siap_packing: 'Siap Packing' }
+      updateItem.current_status = nextStatusMap[tahap] ?? STAGE_STATUS[tahap]
+    }
+    await supabase.from('produksi_item').update(updateItem).eq('id', item.id)
+  }
+
+  revalidatePath('/produksi')
+  return { success: true }
+}
 
 
 

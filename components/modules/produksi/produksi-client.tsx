@@ -12,7 +12,8 @@ import { cn, formatDate } from '@/lib/utils'
 import {
   createProduksi, updateStatusProduksi, editProduksi, selesaiCutting,
   inputReject, leburReject, deleteProduksi, updateSisaFisikBatch,
-  serahStageProduksi, terimaStageProduksi, voidStageHandover, editSerahStage, resetCutting
+  serahStageProduksi, terimaStageProduksi, voidStageHandover, editSerahStage, resetCutting,
+  terimaCuttingSesi, serahSesiStage, terimaSesiStage,
 } from '@/app/(dashboard)/produksi/actions'
 import type { UserRole } from '@/lib/types/database'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
@@ -1470,7 +1471,8 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
 
   function setFilter(tab: string) { navigateProd({ status: tab === 'Semua' ? '' : tab, page: '1' }) }
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
-  const [modal, setModal]       = useState<'create'|'tambahProduksi'|'edit'|'update'|'delete'|'cuttingTerima'|'editCutting'|'serahStage'|'terimaStage'|'editHandover'|'editSerahStage'|'deleteHandover'|'deleteCutting'|null>(null)
+  const [modal, setModal]       = useState<'create'|'tambahProduksi'|'edit'|'update'|'delete'|'cuttingTerima'|'editCutting'|'serahStage'|'terimaStage'|'editHandover'|'editSerahStage'|'deleteHandover'|'deleteCutting'|'sesiCuttingTerima'|'sesiSerahStage'|'sesiTerimaStage'|null>(null)
+  const [activeSesi, setActiveSesi] = useState<{sesiId: string; items: any[]; tahap?: string} | null>(null)
   const [active, setActive]     = useState<any>(null)
   const [activeTahap, setActiveTahap]   = useState<string>('')
   const [activeHandoverId, setActiveHandoverId] = useState<number|null>(null)
@@ -1515,6 +1517,10 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
   function handleEditSerahStage(fd: FormData) { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await editSerahStage(activeHandoverId,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Data penyerahan diperbarui'); setModal(null); router.refresh() }) }
   function handleDeleteHandover() { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await voidStageHandover(activeHandoverId,active.id,activeTahap,'Dihapus manual'); if(r?.error){setErr(r.error);return}; showToast('🗑️ Proses dihapus'); setModal(null); router.refresh() }) }
   function handleDeleteCutting() { if(!active)return; setErr(''); start(async()=>{ const r=await resetCutting(active.id,active.kode); if(r?.error){setErr(r.error);return}; showToast('🗑️ Data terima Cutting dihapus'); setModal(null); router.refresh() }) }
+  function openSesiModal(type: 'sesiCuttingTerima'|'sesiSerahStage'|'sesiTerimaStage', sesiId: string, items: any[], tahap?: string) { setActiveSesi({sesiId, items, tahap}); setErr(''); setModal(type) }
+  function handleSesiCuttingTerima(fd: FormData) { if(!activeSesi)return; setErr(''); start(async()=>{ const r=await terimaCuttingSesi(activeSesi.sesiId,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Cutting sesi diterima'); setModal(null) }) }
+  function handleSesiSerahStage(fd: FormData) { if(!activeSesi)return; setErr(''); start(async()=>{ const r=await serahSesiStage(activeSesi.sesiId,activeSesi.tahap!,fd); if(r?.error){setErr(r.error);return}; showToast(`✅ Diserahkan ke ${activeSesi.tahap?.replace('_',' ')}`); setModal(null) }) }
+  function handleSesiTerimaStage(fd: FormData) { if(!activeSesi)return; setErr(''); start(async()=>{ const r=await terimaSesiStage(activeSesi.sesiId,activeSesi.tahap!,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Terima sesi berhasil'); setModal(null); router.refresh() }) }
 
   // ── Filter ────────────────────────────────────────────────────────────────
   const STATUS_TABS = ['Semua','Cutting','Pas Berat','Annealing','Siap Packing','Sudah Packing','Reject']
@@ -1606,7 +1612,26 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                       <span className="text-[10px] text-violet-400 font-semibold">{gItems.length} produksi · {plbTotal.toFixed(2)} gr dipakai</span>
                     </div>
                   )}
-                  {gItems.map(item=>{
+                  {(()=>{
+                    // Group by sesi_id — multi-gramasi tampil sebagai SesiCard
+                    const sesiMap = new Map<string, any[]>()
+                    for (const it of gItems) {
+                      const key = it.sesi_id ?? `__solo__${it.id}`
+                      if (!sesiMap.has(key)) sesiMap.set(key, [])
+                      sesiMap.get(key)!.push(it)
+                    }
+                    return [...sesiMap.entries()].map(([sk, sItems]) => {
+                      if (sItems.length > 1) {
+                        return <SesiCard key={sk} sesiId={sk} items={sItems} canEdit={canEdit} canDelete={canDelete}
+                          expanded={expanded} toggleExp={toggleExp}
+                          onCuttingTerima={(items) => openSesiModal('sesiCuttingTerima', sk, items)}
+                          onSerahStage={(items, tahap) => openSesiModal('sesiSerahStage', sk, items, tahap)}
+                          onTerimaStage={(items, tahap) => openSesiModal('sesiTerimaStage', sk, items, tahap)}
+                          onEditItem={(item) => openModal('edit', item)}
+                          onDeleteItem={(item) => openModal('delete', item)}
+                        />
+                      }
+                      const item = sItems[0]
             const isExp     = expanded.has(item.id)
             const sc        = STATUS_COLOR[item.current_status] ?? {bg:'rgba(156,163,175,0.1)',text:'#6B7280',dot:'#9CA3AF'}
             const events: any[] = Array.isArray(item.produksi_event)?item.produksi_event.filter((e:any)=>!e.voided_at):[]
@@ -1937,7 +1962,8 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                 )}
               </div>
                 )
-              })}
+              })
+            })()}
                 </div>
               )
             })
@@ -2043,12 +2069,326 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
           </div>
         </div>
       )}
+      {/* ─── Sesi modals ─────────────────────────────────────────────────── */}
+      {modal==='sesiCuttingTerima' && activeSesi && (()=>{
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+            <div className="w-full max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
+              <form onSubmit={e=>{e.preventDefault();handleSesiCuttingTerima(new FormData(e.currentTarget))}}>
+                <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-200">
+                  <div>
+                    <h2 className="text-[15px] font-bold text-slate-900">Terima Cutting Sesi</h2>
+                    <p className="text-[12px] text-slate-400 mt-0.5">{activeSesi.items.length} gramasi · sesi bersama</p>
+                  </div>
+                  <button type="button" onClick={()=>setModal(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><X size={16}/></button>
+                </div>
+                <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
+                  {[...activeSesi.items].sort((a,b)=>Number(a.gramasi)-Number(b.gramasi)).map(it=>(
+                    <div key={it.id} className="rounded-xl border border-slate-200 p-3 space-y-2">
+                      <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">{it.gramasi}gr · serah {fgr(it.serah_gram??it.berat_awal)} gr</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[11px] font-medium text-slate-500 mb-1">Berat ACC (gr)</label>
+                          <input name={`acc_gram_${it.id}`} type="number" step="0.001" required min="0.001"
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all" placeholder={fgr(it.berat_awal)}/>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-medium text-slate-500 mb-1">PCS good</label>
+                          <input name={`pcs_${it.id}`} type="number" min="0" placeholder={String(it.pcs??'')}
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-500 mb-1">Total reject (gr) — dibagi proporsional</label>
+                    <input name="reject_cutting_gram" type="number" step="0.001" min="0" defaultValue="0"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-500 mb-1">Tanggal selesai</label>
+                      <input name="tanggal_selesai" type="date" required defaultValue={new Date().toISOString().split('T')[0]}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-500 mb-1">Jam</label>
+                      <input name="jam_selesai" type="time"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-500 mb-1">Tim</label>
+                    <select name="terima_tim_id" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] text-slate-900 focus:outline-none focus:border-violet-500 transition-all">
+                      <option value="">— pilih tim —</option>
+                      {tims.map((t:any)=><option key={t.id} value={t.id}>{t.nama}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-500 mb-1">Catatan</label>
+                    <input name="catatan" type="text" placeholder="Opsional"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] text-slate-900 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
+                  </div>
+                  {err&&<div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</div>}
+                </div>
+                <div className="px-6 pb-5 flex gap-2">
+                  <button type="button" onClick={()=>setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+                  <button type="submit" disabled={isPending} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">{isPending?'Menyimpan…':'Simpan Terima Cutting'}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )
+      })()}
+      {modal==='sesiSerahStage' && activeSesi && (()=>{
+        const tl: Record<string,string> = {pas_berat:'Pas Berat',annealing:'Annealing',siap_packing:'Siap Packing'}
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+            <div className="w-full max-w-sm bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
+              <form onSubmit={e=>{e.preventDefault();handleSesiSerahStage(new FormData(e.currentTarget))}}>
+                <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-200">
+                  <div>
+                    <h2 className="text-[15px] font-bold text-slate-900">Serahkan ke {tl[activeSesi.tahap!]??activeSesi.tahap}</h2>
+                    <p className="text-[12px] text-slate-400 mt-0.5">{activeSesi.items.length} gramasi · sesi bersama</p>
+                  </div>
+                  <button type="button" onClick={()=>setModal(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><X size={16}/></button>
+                </div>
+                <div className="px-6 py-5 space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-500 mb-1">Tanggal serah</label>
+                      <input name="serah_tanggal" type="date" required defaultValue={new Date().toISOString().split('T')[0]}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-500 mb-1">Jam</label>
+                      <input name="serah_jam" type="time"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-500 mb-1">Tim</label>
+                    <select name="serah_tim_id" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] text-slate-900 focus:outline-none focus:border-violet-500 transition-all">
+                      <option value="">— pilih tim —</option>
+                      {tims.map((t:any)=><option key={t.id} value={t.id}>{t.nama}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-500 mb-1">Admin</label>
+                    <AdminPickerStd prefix="serah_" adminList={adminList}/>
+                  </div>
+                  {err&&<div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</div>}
+                </div>
+                <div className="px-6 pb-5 flex gap-2">
+                  <button type="button" onClick={()=>setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+                  <button type="submit" disabled={isPending} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">{isPending?'Menyimpan…':`Serahkan ke ${tl[activeSesi.tahap!]??activeSesi.tahap}`}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )
+      })()}
+      {modal==='sesiTerimaStage' && activeSesi && (()=>{
+        const tl: Record<string,string> = {pas_berat:'Pas Berat',annealing:'Annealing',siap_packing:'Siap Packing'}
+        const isPb = activeSesi.tahap === 'pas_berat'
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+            <div className="w-full max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
+              <form onSubmit={e=>{e.preventDefault();handleSesiTerimaStage(new FormData(e.currentTarget))}}>
+                <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-200">
+                  <div>
+                    <h2 className="text-[15px] font-bold text-slate-900">Terima {tl[activeSesi.tahap!]??activeSesi.tahap} Sesi</h2>
+                    <p className="text-[12px] text-slate-400 mt-0.5">{activeSesi.items.length} gramasi · sesi bersama</p>
+                  </div>
+                  <button type="button" onClick={()=>setModal(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><X size={16}/></button>
+                </div>
+                <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
+                  {[...activeSesi.items].sort((a,b)=>Number(a.gramasi)-Number(b.gramasi)).map(it=>{
+                    const sh = (it.stage_handover??[]).filter((h:any)=>!h.voided_at).find((h:any)=>h.tahap===activeSesi.tahap)
+                    return (
+                      <div key={it.id} className="rounded-xl border border-slate-200 p-3 space-y-2">
+                        <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">{it.gramasi}gr · diserahkan {fgr(sh?.serah_gram??it.total_gram)} gr</span>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[11px] font-medium text-slate-500 mb-1">Berat terima (gr)</label>
+                            <input name={`terima_gram_${it.id}`} type="number" step="0.001" required min="0.001"
+                              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
+                          </div>
+                          {isPb&&(
+                            <div>
+                              <label className="block text-[11px] font-medium text-slate-500 mb-1">Sisa serbuk (gr)</label>
+                              <input name={`sisa_serbuk_${it.id}`} type="number" step="0.001" min="0" defaultValue="0"
+                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-500 mb-1">Tanggal terima</label>
+                      <input name="terima_tanggal" type="date" required defaultValue={new Date().toISOString().split('T')[0]}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-500 mb-1">Jam</label>
+                      <input name="terima_jam" type="time"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-500 mb-1">Catatan</label>
+                    <input name="terima_catatan" type="text" placeholder="Opsional"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] text-slate-900 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
+                  </div>
+                  {err&&<div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</div>}
+                </div>
+                <div className="px-6 pb-5 flex gap-2">
+                  <button type="button" onClick={()=>setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+                  <button type="submit" disabled={isPending} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">{isPending?'Menyimpan…':`Simpan Terima ${tl[activeSesi.tahap!]??activeSesi.tahap}`}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
 
+// ─── SesiCard ──────────────────────────────────────────────────────────────────
+function SesiCard({ sesiId, items, canEdit, canDelete, expanded, toggleExp, onCuttingTerima, onSerahStage, onTerimaStage, onEditItem, onDeleteItem }: {
+  sesiId: string; items: any[]; canEdit: boolean; canDelete: boolean;
+  expanded: Set<number>; toggleExp: (id: number) => void;
+  onCuttingTerima: (items: any[]) => void;
+  onSerahStage: (items: any[], tahap: string) => void;
+  onTerimaStage: (items: any[], tahap: string) => void;
+  onEditItem: (item: any) => void; onDeleteItem: (item: any) => void;
+}) {
+  const first = items[0]
+  const expKey: number = first.id
+  const isExp = expanded.has(expKey)
+  const s = first.current_status
+  const sc = STATUS_CFG[s] ?? { dot:'#9CA3AF', bg:'rgba(156,163,175,0.1)', text:'#6B7280' }
+  const isVoided = items.every(it => !!it.voided_at)
+  const sorted = [...items].sort((a,b) => Number(a.gramasi) - Number(b.gramasi))
+  const gramasiStr = sorted.map(it => it.gramasi).join(' & ')
 
+  const allAt = (st: string) => items.every(it => it.current_status === st)
+  const allCuttingProses = items.every(it => it.current_status === 'Cutting' && it.status_cutting === 'proses')
+  const allCuttingSelesai = items.every(it => it.status_cutting === 'selesai')
+  const hasAllSerah = (tahap: string) => items.every(it => (it.stage_handover ?? []).some((h: any) => h.tahap === tahap && !h.voided_at))
+  const hasAllTerima = (tahap: string) => items.every(it => (it.stage_handover ?? []).some((h: any) => h.tahap === tahap && h.status === 'selesai' && !h.voided_at))
 
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden transition-all" style={{borderLeft:`3px solid ${sc.dot}`}}>
+      <div className="flex items-center gap-3 px-5 pt-4 pb-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 flex-shrink-0">SESI {items.length}×</span>
+            <span className="text-[13px] font-semibold text-slate-800">{first.nama_item ?? first.kode}</span>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0" style={{background:sc.bg,color:sc.text}}>{s}</span>
+            {isVoided && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-500">Void</span>}
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1 font-medium">{first.batch_kode} · Gramasi {gramasiStr} gr</p>
+          <div className="flex gap-3 mt-1 flex-wrap">
+            {sorted.map(it => (
+              <span key={it.id} className="text-[12px] text-slate-600 tabular-nums">
+                <span className="text-[10px] font-semibold px-1 rounded bg-slate-100 text-slate-600 mr-0.5">{it.gramasi}gr</span>
+                {fgr(it.total_gram ?? it.berat_awal)} gr
+              </span>
+            ))}
+          </div>
+        </div>
+        {canEdit && !isVoided && (
+          <div className="flex flex-col gap-1 flex-shrink-0">
+            {allCuttingProses && (
+              <button onClick={() => onCuttingTerima(items)}
+                className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition-colors whitespace-nowrap">
+                Terima Cutting
+              </button>
+            )}
+            {allCuttingSelesai && allAt('Cutting') && !hasAllSerah('pas_berat') && (
+              <button onClick={() => onSerahStage(items, 'pas_berat')}
+                className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-colors whitespace-nowrap">
+                Serah Pas Berat
+              </button>
+            )}
+            {allAt('Pas Berat') && hasAllSerah('pas_berat') && !hasAllTerima('pas_berat') && (
+              <button onClick={() => onTerimaStage(items, 'pas_berat')}
+                className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-colors whitespace-nowrap">
+                Terima Pas Berat
+              </button>
+            )}
+            {allAt('Pas Berat') && hasAllTerima('pas_berat') && !hasAllSerah('annealing') && (
+              <button onClick={() => onSerahStage(items, 'annealing')}
+                className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-yellow-500 text-white hover:bg-yellow-600 transition-colors whitespace-nowrap">
+                Serah Annealing
+              </button>
+            )}
+            {allAt('Annealing') && hasAllSerah('annealing') && !hasAllTerima('annealing') && (
+              <button onClick={() => onTerimaStage(items, 'annealing')}
+                className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-yellow-500 text-white hover:bg-yellow-600 transition-colors whitespace-nowrap">
+                Terima Annealing
+              </button>
+            )}
+            {allAt('Annealing') && hasAllTerima('annealing') && !hasAllSerah('siap_packing') && (
+              <button onClick={() => onSerahStage(items, 'siap_packing')}
+                className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors whitespace-nowrap">
+                Serah Siap Packing
+              </button>
+            )}
+          </div>
+        )}
+        <button onClick={() => toggleExp(expKey)} className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50 transition-colors flex-shrink-0">
+          {isExp ? <ChevronUp size={15}/> : <ChevronDown size={15}/>}
+        </button>
+      </div>
+      {isExp && (
+        <div className="border-t border-slate-100 px-5 py-4 space-y-3">
+          {sorted.map(it => {
+            const hs = (it.stage_handover ?? []).filter((h: any) => !h.voided_at)
+            return (
+              <div key={it.id} className="rounded-xl border border-slate-200 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">{it.gramasi}gr</span>
+                    <span className="text-[12px] font-semibold text-slate-700">{it.kode}</span>
+                    <span className="text-[11px] text-slate-500">{it.pcs_good ?? it.pcs ?? '?'} pcs</span>
+                  </div>
+                  {canEdit && !it.voided_at && (
+                    <div className="flex gap-1">
+                      <button onClick={() => onEditItem(it)} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50 transition-colors"><Edit2 size={12}/></button>
+                      {canDelete && <button onClick={() => onDeleteItem(it)} className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"><Trash2 size={12}/></button>}
+                    </div>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-[11px]">
+                  <div><span className="text-slate-400">Serah:</span> <span className="font-semibold tabular-nums text-slate-700">{fgr(it.serah_gram ?? it.berat_awal)} gr</span></div>
+                  <div><span className="text-slate-400">Terima:</span> <span className="font-semibold tabular-nums text-slate-700">{fgr(it.terima_gram ?? it.total_gram)} gr</span></div>
+                  <div><span className="text-slate-400">Reject:</span> <span className={`font-semibold tabular-nums ${Number(it.reject_cutting_gram)>0?'text-red-500':'text-slate-400'}`}>{fgr(it.reject_cutting_gram)} gr</span></div>
+                </div>
+                {hs.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {hs.map((h: any) => (
+                      <div key={h.id} className="flex items-center gap-2 text-[11px] text-slate-500">
+                        <span className="font-semibold text-slate-600">{h.tahap.replace(/_/g,' ')}</span>
+                        <span>{fgr(h.serah_gram)}→{fgr(h.terima_gram)} gr</span>
+                        {h.status==='proses'&&<span className="text-[10px] font-semibold text-blue-500">proses</span>}
+                        {h.status==='selesai'&&<span className="text-[10px] font-semibold text-green-500">✓</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
 
 
 
