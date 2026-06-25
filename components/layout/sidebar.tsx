@@ -112,7 +112,7 @@ export default function Sidebar({ mobileOpen, onClose, serverProfile }: SidebarP
           size={16}
           className={cn('flex-shrink-0 transition-colors', active ? 'text-violet-600' : 'text-slate-400')}
         />
-        <span className="flex-1 truncate leading-none">{item.label}</span>
+        <span className="flex-1 truncate">{item.label}</span>
       </Link>
     )
   }
