@@ -1,10 +1,10 @@
 ﻿'use client'
 
 import { useState, useTransition } from 'react'
-import { Plus, Edit2, X, Check, ShieldCheck, Mail } from 'lucide-react'
+import { Plus, Edit2, X, Check, ShieldCheck, Mail, Trash2 } from 'lucide-react'
 import {
   createCabang, updateCabang, toggleCabangAktif,
-  updateUserRole, toggleUserAktif, inviteUser,
+  updateUserRole, toggleUserAktif, inviteUser, deleteUser,
 } from '@/app/(dashboard)/pengaturan/actions'
 
 const inp = 'w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all'
@@ -115,13 +115,33 @@ const ROLE_COLOR: Record<string,string> = {
   kepala_cabang: '#DC2626', accounting: '#9333EA',
 }
 
+type Confirm = { type: 'aktif' | 'nonaktif' | 'hapus'; userId: string; userName: string }
+
 export function UsersSection({ list, currentUserId, showToast, canManage }: {
   list: any[]; currentUserId: string; showToast: (m: string) => void; canManage: boolean
 }) {
   const [isPending, start] = useTransition()
   const [inviteModal, setInviteModal] = useState(false)
   const [editRoleId, setEditRoleId] = useState<string | null>(null)
+  const [confirm, setConfirm] = useState<Confirm | null>(null)
   const [err, setErr] = useState('')
+
+  async function handleConfirm() {
+    if (!confirm) return
+    start(async () => {
+      let r
+      if (confirm.type === 'hapus') {
+        r = await deleteUser(confirm.userId)
+        if (!r?.error) showToast('✅ User dihapus')
+      } else {
+        const aktif = confirm.type === 'aktif'
+        r = await toggleUserAktif(confirm.userId, aktif)
+        if (!r?.error) showToast(aktif ? '✅ User diaktifkan' : 'User dinonaktifkan')
+      }
+      if (r?.error) showToast('❌ ' + r.error)
+      setConfirm(null)
+    })
+  }
 
   return (
     <div className="space-y-3">
@@ -154,35 +174,81 @@ export function UsersSection({ list, currentUserId, showToast, canManage }: {
               {canManage && u.id !== currentUserId && (
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <button onClick={() => setEditRoleId(u.id === editRoleId ? null : u.id)}
-                    className="p-1.5 rounded-lg text-violet-500 hover:bg-violet-50" title="Ubah role">
-                    <ShieldCheck size={13}/>
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-violet-600 bg-violet-50 hover:bg-violet-100 transition-colors" title="Ubah role">
+                    <ShieldCheck size={12}/> Ubah Role
                   </button>
-                  <button onClick={async () => {
-                    const r = await toggleUserAktif(u.id, !u.aktif)
-                    if (r?.error) showToast(r.error); else showToast(u.aktif ? 'User dinonaktifkan' : '✅ User diaktifkan')
-                  }} className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors ${u.aktif ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
+                  <button onClick={() => setConfirm({ type: u.aktif ? 'nonaktif' : 'aktif', userId: u.id, userName: u.name })}
+                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors ${u.aktif ? 'bg-amber-50 text-amber-600 hover:bg-amber-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
                     {u.aktif ? 'Nonaktifkan' : 'Aktifkan'}
+                  </button>
+                  <button onClick={() => setConfirm({ type: 'hapus', userId: u.id, userName: u.name })}
+                    className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors" title="Hapus user">
+                    <Trash2 size={13}/>
                   </button>
                 </div>
               )}
             </div>
             {editRoleId === u.id && (
-              <div className="mt-2 pt-2 border-t border-slate-200">
-                <label className="text-[12px] font-semibold text-slate-500 mb-1 block">Ubah Role</label>
-                <select defaultValue={u.role}
-                  onChange={async e => {
-                    const r = await updateUserRole(u.id, e.target.value)
-                    if (r?.error) showToast(r.error); else { showToast('✅ Role diperbarui'); setEditRoleId(null) }
-                  }}
-                  className="w-full px-3 py-2 text-[12px] rounded-xl border border-violet-200 bg-violet-50 text-violet-700 font-semibold focus:outline-none">
-                  {ROLES.map(r => <option key={r} value={r}>{ROLE_LABEL[r] ?? r}</option>)}
-                </select>
+              <div className="mt-2 pt-2 border-t border-slate-100">
+                <label className="text-[11px] font-medium text-slate-500 mb-1.5 block">Ubah role</label>
+                <div className="flex gap-2">
+                  <select defaultValue={u.role} id={`role-${u.id}`}
+                    className="flex-1 px-3 py-2 text-[12px] rounded-lg border border-violet-200 bg-violet-50 text-violet-700 font-semibold focus:outline-none">
+                    {ROLES.map(r => <option key={r} value={r}>{ROLE_LABEL[r] ?? r}</option>)}
+                  </select>
+                  <button onClick={async () => {
+                    const sel = (document.getElementById(`role-${u.id}`) as HTMLSelectElement).value
+                    const r = await updateUserRole(u.id, sel)
+                    if (r?.error) showToast('❌ ' + r.error); else { showToast('✅ Role diperbarui'); setEditRoleId(null) }
+                  }} className="px-3 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[12px] font-semibold transition-colors">
+                    Simpan
+                  </button>
+                  <button onClick={() => setEditRoleId(null)} className="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-[12px] font-semibold transition-colors">
+                    Batal
+                  </button>
+                </div>
               </div>
             )}
           </div>
         ))}
         {list.length === 0 && <p className="text-[13px] text-slate-400 text-center py-8">Belum ada user</p>}
       </div>
+
+      {/* ── Confirm dialog ── */}
+      {confirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-sm bg-white rounded-xl border border-slate-200 shadow-xl p-5 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${confirm.type === 'hapus' ? 'bg-red-100' : 'bg-amber-100'}`}>
+                {confirm.type === 'hapus' ? <Trash2 size={16} className="text-red-500"/> : <ShieldCheck size={16} className="text-amber-500"/>}
+              </div>
+              <div>
+                <p className="text-[14px] font-semibold text-slate-900">
+                  {confirm.type === 'hapus' ? 'Hapus user?' : confirm.type === 'nonaktif' ? 'Nonaktifkan user?' : 'Aktifkan user?'}
+                </p>
+                <p className="text-[12px] text-slate-500 mt-0.5">
+                  {confirm.type === 'hapus'
+                    ? <>Akun <b>{confirm.userName}</b> akan dihapus permanen dan tidak bisa dipulihkan.</>
+                    : confirm.type === 'nonaktif'
+                    ? <><b>{confirm.userName}</b> tidak akan bisa login sampai diaktifkan kembali.</>
+                    : <><b>{confirm.userName}</b> akan bisa login kembali ke sistem.</>
+                  }
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => setConfirm(null)}
+                className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">
+                Batal
+              </button>
+              <button onClick={handleConfirm} disabled={isPending}
+                className={`flex-1 h-9 rounded-lg text-[13px] font-semibold text-white transition-colors disabled:opacity-50 ${confirm.type === 'hapus' ? 'bg-red-500 hover:bg-red-600' : confirm.type === 'nonaktif' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-green-600 hover:bg-green-700'}`}>
+                {isPending ? 'Memproses...' : confirm.type === 'hapus' ? 'Ya, hapus' : confirm.type === 'nonaktif' ? 'Ya, nonaktifkan' : 'Ya, aktifkan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {inviteModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">

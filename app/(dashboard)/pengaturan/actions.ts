@@ -265,6 +265,23 @@ export async function inviteUser(formData: FormData) {
   return { success: true }
 }
 
+export async function deleteUser(userId: string) {
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const adminClient = createAdminClient()
+  const regularClient = await (await import('@/lib/supabase/server')).createClient()
+  const { data: { user } } = await regularClient.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await regularClient.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Admin Pusat' }
+  if (userId === user.id) return { error: 'Tidak bisa hapus akun sendiri' }
+
+  await regularClient.from('users_profile').delete().eq('id', userId)
+  const { error } = await adminClient.auth.admin.deleteUser(userId)
+  if (error) return { error: error.message }
+  revalidatePath('/pengaturan')
+  return { success: true }
+}
+
 // ═══ MASTER GRAMASI ═════════════════════════════════════════════════════════
 
 export async function createGramasi(nilai: string) {
