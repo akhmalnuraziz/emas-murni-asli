@@ -33,7 +33,7 @@ export default function MutasiClient({ cabangList }: { cabangList: Cabang[] }) {
           <ArrowLeftRight size={20} className="text-white" />
         </div>
         <div>
-          <h1 className="text-[16px] font-bold text-slate-900">Pemindahan Barang</h1>
+          <h1 className="text-[16px] font-semibold text-slate-900">Pemindahan Barang</h1>
           <p className="text-[12px] text-slate-400">Kirim barang tershieldtag ke cabang, kelola stok &amp; riwayat</p>
         </div>
       </div>
@@ -145,7 +145,7 @@ function SerialPickerModal({ gramasi, available, selected, onConfirm, onClose }:
         <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0 items-center">
           <p className="text-[12px] text-slate-500 font-semibold flex-1">{local.size} Serial dipilih</p>
           <button onClick={() => onConfirm(local)}
-            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
             Konfirmasi
           </button>
         </div>
@@ -245,7 +245,7 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200">
           <div className="flex items-center gap-2">
             <ShieldCheck size={15} className="text-green-500" />
-            <span className="text-[13px] font-bold text-slate-800">Daftar Barang</span>
+            <span className="text-[13px] font-semibold text-slate-800">Daftar Barang</span>
           </div>
           <div className="flex items-center gap-3">
             {totalSelected > 0 && (
@@ -272,8 +272,8 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
             <table className="w-full min-w-[520px] text-[13px]">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  {['Nama Barang', 'Gramasi', 'Tersedia', 'Dipilih', 'Satuan', 'Aksi'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">{h}</th>
+                  {['Nama barang', 'Gramasi', 'Tersedia', 'Dipilih', 'Satuan', 'Aksi'].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-[10px] font-medium text-slate-400 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -288,7 +288,7 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-amber-50">
-                            <span className="text-[9px] font-bold text-amber-600">AU</span>
+                            <span className="text-[9px] font-semibold text-amber-600">AU</span>
                           </div>
                           <div>
                             <p className="font-semibold text-slate-800 text-[13px]">Emas {gramasi} gr</p>
@@ -297,12 +297,12 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
                         </div>
                       </td>
                       <td className="px-4 py-3.5">
-                        <span className="text-[12px] font-bold px-2 py-1 rounded-lg text-amber-700 bg-amber-50">{gramasi}gr</span>
+                        <span className="text-[12px] font-semibold px-2 py-1 rounded-lg text-amber-700 bg-amber-50">{gramasi}gr</span>
                       </td>
                       <td className="px-4 py-3.5 font-semibold text-slate-600 text-[13px]">{items.length}</td>
                       <td className="px-4 py-3.5">
                         {selCount > 0
-                          ? <span className="font-bold text-violet-600">{selCount}</span>
+                          ? <span className="font-semibold text-violet-600">{selCount}</span>
                           : <span className="text-slate-300">—</span>}
                       </td>
                       <td className="px-4 py-3.5 text-[12px] font-semibold text-slate-500">PCS</td>
@@ -337,11 +337,11 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
             <div className="ml-auto flex items-center gap-3">
               {totalSelected > 0 && (
                 <p className="text-[12px] text-slate-500">
-                  Total <span className="font-bold text-slate-800">{totalSelected} pcs</span>
+                  Total <span className="font-semibold text-slate-800">{totalSelected} pcs</span>
                 </p>
               )}
               <button onClick={submit} disabled={submitting || totalSelected === 0}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-[13px] font-bold text-white transition-colors disabled:opacity-40 bg-violet-600 hover:bg-violet-700">
+                className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-[13px] font-semibold text-white transition-colors disabled:opacity-40 bg-violet-600 hover:bg-violet-700">
                 <Send size={14} /> {submitting ? 'Mengirim…' : 'Kirim Barang'}
               </button>
             </div>
@@ -442,19 +442,19 @@ function TerimaCard({ mutasi, cabangNama, open, onToggle, onDone }: {
             <Truck size={15} className="text-violet-600" />
           </div>
           <div className="text-left">
-            <p className="font-mono text-[12px] font-bold text-slate-800">{mutasi.kode}</p>
+            <p className="font-mono text-[12px] font-semibold text-slate-800">{mutasi.kode}</p>
             <p className="text-[11px] text-slate-400">dari Gudang Pusat → {cabangNama} · {mutasi.tanggal_kirim}</p>
           </div>
         </div>
         <div className="text-right">
-          <p className="text-[13px] font-bold text-slate-800">{mutasi.pcs} pcs dikirim</p>
+          <p className="text-[13px] font-semibold text-slate-800">{mutasi.pcs} pcs dikirim</p>
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700">Belum Diterima</span>
         </div>
       </button>
 
       {open && (
         <div className="mt-4 pt-4 space-y-3 border-t border-slate-200">
-          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Centang shieldtag yang fisiknya benar-benar diterima</p>
+          <p className="text-[11px] font-medium text-slate-500">Centang shieldtag yang fisiknya benar-benar diterima</p>
           <div className="flex flex-wrap gap-1.5 max-h-[220px] overflow-y-auto pr-1">
             {sentKodes.map(kode => {
               const ok = checked.has(kode)
@@ -475,7 +475,7 @@ function TerimaCard({ mutasi, cabangNama, open, onToggle, onDone }: {
             <div className="rounded-lg px-3 py-2.5 space-y-2 bg-red-50 border border-red-100">
               <div className="flex items-center gap-1.5 text-red-600">
                 <AlertTriangle size={13} />
-                <p className="text-[12px] font-bold">{hilangCount} shieldtag tidak dicocokkan — terdeteksi short-shipment</p>
+                <p className="text-[12px] font-semibold">{hilangCount} shieldtag tidak dicocokkan — terdeteksi short-shipment</p>
               </div>
               <input value={alasanHilang} onChange={e => setAlasanHilang(e.target.value)}
                 placeholder="Alasan/keterangan kehilangan (wajib diisi)" className={inp} />
@@ -493,7 +493,7 @@ function TerimaCard({ mutasi, cabangNama, open, onToggle, onDone }: {
           )}
 
           <button onClick={submit} disabled={submitting}
-            className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg text-[13px] font-bold text-white transition-colors disabled:opacity-40 ${
+            className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg text-[13px] font-semibold text-white transition-colors disabled:opacity-40 ${
               hilangCount > 0 ? 'bg-amber-500 hover:bg-amber-600' : 'bg-green-500 hover:bg-green-600'
             }`}>
             <PackageCheck size={15} /> {submitting ? 'Menyimpan…' : hilangCount > 0 ? 'Konfirmasi (dengan Short-Shipment)' : 'Konfirmasi Penerimaan'}
@@ -547,7 +547,7 @@ function StokCabang({ cabangList, selectedCabang, setSelectedCabang }: {
           <div className="overflow-x-auto">
             <table className="w-full text-[13px]">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wide">
+                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-medium text-slate-400">
                   <th className="text-left px-4 py-3">Gramasi</th>
                   <th className="text-right px-4 py-3">Stok Ready</th>
                   <th className="text-right px-4 py-3">PO</th>
@@ -558,7 +558,7 @@ function StokCabang({ cabangList, selectedCabang, setSelectedCabang }: {
                   <tr><td colSpan={3} className="py-10 text-center text-[13px] text-slate-400">Belum ada stok di cabang ini.</td></tr>
                 ) : visibleRows.map((r, i) => (
                   <tr key={r.gramasi} className={`border-t border-slate-200 ${i % 2 ? 'bg-slate-50/50' : ''}`}>
-                    <td className="px-4 py-3 font-bold text-slate-800">{r.gramasi}gr</td>
+                    <td className="px-4 py-3 font-semibold text-slate-800">{r.gramasi}gr</td>
                     <td className="px-4 py-3 text-right font-semibold text-green-600">{r.stok_ready} pcs</td>
                     <td className="px-4 py-3 text-right font-semibold text-amber-600">{r.po_pcs > 0 ? `PO ${r.po_pcs}` : '—'}</td>
                   </tr>
@@ -606,17 +606,17 @@ function RiwayatMutasi({ cabangList }: { cabangList: Cabang[] }) {
                 <Truck size={15} className="text-violet-600" />
               </div>
               <div>
-                <p className="font-mono text-[12px] font-bold text-slate-800">{m.kode}</p>
+                <p className="font-mono text-[12px] font-semibold text-slate-800">{m.kode}</p>
                 <p className="text-[11px] text-slate-400">{cabangNama(m.cabang_tujuan)} · {m.tanggal_kirim}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <p className="text-[13px] font-bold text-slate-800">{m.pcs} pcs</p>
+                <p className="text-[13px] font-semibold text-slate-800">{m.pcs} pcs</p>
                 <RiwayatBadge status={m.status} statusTerima={m.status_terima} />
               </div>
               <a href={`/mutasi/print/${m.id}`} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-bold transition-colors bg-violet-50 text-violet-700 hover:bg-violet-100"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold transition-colors bg-violet-50 text-violet-700 hover:bg-violet-100"
                 title="Print Surat Jalan">
                 <Printer size={13}/> SJ
               </a>
@@ -641,7 +641,7 @@ const inp = 'w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">{label}</label>
+      <label className="block text-[11px] font-medium text-slate-500 mb-1.5">{label}</label>
       {children}
     </div>
   )
