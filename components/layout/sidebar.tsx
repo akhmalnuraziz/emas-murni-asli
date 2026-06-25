@@ -71,6 +71,7 @@ interface SidebarProps {
 export default function Sidebar({ mobileOpen, onClose, serverProfile }: SidebarProps) {
   const pathname = usePathname()
   const { profile: clientProfile, signOut } = useAuth()
+  const [confirmLogout, setConfirmLogout] = useState(false)
   const profile  = serverProfile ?? clientProfile
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
 
@@ -179,7 +180,7 @@ export default function Sidebar({ mobileOpen, onClose, serverProfile }: SidebarP
               </p>
             </div>
             <button
-              onClick={signOut}
+              onClick={() => setConfirmLogout(true)}
               className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
               title="Logout"
             >
@@ -188,6 +189,32 @@ export default function Sidebar({ mobileOpen, onClose, serverProfile }: SidebarP
           </div>
         </div>
       </aside>
+
+      {confirmLogout && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-sm bg-white rounded-xl border border-slate-200 shadow-xl p-5 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <LogOut size={16} className="text-red-500"/>
+              </div>
+              <div>
+                <p className="text-[14px] font-semibold text-slate-900">Keluar dari sistem?</p>
+                <p className="text-[12px] text-slate-500 mt-0.5">Kamu akan logout dan diarahkan ke halaman login.</p>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button onClick={() => setConfirmLogout(false)}
+                className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">
+                Batal
+              </button>
+              <button onClick={signOut}
+                className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-semibold text-white transition-colors">
+                Ya, keluar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
