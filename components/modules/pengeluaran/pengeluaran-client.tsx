@@ -79,7 +79,7 @@ function PeriodSelector({ period, dateFrom, dateTo }: { period: string; dateFrom
         {PERIOD_OPTIONS.map(opt => (
           <button key={opt.value}
             onClick={() => { if (opt.value === 'custom') { setShowCustom(true); return } setShowCustom(false); navigate(opt.value) }}
-            className={cn('px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all',
+            className={cn('px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all',
               (period === opt.value && opt.value !== 'custom') || (showCustom && opt.value === 'custom')
                 ? 'bg-violet-600 text-white shadow-sm'
                 : 'bg-white text-slate-500 border border-slate-200 hover:border-violet-200 hover:text-violet-600'
@@ -98,7 +98,7 @@ function PeriodSelector({ period, dateFrom, dateTo }: { period: string; dateFrom
           <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
             className="text-[12px] border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-none focus:border-violet-400" />
           <button onClick={() => navigate('custom', customFrom, customTo)}
-            className="px-3 py-1 rounded-xl bg-violet-600 text-white text-[12px] font-bold hover:bg-violet-700 transition-colors">
+            className="px-3 py-1 rounded-xl bg-violet-600 text-white text-[12px] font-semibold hover:bg-violet-700 transition-colors">
             Terapkan
           </button>
         </div>
@@ -157,12 +157,12 @@ function PengeluaranModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal *</label>
               <input name="tanggal" type="date" defaultValue={item?.tanggal ?? today} required
                 className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nominal (Rp) *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Nominal (Rp) *</label>
               <input name="nominal" type="number" step="1000" min="1" defaultValue={item?.nominal ?? ''}
                 placeholder="0" required
                 className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
@@ -170,19 +170,19 @@ function PengeluaranModal({
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Pengeluaran *</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Nama Pengeluaran *</label>
             <input name="nama" type="text" defaultValue={item?.nama ?? ''} placeholder="Contoh: Bayar listrik" required
               className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Lokasi *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Lokasi *</label>
               <input name="lokasi" type="text" defaultValue={item?.lokasi ?? ''} placeholder="Pusat / Cabang CJ" required
                 className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Kategori</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Kategori</label>
               <select name="kategori_id" defaultValue={item?.kategori_id ?? ''}
                 className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all">
                 <option value="">— Pilih —</option>
@@ -194,13 +194,13 @@ function PengeluaranModal({
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Keterangan</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Keterangan</label>
             <textarea name="keterangan" rows={2} defaultValue={item?.keterangan ?? ''} placeholder="Opsional"
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all resize-none"/>
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Foto Bukti</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Bukti</label>
             <input type="file" accept="image/*" onChange={handleFile}
               className="w-full text-[12px] text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[12px] file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"/>
             {fotoPreview && (
@@ -214,7 +214,7 @@ function PengeluaranModal({
             Batal
           </button>
           <button form="pengeluaran-form" type="submit" disabled={isPending}
-            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
             {isPending ? 'Menyimpan...' : 'Simpan'}
           </button>
         </div>
@@ -256,12 +256,12 @@ function KategoriModal({ onClose, item }: { onClose: () => void; item?: Kategori
         <form id="kategori-form" onSubmit={handleSubmit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           {err && <p className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</p>}
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Kategori *</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Nama Kategori *</label>
             <input name="nama" type="text" defaultValue={item?.nama ?? ''} required placeholder="Contoh: Listrik & Air"
               className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Warna</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Warna</label>
             <div className="flex items-center gap-2 flex-wrap">
               {DEFAULT_COLORS.map(c => (
                 <button key={c} type="button" onClick={() => setWarna(c)}
@@ -275,7 +275,7 @@ function KategoriModal({ onClose, item }: { onClose: () => void; item?: Kategori
           <button type="button" onClick={onClose}
             className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
           <button form="kategori-form" type="submit" disabled={isPending}
-            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
             {isPending ? 'Menyimpan...' : 'Simpan'}
           </button>
         </div>
@@ -332,12 +332,12 @@ export default function PengeluaranClient({
             <TrendingDown size={16} className="opacity-80"/>
             <p className="text-[12px] font-semibold opacity-80">Total Pengeluaran</p>
           </div>
-          <p className="text-[20px] font-bold">{formatRupiah(totalPengeluaran)}</p>
+          <p className="text-[20px] font-semibold">{formatRupiah(totalPengeluaran)}</p>
           <p className="text-[12px] opacity-70 mt-1">{periodLabel}</p>
         </div>
         <div className="rounded-xl p-5 sm:col-span-2"
           >
-          <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-3">Per Kategori</p>
+          <p className="text-[12px] font-medium text-slate-400 mb-3">Per kategori</p>
           {sorted.length > 0 ? (
             <div className="space-y-2">
               {sorted.slice(0, 5).map(([nama, total]) => {
@@ -371,7 +371,7 @@ export default function PengeluaranClient({
       <div className="flex gap-1 bg-slate-100 rounded-xl p-1 w-fit">
         {(['pengeluaran', 'kategori'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={cn('px-4 py-1.5 rounded-xl text-[12px] font-bold transition-all capitalize',
+            className={cn('px-4 py-1.5 rounded-xl text-[12px] font-semibold transition-all capitalize',
               tab === t ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'
             )}>
             {t === 'pengeluaran' ? 'Pengeluaran' : 'Kategori'}
@@ -391,7 +391,7 @@ export default function PengeluaranClient({
             </div>
             {canManage && (
               <button onClick={() => setShowAdd(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 text-white text-[12px] font-bold hover:bg-violet-700 transition-colors">
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 text-white text-[12px] font-semibold hover:bg-violet-700 transition-colors">
                 <Plus size={14}/> Tambah
               </button>
             )}
@@ -429,7 +429,7 @@ export default function PengeluaranClient({
                         {p.keterangan && <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1">{p.keterangan}</p>}
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-[13px] font-bold text-red-600">{formatRupiah(p.nominal)}</p>
+                        <p className="text-[13px] font-semibold text-red-600">{formatRupiah(p.nominal)}</p>
                       </div>
                     </div>
                   </div>
@@ -462,7 +462,7 @@ export default function PengeluaranClient({
         <div className="space-y-3">
           {canManage && (
             <button onClick={() => setShowAddKat(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 text-white text-[12px] font-bold hover:bg-violet-700 transition-colors">
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 text-white text-[12px] font-semibold hover:bg-violet-700 transition-colors">
               <Plus size={14}/> Tambah Kategori
             </button>
           )}
@@ -474,7 +474,7 @@ export default function PengeluaranClient({
                   <Tag size={16} style={{ color: k.warna ?? '#94A3B8' }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={cn('text-[13px] font-bold truncate', k.aktif ? 'text-slate-800' : 'text-slate-400 line-through')}>{k.nama}</p>
+                  <p className={cn('text-[13px] font-semibold truncate', k.aktif ? 'text-slate-800' : 'text-slate-400 line-through')}>{k.nama}</p>
                   <p className="text-[10px] text-slate-400 mt-0.5">
                     {byKategori[k.nama] != null ? formatRupiah(byKategori[k.nama]) : 'Rp 0'}
                   </p>
@@ -532,7 +532,7 @@ export default function PengeluaranClient({
             <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
               {voidErr && <p className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{voidErr}</p>}
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Alasan *</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Alasan *</label>
                 <input value={voidReason} onChange={e => setVoidReason(e.target.value)}
                   placeholder="Masukkan alasan penghapusan"
                   className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
@@ -549,7 +549,7 @@ export default function PengeluaranClient({
                   if (res?.error) { setVoidErr(res.error); return }
                   setVoidId(null)
                 })}
-                className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+                className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
                 {voidPending ? 'Menghapus...' : 'Ya, Hapus'}
               </button>
             </div>
