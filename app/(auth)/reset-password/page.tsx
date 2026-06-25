@@ -1,17 +1,30 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function ResetPasswordPage() {
-  const [password, setPassword] = useState('')
-  const [confirm,  setConfirm]  = useState('')
-  const [loading,  setLoading]  = useState(false)
-  const [error,    setError]    = useState<string | null>(null)
-  const [done,     setDone]     = useState(false)
-  const router  = useRouter()
-  const supabase = createClient()
+function ResetPasswordForm() {
+  const [password, setPassword]   = useState('')
+  const [confirm,  setConfirm]    = useState('')
+  const [loading,  setLoading]    = useState(false)
+  const [error,    setError]      = useState<string | null>(null)
+  const [done,     setDone]       = useState(false)
+  const [ready,    setReady]      = useState(false)
+  const router       = useRouter()
+  const searchParams = useSearchParams()
+  const supabase     = createClient()
+
+  // Exchange code for session when page loads
+  useEffect(() => {
+    const code = searchParams.get('code')
+    if (!code) { setError('Link tidak valid atau sudah kedaluwarsa.'); return }
+    supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+      if (error) setError('Link sudah kedaluwarsa. Minta ulang reset password.')
+      else setReady(true)
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,12 +58,22 @@ export default function ResetPasswordPage() {
               <p className="text-[13px] font-semibold text-green-700">Password berhasil diubah!</p>
               <p className="text-[12px] text-slate-400 mt-1">Mengalihkan ke dashboard…</p>
             </div>
+          ) : error && !ready ? (
+            <div className="px-6 py-8 text-center space-y-3">
+              <p className="text-[13px] text-red-600">{error}</p>
+              <button onClick={() => router.push('/login')}
+                className="text-[12px] text-violet-600 hover:text-violet-700 font-medium">
+                ← Kembali ke login
+              </button>
+            </div>
+          ) : !ready ? (
+            <div className="px-6 py-8 text-center text-[13px] text-slate-400">Memverifikasi link…</div>
           ) : (
             <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
               <div>
                 <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Password baru</label>
                 <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                  placeholder="Minimal 8 karakter" required minLength={8}
+                  placeholder="Minimal 8 karakter" required minLength={8} autoFocus
                   className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-[13px] text-slate-900 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
               </div>
               <div>
@@ -77,5 +100,13 @@ export default function ResetPasswordPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordForm />
+    </Suspense>
   )
 }
