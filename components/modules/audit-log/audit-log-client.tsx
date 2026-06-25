@@ -74,7 +74,7 @@ function JsonBlock({ label, data, color }: { label: string; data: Record<string,
   const entries = data ? Object.entries(data) : []
   return (
     <div className="rounded-lg px-3 py-2 bg-slate-50 border border-slate-200">
-      <p className="text-[10px] font-bold tracking-widest uppercase mb-2" style={{ color }}>{label}</p>
+      <p className="text-[10px] font-medium mb-2" style={{ color }}>{label}</p>
       {entries.length === 0 ? (
         <p className="text-[12px] text-slate-400 italic">Tidak ada data</p>
       ) : (
@@ -108,7 +108,7 @@ function DetailDrawer({ log, onClose }: { log: AuditLogRow; onClose: () => void 
               <ActionIcon size={16} style={{ color: acfg.text }}/>
             </div>
             <div>
-              <p className="text-[15px] font-bold text-slate-900">{log.record_key || log.record_id || `#${log.id}`}</p>
+              <p className="text-[15px] font-semibold text-slate-900">{log.record_key || log.record_id || `#${log.id}`}</p>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: mcfg.bg, color: mcfg.text }}>{mod}</span>
                 <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: acfg.bg, color: acfg.text }}>{normAction(log.action)}</span>
@@ -120,18 +120,18 @@ function DetailDrawer({ log, onClose }: { log: AuditLogRow; onClose: () => void 
         <div className="px-5 py-4 overflow-y-auto space-y-4 flex-1">
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg px-3 py-2 bg-slate-50 border border-slate-200">
-              <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Waktu</p>
+              <p className="text-[10px] text-slate-400 font-medium">Waktu</p>
               <p className="text-[13px] font-semibold text-slate-700 mt-0.5">{formatDateTime(log.timestamp)}</p>
             </div>
             <div className="rounded-lg px-3 py-2 bg-slate-50 border border-slate-200">
-              <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Oleh</p>
+              <p className="text-[10px] text-slate-400 font-medium">Oleh</p>
               <p className="text-[13px] font-semibold text-slate-700 mt-0.5">{log.user_name || '—'} <span className="text-slate-400 font-normal">({log.user_role || '—'})</span></p>
             </div>
           </div>
 
           {log.reason && (
             <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">
-              <p className="text-[10px] font-bold tracking-wide uppercase mb-1">Alasan</p>
+              <p className="text-[10px] font-medium mb-1">Alasan</p>
               <p>{log.reason}</p>
             </div>
           )}
@@ -214,8 +214,8 @@ export default function AuditLogClient({ logs }: Props) {
             { label: 'User Tercatat', val: distinctUsers, cls: 'text-amber-600' },
           ].map(c => (
             <div key={c.label} className="bg-white border border-slate-200 rounded-xl p-4 text-center">
-              <p className="text-[10.5px] font-semibold text-slate-400 uppercase tracking-wide">{c.label}</p>
-              <p className={`text-[22px] font-bold mt-1 tabular-nums leading-none ${c.cls}`}>{c.val}</p>
+              <p className="text-[10.5px] font-medium text-slate-400">{c.label}</p>
+              <p className={`text-[22px] font-semibold mt-1 tabular-nums leading-none ${c.cls}`}>{c.val}</p>
             </div>
           ))}
         </div>
@@ -271,7 +271,7 @@ export default function AuditLogClient({ logs }: Props) {
             <thead>
               <tr className="border-b" style={{ borderColor: 'rgba(243,244,246,0.9)', background: 'rgba(249,250,251,0.6)' }}>
                 {['WAKTU', 'MODUL', 'AKSI', 'RECORD', 'USER', 'ALASAN', ''].map(h => (
-                  <th key={h} className="px-4 py-3.5 text-left text-[10px] font-bold text-slate-400 tracking-widest uppercase whitespace-nowrap">{h}</th>
+                  <th key={h} className="px-4 py-3.5 text-left text-[10px] font-medium text-slate-400 whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -297,13 +297,13 @@ export default function AuditLogClient({ logs }: Props) {
                       <div className="flex items-center gap-1.5"><Clock size={11} className="text-slate-300"/>{formatDateTime(l.timestamp)}</div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-[12px] font-bold px-2 py-0.5 rounded-full" style={{ background: mcfg.bg, color: mcfg.text }}>{mod}</span>
+                      <span className="text-[12px] font-semibold px-2 py-0.5 rounded-full" style={{ background: mcfg.bg, color: mcfg.text }}>{mod}</span>
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-[12px] font-semibold px-2.5 py-1 rounded-full" style={{ background: acfg.bg, color: acfg.text }}>{normAction(l.action)}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="font-mono text-[12px] font-bold text-slate-900">{l.record_key || l.record_id || '—'}</span>
+                      <span className="font-mono text-[12px] font-semibold text-slate-900">{l.record_key || l.record_id || '—'}</span>
                     </td>
                     <td className="px-4 py-3 text-[12px] text-slate-600">
                       <div className="flex items-center gap-1.5"><User size={11} className="text-slate-300"/>{l.user_name || '—'}</div>

@@ -108,7 +108,7 @@ export default function BackupClient({ userRole }: { userRole: string }) {
           <p className="text-[12px] text-slate-400 mt-0.5">Unduh data sebagai CSV — kompatibel dengan Excel</p>
         </div>
         <button onClick={downloadAll} disabled={isPending}
-          className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold text-white rounded-xl disabled:opacity-60"
+          className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold text-white rounded-xl disabled:opacity-60"
           style={{ background: 'linear-gradient(135deg,#0891B2,#0E7490)', boxShadow: '0 4px 20px rgba(8,145,178,0.4)' }}>
           <Download size={14}/> Unduh Semua
         </button>
@@ -116,7 +116,7 @@ export default function BackupClient({ userRole }: { userRole: string }) {
 
       {/* Info banner */}
       <div className="rounded-xl px-4 py-3 text-[13px] text-blue-700" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)' }}>
-        <p className="font-bold mb-1">Cara backup:</p>
+        <p className="font-semibold mb-1">Cara backup:</p>
         <ul className="text-[12px] space-y-0.5 text-blue-600">
           <li>• Klik per-tabel untuk unduh satu file CSV</li>
           <li>• Klik <b>Unduh Semua</b> untuk unduh semua tabel sekaligus</li>
@@ -128,7 +128,7 @@ export default function BackupClient({ userRole }: { userRole: string }) {
       {/* Tables by group */}
       {groups.map(group => (
         <div key={group} className="space-y-2">
-          <p className="text-[12px] font-bold text-slate-500 uppercase tracking-widest px-1">{group}</p>
+          <p className="text-[12px] font-medium text-slate-500 px-1">{group}</p>
           <div className="space-y-1.5">
             {TABLES.filter(t => t.group === group).map(t => {
               const st = status[t.key] ?? 'idle'
@@ -140,14 +140,14 @@ export default function BackupClient({ userRole }: { userRole: string }) {
                       <Database size={14} className="text-cyan-600"/>
                     </div>
                     <div>
-                      <p className="text-[13px] font-bold text-slate-800">{t.label}</p>
+                      <p className="text-[13px] font-semibold text-slate-800">{t.label}</p>
                       <p className="text-[11px] text-slate-400">{t.desc}</p>
                     </div>
                   </div>
                   <button
                     onClick={() => downloadTable(t.key, t.label)}
                     disabled={st === 'loading' || isPending}
-                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[12px] font-bold transition-all disabled:opacity-50 ${
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[12px] font-semibold transition-all disabled:opacity-50 ${
                       st === 'done' ? 'bg-green-50 text-green-600' :
                       st === 'error' ? 'bg-red-50 text-red-500' :
                       'bg-cyan-50 text-cyan-700 hover:bg-cyan-100'

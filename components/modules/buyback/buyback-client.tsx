@@ -28,7 +28,7 @@ const HASIL_CFG: Record<string, { label: string; bg: string; text: string; icon:
 const inp = "w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"
 const F = ({ label, req, children }: { label: string; req?: boolean; children: React.ReactNode }) => (
   <div className="flex flex-col gap-1.5">
-    <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+    <label className="block text-[11px] font-medium text-slate-500">
       {label}{req && <span className="text-red-400 ml-0.5">*</span>}
     </label>
     {children}
@@ -88,7 +88,7 @@ export default function BuybackClient({ initialList, userRole, userName }: Props
         </div>
         <div className="flex items-center gap-2">
           {pendingCount > 0 && (
-            <span className="text-[12px] font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
+            <span className="text-[12px] font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
               {pendingCount} pending inspeksi
             </span>
           )}
@@ -97,7 +97,7 @@ export default function BuybackClient({ initialList, userRole, userName }: Props
             <RefreshCw size={13} /> Muat Ulang
           </button>
           <button onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-bold text-white transition-all bg-violet-600 hover:bg-violet-700">
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-semibold text-white transition-all bg-violet-600 hover:bg-violet-700">
             <Plus size={14} /> Terima Buyback
           </button>
         </div>
@@ -188,9 +188,9 @@ function BuybackForm({ userName, onClose, onSaved }: {
   if (done) return (
     <div className="bg-white rounded-xl border border-slate-200 p-8 text-center space-y-3">
       <CheckCircle2 size={40} className="mx-auto text-emerald-500" />
-      <p className="font-bold text-slate-800">Buyback Diterima</p>
+      <p className="font-semibold text-slate-800">Buyback Diterima</p>
       <p className="text-[13px] font-mono text-slate-500">{done}</p>
-      <button onClick={onSaved} className="px-6 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors">
+      <button onClick={onSaved} className="px-6 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors">
         Selesai
       </button>
     </div>
@@ -282,7 +282,7 @@ function BuybackForm({ userName, onClose, onSaved }: {
           Batal
         </button>
         <button onClick={handleSave} disabled={saving}
-          className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+          className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
           {saving ? 'Menyimpan…' : 'Simpan Buyback'}
         </button>
       </div>
@@ -319,7 +319,7 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, userName, onUp
             <StatusIcon size={16} style={{ color: cfg.text }} />
           </div>
           <div>
-            <p className="font-mono text-[13px] font-bold text-slate-800">{b.kode}</p>
+            <p className="font-mono text-[13px] font-semibold text-slate-800">{b.kode}</p>
             <p className="text-[12px] text-slate-400">{b.nama_customer} • {formatDate(b.tanggal)}</p>
           </div>
         </div>
@@ -328,7 +328,7 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, userName, onUp
             <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{b.shieldtag_kode}</span>
           )}
           {b.gramasi && (
-            <span className="text-[12px] font-bold text-slate-600">{b.gramasi} gr</span>
+            <span className="text-[12px] font-semibold text-slate-600">{b.gramasi} gr</span>
           )}
           <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
             style={{ background: cfg.bg, color: cfg.text }}>{cfg.label}</span>
@@ -366,7 +366,7 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, userName, onUp
           {/* Panel proses jika masih pending */}
           {b.status === 'pending' && canProses && (
             <div className="rounded-lg px-3 py-3 bg-violet-50 border border-violet-100 space-y-3">
-              <p className="text-[12px] font-bold text-violet-700">Tentukan Tindakan Buyback</p>
+              <p className="text-[12px] font-semibold text-violet-700">Tentukan Tindakan Buyback</p>
               <select value={aksi} onChange={e => setAksi(e.target.value)}
                 className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all">
                 <option value="">-- Pilih tindakan --</option>
@@ -379,7 +379,7 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, userName, onUp
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all resize-none"
                 rows={2} placeholder="Keterangan (opsional)" />
               <button onClick={doProses} disabled={saving || !aksi}
-                className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+                className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
                 {saving ? 'Memproses…' : 'Konfirmasi Tindakan'}
               </button>
             </div>

@@ -86,7 +86,7 @@ export default function PrioritasProduksiClient({
               style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}>
               <Icon size={18} style={{ color: cfg.text }} className="flex-shrink-0" />
               <div>
-                <p className="text-[13px] font-bold" style={{ color: cfg.text }}>{count} gramasi</p>
+                <p className="text-[13px] font-semibold" style={{ color: cfg.text }}>{count} gramasi</p>
                 <p className="text-[10px] font-semibold text-slate-500">{cfg.desc}</p>
               </div>
             </div>
@@ -98,11 +98,11 @@ export default function PrioritasProduksiClient({
       {totalRekomendasi > 0 && (
         <div className="rounded-xl p-4 flex items-center gap-4 bg-violet-50/20 border border-violet-200/50">
           <div className="text-center">
-            <p className="text-[20px] font-bold text-violet-700">{totalRekomendasi}</p>
-            <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">pcs total</p>
+            <p className="text-[20px] font-semibold text-violet-700">{totalRekomendasi}</p>
+            <p className="text-[10px] font-medium text-violet-400">pcs total</p>
           </div>
           <div>
-            <p className="text-[13px] font-bold text-violet-800">Total Rekomendasi Produksi</p>
+            <p className="text-[13px] font-semibold text-violet-800">Total Rekomendasi Produksi</p>
             <p className="text-[12px] text-violet-500">
               Jumlah item yang perlu diproduksi untuk memenuhi safety stock + semua PO aktif
             </p>
@@ -128,7 +128,7 @@ export default function PrioritasProduksiClient({
           <div key={p}>
             <div className="flex items-center gap-2 mb-2">
               <Icon size={14} style={{ color: cfg.text }} />
-              <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: cfg.text }}>
+              <p className="text-[12px] font-medium" style={{ color: cfg.text }}>
                 {cfg.label}
               </p>
             </div>
@@ -139,16 +139,16 @@ export default function PrioritasProduksiClient({
                   <thead>
                     <tr style={{ background: cfg.bg, borderBottom: `1px solid ${cfg.border}` }}>
                       {['Gramasi', 'Stok Gudang', 'Transit', 'WIP Produksi', 'Safety Stock', 'PO Demand', 'Rekomendasi', 'PO Aktif'].map(h => (
-                        <th key={h} className="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                        <th key={h} className="px-4 py-3 text-left text-[10px] font-medium text-slate-400 whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {items.map((item, i) => (
                       <tr key={item.gramasi} className={`hover:bg-slate-50/30 ${i !== 0 ? 'border-t border-black/[0.04]' : ''}`}>
-                        <td className="px-4 py-3 font-bold text-slate-800">{item.gramasi} gr</td>
+                        <td className="px-4 py-3 font-semibold text-slate-800">{item.gramasi} gr</td>
                         <td className="px-4 py-3">
-                          <span className={`font-bold text-[13px] ${item.stok < item.safetyStock ? 'text-red-600' : 'text-slate-800'}`}>
+                          <span className={`font-semibold text-[13px] ${item.stok < item.safetyStock ? 'text-red-600' : 'text-slate-800'}`}>
                             {item.stok} pcs
                           </span>
                         </td>
@@ -165,12 +165,12 @@ export default function PrioritasProduksiClient({
                         </td>
                         <td className="px-4 py-3">
                           {item.poDemand > 0 ? (
-                            <span className="font-bold text-red-600">{item.poDemand} pcs</span>
+                            <span className="font-semibold text-red-600">{item.poDemand} pcs</span>
                           ) : '—'}
                         </td>
                         <td className="px-4 py-3">
                           {item.rekomendasi > 0 ? (
-                            <span className="inline-flex items-center gap-1 font-bold text-white text-[12px] px-2.5 py-1 rounded-full"
+                            <span className="inline-flex items-center gap-1 font-semibold text-white text-[12px] px-2.5 py-1 rounded-full"
                               style={{ background: cfg.text }}>
                               +{item.rekomendasi} pcs
                             </span>
@@ -182,7 +182,7 @@ export default function PrioritasProduksiClient({
                           {item.poKodes.length > 0 ? (
                             <div className="flex flex-wrap gap-1">
                               {item.poKodes.map(k => (
-                                <span key={k} className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-sky-50 text-sky-700">{k}</span>
+                                <span key={k} className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-sky-50 text-sky-700">{k}</span>
                               ))}
                             </div>
                           ) : '—'}

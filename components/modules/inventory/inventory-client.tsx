@@ -54,7 +54,7 @@ export default function InventoryClient() {
         <div className="rounded-xl px-4 py-3 flex items-start gap-2.5 bg-amber-50 border border-amber-200">
           <ShieldAlert size={15} className="text-amber-500 flex-shrink-0 mt-0.5" />
           <p className="text-[12px] text-amber-700 leading-relaxed">
-            <span className="font-bold">{totalBelum} pcs</span> belum punya shieldtag. Barang sudah ada di gudang,
+            <span className="font-semibold">{totalBelum} pcs</span> belum punya shieldtag. Barang sudah ada di gudang,
             tapi <span className="font-semibold">belum bisa dikirim ke cabang</span> — daftarkan shieldtag-nya dulu.
           </p>
         </div>
@@ -81,7 +81,7 @@ export default function InventoryClient() {
           <div className="overflow-x-auto">
             <table className="w-full text-[13px]">
               <thead>
-                <tr className="text-[10.5px] font-semibold text-slate-400 uppercase tracking-wide bg-slate-50 border-b border-slate-200">
+                <tr className="text-[10.5px] font-medium text-slate-400 bg-slate-50 border-b border-slate-200">
                   <th className="text-left px-4 py-3">Gramasi</th>
                   <th className="text-right px-4 py-3">Total Gudang</th>
                   <th className="text-right px-4 py-3">Tershieldtag</th>
@@ -92,17 +92,17 @@ export default function InventoryClient() {
               <tbody>
                 {rows.map((r, i) => (
                   <tr key={r.gramasi} className={`border-t border-slate-200 ${i % 2 ? 'bg-slate-50/50' : ''}`}>
-                    <td className="px-4 py-3 font-bold text-slate-800">{r.gramasi}gr</td>
+                    <td className="px-4 py-3 font-semibold text-slate-800">{r.gramasi}gr</td>
                     <td className="px-4 py-3 text-right font-semibold text-slate-700">{r.total_packed} pcs</td>
                     <td className="px-4 py-3 text-right font-semibold text-green-600">{r.tershieldtag} pcs</td>
                     <td className="px-4 py-3 text-right font-semibold text-amber-600">{r.belum_shieldtag} pcs</td>
                     <td className="px-4 py-3 text-center">
                       {r.belum_shieldtag === 0 ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-green-100 text-green-700">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-green-100 text-green-700">
                           <ShieldCheck size={11} /> Siap mutasi
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
                           <ShieldAlert size={11} /> Sebagian belum
                         </span>
                       )}
@@ -128,10 +128,10 @@ function KPI({ label, value, sub, icon, tone }: { label: string; value: string; 
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-4">
       <div className="flex items-start justify-between mb-3">
-        <span className="text-[10.5px] font-semibold text-slate-400 uppercase tracking-wide">{label}</span>
+        <span className="text-[10.5px] font-medium text-slate-400">{label}</span>
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${tones[tone] ?? tones.slate}`}>{icon}</div>
       </div>
-      <p className="text-[20px] font-bold text-slate-900 leading-none tabular-nums">{value}</p>
+      <p className="text-[20px] font-semibold text-slate-900 leading-none tabular-nums">{value}</p>
       <p className="text-[11px] text-slate-400 mt-1">{sub}</p>
     </div>
   )

@@ -28,7 +28,7 @@ const STATUS_CFG: Record<string, { bg: string; text: string; label: string }> = 
 const inp = "w-full px-4 py-3 text-[13px] rounded-xl border border-slate-200/70 bg-white/80 focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-300 transition-all"
 const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
   <div className="flex flex-col gap-1.5">
-    <label className="text-[11px] font-bold text-slate-400 tracking-widest uppercase">{label}</label>
+    <label className="text-[11px] font-medium text-slate-400">{label}</label>
     {children}
   </div>
 )
@@ -55,7 +55,7 @@ export default function StockOpnameClient({ initialList, cabangList, userRole, u
             <ClipboardList size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-[16px] font-bold text-slate-900">Stock Opname</h1>
+            <h1 className="text-[16px] font-semibold text-slate-900">Stock Opname</h1>
             <p className="text-[12px] text-slate-400">Verifikasi stok fisik vs stok sistem</p>
           </div>
         </div>
@@ -65,7 +65,7 @@ export default function StockOpnameClient({ initialList, cabangList, userRole, u
             <RefreshCw size={13} className={isPending ? 'animate-spin' : ''} /> Muat Ulang
           </button>
           <button onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-bold text-white transition-all bg-violet-600 hover:bg-violet-700">
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-semibold text-white transition-all bg-violet-600 hover:bg-violet-700">
             <Plus size={14} /> Buat Stock Opname
           </button>
         </div>
@@ -172,7 +172,7 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
       {step === 'done' ? (
         <div className="text-center py-8 space-y-3">
           <CheckCircle2 size={40} className="mx-auto text-emerald-500" />
-          <p className="font-bold text-slate-800">Stock Opname Tersimpan</p>
+          <p className="font-semibold text-slate-800">Stock Opname Tersimpan</p>
           <p className="text-[13px] text-slate-500 font-mono">{savedKode}</p>
           {rows.some(r => r.selisih_pcs !== 0) && (
             <p className="text-[12px] text-amber-600 bg-amber-50 rounded-xl px-4 py-2">
@@ -194,7 +194,7 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
             </select>
           </F>
           <button onClick={loadStok} disabled={loadingRows}
-            className="w-full py-3 rounded-xl text-[13px] font-bold text-white transition-all bg-violet-600 hover:bg-violet-700 disabled:opacity-50">
+            className="w-full py-3 rounded-xl text-[13px] font-semibold text-white transition-all bg-violet-600 hover:bg-violet-700 disabled:opacity-50">
             {loadingRows ? 'Memuat stok sistem…' : `Ambil Stok ${lokasiLabel}`}
           </button>
         </div>
@@ -219,7 +219,7 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
               <tbody>
                 {rows.map(r => (
                   <tr key={r.gramasi} className={cn('border-t border-slate-50', r.selisih_pcs !== 0 ? 'bg-amber-50/40' : '')}>
-                    <td className="px-4 py-2.5 font-bold text-slate-700">{r.gramasi} gr</td>
+                    <td className="px-4 py-2.5 font-semibold text-slate-700">{r.gramasi} gr</td>
                     <td className="px-4 py-2.5 text-right text-slate-500">{r.pcs_sistem}</td>
                     <td className="px-4 py-2.5 text-right">
                       <input
@@ -261,7 +261,7 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
               Kembali
             </button>
             <button onClick={handleSave} disabled={saving || rows.length === 0}
-              className="flex-1 py-3 rounded-xl text-[13px] font-bold text-white transition-all disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
+              className="flex-1 py-3 rounded-xl text-[13px] font-semibold text-white transition-all disabled:opacity-50 bg-violet-600 hover:bg-violet-700">
               {saving ? 'Menyimpan…' : 'Simpan Stock Opname'}
             </button>
           </div>
@@ -295,7 +295,7 @@ function SOCard({ so, expanded, onToggle, canApprove, userName, onApproved }: {
         onClick={onToggle}>
         <div className="flex items-center gap-3">
           <div>
-            <p className="font-mono text-[13px] font-bold text-slate-800">{so.kode}</p>
+            <p className="font-mono text-[13px] font-semibold text-slate-800">{so.kode}</p>
             <p className="text-[12px] text-slate-400 mt-0.5">
               {formatDate(so.tanggal)} • {so.lokasi === 'gudang_pusat' ? 'Gudang Pusat' : so.lokasi}
             </p>
@@ -331,7 +331,7 @@ function SOCard({ so, expanded, onToggle, canApprove, userName, onApproved }: {
                     const diff = sel?.selisih_pcs ?? 0
                     return (
                       <tr key={row.gramasi} className={cn('border-t border-slate-50', diff !== 0 ? 'bg-amber-50/30' : '')}>
-                        <td className="px-4 py-2.5 font-bold text-slate-700">{row.gramasi} gr</td>
+                        <td className="px-4 py-2.5 font-semibold text-slate-700">{row.gramasi} gr</td>
                         <td className="px-4 py-2.5 text-right text-slate-500">{row.pcs} pcs</td>
                         <td className="px-4 py-2.5 text-right text-slate-700">{fisik?.pcs ?? row.pcs} pcs</td>
                         <td className={cn('px-4 py-2.5 text-right font-semibold',
@@ -370,11 +370,11 @@ function SOCard({ so, expanded, onToggle, canApprove, userName, onApproved }: {
                 rows={2} placeholder="Keterangan approval (opsional)" />
               <div className="flex gap-2">
                 <button onClick={() => doApprove(false)} disabled={approving}
-                  className="flex-1 py-2 rounded-xl text-[12px] font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5">
+                  className="flex-1 py-2 rounded-xl text-[12px] font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5">
                   <X size={13} /> Tolak
                 </button>
                 <button onClick={() => doApprove(true)} disabled={approving}
-                  className="flex-1 py-2 rounded-xl text-[12px] font-bold text-white transition-all flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600">
+                  className="flex-1 py-2 rounded-xl text-[12px] font-semibold text-white transition-all flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600">
                   <Check size={13} /> Setujui
                 </button>
               </div>

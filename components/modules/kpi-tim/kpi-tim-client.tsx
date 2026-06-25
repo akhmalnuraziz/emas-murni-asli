@@ -49,7 +49,7 @@ function ScoreBar({ value, color }: { value: number; color: string }) {
       <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
         <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, value)}%`, background: color }} />
       </div>
-      <span className="text-[11px] font-bold text-slate-500 w-8 text-right">{Math.round(value)}</span>
+      <span className="text-[11px] font-semibold text-slate-500 w-8 text-right">{Math.round(value)}</span>
     </div>
   )
 }
@@ -60,10 +60,10 @@ function AchievementBar({ pct, targetSerah, actual }: { pct: number; targetSerah
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+        <p className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
           <Target size={10} /> Achievement Target
         </p>
-        <span className="text-[12px] font-bold" style={{ color }}>{pct.toFixed(0)}%</span>
+        <span className="text-[12px] font-semibold" style={{ color }}>{pct.toFixed(0)}%</span>
       </div>
       <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
         <div className="h-full rounded-full transition-all" style={{ width: `${clamped}%`, background: color }} />
@@ -90,13 +90,13 @@ function PeriodSelector({ period, dateFrom, dateTo }: { period: string; dateFrom
         {PERIOD_OPTIONS.map(opt => {
           if (opt.value === 'custom') return (
             <button key="custom" onClick={() => setShowCustom(v => !v)}
-              className={cn('px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all',
+              className={cn('px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all',
                 showCustom ? 'bg-violet-600 text-white' : 'bg-white text-slate-500 border border-slate-200 hover:border-violet-200 hover:text-violet-600'
               )}>{opt.label}</button>
           )
           return (
             <a key={opt.value} href={`/kpi-tim?period=${opt.value}`}
-              className={cn('px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all cursor-pointer',
+              className={cn('px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all cursor-pointer',
                 period === opt.value && !showCustom ? 'bg-violet-600 text-white shadow-sm' : 'bg-white text-slate-500 border border-slate-200 hover:border-violet-200 hover:text-violet-600'
               )}>{opt.label}</a>
           )
@@ -111,7 +111,7 @@ function PeriodSelector({ period, dateFrom, dateTo }: { period: string; dateFrom
           <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
             className="text-[12px] border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-violet-400" />
           <button onClick={() => startTransition(() => router.push(`/kpi-tim?period=custom&from=${customFrom}&to=${customTo}`))}
-            className="px-3 py-1 rounded-xl bg-violet-600 text-white text-[12px] font-bold">Terapkan</button>
+            className="px-3 py-1 rounded-xl bg-violet-600 text-white text-[12px] font-semibold">Terapkan</button>
         </div>
       )}
     </div>
@@ -136,7 +136,7 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
           <Star size={20} className="text-white" />
         </div>
         <div>
-          <h1 className="text-[16px] font-bold text-slate-900">KPI Tim Produksi</h1>
+          <h1 className="text-[16px] font-semibold text-slate-900">KPI Tim Produksi</h1>
           <p className="text-[12px] text-slate-400">
             {periodLabel} · Efisiensi {bobot.efisiensi}% · Loss {bobot.loss}% · Kecepatan {bobot.kecepatan}%
           </p>
@@ -157,7 +157,7 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
           <div key={label} className="flex items-center gap-2 min-w-[180px]">
             <div className="w-2 h-8 rounded-full" style={{ background: color }} />
             <div>
-              <p className="text-[13px] font-bold text-slate-800">{label} <span className="text-[12px] font-normal text-slate-400">({pct}%)</span></p>
+              <p className="text-[13px] font-semibold text-slate-800">{label} <span className="text-[12px] font-normal text-slate-400">({pct}%)</span></p>
               <p className="text-[10px] text-slate-400">{desc}</p>
             </div>
           </div>
@@ -172,12 +172,12 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
             <button
               onClick={() => setExpanded(expanded === tim.id ? null : tim.id)}
               className="w-full px-5 py-4 flex items-center gap-4 text-left hover:bg-slate-50/50 transition-colors">
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[13px] font-bold text-white flex-shrink-0"
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[13px] font-semibold text-white flex-shrink-0"
                 style={{ background: tim.warna ?? '#7F6DC6' }}>
                 {rank + 1}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-slate-800">{tim.nama}</p>
+                <p className="font-semibold text-slate-800">{tim.nama}</p>
                 <p className="text-[12px] text-slate-400">
                   {tim.anggota.filter(a => a.aktif).length} anggota
                   {tim.stats ? ` · ${tim.stats.count} proses · ${tim.stats.totalSerah.toFixed(1)} gr serah` : ''}
@@ -187,7 +187,7 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
               {tim.achievementPct !== null && (
                 <div className="flex-shrink-0 text-center hidden sm:block">
                   <p className="text-[10px] text-slate-400 font-semibold">Target</p>
-                  <p className="text-[13px] font-bold" style={{ color: tim.achievementPct >= 100 ? '#16a34a' : tim.achievementPct >= 70 ? '#d97706' : '#dc2626' }}>
+                  <p className="text-[13px] font-semibold" style={{ color: tim.achievementPct >= 100 ? '#16a34a' : tim.achievementPct >= 70 ? '#d97706' : '#dc2626' }}>
                     {tim.achievementPct.toFixed(0)}%
                   </p>
                 </div>
@@ -196,7 +196,7 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
                 {tim.kpi ? (
                   <>
                     <Stars n={tim.bintang} />
-                    <span className="text-[13px] font-bold text-slate-600 w-10 text-right">
+                    <span className="text-[13px] font-semibold text-slate-600 w-10 text-right">
                       {Math.round(tim.kpi.totalScore)}
                     </span>
                   </>
@@ -260,15 +260,15 @@ export default function KpiTimClient({ kpiList, bobot, period, dateFrom, dateTo 
                         { label: 'Total Proses', value: `${tim.stats.count}x` },
                       ].map(({ label, value }) => (
                         <div key={label} className="rounded-xl p-3 text-center bg-slate-400/[0.06] border border-slate-400/[0.08]">
-                          <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">{label}</p>
-                          <p className="text-[13px] font-bold text-slate-700 mt-0.5">{value}</p>
+                          <p className="text-[10px] text-slate-400 font-medium">{label}</p>
+                          <p className="text-[13px] font-semibold text-slate-700 mt-0.5">{value}</p>
                         </div>
                       ))}
                     </div>
 
                     {/* Anggota */}
                     <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Anggota Tim</p>
+                      <p className="text-[10px] font-medium text-slate-400 mb-2">Anggota Tim</p>
                       <div className="flex flex-wrap gap-1.5">
                         {tim.anggota.filter(a => a.aktif).map(a => (
                           <span key={a.id} className="text-[12px] px-2.5 py-1 rounded-full font-medium"

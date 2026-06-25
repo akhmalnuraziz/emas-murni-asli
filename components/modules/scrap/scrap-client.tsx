@@ -73,12 +73,12 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-[18px] font-bold text-slate-800">Scrap Inventory</h1>
+          <h1 className="text-[18px] font-semibold text-slate-800">Scrap Inventory</h1>
           <p className="text-[12px] text-slate-400 mt-0.5">Sisa lebihan proses produksi</p>
         </div>
         {canManage && (
           <button onClick={() => { setModal('create'); setErr('') }}
-            className="flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-bold text-white rounded-xl bg-violet-600 hover:bg-violet-700 transition-colors">
+            className="flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-semibold text-white rounded-xl bg-violet-600 hover:bg-violet-700 transition-colors">
             <Plus size={14}/> Tambah Scrap
           </button>
         )}
@@ -92,8 +92,8 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
           { label: 'Entri', val: `${scrapList.length} item`, color: '#7C3AED' },
         ].map(c => (
           <div key={c.label} className="rounded-xl px-4 py-3 bg-white border border-slate-200">
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">{c.label}</p>
-            <p className="text-[16px] font-bold mt-0.5" style={{ color: c.color }}>{c.val}</p>
+            <p className="text-[10px] font-medium text-slate-400">{c.label}</p>
+            <p className="text-[16px] font-semibold mt-0.5" style={{ color: c.color }}>{c.val}</p>
           </div>
         ))}
       </div>
@@ -124,7 +124,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
             <thead>
               <tr className="bg-slate-50">
                 {['KODE','BATCH','SUMBER','BERAT','SISA','STATUS','TGL','AKSI'].map(h => (
-                  <th key={h} className="px-4 py-3.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">{h}</th>
+                  <th key={h} className="px-4 py-3.5 text-left text-[10px] font-medium text-slate-400 whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -138,15 +138,15 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
                 const cfg = STATUS_CFG[s.status] ?? STATUS_CFG['tersedia']
                 return (
                   <tr key={s.id} className={cn('border-t border-slate-50 hover:bg-slate-50/50', i === 0 ? 'border-transparent' : '')}>
-                    <td className="px-4 py-3"><span className="font-mono text-[12px] font-bold text-slate-700">{s.kode}</span></td>
+                    <td className="px-4 py-3"><span className="font-mono text-[12px] font-semibold text-slate-700">{s.kode}</span></td>
                     <td className="px-4 py-3 text-[12px] text-slate-500">{s.batch_kode || '—'}</td>
                     <td className="px-4 py-3 text-[12px] text-slate-500 capitalize">{s.sumber_proses}</td>
-                    <td className="px-4 py-3 text-[12px] font-bold text-slate-700">{fmtGram(s.berat_gram)}</td>
-                    <td className="px-4 py-3 text-[12px] font-bold" style={{ color: Number(s.berat_sisa) > 0 ? '#16A34A' : '#94A3B8' }}>
+                    <td className="px-4 py-3 text-[12px] font-semibold text-slate-700">{fmtGram(s.berat_gram)}</td>
+                    <td className="px-4 py-3 text-[12px] font-semibold" style={{ color: Number(s.berat_sisa) > 0 ? '#16A34A' : '#94A3B8' }}>
                       {fmtGram(s.berat_sisa ?? 0)}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full capitalize"
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize"
                         style={{ background: cfg.bg, color: cfg.text }}>{s.status}</span>
                     </td>
                     <td className="px-4 py-3 text-[12px] text-slate-400 whitespace-nowrap">{formatDate(s.tanggal)}</td>
@@ -156,7 +156,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
                           <button onClick={async () => {
                             const r = await updateScrapStatus(s.id, 'dilebur', s.berat_gram)
                             if (r?.error) showToast(r.error, false); else showToast('✅ Status diperbarui')
-                          }} className="px-2 py-1 rounded-lg text-[10px] font-bold bg-violet-50 text-violet-600 hover:bg-violet-100 transition-colors">
+                          }} className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-violet-50 text-violet-600 hover:bg-violet-100 transition-colors">
                             Lebur
                           </button>
                         )}
@@ -185,30 +185,30 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
               <button onClick={() => setModal(null)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X size={14}/></button>
             </div>
             <form id="scrap-form" onSubmit={e => { e.preventDefault(); handleCreate(new FormData(e.currentTarget)) }} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
-              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal *</label>
+              <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal *</label>
                 <input name="tanggal" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/></div>
-              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Berat (gr) *</label>
+              <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Berat (gr) *</label>
                 <input name="berat_gram" type="number" step="0.001" min="0.001" required placeholder="0.000" className={inp}/></div>
-              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Sumber Proses</label>
+              <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Sumber Proses</label>
                 <select name="sumber_proses" className={inp}>
                   {SUMBER.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
-              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Batch (opsional)</label>
+              <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Batch (opsional)</label>
                 <input name="batch_kode" placeholder="mis. B-030" className={inp}/></div>
-              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tim</label>
+              <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tim</label>
                 <select name="tim_nama" className={inp}>
                   <option value="">— Pilih Tim —</option>
                   {timList.map((t: any) => <option key={t.id} value={t.nama}>{t.nama}</option>)}
                 </select>
               </div>
-              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
+              <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan</label>
                 <input name="catatan" placeholder="opsional" className={inp}/></div>
               {err && <p className="text-[12px] text-red-500 font-semibold">{err}</p>}
             </form>
             <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
               <button type="button" onClick={() => setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-              <button type="submit" form="scrap-form" disabled={isPending} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+              <button type="submit" form="scrap-form" disabled={isPending} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
                 {isPending ? 'Menyimpan...' : 'Simpan'}
               </button>
             </div>
@@ -228,7 +228,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
               <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">
                 <p className="font-semibold">⚠️ Scrap akan di-void dan tidak bisa diaktifkan kembali</p>
               </div>
-              <div><label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Alasan Void *</label>
+              <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Alasan Void *</label>
                 <input value={voidReason} onChange={e => setVoidReason(e.target.value)}
                   placeholder="Alasan void..." className={inp}/>
               </div>
@@ -242,7 +242,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
                     if (r?.error) showToast(r.error, false); else { showToast('Scrap di-void'); setVoidModal(null) }
                   })
                 }}
-                className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+                className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
                 {isPending ? 'Memproses...' : 'Void'}
               </button>
             </div>
