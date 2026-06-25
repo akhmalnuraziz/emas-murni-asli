@@ -260,7 +260,7 @@ export default function DashboardClient({
                   <Icon size={16} className={color} />
                 </div>
                 <div>
-                  <p className="text-[22px] font-bold text-slate-900 leading-none tabular-nums">{count}</p>
+                  <p className="text-[22px] font-semibold text-slate-900 leading-none tabular-nums">{count}</p>
                   <p className="text-[11px] text-slate-400 font-medium mt-0.5">{label}</p>
                 </div>
               </a>
@@ -333,7 +333,7 @@ export default function DashboardClient({
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <p className="text-[24px] font-bold text-slate-900 leading-none tabular-nums">{totalPcs.toLocaleString('id-ID')} pcs</p>
+                      <p className="text-[24px] font-semibold text-slate-900 leading-none tabular-nums">{totalPcs.toLocaleString('id-ID')} pcs</p>
                       {targetPackingHarian > 0 && (
                         <p className="text-[11px] text-slate-400 mt-1 font-normal">Target: {targetPackingHarian.toLocaleString('id-ID')} pcs/hari</p>
                       )}
@@ -344,7 +344,7 @@ export default function DashboardClient({
                     <div className="mb-4">
                       <div className="flex justify-between mb-1">
                         <span className="text-[11px] text-slate-400 font-medium">Progress Harian</span>
-                        <span className={cn('text-[11px] font-bold tabular-nums',
+                        <span className={cn('text-[11px] font-semibold tabular-nums',
                           pct >= 100 ? 'text-green-600' : pct >= 70 ? 'text-amber-500' : 'text-slate-500')}>
                           {pct}%
                         </span>
@@ -537,7 +537,7 @@ function KpiCard({ label, value, sub, sub2, icon: Icon, iconColor, iconBg, alert
           <Icon size={15} className={iconColor} />
         </div>
       </div>
-      <p className="text-[22px] font-bold text-slate-900 leading-none tabular-nums">{value}</p>
+      <p className="text-[22px] font-semibold text-slate-900 leading-none tabular-nums">{value}</p>
       {sub  && <p className="text-[11px] text-slate-400 mt-1.5 font-normal">{sub}</p>}
       {sub2 && <p className="text-[11px] text-violet-600 font-medium">{sub2}</p>}
     </div>

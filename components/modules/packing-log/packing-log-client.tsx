@@ -301,12 +301,12 @@ function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint,onShieldtagC
       </div>
       <div className="grid grid-cols-3 gap-2">
         <div><p className="text-[10px] text-slate-400">Batch</p><p className="text-[12px] font-semibold text-slate-700">{p.batch_kode}</p></div>
-        <div><p className="text-[10px] text-slate-400">TANGGAL</p><p className="text-[12px] font-semibold text-slate-700">{formatDate(p.tanggal)}</p></div>
+        <div><p className="text-[10px] text-slate-400">Tanggal</p><p className="text-[12px] font-semibold text-slate-700">{formatDate(p.tanggal)}</p></div>
         <div><p className="text-[10px] text-slate-400">Gramasi</p><p className="text-[12px] font-semibold text-slate-700">{p.gramasi} gr</p></div>
         <div><p className="text-[10px] text-slate-400">Dipack</p><p className="text-[13px] font-semibold text-slate-800">{p.pcs_dipack} pcs</p></div>
-        <div><p className="text-[10px] text-slate-400">TOTAL GRAM</p><p className="text-[12px] font-semibold text-slate-700">{Number(p.total_gram_aktual).toFixed(3)} gr</p></div>
+        <div><p className="text-[10px] text-slate-400">Total gram</p><p className="text-[12px] font-semibold text-slate-700">{Number(p.total_gram_aktual).toFixed(3)} gr</p></div>
         <div>
-          <p className="text-[10px] text-slate-400">SHIELDTAG</p>
+          <p className="text-[10px] text-slate-400">Shieldtag</p>
           <button type="button" onClick={()=>{ if(stCount>0&&onShieldtagClick) onShieldtagClick() }} disabled={stCount===0}
             className={cn('text-[12px] font-semibold',stCount>0?'text-emerald-600 underline decoration-dotted cursor-pointer':'text-slate-400 cursor-default')}>🏷 {stCount}/{p.pcs_dipack}</button>
         </div>
@@ -421,7 +421,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-[18px] font-bold text-slate-900 tracking-tight">Packing Log</h1>
+            <h1 className="text-[18px] font-semibold text-slate-900 tracking-tight">Packing Log</h1>
             <p className="text-[12px] text-slate-400 mt-0.5">Kelola packing & registrasi Shieldtag</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-end">
@@ -515,7 +515,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
                       onChange={()=>toggleSelectAll(filteredByDate(filtered))}/>
                   )}
                 </th>
-                {([['KODE','left'],['TANGGAL','left'],['BATCH','center'],['GRAMASI','center'],['PCS TOTAL','left'],['DIPACK','left'],['TOTAL GRAM','left'],['ADMIN','left'],['OPERATOR','left'],['FOTO','left'],['SHIELDTAG','center'],['STATUS','center'],['AKSI','left']] as const).map(([h,al])=>(
+                {([['Kode','left'],['Tanggal','left'],['Batch','center'],['Gramasi','center'],['PCS total','left'],['Dipack','left'],['Total gram','left'],['Admin','left'],['Operator','left'],['Foto','left'],['Shieldtag','center'],['Status','center'],['Aksi','left']] as const).map(([h,al])=>(
                   <th key={h}className={cn('px-4 py-3 text-[10px] font-medium text-slate-400 whitespace-nowrap align-middle',al==='center'?'text-center':'text-left')}>{h}</th>
                 ))}
               </tr>

@@ -1543,7 +1543,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-[18px] font-bold text-slate-900 tracking-tight">Produksi</h1>
+            <h1 className="text-[18px] font-semibold text-slate-900 tracking-tight">Produksi</h1>
           </div>
           {canEdit&&(
             <button onClick={()=>openModal('create')}

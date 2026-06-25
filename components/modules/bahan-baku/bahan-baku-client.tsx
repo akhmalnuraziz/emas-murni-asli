@@ -436,7 +436,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-[18px] font-bold text-slate-900 tracking-tight">Bahan Baku</h1>
+            <h1 className="text-[18px] font-semibold text-slate-900 tracking-tight">Bahan Baku</h1>
             <p className="text-[12px] text-slate-400 mt-0.5">{batches.filter(b=>getBatchStatus(b)!=='dihapus').length} batch tercatat</p>
           </div>
           <div className="flex items-center gap-2">
