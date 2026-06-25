@@ -54,8 +54,8 @@ function StatusBadge({ status }: { status: string }) {
     pending: 'bg-amber-100 text-amber-700',
   }
   return (
-    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cfg[status] ?? 'bg-slate-100 text-slate-500'}`}>
-      {status.toUpperCase()}
+    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${cfg[status] ?? 'bg-slate-100 text-slate-500'}`}>
+      {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
   )
 }
@@ -157,12 +157,12 @@ function CreatePenjualanModal({
           {/* Header fields */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Tanggal *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal *</label>
               <input name="tanggal" type="date" required defaultValue={new Date().toISOString().split('T')[0]}
                 className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all" />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Channel *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Channel *</label>
               <select name="channel" value={channel} onChange={e => setChannel(e.target.value)}
                 className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all">
                 <option value="toko">Toko Fisik</option>
@@ -180,7 +180,7 @@ function CreatePenjualanModal({
           {/* Conditional fields */}
           {isCabang && (
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Cabang *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Cabang *</label>
               <select name="cabang_kode" required className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"
                 onChange={e => {
                   const opt = e.target.options[e.target.selectedIndex]
@@ -196,11 +196,11 @@ function CreatePenjualanModal({
           {isMktpl && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Akun Marketplace</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Akun Marketplace</label>
                 <input name="marketplace_akun" placeholder="mis. tokomas_emas" className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all" />
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">No. Invoice Marketplace</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">No. Invoice Marketplace</label>
                 <input name="no_invoice_mktpl" placeholder="INV/xxxxxxxx" className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all" />
               </div>
             </div>
@@ -209,21 +209,21 @@ function CreatePenjualanModal({
           {/* Customer */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Nama Customer</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Nama Customer</label>
               <input name="nama_customer" placeholder="Opsional" className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all" />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">No. HP</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">No. HP</label>
               <input name="hp_customer" placeholder="08xx…" className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">No. KTP</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">No. KTP</label>
               <input name="ktp_customer" placeholder="Opsional" className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all" />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Alamat</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Alamat</label>
               <input name="alamat_customer" placeholder="Opsional" className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all" />
             </div>
           </div>
@@ -231,9 +231,9 @@ function CreatePenjualanModal({
           {/* Items */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Item ShieldTag *</label>
+              <label className="text-[11px] font-medium text-slate-500">Item ShieldTag *</label>
               <button type="button" onClick={addItem}
-                className="text-[10px] font-bold text-violet-600 hover:text-violet-800 flex items-center gap-1">
+                className="text-[10px] font-semibold text-violet-600 hover:text-violet-800 flex items-center gap-1">
                 <Plus size={12} /> Tambah
               </button>
             </div>
@@ -266,7 +266,7 @@ function CreatePenjualanModal({
                   )}
                   {it.preview && !it.lookupError && (
                     <div className="flex items-center gap-2 pl-3">
-                      <span className="text-[10px] font-bold text-green-700 bg-green-50 rounded-lg px-2 py-0.5">✓ {it.preview.produk_nama}</span>
+                      <span className="text-[10px] font-semibold text-green-700 bg-green-50 rounded-lg px-2 py-0.5">✓ {it.preview.produk_nama}</span>
                       <span className="text-[10px] text-slate-400">{it.preview.gramasi} gr</span>
                     </div>
                   )}
@@ -281,9 +281,9 @@ function CreatePenjualanModal({
           {/* Payments */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Pembayaran</label>
+              <label className="text-[11px] font-medium text-slate-500">Pembayaran</label>
               <button type="button" onClick={addPayment}
-                className="text-[10px] font-bold text-violet-600 hover:text-violet-800 flex items-center gap-1">
+                className="text-[10px] font-semibold text-violet-600 hover:text-violet-800 flex items-center gap-1">
                 <Plus size={12} /> Tambah metode
               </button>
             </div>
@@ -309,7 +309,7 @@ function CreatePenjualanModal({
 
           {/* Notes */}
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Catatan</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan</label>
             <input name="catatan" placeholder="Opsional" className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all" />
           </div>
 
@@ -322,7 +322,7 @@ function CreatePenjualanModal({
             Batal
           </button>
           <button type="submit" form="create-penjualan-form" disabled={pending}
-            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
             {pending ? 'Menyimpan…' : 'Simpan & Buka Faktur'}
           </button>
         </div>
@@ -353,7 +353,7 @@ function PenjualanRow({ pj, canSeeRp, isOwner }: { pj: Penjualan; canSeeRp: bool
         onClick={() => setOpen(o => !o)}>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-mono font-bold text-[13px] text-slate-800">{pj.no_faktur}</span>
+            <span className="font-mono font-semibold text-[13px] text-slate-800">{pj.no_faktur}</span>
             <StatusBadge status={pj.status} />
             <ChannelBadge channel={pj.channel} />
           </div>
@@ -366,7 +366,7 @@ function PenjualanRow({ pj, canSeeRp, isOwner }: { pj: Penjualan; canSeeRp: bool
         <div className="text-right flex-shrink-0">
           {canSeeRp && (
             <>
-              <p className="text-[13px] font-bold text-slate-800">{fmtRp(pj.total_harga_jual ?? 0)}</p>
+              <p className="text-[13px] font-semibold text-slate-800">{fmtRp(pj.total_harga_jual ?? 0)}</p>
               <p className={`text-[11px] font-semibold ${(pj.total_profit ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 profit {fmtRp(pj.total_profit ?? 0)}
               </p>
@@ -382,13 +382,13 @@ function PenjualanRow({ pj, canSeeRp, isOwner }: { pj: Penjualan; canSeeRp: bool
         <div className="px-4 pb-4 border-t border-slate-200 pt-3 space-y-3">
           {/* Items */}
           <div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Item</p>
+            <p className="text-[10px] font-medium text-slate-400 mb-1">Item</p>
             <div className="space-y-1">
               {pj.items.map(it => (
                 <div key={it.id} className="flex justify-between items-center text-[12px] text-slate-600">
                   <span className="font-mono font-semibold">{it.shieldtag_kode}</span>
                   <span>{it.gramasi} gr</span>
-                  {canSeeRp && <span className="font-bold">{fmtRp(it.harga_jual)}</span>}
+                  {canSeeRp && <span className="font-semibold">{fmtRp(it.harga_jual)}</span>}
                   {canSeeRp && <span className={it.profit >= 0 ? 'text-green-600' : 'text-red-500'}>{fmtRp(it.profit)}</span>}
                 </div>
               ))}
@@ -398,12 +398,12 @@ function PenjualanRow({ pj, canSeeRp, isOwner }: { pj: Penjualan; canSeeRp: bool
           {/* Payments */}
           {pj.payments.length > 0 && (
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Pembayaran</p>
+              <p className="text-[10px] font-medium text-slate-400 mb-1">Pembayaran</p>
               <div className="space-y-1">
                 {pj.payments.map(p => (
                   <div key={p.id} className="flex justify-between text-[12px] text-slate-600">
                     <span>{p.metode}</span>
-                    {canSeeRp && <span className="font-bold">{fmtRp(p.jumlah)}</span>}
+                    {canSeeRp && <span className="font-semibold">{fmtRp(p.jumlah)}</span>}
                   </div>
                 ))}
               </div>
@@ -430,7 +430,7 @@ function PenjualanRow({ pj, canSeeRp, isOwner }: { pj: Penjualan; canSeeRp: bool
                     placeholder="Alasan void…"
                     className="flex-1 h-9 rounded-lg border border-red-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-red-400/30 transition-all" />
                   <button onClick={doVoid} disabled={pending || !voidReason.trim()}
-                    className="h-9 px-3 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-bold text-white transition-colors disabled:opacity-50">
+                    className="h-9 px-3 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
                     {pending ? '…' : 'Void'}
                   </button>
                   <button onClick={() => setShowVoid(false)} className="text-[13px] text-slate-400 hover:text-slate-600">Batal</button>
@@ -478,7 +478,7 @@ export default function PenjualanClient({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[18px] font-bold text-slate-900 tracking-tight">Penjualan</h1>
+          <h1 className="text-[18px] font-semibold text-slate-900 tracking-tight">Penjualan</h1>
           <p className="text-[12px] text-slate-400 mt-0.5">
             {penjualanList.length} transaksi
             {canSeeRp && ` · Omzet bulan ini: ${fmtRp(totalBulanIni)}`}
