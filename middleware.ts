@@ -31,8 +31,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  const isAuthPage = pathname.startsWith('/login')
-  const isPublicPath = pathname === '/' || isAuthPage
+  const isAuthPage    = pathname.startsWith('/login')
+  const isPublicPath  = pathname === '/'
+    || isAuthPage
+    || pathname.startsWith('/reset-password')
+    || pathname.startsWith('/auth/')
 
   if (!user && !isPublicPath) {
     const url = request.nextUrl.clone()
