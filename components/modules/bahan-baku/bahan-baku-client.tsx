@@ -289,8 +289,8 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
               placeholder={si?.warn?'Wajib — jelaskan alasan selisih berat':'Catatan tambahan...'}
               className={cn(inp,si?.warn&&'border-red-300')} required={!!si?.warn}/>
           </F>
-          {/* TTD wajib jika selisih melebihi toleransi DAN catatan belum diisi */}
-          {si?.warn&&!catatan.trim()&&(
+          {/* TTD wajib jika selisih melebihi toleransi */}
+          {si?.warn&&(
             <LossApprovalPanel
               lossGram={Math.abs(parseFloat(pusat)-parseFloat(gudang))}
               toleransiGram={0.05}
