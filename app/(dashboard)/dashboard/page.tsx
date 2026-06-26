@@ -39,6 +39,7 @@ export default async function DashboardPage({
   const [
     { data: profile },
     { data: shieldtagAktif },
+    { data: _shieldtagTransit },
     { data: penjualanPeriode },
     { data: buybackPeriode },
     { data: produksiPipeline },
@@ -62,6 +63,9 @@ export default async function DashboardPage({
     { data: targetRow },
     // Balance Engine
     { data: balanceBatches },
+    { data: _balanceProduksi },
+    { data: _balanceShieldtag },
+    { data: _balancePenjualan },
   ] = await Promise.all([
     supabase.from('users_profile').select('name, role').eq('id', user?.id ?? '').single(),
     supabase.from('shieldtag').select('gramasi, hpp').eq('status', 'Aktif').is('voided_at', null),
