@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const OPENAGENTIC_URL = process.env.OPENAGENTIC_API_URL!
-const OPENAGENTIC_KEY = process.env.OPENAGENTIC_API_KEY!
+const GROQ_API_URL = process.env.GROQ_API_URL!
+const GROQ_API_KEY = process.env.GROQ_API_KEY!
 
 const SYSTEM_PROMPT = `Kamu adalah asisten AI untuk sistem manajemen produksi emas PT Emas Murni Asli. 
 Kamu bisa membantu menjawab pertanyaan tentang:
@@ -18,21 +18,20 @@ Gunakan data yang diberikan user untuk memberikan analisis yang akurat.`
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, model = 'claude-sonnet-4.5' } = await req.json()
+    const { messages, model = 'llama-3.3-70b-versatile' } = await req.json()
 
-    // Validate env
-    if (!OPENAGENTIC_URL || !OPENAGENTIC_KEY) {
+    if (!GROQ_API_URL || !GROQ_API_KEY) {
       return NextResponse.json(
         { error: 'API belum dikonfigurasi. Hubungi admin.' },
         { status: 500 }
       )
     }
 
-    const response = await fetch(`${OPENAGENTIC_URL}/chat/completions`, {
+    const response = await fetch(`${GROQ_API_URL}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAGENTIC_KEY}`,
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
       },
       body: JSON.stringify({
         model,
@@ -41,28 +40,23 @@ export async function POST(req: NextRequest) {
           ...messages,
         ],
         stream: true,
+        max_tokens: 2048,
       }),
     })
 
-    // Handle upstream errors
     if (!response.ok) {
       const errorText = await response.text()
       let errorMsg = 'Layanan AI sedang tidak tersedia.'
 
       try {
         const errorData = JSON.parse(errorText)
-        if (errorData.error?.code === 'proxy_error') {
-          errorMsg = 'Layanan AI sedang sibuk atau dalam pemeliharaan. Coba lagi dalam beberapa menit.'
-        } else if (errorData.error?.code === 'missing_api_key') {
-          errorMsg = 'API key tidak valid. Hubungi admin.'
-        } else if (errorData.error?.message) {
+        if (errorData.error?.message) {
           errorMsg = errorData.error.message
         }
       } catch {
-        // Use default error message
+        // Use default
       }
 
-      // Return error as SSE so client can handle it
       const encoder = new TextEncoder()
       const stream = new ReadableStream({
         start(controller) {
@@ -73,25 +67,17 @@ export async function POST(req: NextRequest) {
       })
 
       return new Response(stream, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
-        },
+        headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
       })
     }
 
-    // Stream the response
     const encoder = new TextEncoder()
     const decoder = new TextDecoder()
 
     const stream = new ReadableStream({
       async start(controller) {
         const reader = response.body?.getReader()
-        if (!reader) {
-          controller.close()
-          return
-        }
+        if (!reader) { controller.close(); return }
 
         try {
           while (true) {
@@ -113,9 +99,7 @@ export async function POST(req: NextRequest) {
                 if (content) {
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`))
                 }
-              } catch {
-                // Skip malformed lines
-              }
+              } catch {}
             }
           }
         } catch (error) {
@@ -127,11 +111,7 @@ export async function POST(req: NextRequest) {
     })
 
     return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-      },
+      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
     })
   } catch (error) {
     return NextResponse.json(

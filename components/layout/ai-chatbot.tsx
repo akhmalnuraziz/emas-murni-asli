@@ -5,11 +5,10 @@ import { MessageCircle, X, Send, Bot, User, ChevronDown, RefreshCcw, AlertCircle
 import { cn } from '@/lib/utils'
 
 const AVAILABLE_MODELS = [
-  { id: 'claude-sonnet-4.5', name: 'Claude Sonnet 4.5', provider: 'Anthropic' },
-  { id: 'gpt-5.2', name: 'GPT-5.2', provider: 'OpenAI' },
-  { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', provider: 'Google' },
-  { id: 'deepseek-3.2', name: 'DeepSeek 3.2', provider: 'DeepSeek' },
-  { id: 'qwen3.7-max', name: 'Qwen 3.7 Max', provider: 'Alibaba' },
+  { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B', provider: 'Meta (via Groq)' },
+  { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B', provider: 'Meta (via Groq)' },
+  { id: 'gemma2-9b-it', name: 'Gemma 2 9B', provider: 'Google (via Groq)' },
+  { id: 'mixtral-8x7b-32768', name: 'Mixtral 8x7B', provider: 'Mistral (via Groq)' },
 ]
 
 interface Message {

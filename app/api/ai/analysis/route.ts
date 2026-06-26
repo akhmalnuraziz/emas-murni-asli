@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const OPENAGENTIC_URL = process.env.OPENAGENTIC_API_URL!
-const OPENAGENTIC_KEY = process.env.OPENAGENTIC_API_KEY!
+const GROQ_API_URL = process.env.GROQ_API_URL!
+const GROQ_API_KEY = process.env.GROQ_API_KEY!
 
 const ANALYSIS_PROMPT = `Kamu adalah analis data untuk PT Emas Murni Asli, produsen emas.
 Berdasarkan data yang diberikan, buatlah analisis singkat yang mencakup:
@@ -14,10 +14,9 @@ Jawab dalam Bahasa Indonesia, singkat dan padat. Gunakan poin-poin jika perlu.`
 
 export async function POST(req: NextRequest) {
   try {
-    const { data, question, model = 'claude-sonnet-4.5' } = await req.json()
+    const { data, question, model = 'llama-3.3-70b-versatile' } = await req.json()
 
-    // Validate env
-    if (!OPENAGENTIC_URL || !OPENAGENTIC_KEY) {
+    if (!GROQ_API_URL || !GROQ_API_KEY) {
       return NextResponse.json(
         { error: 'API belum dikonfigurasi. Hubungi admin.' },
         { status: 500 }
@@ -30,11 +29,11 @@ ${JSON.stringify(data, null, 2)}
 
 Pertanyaan: ${question || 'Buat analisis kondisi bisnis saat ini berdasarkan data di atas.'}`
 
-    const response = await fetch(`${OPENAGENTIC_URL}/chat/completions`, {
+    const response = await fetch(`${GROQ_API_URL}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAGENTIC_KEY}`,
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
       },
       body: JSON.stringify({
         model,
@@ -43,28 +42,21 @@ Pertanyaan: ${question || 'Buat analisis kondisi bisnis saat ini berdasarkan dat
           { role: 'user', content: userMessage },
         ],
         stream: true,
+        max_tokens: 2048,
       }),
     })
 
-    // Handle upstream errors
     if (!response.ok) {
       const errorText = await response.text()
       let errorMsg = 'Layanan AI sedang tidak tersedia.'
 
       try {
         const errorData = JSON.parse(errorText)
-        if (errorData.error?.code === 'proxy_error') {
-          errorMsg = 'Layanan AI sedang sibuk atau dalam pemeliharaan. Coba lagi dalam beberapa menit.'
-        } else if (errorData.error?.code === 'missing_api_key') {
-          errorMsg = 'API key tidak valid. Hubungi admin.'
-        } else if (errorData.error?.message) {
+        if (errorData.error?.message) {
           errorMsg = errorData.error.message
         }
-      } catch {
-        // Use default error message
-      }
+      } catch {}
 
-      // Return error as SSE
       const encoder = new TextEncoder()
       const stream = new ReadableStream({
         start(controller) {
@@ -75,11 +67,7 @@ Pertanyaan: ${question || 'Buat analisis kondisi bisnis saat ini berdasarkan dat
       })
 
       return new Response(stream, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
-        },
+        headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
       })
     }
 
@@ -89,10 +77,7 @@ Pertanyaan: ${question || 'Buat analisis kondisi bisnis saat ini berdasarkan dat
     const stream = new ReadableStream({
       async start(controller) {
         const reader = response.body?.getReader()
-        if (!reader) {
-          controller.close()
-          return
-        }
+        if (!reader) { controller.close(); return }
 
         try {
           while (true) {
@@ -114,9 +99,7 @@ Pertanyaan: ${question || 'Buat analisis kondisi bisnis saat ini berdasarkan dat
                 if (content) {
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`))
                 }
-              } catch {
-                // Skip malformed lines
-              }
+              } catch {}
             }
           }
         } catch (error) {
@@ -128,11 +111,7 @@ Pertanyaan: ${question || 'Buat analisis kondisi bisnis saat ini berdasarkan dat
     })
 
     return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-      },
+      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
     })
   } catch (error) {
     return NextResponse.json(
