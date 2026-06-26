@@ -551,6 +551,8 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
     const fd = new FormData(el)
     fd.set('fotos_b64', JSON.stringify(b64))
     fd.set('gramasi_list', JSON.stringify(gramasiRows.map(r => ({ gramasi: r.gramasi, pcs: parseInt(r.pcs) || 0 }))))
+    // berat_serah_batch = total berat yang diserahkan ke cutting (sama dengan berat_awal saat create)
+    fd.set('berat_serah_batch', f.berat_awal)
     onSubmit(fd)
   }
   return (
@@ -2083,6 +2085,12 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                   <button type="button" onClick={()=>setModal(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><X size={16}/></button>
                 </div>
                 <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
+                  {/* Info berat_serah_batch */}
+                  {activeSesi.items[0]?.berat_serah_batch && (
+                    <div className="rounded-lg px-3 py-2 bg-blue-50 border border-blue-100 text-blue-700 text-[12px] font-medium">
+                      Berat serah batch: <span className="font-bold">{fgr(activeSesi.items[0].berat_serah_batch)} gr</span> — Total ACC + Reject harus sama
+                    </div>
+                  )}
                   {[...activeSesi.items].sort((a,b)=>Number(a.gramasi)-Number(b.gramasi)).map(it=>(
                     <div key={it.id} className="rounded-xl border border-slate-200 p-3 space-y-2">
                       <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">{it.gramasi}gr · serah {fgr(it.serah_gram??it.berat_awal)} gr</span>

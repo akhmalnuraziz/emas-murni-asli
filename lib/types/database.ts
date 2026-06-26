@@ -78,6 +78,25 @@ export interface ProduksiItem {
   created_by: string | null
   voided_at: string | null
   void_reason: string | null
+  berat_serah_batch: number | null
+  sesi_id: string | null
+  berat_awal: number | null
+  pcs_awal: number | null
+  pcs_good: number | null
+  pcs_reject: number | null
+  terima_gram: number | null
+  reject_cutting_gram: number | null
+  berat_reject: number | null
+  serah_gram: number | null
+  nama_item: string | null
+  peleburan_id: number | null
+  peleburan_kode: string | null
+  status_cutting: string | null
+  sisa_serbuk: number | null
+  operator: string | null
+  admin_input: string | null
+  tim_id: number | null
+  tim_nama: string | null
 }
 
 export interface ProduksiEvent {

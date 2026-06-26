@@ -173,6 +173,7 @@ export async function createProduksi(formData: FormData) {
   const namaItemBase = (formData.get('nama_item') as string) || ''
   const catatan = formData.get('catatan') as string || null
   const operator = formData.get('operator') as string || profile?.name || null
+  const beratSerahBatch = parseFloat(formData.get('berat_serah_batch') as string) || null
 
   const fotosB64Raw = formData.get('fotos_b64') as string
   const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
@@ -211,6 +212,7 @@ export async function createProduksi(formData: FormData) {
       kode, batch_kode: batchKode, gramasi: row.gramasi, pcs: pcsVal, pcs_awal: pcsVal, pcs_good: pcsVal, pcs_reject: 0,
       nama_item: namaItem,
       berat_awal: beratItem, serah_gram: beratItem, total_gram: beratItem, current_status: statusAwal,
+      berat_serah_batch: beratSerahBatch,
       tanggal_produksi: tanggalProduksi, tanggal: tanggalProduksi,
       tanggal_mulai: tanggalProduksi,
       jam_mulai_cutting: jamMulai,
@@ -1185,10 +1187,21 @@ export async function terimaCuttingSesi(sesiId: string, formData: FormData) {
     : []
 
   const totalBeratAwal = items.reduce((s, it) => s + Number(it.berat_awal ?? 0), 0)
+  // Gunakan berat_serah_batch jika ada, fallback ke total berat_awal
+  const beratSerahBatch = Number(items[0]?.berat_serah_batch ?? totalBeratAwal)
 
   for (const item of items) {
     const accGram = parseFloat(formData.get(`acc_gram_${item.id}`) as string || '0')
     if (!accGram || accGram <= 0) return { error: `Berat ACC untuk ${item.gramasi}gr wajib diisi` }
+
+    // Validasi: total ACC tidak boleh melebihi berat_serah_batch
+    const totalAccSoFar = items.reduce((s, it) => {
+      if (it.id === item.id) return s + accGram
+      return s + parseFloat(formData.get(`acc_gram_${it.id}`) as string || '0')
+    }, 0)
+    if (totalAccSoFar + rejectTotal > beratSerahBatch + 0.01) {
+      return { error: `Total ACC (${totalAccSoFar.toFixed(2)}gr) + Reject (${rejectTotal}gr) melebihi berat serah batch (${beratSerahBatch}gr)` }
+    }
 
     // Reject proporsional per item
     const rejectItem = totalBeratAwal > 0
