@@ -14,7 +14,7 @@ Jawab dalam Bahasa Indonesia, singkat dan padat. Gunakan poin-poin jika perlu.`
 
 export async function POST(req: NextRequest) {
   try {
-    const { data, question, model = 'llama-3.3-70b-versatile' } = await req.json()
+    const { data, question, model = 'meta-llama/llama-4-scout-17b-16e-instruct' } = await req.json()
 
     if (!GROQ_API_URL || !GROQ_API_KEY) {
       return NextResponse.json(

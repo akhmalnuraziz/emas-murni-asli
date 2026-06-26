@@ -45,7 +45,7 @@ Jawaban: "Stok shieldtag 10gr aktif: 15 pcs"
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, model = 'llama-3.3-70b-versatile' } = await req.json()
+    const { messages, model = 'meta-llama/llama-4-scout-17b-16e-instruct' } = await req.json()
 
     if (!GROQ_API_URL || !GROQ_API_KEY) {
       return NextResponse.json(

@@ -5,10 +5,10 @@ import { MessageCircle, X, Send, Bot, User, ChevronDown, RefreshCcw, AlertCircle
 import { cn } from '@/lib/utils'
 
 const AVAILABLE_MODELS = [
+  { id: 'meta-llama/llama-4-scout-17b-16e-instruct', name: 'Llama 4 Scout 17B', provider: 'Meta (via Groq) - Terbaru' },
   { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B', provider: 'Meta (via Groq)' },
-  { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B', provider: 'Meta (via Groq)' },
-  { id: 'gemma2-9b-it', name: 'Gemma 2 9B', provider: 'Google (via Groq)' },
-  { id: 'mixtral-8x7b-32768', name: 'Mixtral 8x7B', provider: 'Mistral (via Groq)' },
+  { id: 'openai/gpt-oss-20b', name: 'GPT-OSS 20B', provider: 'OpenAI (via Groq)' },
+  { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B', provider: 'Meta (via Groq) - Cepat' },
 ]
 
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000 // 10 menit
