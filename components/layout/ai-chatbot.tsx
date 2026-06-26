@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { MessageCircle, X, Send, Bot, User, ChevronDown, RefreshCcw, AlertCircle } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { MessageCircle, X, Send, Bot, User, ChevronDown, RefreshCcw, AlertCircle, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const AVAILABLE_MODELS = [
@@ -10,6 +10,8 @@ const AVAILABLE_MODELS = [
   { id: 'gemma2-9b-it', name: 'Gemma 2 9B', provider: 'Google (via Groq)' },
   { id: 'mixtral-8x7b-32768', name: 'Mixtral 8x7B', provider: 'Mistral (via Groq)' },
 ]
+
+const IDLE_TIMEOUT_MS = 10 * 60 * 1000 // 10 menit
 
 interface Message {
   role: 'user' | 'assistant' | 'error'
@@ -24,8 +26,27 @@ export default function AiChatbot() {
   const [selectedModel, setSelectedModel] = useState(AVAILABLE_MODELS[0].id)
   const [showModelPicker, setShowModelPicker] = useState(false)
   const [apiStatus, setApiStatus] = useState<'ok' | 'error' | 'checking'>('checking')
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const lastActivityRef = useRef<number>(Date.now())
+  const idleTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  const clearChat = useCallback(() => {
+    setMessages([])
+    setShowClearConfirm(false)
+  }, [])
+
+  // Auto-reset setelah 10 menit idle
+  const resetIdleTimer = useCallback(() => {
+    lastActivityRef.current = Date.now()
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+    idleTimerRef.current = setTimeout(() => {
+      if (messages.length > 0) {
+        clearChat()
+      }
+    }, IDLE_TIMEOUT_MS)
+  }, [messages.length, clearChat])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -38,10 +59,20 @@ export default function AiChatbot() {
   useEffect(() => {
     if (isOpen) {
       inputRef.current?.focus()
-      // Check API status when opening
       checkApiStatus()
+      resetIdleTimer()
     }
-  }, [isOpen])
+    return () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+    }
+  }, [isOpen, resetIdleTimer])
+
+  // Reset timer setiap user activity
+  useEffect(() => {
+    if (isOpen && messages.length > 0) {
+      resetIdleTimer()
+    }
+  }, [messages, isOpen, resetIdleTimer])
 
   const checkApiStatus = async () => {
     setApiStatus('checking')
@@ -65,7 +96,6 @@ export default function AiChatbot() {
     
     if (!messageToSend.content || loading) return
 
-    // Remove error message if exists
     setMessages(prev => {
       const filtered = prev.filter(m => m.role !== 'error')
       return retryMessage ? filtered : [...filtered, messageToSend]
@@ -73,6 +103,7 @@ export default function AiChatbot() {
     
     if (!retryMessage) setInput('')
     setLoading(true)
+    resetIdleTimer()
 
     try {
       const messagesForApi = retryMessage
@@ -131,9 +162,7 @@ export default function AiChatbot() {
                 return updated
               })
             }
-          } catch {
-            // Skip malformed lines
-          }
+          } catch {}
         }
         if (hasError) break
       }
@@ -195,6 +224,37 @@ export default function AiChatbot() {
               </div>
             </div>
             <div className="flex items-center gap-1">
+              {/* Clear Chat */}
+              {messages.length > 0 && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowClearConfirm(!showClearConfirm)}
+                    className="p-1.5 hover:bg-violet-500 rounded-lg transition-colors"
+                    title="Hapus semua pesan"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                  {showClearConfirm && (
+                    <div className="absolute right-0 top-full mt-1 w-52 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-10">
+                      <p className="px-3 py-1 text-[11px] text-slate-500">Hapus semua pesan?</p>
+                      <div className="flex gap-1 px-2 pt-1">
+                        <button
+                          onClick={() => setShowClearConfirm(false)}
+                          className="flex-1 py-1.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
+                        >
+                          Batal
+                        </button>
+                        <button
+                          onClick={clearChat}
+                          className="flex-1 py-1.5 text-[11px] font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
               {/* API Status */}
               <div className={cn(
                 'w-2 h-2 rounded-full mr-2',
@@ -245,6 +305,7 @@ export default function AiChatbot() {
                 <Bot size={40} className="mx-auto text-violet-300 mb-3" />
                 <p className="text-[13px] text-slate-500 font-medium">Halo! Ada yang bisa saya bantu?</p>
                 <p className="text-[11px] text-slate-400 mt-1">Tanya tentang stok, produksi, penjualan, atau data lainnya.</p>
+                <p className="text-[10px] text-slate-300 mt-2">Chat otomatis dihapus setelah 10 menit tidak dipakai</p>
                 {apiStatus === 'error' && (
                   <p className="text-[11px] text-red-400 mt-3 flex items-center justify-center gap-1">
                     <AlertCircle size={12} />
