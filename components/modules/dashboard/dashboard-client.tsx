@@ -6,7 +6,7 @@ import {
   TrendingUp, ShoppingCart, RotateCcw, Layers, Flame,
   Scale, Thermometer, CheckCircle2, Clock, Truck, ClipboardCheck,
   BoxSelect, TriangleAlert, Boxes, Wallet, Calendar, ChevronRight,
-  Sparkles, Loader2, X,
+  Sparkles, Loader2, X, RefreshCcw,
 } from 'lucide-react'
 import { cn, formatRupiah, formatDate } from '@/lib/utils'
 import { Badge, StatusBadge } from '@/components/ui/badge'
@@ -182,13 +182,23 @@ export default function DashboardClient({
         }),
       })
 
-      if (!response.ok) throw new Error('Failed')
+      if (!response.ok) {
+        setAiAnalysis('Gagal terhubung ke server AI. Silakan coba lagi.')
+        setAiLoading(false)
+        return
+      }
 
       const reader = response.body?.getReader()
-      if (!reader) return
+      if (!reader) {
+        setAiAnalysis('Gagal membaca respons dari server.')
+        setAiLoading(false)
+        return
+      }
 
       const decoder = new TextDecoder()
       let result = ''
+      let hasError = false
+      let errorMsg = ''
 
       while (true) {
         const { done, value } = await reader.read()
@@ -203,6 +213,11 @@ export default function DashboardClient({
 
           try {
             const parsed = JSON.parse(trimmed)
+            if (parsed.error) {
+              hasError = true
+              errorMsg = parsed.error
+              break
+            }
             if (parsed.content) {
               result += parsed.content
               setAiAnalysis(result)
@@ -211,9 +226,16 @@ export default function DashboardClient({
             // Skip
           }
         }
+        if (hasError) break
+      }
+
+      if (hasError && !result) {
+        setAiAnalysis(errorMsg || 'Layanan AI sedang tidak tersedia. Coba lagi dalam beberapa menit.')
+      } else if (!result) {
+        setAiAnalysis('Tidak ada respons dari AI. Silakan coba lagi.')
       }
     } catch {
-      setAiAnalysis('Gagal menganalisis data. Silakan coba lagi.')
+      setAiAnalysis('Gagal terhubung ke server. Periksa koneksi internet anda.')
     } finally {
       setAiLoading(false)
     }
@@ -281,12 +303,23 @@ export default function DashboardClient({
               <Sparkles size={16} className="text-violet-500" />
               <p className="text-[13px] font-semibold text-violet-700">AI Analysis</p>
             </div>
-            <button
-              onClick={() => setShowAiPanel(false)}
-              className="p-1 text-violet-400 hover:text-violet-600 transition-colors"
-            >
-              <X size={14} />
-            </button>
+            <div className="flex items-center gap-2">
+              {!aiLoading && aiAnalysis && (
+                <button
+                  onClick={runAiAnalysis}
+                  className="flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium text-violet-600 hover:text-violet-700 hover:bg-violet-100 rounded-lg transition-colors"
+                >
+                  <RefreshCcw size={12} />
+                  Ulangi
+                </button>
+              )}
+              <button
+                onClick={() => setShowAiPanel(false)}
+                className="p-1 text-violet-400 hover:text-violet-600 transition-colors"
+              >
+                <X size={14} />
+              </button>
+            </div>
           </div>
           <div className="text-[13px] text-slate-700 leading-relaxed whitespace-pre-wrap">
             {aiAnalysis || (
@@ -296,6 +329,15 @@ export default function DashboardClient({
               </span>
             )}
           </div>
+          {!aiLoading && aiAnalysis && aiAnalysis.includes('Gagal') && (
+            <button
+              onClick={runAiAnalysis}
+              className="mt-3 flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-violet-600 bg-white border border-violet-200 hover:bg-violet-50 rounded-lg transition-colors"
+            >
+              <RefreshCcw size={12} />
+              Coba Lagi
+            </button>
+          )}
         </div>
       )}
 

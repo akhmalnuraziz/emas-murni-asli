@@ -16,6 +16,14 @@ export async function POST(req: NextRequest) {
   try {
     const { data, question, model = 'claude-sonnet-4.5' } = await req.json()
 
+    // Validate env
+    if (!OPENAGENTIC_URL || !OPENAGENTIC_KEY) {
+      return NextResponse.json(
+        { error: 'API belum dikonfigurasi. Hubungi admin.' },
+        { status: 500 }
+      )
+    }
+
     const userMessage = `Berikut adalah data dari sistem ERP kami:
 
 ${JSON.stringify(data, null, 2)}
@@ -38,9 +46,41 @@ Pertanyaan: ${question || 'Buat analisis kondisi bisnis saat ini berdasarkan dat
       }),
     })
 
+    // Handle upstream errors
     if (!response.ok) {
-      const error = await response.text()
-      return NextResponse.json({ error }, { status: response.status })
+      const errorText = await response.text()
+      let errorMsg = 'Layanan AI sedang tidak tersedia.'
+
+      try {
+        const errorData = JSON.parse(errorText)
+        if (errorData.error?.code === 'proxy_error') {
+          errorMsg = 'Layanan AI sedang sibuk atau dalam pemeliharaan. Coba lagi dalam beberapa menit.'
+        } else if (errorData.error?.code === 'missing_api_key') {
+          errorMsg = 'API key tidak valid. Hubungi admin.'
+        } else if (errorData.error?.message) {
+          errorMsg = errorData.error.message
+        }
+      } catch {
+        // Use default error message
+      }
+
+      // Return error as SSE
+      const encoder = new TextEncoder()
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: errorMsg })}\n\n`))
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+          controller.close()
+        },
+      })
+
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      })
     }
 
     const encoder = new TextEncoder()
@@ -96,7 +136,7 @@ Pertanyaan: ${question || 'Buat analisis kondisi bisnis saat ini berdasarkan dat
     })
   } catch (error) {
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Gagal terhubung ke server. Periksa koneksi internet anda.' },
       { status: 500 }
     )
   }

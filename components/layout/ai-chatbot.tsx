@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { MessageCircle, X, Send, Bot, User, ChevronDown } from 'lucide-react'
+import { MessageCircle, X, Send, Bot, User, ChevronDown, RefreshCcw, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const AVAILABLE_MODELS = [
@@ -13,7 +13,7 @@ const AVAILABLE_MODELS = [
 ]
 
 interface Message {
-  role: 'user' | 'assistant'
+  role: 'user' | 'assistant' | 'error'
   content: string
 }
 
@@ -24,6 +24,7 @@ export default function AiChatbot() {
   const [loading, setLoading] = useState(false)
   const [selectedModel, setSelectedModel] = useState(AVAILABLE_MODELS[0].id)
   const [showModelPicker, setShowModelPicker] = useState(false)
+  const [apiStatus, setApiStatus] = useState<'ok' | 'error' | 'checking'>('checking')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -38,38 +39,69 @@ export default function AiChatbot() {
   useEffect(() => {
     if (isOpen) {
       inputRef.current?.focus()
+      // Check API status when opening
+      checkApiStatus()
     }
   }, [isOpen])
 
-  const sendMessage = async () => {
-    if (!input.trim() || loading) return
+  const checkApiStatus = async () => {
+    setApiStatus('checking')
+    try {
+      const res = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: 'test' }],
+          model: selectedModel,
+        }),
+      })
+      setApiStatus(res.ok ? 'ok' : 'error')
+    } catch {
+      setApiStatus('error')
+    }
+  }
 
-    const userMessage = input.trim()
-    setInput('')
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }])
+  const sendMessage = async (retryMessage?: Message) => {
+    const messageToSend = retryMessage || { role: 'user' as const, content: input.trim() }
+    
+    if (!messageToSend.content || loading) return
+
+    // Remove error message if exists
+    setMessages(prev => {
+      const filtered = prev.filter(m => m.role !== 'error')
+      return retryMessage ? filtered : [...filtered, messageToSend]
+    })
+    
+    if (!retryMessage) setInput('')
     setLoading(true)
 
     try {
+      const messagesForApi = retryMessage
+        ? messages.filter(m => m.role !== 'error').map(m => ({ role: m.role, content: m.content }))
+        : [...messages, messageToSend].map(m => ({ role: m.role, content: m.content }))
+
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [...messages, { role: 'user', content: userMessage }],
+          messages: messagesForApi,
           model: selectedModel,
         }),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to get response')
+        throw new Error(`HTTP ${response.status}`)
       }
 
       const reader = response.body?.getReader()
-      if (!reader) return
+      if (!reader) throw new Error('No reader')
 
       const decoder = new TextDecoder()
       let assistantMessage = ''
+      let hasError = false
+      let errorMsg = ''
 
-      setMessages(prev => [...prev, { role: 'assistant', content: '' }])
+      setMessages(prev => [...prev.filter(m => m.role !== 'error'), { role: 'assistant', content: '' }])
 
       while (true) {
         const { done, value } = await reader.read()
@@ -84,6 +116,11 @@ export default function AiChatbot() {
 
           try {
             const parsed = JSON.parse(trimmed)
+            if (parsed.error) {
+              hasError = true
+              errorMsg = parsed.error
+              break
+            }
             if (parsed.content) {
               assistantMessage += parsed.content
               setMessages(prev => {
@@ -99,11 +136,19 @@ export default function AiChatbot() {
             // Skip malformed lines
           }
         }
+        if (hasError) break
+      }
+
+      if (hasError && !assistantMessage) {
+        setMessages(prev => [
+          ...prev.slice(0, -1),
+          { role: 'error', content: errorMsg || 'Layanan AI tidak tersedia. Coba ganti model atau coba lagi nanti.' },
+        ])
       }
     } catch (error) {
       setMessages(prev => [
         ...prev.slice(0, -1),
-        { role: 'assistant', content: 'Maaf, terjadi kesalahan. Silakan coba lagi.' },
+        { role: 'error', content: 'Gagal mengirim pesan. Periksa koneksi internet dan coba lagi.' },
       ])
     } finally {
       setLoading(false)
@@ -151,6 +196,11 @@ export default function AiChatbot() {
               </div>
             </div>
             <div className="flex items-center gap-1">
+              {/* API Status */}
+              <div className={cn(
+                'w-2 h-2 rounded-full mr-2',
+                apiStatus === 'ok' ? 'bg-green-400' : apiStatus === 'error' ? 'bg-red-400' : 'bg-yellow-400 animate-pulse'
+              )} title={apiStatus === 'ok' ? 'API Online' : apiStatus === 'error' ? 'API Offline' : 'Checking...'} />
               {/* Model Picker */}
               <div className="relative">
                 <button
@@ -196,6 +246,12 @@ export default function AiChatbot() {
                 <Bot size={40} className="mx-auto text-violet-300 mb-3" />
                 <p className="text-[13px] text-slate-500 font-medium">Halo! Ada yang bisa saya bantu?</p>
                 <p className="text-[11px] text-slate-400 mt-1">Tanya tentang stok, produksi, penjualan, atau data lainnya.</p>
+                {apiStatus === 'error' && (
+                  <p className="text-[11px] text-red-400 mt-3 flex items-center justify-center gap-1">
+                    <AlertCircle size={12} />
+                    Layanan AI sedang tidak tersedia
+                  </p>
+                )}
               </div>
             )}
             {messages.map((msg, i) => (
@@ -211,11 +267,18 @@ export default function AiChatbot() {
                     <Bot size={14} className="text-violet-600" />
                   </div>
                 )}
+                {msg.role === 'error' && (
+                  <div className="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <AlertCircle size={14} className="text-red-500" />
+                  </div>
+                )}
                 <div
                   className={cn(
                     'max-w-[80%] px-3 py-2 rounded-2xl text-[13px] leading-relaxed',
                     msg.role === 'user'
                       ? 'bg-violet-600 text-white rounded-br-md'
+                      : msg.role === 'error'
+                      ? 'bg-red-50 text-red-700 border border-red-200 rounded-bl-md'
                       : 'bg-slate-100 text-slate-800 rounded-bl-md'
                   )}
                 >
@@ -226,6 +289,18 @@ export default function AiChatbot() {
                       <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                     </span>
                   ) : null)}
+                  {msg.role === 'error' && !loading && (
+                    <button
+                      onClick={() => {
+                        const lastUserMsg = messages.slice(0, i).reverse().find(m => m.role === 'user')
+                        if (lastUserMsg) sendMessage(lastUserMsg)
+                      }}
+                      className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-red-600 hover:text-red-700"
+                    >
+                      <RefreshCcw size={12} />
+                      Coba lagi
+                    </button>
+                  )}
                 </div>
                 {msg.role === 'user' && (
                   <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0">
@@ -245,17 +320,18 @@ export default function AiChatbot() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ketik pesan..."
+                placeholder={apiStatus === 'error' ? 'Layanan AI sedang tidak tersedia...' : 'Ketik pesan...'}
                 rows={1}
-                className="flex-1 resize-none rounded-xl border border-slate-200 px-3 py-2 text-[13px] focus:outline-none focus:border-violet-400 bg-slate-50 max-h-20"
+                disabled={apiStatus === 'error'}
+                className="flex-1 resize-none rounded-xl border border-slate-200 px-3 py-2 text-[13px] focus:outline-none focus:border-violet-400 bg-slate-50 max-h-20 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ minHeight: '38px' }}
               />
               <button
-                onClick={sendMessage}
-                disabled={!input.trim() || loading}
+                onClick={() => sendMessage()}
+                disabled={!input.trim() || loading || apiStatus === 'error'}
                 className={cn(
                   'w-9 h-9 rounded-xl flex items-center justify-center transition-colors flex-shrink-0',
-                  input.trim() && !loading
+                  input.trim() && !loading && apiStatus !== 'error'
                     ? 'bg-violet-600 hover:bg-violet-700 text-white'
                     : 'bg-slate-100 text-slate-400'
                 )}
