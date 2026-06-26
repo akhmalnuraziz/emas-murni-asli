@@ -747,7 +747,7 @@ export async function editPeleburan(id: number, formData: FormData) {
     ? await uploadBase64Fotos(supabase, newFotosB64, plb.kode + '_edit', existing)
     : { urls: existing }
 
-  const updatePayload = {
+  const updatePayload: Record<string, unknown> = {
     dikasih_gram: dikasih, tanggal, jam_mulai: jamMulai,
     operator, keterangan_serahkan: keterangan,
     foto_serahkan: fotoUrls,
