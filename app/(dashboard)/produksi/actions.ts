@@ -131,11 +131,11 @@ export async function createProduksi(formData: FormData) {
   const peleburanId = parseInt(formData.get('peleburan_id') as string) || null
 
   // Multi-gramasi: baca gramasi_list JSON, fallback ke field gramasi/pcs tunggal
-  type GramasiRow = { gramasi: string; pcs: number }
+  type GramasiRow = { gramasi: string; pcs: number; catatan: string | null }
   const gramasiListRaw = formData.get('gramasi_list') as string
   const gramasiList: GramasiRow[] = gramasiListRaw
     ? JSON.parse(gramasiListRaw)
-    : [{ gramasi: formData.get('gramasi') as string, pcs: parseInt(formData.get('pcs') as string) || 0 }]
+    : [{ gramasi: formData.get('gramasi') as string, pcs: parseInt(formData.get('pcs') as string) || 0, catatan: formData.get('catatan') as string || null }]
 
   if (!batchKode) return { error: 'Batch wajib dipilih' }
   if (!gramasiList.length || gramasiList.some(r => !r.gramasi)) return { error: 'Gramasi wajib dipilih' }
@@ -171,9 +171,13 @@ export async function createProduksi(formData: FormData) {
   const targetSelesai = (formData.get('target_selesai') as string) || null
   const jamMulai = (formData.get('jam_mulai') as string) || null
   const namaItemBase = (formData.get('nama_item') as string) || ''
-  const catatan = formData.get('catatan') as string || null
+  const catatanGlobal = formData.get('catatan') as string || null
   const operator = formData.get('operator') as string || profile?.name || null
   const beratSerahBatch = parseFloat(formData.get('berat_serah_batch') as string) || null
+
+  // Per-gramasi fotos: { "0": [base64...], "1": [base64...] }
+  const allFotosB64Raw = formData.get('fotos_b64') as string
+  const allFotosB64: Record<string, string[]> = allFotosB64Raw ? JSON.parse(allFotosB64Raw) : {}
 
   const fotosB64Raw = formData.get('fotos_b64') as string
   const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
@@ -184,9 +188,6 @@ export async function createProduksi(formData: FormData) {
 
   // sesi_id: shared UUID untuk multi-gramasi agar bisa diproses bersama
   const sesiId = gramasiList.length > 1 ? crypto.randomUUID() : null
-
-  // Upload foto sekali, pakai bersama oleh semua item
-  const fotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, allKodes[0]) : []
 
   // Distribusi berat proporsional: berat_i = beratAwal × (gramasi_i × pcs_i) / totalWeight
   const totalWeight = gramasiList.reduce((s, r) => s + parseFloat(r.gramasi) * (r.pcs || 1), 0)
@@ -207,6 +208,11 @@ export async function createProduksi(formData: FormData) {
     const namaItem = namaItemBase
       ? (gramasiList.length > 1 ? `${namaItemBase} ${row.gramasi}GR` : namaItemBase)
       : `LM REI ${row.gramasi}GR`
+    const catatanItem = row.catatan || catatanGlobal
+
+    // Upload foto per gramasi
+    const fotosItemB64 = allFotosB64[i] ?? allFotosB64[String(i)] ?? []
+    const fotoUrls = fotosItemB64.length > 0 ? await uploadBase64Fotos(supabase, fotosItemB64, kode) : []
 
     const { data: produksi, error } = await supabase.from('produksi_item').insert({
       kode, batch_kode: batchKode, gramasi: row.gramasi, pcs: pcsVal, pcs_awal: pcsVal, pcs_good: pcsVal, pcs_reject: 0,
@@ -226,12 +232,13 @@ export async function createProduksi(formData: FormData) {
       tim_anggota_aktif: (formData.get('tim_anggota_aktif') as string) || null,
       admin_input: (formData.get('admin_input') as string) || null,
       memo: formData.get('memo') as string || null,
-      operator, catatan, created_by: user.id,
+      operator, catatan: catatanItem, created_by: user.id,
     }).select().single()
 
     if (error) return { error: error.message }
     createdItems.push(produksi)
 
+    // Simpan foto serah per item
     if (fotoUrls.length > 0) {
       await supabase.from('produksi_item').update({ foto_serahkan_cutting: fotoUrls }).eq('id', produksi.id)
     }
@@ -239,7 +246,7 @@ export async function createProduksi(formData: FormData) {
     await supabase.from('produksi_event').insert({
       produksi_item_id: produksi.id, tanggal: tanggalProduksi,
       status: statusAwal, total_gram: beratItem, berat_sebelumnya: beratItem,
-      sisa_serbuk: sisaSerbuk, losses: 0, catatan,
+      sisa_serbuk: sisaSerbuk, losses: 0, catatan: catatanItem,
       user_name: profile?.name || null, fotos: fotoUrls,
     })
   }
@@ -1175,22 +1182,20 @@ export async function terimaCuttingSesi(sesiId: string, formData: FormData) {
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
   const tanggalSelesai = formData.get('tanggal_selesai') as string
   const jamSelesai = (formData.get('jam_selesai') as string) || null
-  const catatan = (formData.get('catatan') as string) || null
   const rejectTotal = parseFloat(formData.get('reject_cutting_gram') as string || '0')
 
   if (!tanggalSelesai) return { error: 'Tanggal selesai wajib diisi' }
 
-  const fotosB64Raw = formData.get('fotos_b64') as string
-  const fotosB64 = fotosB64Raw ? JSON.parse(fotosB64Raw) : []
-  const fotoUrls = fotosB64.length > 0
-    ? await uploadBase64Fotos(supabase, fotosB64, `sesi-${sesiId}-cutting`)
-    : []
+  // Per-gramasi fotos: { "0": [base64...], "1": [base64...] }
+  const allFotosB64Raw = formData.get('fotos_b64') as string
+  const allFotosB64: Record<string, string[]> = allFotosB64Raw ? JSON.parse(allFotosB64Raw) : {}
 
   const totalBeratAwal = items.reduce((s, it) => s + Number(it.berat_awal ?? 0), 0)
   // Gunakan berat_serah_batch jika ada, fallback ke total berat_awal
   const beratSerahBatch = Number(items[0]?.berat_serah_batch ?? totalBeratAwal)
 
-  for (const item of items) {
+  for (let idx = 0; idx < items.length; idx++) {
+    const item = items[idx]
     const accGram = parseFloat(formData.get(`acc_gram_${item.id}`) as string || '0')
     if (!accGram || accGram <= 0) return { error: `Berat ACC untuk ${item.gramasi}gr wajib diisi` }
 
@@ -1211,6 +1216,18 @@ export async function terimaCuttingSesi(sesiId: string, formData: FormData) {
     const serahGram = Number(item.serah_gram ?? item.berat_awal ?? 0)
     const losses = Math.max(0, serahGram - accGram - rejectItem)
 
+    // Per-item catatan
+    const catatanItem = (formData.get(`catatan_${item.id}`) as string) || null
+
+    // Per-item fotos
+    const fotosItemB64 = allFotosB64[idx] ?? allFotosB64[String(idx)] ?? []
+    const fotoUrls = fotosItemB64.length > 0
+      ? await uploadBase64Fotos(supabase, fotosItemB64, `${item.kode}-terima`)
+      : []
+    // Gabung dengan existing fotos
+    const existingFotos: string[] = Array.isArray(item.foto_diterima_cutting) ? item.foto_diterima_cutting : []
+    const finalFotos = [...existingFotos, ...fotoUrls]
+
     await supabase.from('produksi_event').insert({
       produksi_item_id: item.id,
       tanggal: tanggalSelesai,
@@ -1220,11 +1237,11 @@ export async function terimaCuttingSesi(sesiId: string, formData: FormData) {
       sisa_serbuk: rejectItem,
       losses,
       jam_mulai: jamSelesai,
-      catatan: catatan
-        ? `Serah: ${serahGram}gr | Terima: ${accGram}gr | Reject: ${rejectItem}gr | ${catatan}`
+      catatan: catatanItem
+        ? `Serah: ${serahGram}gr | Terima: ${accGram}gr | Reject: ${rejectItem}gr | ${catatanItem}`
         : `Serah: ${serahGram}gr | Terima: ${accGram}gr | Reject: ${rejectItem}gr`,
       user_name: profile?.name || null,
-      fotos: fotoUrls,
+      fotos: finalFotos,
     })
 
     const pcsGood = parseInt(formData.get(`pcs_${item.id}`) as string || '0') || null
@@ -1235,9 +1252,9 @@ export async function terimaCuttingSesi(sesiId: string, formData: FormData) {
       jam_selesai: jamSelesai,
       status_cutting: 'selesai',
       total_gram: accGram,
-      foto_diterima_cutting: fotoUrls,
+      foto_diterima_cutting: finalFotos,
     }
-    if (catatan) updateData.catatan_terima = catatan
+    if (catatanItem) updateData.catatan_terima = catatanItem
     if (pcsGood && pcsGood > 0) { updateData.pcs_good = pcsGood; updateData.pcs = pcsGood }
     if (rejectItem > 0) {
       updateData.berat_reject = Number(item.berat_reject ?? 0) + rejectItem

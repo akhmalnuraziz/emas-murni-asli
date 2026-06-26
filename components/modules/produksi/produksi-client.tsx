@@ -532,14 +532,14 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
   const firstBatch = batches[0]?.kode ?? ''
   const firstPlb = (peleburanByBatch[firstBatch] ?? [])[0]
   const [f, setF] = useState({ batch_kode: firstBatch, peleburan_id: firstPlb ? String(firstPlb.id) : '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime })
-  const [gramasiRows, setGramasiRows] = useState<Array<{gramasi: string; pcs: string}>>([{ gramasi: '1', pcs: '' }])
-  const [fotos, setFotos] = useState<File[]>([])
+  type GramasiRow = { gramasi: string; pcs: string; catatan: string; fotos: File[] }
+  const [gramasiRows, setGramasiRows] = useState<GramasiRow[]>([{ gramasi: '1', pcs: '', catatan: '', fotos: [] }])
   const [up, setUp] = useState(false)
   const s = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
   const plbList = peleburanByBatch[f.batch_kode] ?? []
   const selectedPlb = plbList.find(p => String(p.id) === f.peleburan_id)
+  const updateRow = (idx: number, patch: Partial<GramasiRow>) => setGramasiRows(r => r.map((x, i) => i === idx ? { ...x, ...patch } : x))
 
-  // Saat ganti batch, set peleburan ke yang pertama (langsung, tanpa fetch)
   useEffect(() => {
     const list = peleburanByBatch[f.batch_kode] ?? []
     setF(p => ({ ...p, peleburan_id: list[0] ? String(list[0].id) : '' }))
@@ -547,11 +547,19 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
 
   async function submit(e: React.FormEvent) {
     e.preventDefault(); const el = e.currentTarget as HTMLFormElement
-    setUp(true); const b64 = fotos.length > 0 ? await filesToBase64(fotos) : []; setUp(false)
+    setUp(true)
+    const allFotosB64: Record<string, string[]> = {}
+    for (let i = 0; i < gramasiRows.length; i++) {
+      const fotos = gramasiRows[i].fotos
+      allFotosB64[i] = fotos.length > 0 ? await filesToBase64(fotos) : []
+    }
+    setUp(false)
     const fd = new FormData(el)
-    fd.set('fotos_b64', JSON.stringify(b64))
-    fd.set('gramasi_list', JSON.stringify(gramasiRows.map(r => ({ gramasi: r.gramasi, pcs: parseInt(r.pcs) || 0 }))))
-    // berat_serah_batch = total berat yang diserahkan ke cutting (sama dengan berat_awal saat create)
+    fd.set('fotos_b64', JSON.stringify(allFotosB64))
+    fd.set('gramasi_list', JSON.stringify(gramasiRows.map((r, i) => ({
+      gramasi: r.gramasi, pcs: parseInt(r.pcs) || 0,
+      catatan: r.catatan || null,
+    }))))
     fd.set('berat_serah_batch', f.berat_awal)
     onSubmit(fd)
   }
@@ -585,57 +593,8 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
               </>
             )}
           </F>
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between">
-              <label className="text-[12px] font-semibold text-slate-600">Gramasi yang dicetak <span className="text-red-400">*</span></label>
-              {gramasiRows.length > 0 && (
-                <span className="text-[11px] font-medium text-violet-600">{gramasiRows.length} gramasi dipilih</span>
-              )}
-            </div>
-            {/* Pill chips — tap untuk pilih/batal */}
-            <div className="flex flex-wrap gap-1.5">
-              {GRAMASI_OPTIONS.map(g => {
-                const isSelected = gramasiRows.some(r => r.gramasi === g)
-                return (
-                  <button key={g} type="button"
-                    onClick={() => setGramasiRows(r => isSelected ? r.filter(x => x.gramasi !== g) : [...r, { gramasi: g, pcs: '' }])}
-                    className={`px-3 py-1 rounded-full text-[12px] font-semibold border transition-all ${
-                      isSelected
-                        ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
-                        : 'bg-white text-slate-500 border-slate-200 hover:border-violet-300 hover:text-violet-600'
-                    }`}>
-                    {g} gr
-                  </button>
-                )
-              })}
-            </div>
-            {/* PCS per gramasi terpilih */}
-            {gramasiRows.length > 0 && (
-              <div className="rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
-                {gramasiRows.map((row, idx) => (
-                  <div key={row.gramasi} className="flex items-center gap-3 px-3 py-2 bg-white">
-                    <span className="text-[13px] font-semibold text-violet-700 w-14 flex-shrink-0">{row.gramasi} gr</span>
-                    <input type="number" min="1" value={row.pcs}
-                      onChange={e => setGramasiRows(r => r.map((x, i) => i === idx ? { ...x, pcs: e.target.value } : x))}
-                      placeholder="Jml PCS (opsional)"
-                      className="flex-1 h-7 px-2.5 rounded-md border border-slate-200 bg-slate-50 text-[12px] text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400 transition-all" />
-                    <button type="button"
-                      onClick={() => setGramasiRows(r => r.filter(x => x.gramasi !== row.gramasi))}
-                      className="text-slate-300 hover:text-red-400 transition-colors flex-shrink-0"><X size={13}/></button>
-                  </div>
-                ))}
-              </div>
-            )}
-            {gramasiRows.length === 0 && (
-              <p className="text-[11px] text-amber-600 font-medium">Pilih minimal 1 gramasi di atas</p>
-            )}
-            {gramasiRows.length > 0 && (() => {
-              const total = gramasiRows.reduce((s, r) => s + parseFloat(r.gramasi) * (parseInt(r.pcs || '1') || 1), 0)
-              return <p className="text-[11px] text-violet-500 font-medium">Estimasi total: <span className="font-semibold">{total.toFixed(2)} gr</span></p>
-            })()}
-          </div>
           <div className="grid grid-cols-2 gap-3 items-end">
-            <F label="Total bahan yang di serahkan" req><input name="berat_awal" type="number" step="0.01" value={f.berat_awal} onChange={e => s('berat_awal', e.target.value)} placeholder="500.15" className={inp} required /></F>
+            <F label="Total bahan yang diserahkan" req><input name="berat_awal" type="number" step="0.01" value={f.berat_awal} onChange={e => s('berat_awal', e.target.value)} placeholder="500.15" className={inp} required /></F>
             <F label="Status Awal" req>
               <select name="status_awal" value={f.status_awal} onChange={e => s('status_awal', e.target.value)} className={inp} required>
                 {['Cutting','Pas Berat','Annealing','Siap Packing'].map(st => <option key={st} value={st}>{st}</option>)}
@@ -647,10 +606,69 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
             <F label="Jam Mulai" req><input name="jam_mulai" type="time" value={f.jam_mulai ?? ''} onChange={e => s('jam_mulai', e.target.value)} className={inp} required /></F>
           </div>
           <AdminPickerStd adminList={adminList} prefix="" label="Admin Yang Menyerahkan" />
-          <F label="Catatan"><input name="catatan" placeholder="Catatan tambahan..." className={inp} /></F>
-          <F label="Foto Bahan Diserahkan (Max 10 Foto)">
-            <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto" />
-          </F>
+
+          {/* ═══ Gramasi sections — setiap gramasi punya catatan & foto sendiri ═══ */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="text-[12px] font-semibold text-slate-600">Gramasi yang dicetak <span className="text-red-400">*</span></label>
+              {gramasiRows.length > 0 && (
+                <span className="text-[11px] font-medium text-violet-600">{gramasiRows.length} gramasi dipilih</span>
+              )}
+            </div>
+            {/* Pill chips */}
+            <div className="flex flex-wrap gap-1.5">
+              {GRAMASI_OPTIONS.map(g => {
+                const isSelected = gramasiRows.some(r => r.gramasi === g)
+                return (
+                  <button key={g} type="button"
+                    onClick={() => setGramasiRows(r => isSelected ? r.filter(x => x.gramasi !== g) : [...r, { gramasi: g, pcs: '', catatan: '', fotos: [] }])}
+                    className={`px-3 py-1 rounded-full text-[12px] font-semibold border transition-all ${
+                      isSelected
+                        ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
+                        : 'bg-white text-slate-500 border-slate-200 hover:border-violet-300 hover:text-violet-600'
+                    }`}>
+                    {g} gr
+                  </button>
+                )
+              })}
+            </div>
+            {/* Detail per gramasi: PCS, Catatan, Foto */}
+            {gramasiRows.map((row, idx) => (
+              <div key={row.gramasi} className="rounded-xl border border-violet-200 bg-violet-50/30 p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px] font-bold text-violet-700">{row.gramasi} gr</span>
+                  <div className="flex-1">
+                    <input type="number" min="1" value={row.pcs}
+                      onChange={e => updateRow(idx, { pcs: e.target.value })}
+                      placeholder="Jml PCS (opsional)"
+                      className="w-full h-7 px-2.5 rounded-md border border-slate-200 bg-white text-[12px] text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400 transition-all" />
+                  </div>
+                  <button type="button"
+                    onClick={() => setGramasiRows(r => r.filter((_, i) => i !== idx))}
+                    className="text-slate-300 hover:text-red-400 transition-colors flex-shrink-0"><X size={13}/></button>
+                </div>
+                <input type="text" value={row.catatan}
+                  onChange={e => updateRow(idx, { catatan: e.target.value })}
+                  placeholder={`Catatan ${row.gramasi}gr (opsional)`}
+                  className="w-full h-7 px-2.5 rounded-md border border-slate-200 bg-white text-[12px] text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400 transition-all" />
+                <div>
+                  <label className="text-[10px] font-medium text-slate-400 mb-1 block">Foto {row.gramasi}gr</label>
+                  <FotoPicker files={row.fotos}
+                    onAdd={ff => updateRow(idx, { fotos: [...row.fotos, ...ff].slice(0, 5) })}
+                    onRemove={i => i === -1 ? updateRow(idx, { fotos: [] }) : updateRow(idx, { fotos: row.fotos.filter((_, j) => j !== i) })}
+                    label={`Foto ${row.gramasi}gr`} small />
+                </div>
+              </div>
+            ))}
+            {gramasiRows.length === 0 && (
+              <p className="text-[11px] text-amber-600 font-medium">Pilih minimal 1 gramasi di atas</p>
+            )}
+            {gramasiRows.length > 0 && (() => {
+              const total = gramasiRows.reduce((s, r) => s + parseFloat(r.gramasi) * (parseInt(r.pcs || '1') || 1), 0)
+              return <p className="text-[11px] text-violet-500 font-medium">Estimasi total: <span className="font-semibold">{total.toFixed(2)} gr</span></p>
+            })()}
+          </div>
+
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/>{error}</div>}
           <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0 -mx-5 -mb-4 mt-2">
             <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
@@ -2076,74 +2094,15 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
             <div className="w-full max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
-              <form onSubmit={e=>{e.preventDefault();handleSesiCuttingTerima(new FormData(e.currentTarget))}}>
-                <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-200">
-                  <div>
-                    <h2 className="text-[15px] font-bold text-slate-900">Terima Cutting Sesi</h2>
-                    <p className="text-[12px] text-slate-400 mt-0.5">{activeSesi.items.length} gramasi · sesi bersama</p>
-                  </div>
-                  <button type="button" onClick={()=>setModal(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><X size={16}/></button>
-                </div>
-                <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
-                  {/* Info berat_serah_batch */}
-                  {activeSesi.items[0]?.berat_serah_batch && (
-                    <div className="rounded-lg px-3 py-2 bg-blue-50 border border-blue-100 text-blue-700 text-[12px] font-medium">
-                      Berat serah batch: <span className="font-bold">{fgr(activeSesi.items[0].berat_serah_batch)} gr</span> — Total ACC + Reject harus sama
-                    </div>
-                  )}
-                  {[...activeSesi.items].sort((a,b)=>Number(a.gramasi)-Number(b.gramasi)).map(it=>(
-                    <div key={it.id} className="rounded-xl border border-slate-200 p-3 space-y-2">
-                      <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">{it.gramasi}gr · serah {fgr(it.serah_gram??it.berat_awal)} gr</span>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-[11px] font-medium text-slate-500 mb-1">Berat ACC (gr)</label>
-                          <input name={`acc_gram_${it.id}`} type="number" step="0.001" required min="0.001"
-                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all" placeholder={fgr(it.berat_awal)}/>
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-medium text-slate-500 mb-1">PCS good</label>
-                          <input name={`pcs_${it.id}`} type="number" min="0" placeholder={String(it.pcs??'')}
-                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-500 mb-1">Total reject (gr) — dibagi proporsional</label>
-                    <input name="reject_cutting_gram" type="number" step="0.001" min="0" defaultValue="0"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-medium text-slate-500 mb-1">Tanggal selesai</label>
-                      <input name="tanggal_selesai" type="date" required defaultValue={new Date().toISOString().split('T')[0]}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-medium text-slate-500 mb-1">Jam</label>
-                      <input name="jam_selesai" type="time"
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-500 mb-1">Tim</label>
-                    <select name="terima_tim_id" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] text-slate-900 focus:outline-none focus:border-violet-500 transition-all">
-                      <option value="">— pilih tim —</option>
-                      {tims.map((t:any)=><option key={t.id} value={t.id}>{t.nama}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-500 mb-1">Catatan</label>
-                    <input name="catatan" type="text" placeholder="Opsional"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] text-slate-900 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
-                  </div>
-                  {err&&<div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</div>}
-                </div>
-                <div className="px-6 pb-5 flex gap-2">
-                  <button type="button" onClick={()=>setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-                  <button type="submit" disabled={isPending} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">{isPending?'Menyimpan…':'Simpan Terima Cutting'}</button>
-                </div>
-              </form>
+              <SesiCuttingTerimaForm
+                items={activeSesi.items}
+                tims={tims}
+                adminList={adminList}
+                err={err}
+                isPending={isPending}
+                onCancel={()=>setModal(null)}
+                onSubmit={handleSesiCuttingTerima}
+              />
             </div>
           </div>
         )
@@ -2262,6 +2221,111 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
         )
       })()}
     </div>
+  )
+}
+
+// ─── SesiCuttingTerimaForm — per-gramasi: ACC, PCS, Catatan, Foto ──────────────
+function SesiCuttingTerimaForm({ items, tims, adminList, err, isPending, onCancel, onSubmit }: {
+  items: any[]; tims: any[]; adminList: any[]; err: string; isPending: boolean;
+  onCancel: () => void; onSubmit: (fd: FormData) => void
+}) {
+  const sorted = [...items].sort((a,b) => Number(a.gramasi) - Number(b.gramasi))
+  const [perItem, setPerItem] = useState<Record<number, { catatan: string; fotos: File[] }>>(() => {
+    const init: Record<number, { catatan: string; fotos: File[] }> = {}
+    items.forEach(it => { init[it.id] = { catatan: '', fotos: [] } })
+    return init
+  })
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const el = e.currentTarget as HTMLFormElement
+    const fd = new FormData(el)
+    // Convert per-item fotos to base64
+    const fotosMap: Record<string, string[]> = {}
+    for (let i = 0; i < sorted.length; i++) {
+      const it = sorted[i]
+      const fotos = perItem[it.id]?.fotos ?? []
+      fotosMap[i] = fotos.length > 0 ? await filesToBase64(fotos) : []
+    }
+    fd.set('fotos_b64', JSON.stringify(fotosMap))
+    onSubmit(fd)
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-200">
+        <div>
+          <h2 className="text-[15px] font-bold text-slate-900">Terima Cutting Sesi</h2>
+          <p className="text-[12px] text-slate-400 mt-0.5">{items.length} gramasi · sesi bersama</p>
+        </div>
+        <button type="button" onClick={onCancel} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><X size={16}/></button>
+      </div>
+      <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
+        {items[0]?.berat_serah_batch && (
+          <div className="rounded-lg px-3 py-2 bg-blue-50 border border-blue-100 text-blue-700 text-[12px] font-medium">
+            Berat serah batch: <span className="font-bold">{fgr(items[0].berat_serah_batch)} gr</span> — Total ACC + Reject harus sama
+          </div>
+        )}
+        {sorted.map(it => (
+          <div key={it.id} className="rounded-xl border border-violet-200 bg-violet-50/30 p-3 space-y-2">
+            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-violet-100 text-violet-700">{it.gramasi}gr · serah {fgr(it.serah_gram ?? it.berat_awal)} gr</span>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1">Berat ACC (gr)</label>
+                <input name={`acc_gram_${it.id}`} type="number" step="0.001" required min="0.001"
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all" placeholder={fgr(it.berat_awal)} />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1">PCS good</label>
+                <input name={`pcs_${it.id}`} type="number" min="0" placeholder={String(it.pcs ?? '')}
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all" />
+              </div>
+            </div>
+            <input type="text" value={perItem[it.id]?.catatan ?? ''}
+              onChange={e => setPerItem(p => ({ ...p, [it.id]: { ...p[it.id], catatan: e.target.value } }))}
+              placeholder={`Catatan ${it.gramasi}gr (opsional)`}
+              className="w-full h-7 px-2.5 rounded-md border border-slate-200 bg-white text-[12px] text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400 transition-all" />
+            <div>
+              <label className="text-[10px] font-medium text-slate-400 mb-1 block">Foto {it.gramasi}gr</label>
+              <FotoPicker files={perItem[it.id]?.fotos ?? []}
+                onAdd={ff => setPerItem(p => ({ ...p, [it.id]: { ...p[it.id], fotos: [...(p[it.id]?.fotos ?? []), ...ff].slice(0, 5) } }))}
+                onRemove={i => i === -1 ? setPerItem(p => ({ ...p, [it.id]: { ...p[it.id], fotos: [] } })) : setPerItem(p => ({ ...p, [it.id]: { ...p[it.id], fotos: (p[it.id]?.fotos ?? []).filter((_, j) => j !== i) } }))}
+                label={`Foto ${it.gramasi}gr`} small />
+            </div>
+          </div>
+        ))}
+        <div>
+          <label className="block text-[11px] font-medium text-slate-500 mb-1">Total reject (gr) — dibagi proporsional</label>
+          <input name="reject_cutting_gram" type="number" step="0.001" min="0" defaultValue="0"
+            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Tanggal selesai</label>
+            <input name="tanggal_selesai" type="date" required defaultValue={new Date().toISOString().split('T')[0]}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all" />
+          </div>
+          <div>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Jam</label>
+            <input name="jam_selesai" type="time"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all" />
+          </div>
+        </div>
+        <div>
+          <label className="block text-[11px] font-medium text-slate-500 mb-1">Tim</label>
+          <select name="terima_tim_id" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] text-slate-900 focus:outline-none focus:border-violet-500 transition-all">
+            <option value="">— pilih tim —</option>
+            {tims.map((t: any) => <option key={t.id} value={t.id}>{t.nama}</option>)}
+          </select>
+        </div>
+        <AdminPickerStd adminList={adminList} prefix="terima_" label="Admin Penerima" />
+        {err && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</div>}
+      </div>
+      <div className="px-6 pb-5 flex gap-2">
+        <button type="button" onClick={onCancel} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+        <button type="submit" disabled={isPending} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">{isPending ? 'Menyimpan…' : 'Simpan Terima Cutting'}</button>
+      </div>
+    </form>
   )
 }
 
