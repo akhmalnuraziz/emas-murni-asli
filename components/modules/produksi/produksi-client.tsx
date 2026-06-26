@@ -2169,6 +2169,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
             <TerimaCuttingForm item={active} tims={tims} adminList={adminList}
+              toleransi={toleransi.cutting ?? 0.05}
               err={err} isPending={isPending}
               onCancel={()=>setModal(null)}
               onSubmit={handleTerimaCuttingItem} />
@@ -2285,17 +2286,34 @@ function SesiCuttingTerimaForm({ items, tims, adminList, err, isPending, onCance
 }
 
 // ─── TerimaCuttingForm — untuk item tanpa gramasi (pilih gramasi & ACC) ────────
-function TerimaCuttingForm({ item, tims, adminList, err, isPending, onCancel, onSubmit }: {
-  item: any; tims: any[]; adminList: any[]; err: string; isPending: boolean;
+function TerimaCuttingForm({ item, tims, adminList, toleransi, err, isPending, onCancel, onSubmit }: {
+  item: any; tims: any[]; adminList: any[]; toleransi: number; err: string; isPending: boolean;
   onCancel: () => void; onSubmit: (fd: FormData) => void
 }) {
   type GramasiRow = { gramasi: string; pcs: string; acc_gram: string; catatan: string; fotos: File[] }
   const [gramasiRows, setGramasiRows] = useState<GramasiRow[]>([])
+  const [reject, setReject] = useState('0')
   const [up, setUp] = useState(false)
   const updateRow = (idx: number, patch: Partial<GramasiRow>) => setGramasiRows(r => r.map((x, i) => i === idx ? { ...x, ...patch } : x))
 
+  // Loss approval state (muncul saat loss > toleransi)
+  const [lossAlasan, setLossAlasan] = useState('')
+  const [lossOpNama, setLossOpNama] = useState('')
+  const [lossAdminNama, setLossAdminNama] = useState('')
+  const [ttdOp, setTtdOp] = useState<string | null>(null)
+  const [ttdAdmin, setTtdAdmin] = useState<string | null>(null)
+
+  const totalAcc = gramasiRows.reduce((s, r) => s + (parseFloat(r.acc_gram) || 0), 0)
+  const lossNow = Math.max(0, Number(item.berat_awal ?? 0) - totalAcc - (parseFloat(reject) || 0))
+  const overTol = gramasiRows.length > 0 && lossNow > toleransi + 0.0001
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); const el = e.currentTarget as HTMLFormElement
+    if (overTol) {
+      if (!lossAlasan.trim()) { alert('Alasan loss wajib diisi'); return }
+      if (!ttdOp) { alert('Tanda tangan operator wajib'); return }
+      if (!ttdAdmin) { alert('Tanda tangan admin wajib'); return }
+    }
     setUp(true)
     const allFotosB64: Record<string, string[]> = {}
     for (let i = 0; i < gramasiRows.length; i++) {
@@ -2308,6 +2326,13 @@ function TerimaCuttingForm({ item, tims, adminList, err, isPending, onCancel, on
       gramasi: r.gramasi, pcs: parseInt(r.pcs) || 0,
       acc_gram: parseFloat(r.acc_gram) || 0, catatan: r.catatan || null,
     }))))
+    if (overTol) {
+      fd.set('loss_alasan', lossAlasan)
+      fd.set('loss_operator_nama', lossOpNama)
+      fd.set('loss_admin_nama', lossAdminNama)
+      if (ttdOp) fd.set('loss_ttd_operator', ttdOp)
+      if (ttdAdmin) fd.set('loss_ttd_admin', ttdAdmin)
+    }
     setUp(false)
     onSubmit(fd)
   }
@@ -2386,15 +2411,32 @@ function TerimaCuttingForm({ item, tims, adminList, err, isPending, onCancel, on
         {gramasiRows.length === 0 && (
           <p className="text-[11px] text-amber-600 font-medium">Pilih minimal 1 gramasi di atas</p>
         )}
-        {gramasiRows.length > 0 && (() => {
-          const totalAcc = gramasiRows.reduce((s, r) => s + parseFloat(r.acc_gram || '0'), 0)
-          return <p className="text-[11px] text-violet-500 font-medium">Total ACC: <span className="font-semibold">{totalAcc.toFixed(2)} gr</span></p>
-        })()}
+        {gramasiRows.length > 0 && (
+          <p className="text-[11px] text-violet-500 font-medium">Total ACC: <span className="font-semibold">{totalAcc.toFixed(2)} gr</span></p>
+        )}
         <div>
           <label className="block text-[11px] font-medium text-slate-500 mb-1">Total reject (gr) — akumulasi</label>
-          <input name="reject_cutting_gram" type="number" step="0.001" min="0" defaultValue="0"
+          <input name="reject_cutting_gram" type="number" step="0.001" min="0" value={reject}
+            onChange={e => setReject(e.target.value)}
             className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all" />
         </div>
+
+        {/* Indikator loss realtime + panel approval (sama seperti form Cutting/Peleburan) */}
+        {gramasiRows.length > 0 && (
+          <div className={cn('px-3 py-2 rounded-xl text-[12px] font-semibold flex items-center justify-between', overTol ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700')}>
+            <span>Loss: {lossNow.toFixed(2)} gr</span>
+            <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
+          </div>
+        )}
+        {overTol && (
+          <LossApprovalPanel
+            lossGram={lossNow} toleransiGram={toleransi} proses="Cutting"
+            alasan={lossAlasan} setAlasan={setLossAlasan}
+            operatorNama={lossOpNama} setOperatorNama={setLossOpNama}
+            adminNama={lossAdminNama} setAdminNama={setLossAdminNama}
+            setTtdOperator={setTtdOp} setTtdAdmin={setTtdAdmin}
+          />
+        )}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-[11px] font-medium text-slate-500 mb-1">Tanggal selesai</label>

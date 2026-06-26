@@ -1146,6 +1146,27 @@ export async function terimaCuttingItem(itemId: number, formData: FormData) {
   }
 
   const serahGram = Number(item.serah_gram ?? item.berat_awal ?? 0)
+
+  // ── Validasi loss vs toleransi (loss seluruh batch cutting) ──────────────────
+  const totalLoss = Math.max(0, serahGram - totalAcc - rejectTotal)
+  const tolMap = await getToleransiLoss()
+  const toleransiCut = tolMap['cutting'] ?? 0.05
+  const lossAlasan = (formData.get('loss_alasan') as string) || ''
+  if (totalLoss > toleransiCut + 0.0001) {
+    const ttdOp = formData.get('loss_ttd_operator') as string
+    const ttdAdmin = formData.get('loss_ttd_admin') as string
+    if (!lossAlasan.trim()) return { error: `Loss ${totalLoss.toFixed(3)}gr melebihi toleransi ${toleransiCut}gr. Alasan wajib diisi.` }
+    if (!ttdOp) return { error: 'Tanda tangan operator wajib.' }
+    if (!ttdAdmin) return { error: 'Tanda tangan admin/manager wajib.' }
+    await saveLossApproval(supabase, {
+      batchKode: item.batch_kode, proses: 'cutting', refTable: 'produksi_item', refId: itemId,
+      timId: item.tim_id ?? null, timNama: item.tim_nama ?? null,
+      masukGram: serahGram, keluarGram: totalAcc, lossGram: totalLoss, toleransiGram: toleransiCut,
+      alasan: lossAlasan, ttdOperatorDataUrl: ttdOp, operatorNama: (formData.get('loss_operator_nama') as string) || item.operator || null,
+      ttdAdminDataUrl: ttdAdmin, adminUserId: user.id, adminNama: (formData.get('loss_admin_nama') as string) || profile?.name || null,
+    })
+  }
+
   const sesiId = gramasiList.length > 1 ? crypto.randomUUID() : null
   if (gramasiList.length === 1) {
     // 1 gramasi → UPDATE existing item
