@@ -1643,7 +1643,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
 
                   {/* Action buttons */}
                   {canEdit&&!isVoided&&(()=>{
-                    if(s==='Cutting' && !item.gramasi && !item.status_cutting)
+                    if(s==='Cutting' && !item.gramasi && item.status_cutting!=='selesai')
                       return <button onClick={()=>openModal('terimaCuttingItem',item)}
                         className="h-8 px-3 rounded-xl text-[11px] font-semibold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-violet-600 text-white">
                         Terima Cutting <span className="text-[9px] opacity-70">(pilih gramasi)</span>
