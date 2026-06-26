@@ -80,7 +80,7 @@ export default async function BahanBakuPage({
     if (la.ref_id != null && !lossMap[la.ref_id]) lossMap[la.ref_id] = la
   }
 
-  const peleburanList = (peleburanRaw ?? []).map((p: { diterima_gram?: number; sisa_bahan_seharusnya?: number }) => ({
+  const peleburanList = (peleburanRaw ?? []).map((p: Record<string, unknown>) => ({
     ...p,
     sisa_gram: p.diterima_gram != null
       ? parseFloat(String(p.diterima_gram)) - (usageMap[p.id] ?? 0)
