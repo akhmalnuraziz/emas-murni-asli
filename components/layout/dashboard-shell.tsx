@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Sidebar from '@/components/layout/sidebar'
 import Header from '@/components/layout/header'
 import IdleLogoutProvider from '@/components/layout/idle-logout-provider'
+import AiChatbot from '@/components/layout/ai-chatbot'
 import { usePathname } from 'next/navigation'
 
 const PAGE_META: Record<string, { title: string; subtitle: string }> = {
@@ -64,6 +65,7 @@ export default function DashboardShell({
           </main>
         </div>
       </div>
+      <AiChatbot />
     </IdleLogoutProvider>
   )
 }

@@ -6,6 +6,7 @@ import {
   TrendingUp, ShoppingCart, RotateCcw, Layers, Flame,
   Scale, Thermometer, CheckCircle2, Clock, Truck, ClipboardCheck,
   BoxSelect, TriangleAlert, Boxes, Wallet, Calendar, ChevronRight,
+  Sparkles, Loader2, X,
 } from 'lucide-react'
 import { cn, formatRupiah, formatDate } from '@/lib/utils'
 import { Badge, StatusBadge } from '@/components/ui/badge'
@@ -131,6 +132,10 @@ export default function DashboardClient({
   poPackaging, stokAkrilik, totalPengeluaran, produksiTrend,
   packingHariIni, siapPacking, rejectList, balanceSelisih, targetPackingHarian,
 }: Props) {
+  const [aiAnalysis, setAiAnalysis] = useState<string>('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [showAiPanel, setShowAiPanel] = useState(false)
+
   const now  = new Date()
   const jam  = now.getHours()
   const greeting = jam < 12 ? 'Selamat pagi' : jam < 15 ? 'Selamat siang' : jam < 19 ? 'Selamat sore' : 'Selamat malam'
@@ -149,6 +154,71 @@ export default function DashboardClient({
 
   const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
+  const runAiAnalysis = async () => {
+    setAiLoading(true)
+    setShowAiPanel(true)
+    setAiAnalysis('')
+
+    const dashboardData = {
+      periode: periodLabel,
+      stok,
+      transit,
+      penjualan,
+      reject,
+      pipeline,
+      poPackaging,
+      totalPengeluaran,
+      packingHariIni: packingHariIni.length,
+      balanceSelisih,
+    }
+
+    try {
+      const response = await fetch('/api/ai/analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          data: dashboardData,
+          question: 'Buat analisis kondisi bisnis emas saat ini berdasarkan data dashboard.',
+        }),
+      })
+
+      if (!response.ok) throw new Error('Failed')
+
+      const reader = response.body?.getReader()
+      if (!reader) return
+
+      const decoder = new TextDecoder()
+      let result = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value, { stream: true })
+        const lines = chunk.split('\n').filter(line => line.trim() !== '')
+
+        for (const line of lines) {
+          const trimmed = line.replace(/^data: /, '')
+          if (trimmed === '[DONE]') break
+
+          try {
+            const parsed = JSON.parse(trimmed)
+            if (parsed.content) {
+              result += parsed.content
+              setAiAnalysis(result)
+            }
+          } catch {
+            // Skip
+          }
+        }
+      }
+    } catch {
+      setAiAnalysis('Gagal menganalisis data. Silakan coba lagi.')
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
   return (
     <div className="space-y-5 pb-8 max-w-[1280px]">
 
@@ -160,7 +230,26 @@ export default function DashboardClient({
           </p>
           <p className="text-[12px] text-slate-400 mt-0.5 font-normal">{dateStr}</p>
         </div>
-        <PeriodSelector period={period} dateFrom={dateFrom} dateTo={dateTo} />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={runAiAnalysis}
+            disabled={aiLoading}
+            className={cn(
+              'flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-semibold transition-all border',
+              aiLoading
+                ? 'bg-violet-50 text-violet-400 border-violet-200 cursor-not-allowed'
+                : 'bg-gradient-to-r from-violet-500 to-purple-500 text-white border-transparent hover:from-violet-600 hover:to-purple-600 shadow-sm hover:shadow-md'
+            )}
+          >
+            {aiLoading ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Sparkles size={14} />
+            )}
+            {aiLoading ? 'Menganalisis...' : 'AI Analysis'}
+          </button>
+          <PeriodSelector period={period} dateFrom={dateFrom} dateTo={dateTo} />
+        </div>
       </div>
 
       {/* ── Alert banner ─────────────────────────────────────────────── */}
@@ -180,6 +269,32 @@ export default function DashboardClient({
                 </li>
               ))}
             </ul>
+          </div>
+        </div>
+      )}
+
+      {/* ── AI Analysis Panel ─────────────────────────────────────────── */}
+      {showAiPanel && (
+        <div className="bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles size={16} className="text-violet-500" />
+              <p className="text-[13px] font-semibold text-violet-700">AI Analysis</p>
+            </div>
+            <button
+              onClick={() => setShowAiPanel(false)}
+              className="p-1 text-violet-400 hover:text-violet-600 transition-colors"
+            >
+              <X size={14} />
+            </button>
+          </div>
+          <div className="text-[13px] text-slate-700 leading-relaxed whitespace-pre-wrap">
+            {aiAnalysis || (
+              <span className="inline-flex items-center gap-2 text-violet-500">
+                <Loader2 size={14} className="animate-spin" />
+                Sedang menganalisis data...
+              </span>
+            )}
           </div>
         </div>
       )}
