@@ -83,9 +83,9 @@ export default async function BahanBakuPage({
   const peleburanList = (peleburanRaw ?? []).map((p: Record<string, unknown>) => ({
     ...p,
     sisa_gram: p.diterima_gram != null
-      ? parseFloat(String(p.diterima_gram)) - (usageMap[p.id] ?? 0)
+      ? parseFloat(String(p.diterima_gram)) - (usageMap[Number(p.id)] ?? 0)
       : null,
-    loss_approval: lossMap[p.id] ?? null,
+    loss_approval: lossMap[Number(p.id)] ?? null,
   }))
 
   const batchLossMap: Record<number, any> = {}
