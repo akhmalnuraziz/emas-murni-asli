@@ -1,21 +1,22 @@
 ﻿'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { createNotif } from '@/app/(dashboard)/notifikasi/actions'
 
 const BATCH_PREFIX = 'PROD.GDCJ/BATCH'
 
-async function generateBatchCode(supabase: any): Promise<string> {
+async function generateBatchCode(supabase: SupabaseClient): Promise<string> {
   const { count } = await supabase.from('batch').select('*', { count: 'exact', head: true })
   return `${BATCH_PREFIX}/${String((count ?? 0) + 1).padStart(4, '0')}`
 }
 
-async function updateSisaSeharusnya(supabase: any, batchKode: string) {
+async function updateSisaSeharusnya(supabase: SupabaseClient, batchKode: string) {
   const { data: prodList } = await supabase
     .from('produksi_item').select('berat_awal')
     .eq('batch_kode', batchKode).is('voided_at', null)
-  const totalTerpakai = (prodList ?? []).reduce((s: number, p: any) => s + (p.berat_awal || 0), 0)
+  const totalTerpakai = (prodList ?? []).reduce((s: number, p: { berat_awal?: number }) => s + (p.berat_awal || 0), 0)
   const { data: batch } = await supabase.from('batch').select('timbangan_akhir').eq('kode', batchKode).single()
   if (batch) {
     await supabase.from('batch').update({
@@ -26,7 +27,7 @@ async function updateSisaSeharusnya(supabase: any, batchKode: string) {
 
 // Upload foto dari base64 string ke Supabase Storage (server selalu authenticated)
 async function uploadBase64Fotos(
-  supabase: any, b64Array: string[], prefix: string, existing: string[]
+  supabase: SupabaseClient, b64Array: string[], prefix: string, existing: string[]
 ): Promise<{ urls: string[]; uploadError?: string }> {
   const { decodeAndValidateBase64Image, sanitizePathSegment } = await import('@/lib/upload-validation')
   const urls: string[] = [...existing]
@@ -36,7 +37,7 @@ async function uploadBase64Fotos(
     if (!b64) continue
     let buf: Buffer, ext: string, contentType: string
     try { ({ buffer: buf, ext, contentType } = decodeAndValidateBase64Image(b64)) }
-    catch (err: any) { return { urls, uploadError: `Foto ${i+1}: ${err?.message ?? 'invalid'}` } }
+    catch (err) { return { urls, uploadError: `Foto ${i+1}: ${err instanceof Error ? err.message : 'invalid'}` } }
     const rand = Math.random().toString(36).slice(2, 8)
     const path = `batch/${safe}/${Date.now()}_${i}_${rand}.${ext}`
     const { error: storageErr } = await supabase.storage
@@ -51,7 +52,7 @@ async function uploadBase64Fotos(
 }
 
 // Upload tanda tangan PNG (loss approval peleburan)
-async function uploadSignaturePlb(supabase: any, dataUrl: string, prefix: string): Promise<string | null> {
+async function uploadSignaturePlb(supabase: SupabaseClient, dataUrl: string, prefix: string): Promise<string | null> {
   try {
     const { decodeAndValidateBase64Image, sanitizePathSegment } = await import('@/lib/upload-validation')
     const { buffer, ext } = decodeAndValidateBase64Image(dataUrl, { allow: ['png', 'jpeg', 'webp'], maxBytes: 500_000 })
@@ -65,7 +66,7 @@ async function uploadSignaturePlb(supabase: any, dataUrl: string, prefix: string
 }
 
 // Ambil toleransi loss peleburan dari pengaturan
-async function getToleransiPeleburan(supabase: any): Promise<number> {
+async function getToleransiPeleburan(supabase: SupabaseClient): Promise<number> {
   const { data } = await supabase.from('pengaturan').select('value').eq('key', 'toleransi_loss_peleburan').maybeSingle()
   return parseFloat(data?.value ?? '0.05') || 0.05
 }
@@ -112,7 +113,7 @@ export async function createBatch(formData: FormData) {
   const hargaBeli     = parseFloat(formData.get('harga_beli') as string) || 0
   const biayaTbhRaw   = formData.get('biaya_tbh') as string
   const biayaTbh      = biayaTbhRaw ? JSON.parse(biayaTbhRaw) : []
-  const totalBiayaTbh = biayaTbh.reduce((s: number, b: any) => s + (b.jumlah || 0), 0)
+  const totalBiayaTbh = biayaTbh.reduce((s: number, b: { jumlah?: number }) => s + (b.jumlah || 0), 0)
   const totalHpp      = hargaBeli + totalBiayaTbh
   const hppGr         = beratGudang > 0 ? totalHpp / beratGudang : 0
 
@@ -200,7 +201,7 @@ export async function createBatchRingkas(formData: FormData) {
 
   const catatan = (formData.get('catatan') as string) || null
 
-  const { data, error } = await supabase.from('batch').insert({
+  const { error } = await supabase.from('batch').insert({
     kode,
     nama_batch:            kode,
     supplier:              'GUDANG PUSAT',
@@ -258,7 +259,7 @@ export async function updateBatch(batchId: number, batchKode: string, formData: 
   const hargaBeli     = parseFloat(formData.get('harga_beli') as string) || 0
   const biayaTbhRaw   = formData.get('biaya_tbh') as string
   const biayaTbh      = biayaTbhRaw ? JSON.parse(biayaTbhRaw) : []
-  const totalBiayaTbh = biayaTbh.reduce((s: number, b: any) => s + (b.jumlah || 0), 0)
+  const totalBiayaTbh = biayaTbh.reduce((s: number, b: { jumlah?: number }) => s + (b.jumlah || 0), 0)
   const totalHpp      = hargaBeli + totalBiayaTbh
   const hppGr         = beratGudang > 0 ? totalHpp / beratGudang : 0
 
@@ -746,7 +747,7 @@ export async function editPeleburan(id: number, formData: FormData) {
     ? await uploadBase64Fotos(supabase, newFotosB64, plb.kode + '_edit', existing)
     : { urls: existing }
 
-  const updatePayload: any = {
+  const updatePayload = {
     dikasih_gram: dikasih, tanggal, jam_mulai: jamMulai,
     operator, keterangan_serahkan: keterangan,
     foto_serahkan: fotoUrls,

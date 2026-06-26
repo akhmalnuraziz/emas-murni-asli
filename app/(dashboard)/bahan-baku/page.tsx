@@ -30,9 +30,8 @@ export default async function BahanBakuPage({
     { data: batchLossRows },
   ] = await Promise.all([
     (() => {
-      let bq = supabase.from('batch').select('*').order('created_at', { ascending: false })
-      if (q) bq = bq.or(`kode.ilike.%${q}%,nama_batch.ilike.%${q}%,supplier.ilike.%${q}%`) as any
-      return bq.limit(200)
+      const bq = supabase.from('batch').select('*').order('created_at', { ascending: false })
+      return q ? bq.or(`kode.ilike.%${q}%,nama_batch.ilike.%${q}%,supplier.ilike.%${q}%`).limit(200) : bq.limit(200)
     })(),
     supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
     supabase.from('peleburan')
@@ -81,7 +80,7 @@ export default async function BahanBakuPage({
     if (la.ref_id != null && !lossMap[la.ref_id]) lossMap[la.ref_id] = la
   }
 
-  const peleburanList = (peleburanRaw ?? []).map((p: any) => ({
+  const peleburanList = (peleburanRaw ?? []).map((p: { diterima_gram?: number; sisa_bahan_seharusnya?: number }) => ({
     ...p,
     sisa_gram: p.diterima_gram != null
       ? parseFloat(String(p.diterima_gram)) - (usageMap[p.id] ?? 0)

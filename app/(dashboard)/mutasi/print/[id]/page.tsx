@@ -40,8 +40,6 @@ export default async function PrintSJPage({ params }: { params: Promise<{ id: st
     ? new Date(tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
     : '—'
 
-  const totalHpp = (tags ?? []).reduce((s, t) => s + Number(t.hpp ?? 0), 0)
-
   return (
     <html lang="id">
       <head>

@@ -32,7 +32,6 @@ export default async function KpiTimPage({
   }
 
   const [
-    { data: profile },
     { data: tims },
     { data: handovers },
     { data: cuttingItems },

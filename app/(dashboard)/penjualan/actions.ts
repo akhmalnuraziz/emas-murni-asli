@@ -73,7 +73,6 @@ export async function createPenjualan(formData: FormData) {
 
   // Lookup marketplace fee
   let feeMarketplace = 0
-  let feeCustom = 0
   if (channel !== 'toko' && channel !== 'cabang') {
     const { data: mkt } = await supabase.from('marketplace_setting').select('fee_persen').eq('channel', channel).single()
     feeMarketplace = Number(mkt?.fee_persen ?? 0)

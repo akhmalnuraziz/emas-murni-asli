@@ -39,7 +39,6 @@ export default async function DashboardPage({
   const [
     { data: profile },
     { data: shieldtagAktif },
-    { data: shieldtagTransit },
     { data: penjualanPeriode },
     { data: buybackPeriode },
     { data: produksiPipeline },
@@ -63,9 +62,6 @@ export default async function DashboardPage({
     { data: targetRow },
     // Balance Engine
     { data: balanceBatches },
-    { data: balanceProduksi },
-    { data: balanceShieldtag },
-    { data: balancePenjualan },
   ] = await Promise.all([
     supabase.from('users_profile').select('name, role').eq('id', user?.id ?? '').single(),
     supabase.from('shieldtag').select('gramasi, hpp').eq('status', 'Aktif').is('voided_at', null),
@@ -207,8 +203,6 @@ export default async function DashboardPage({
     dailyTotal[day] = (dailyTotal[day] ?? 0) + pcs
   }
   const trendGramasi = GRAMASI_ORDER.filter(g => trendMap[g])
-  // Hitung hari-hari yang ada datanya untuk menentukan range kolom
-  const trendDays = Object.keys(dailyTotal).map(Number).sort((a, b) => a - b)
   // Jumlah hari di bulan (pakai dateFrom untuk detect bulan)
   const trendMonth = dateFrom.slice(0, 7)
   const daysInMonth = new Date(Number(trendMonth.slice(0, 4)), Number(trendMonth.slice(5, 7)), 0).getDate()
