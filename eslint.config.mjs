@@ -8,6 +8,9 @@ const eslintConfig = defineConfig([
   {
     rules: {
       '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-var-requires': 'warn',
+      'react/no-unescaped-entities': 'warn',
+      'prefer-const': 'warn',
     },
   },
   // Override default ignores of eslint-config-next.
