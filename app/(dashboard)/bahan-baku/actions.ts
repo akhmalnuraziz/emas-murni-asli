@@ -512,7 +512,7 @@ export async function createPeleburan(formData: FormData) {
 
   // ── Parse sumber bahan ──────────────────────────────────────────────────
   type SumberItem = {
-    tipe: 'batch_mentah' | 'sisa_peleburan' | 'reject_cutting'
+    tipe: 'batch_mentah' | 'sisa_peleburan' | 'reject_cutting' | 'reject_packing'
     ref_id: string | null
     ref_label: string
     gram_otomatis: number
@@ -625,6 +625,23 @@ export async function createPeleburan(formData: FormData) {
     }
   }
 
+  // ── Update reject_packing: tambahkan gram_reject_dilebur ─────────────────────
+  const rejectPackingIds = [...new Set(sumberList
+    .filter(s => s.tipe === 'reject_packing' && s.ref_id)
+    .map(s => parseInt(s.ref_id!)))]
+  if (rejectPackingIds.length > 0) {
+    for (const pid of rejectPackingIds) {
+      const s = sumberList.find(x => x.tipe === 'reject_packing' && x.ref_id === String(pid))
+      if (!s) continue
+      const { data: pk } = await supabase.from('packing').select('gram_reject, gram_reject_dilebur').eq('id', pid).single()
+      if (pk) {
+        await supabase.from('packing').update({
+          gram_reject_dilebur: Math.min(Number(pk.gram_reject), Number(pk.gram_reject_dilebur ?? 0) + Number(s.gram_aktual))
+        }).eq('id', pid)
+      }
+    }
+  }
+
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'CREATE', module: 'peleburan', record_key: kode, record_id: String(data.id),
@@ -633,6 +650,7 @@ export async function createPeleburan(formData: FormData) {
 
   revalidatePath('/bahan-baku')
   revalidatePath('/produksi')
+  revalidatePath('/packing-log')
   return { success: true, kode, id: data.id }
 }
 

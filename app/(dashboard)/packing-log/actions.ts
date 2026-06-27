@@ -254,3 +254,38 @@ export async function markPrinted(packingId: number) {
   revalidatePath('/packing-log')
   return { success: true }
 }
+
+export async function reportPackingReject(packingId: number, pcsReject: number, gramReject: number) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat', 'spv', 'manager'].includes(profile?.role ?? ''))
+    return { error: 'Hanya Owner/Manager/SPV/Admin Pusat' }
+
+  if (pcsReject <= 0) return { error: 'PCS reject harus lebih dari 0' }
+  if (gramReject <= 0) return { error: 'Gram reject harus lebih dari 0' }
+
+  const { data: packing } = await supabase.from('packing')
+    .select('pcs_dipack, shieldtag_count, pcs_reject, kode')
+    .eq('id', packingId).single()
+  if (!packing) return { error: 'Packing tidak ditemukan' }
+  if ((packing.pcs_reject ?? 0) > 0) return { error: 'Reject sudah pernah dilaporkan untuk packing ini' }
+
+  const stCount = packing.shieldtag_count ?? 0
+  if (pcsReject + stCount > packing.pcs_dipack)
+    return { error: `Total shieldtag (${stCount}) + reject (${pcsReject}) melebihi PCS dipack (${packing.pcs_dipack})` }
+
+  await supabase.from('packing').update({ pcs_reject: pcsReject, gram_reject: gramReject }).eq('id', packingId)
+
+  await supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'REPORT_REJECT', module: 'PACKING',
+    record_key: packing.kode, record_id: String(packingId),
+    after_data: { pcs_reject: pcsReject, gram_reject: gramReject },
+  })
+
+  revalidatePath('/packing-log')
+  revalidatePath('/bahan-baku')
+  return { success: true }
+}

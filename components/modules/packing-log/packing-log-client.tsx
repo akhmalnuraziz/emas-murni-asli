@@ -3,10 +3,10 @@
 import { useState, useEffect, useTransition } from 'react'
 import {
   Plus, Search, Edit2, Trash2, Printer, Check,
-  AlertTriangle, X, Package, Camera
+  AlertTriangle, X, Package, Camera, ShieldX
 } from 'lucide-react'
 import { cn, formatDate } from '@/lib/utils'
-import { createPacking, editPacking, voidPacking, markPrinted } from '@/app/(dashboard)/packing-log/actions'
+import { createPacking, editPacking, voidPacking, markPrinted, reportPackingReject } from '@/app/(dashboard)/packing-log/actions'
 import type { UserRole } from '@/lib/types/database'
 
 interface Props {
@@ -279,9 +279,52 @@ function EditModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;
   )
 }
 
+// ─── Reject Modal ─────────────────────────────────────────────────────────────
+function RejectModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;onSubmit:(pcs:number,gram:number)=>void;isPending:boolean;error:string}){
+  const [pcs,setPcs]=useState('')
+  const [gram,setGram]=useState('')
+  const stCount=p.shieldtag_count??0
+  const maxPcs=p.pcs_dipack-stCount
+  return(
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-sm bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+          <div>
+            <h2 className="text-[15px] font-bold text-slate-900">Laporkan Reject Packing</h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">{p.kode} · {stCount}/{p.pcs_dipack} shieldtag berhasil</p>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
+        </div>
+        <div className="px-5 py-4 space-y-4">
+          <div className="rounded-lg px-3 py-2 bg-amber-50 border border-amber-100 text-[12px] text-amber-700">
+            <span className="font-semibold">Maks {maxPcs} PCS reject</span> (dari {p.pcs_dipack} dipack − {stCount} shieldtag). Emas reject ini akan bisa dimasukkan ke Peleburan.
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <F label="PCS Reject" req>
+              <input type="number" min="1" max={maxPcs} value={pcs} onChange={e=>setPcs(e.target.value)} placeholder={`Max ${maxPcs}`} className={inp}/>
+            </F>
+            <F label="Gram Reject (aktual)" req>
+              <input type="number" step="0.001" min="0.001" value={gram} onChange={e=>setGram(e.target.value)} placeholder="0.000" className={inp}/>
+            </F>
+          </div>
+          {error&&<div className="flex items-center gap-2 rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600"><AlertTriangle size={14}/>{error}</div>}
+        </div>
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200">
+          <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+          <button disabled={isPending||!pcs||!gram} onClick={()=>onSubmit(parseInt(pcs),parseFloat(gram))}
+            className="flex-1 h-9 rounded-lg bg-orange-500 hover:bg-orange-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            {isPending&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
+            {isPending?'Menyimpan...':'Simpan Reject'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Packing Card (mobile) ────────────────────────────────────────────────────
-function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint,onShieldtagClick}:{
-  p:any;canManage:boolean;canDelete:boolean;onEdit:()=>void;onDelete:()=>void;onPrint:()=>void;onShieldtagClick?:()=>void
+function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint,onShieldtagClick,onReject}:{
+  p:any;canManage:boolean;canDelete:boolean;onEdit:()=>void;onDelete:()=>void;onPrint:()=>void;onShieldtagClick?:()=>void;onReject?:()=>void
 }){
   const [lightbox,setLightbox]=useState<string|null>(null)
   const fotos=Array.isArray(p.fotos)?p.fotos:[]
@@ -294,7 +337,9 @@ function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint,onShieldtagC
         <span className="text-[12px] font-mono font-semibold text-violet-600">{p.kode}</span>
         <div className="flex items-center gap-1.5">
           {isPrinted&&<span className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-emerald-700 bg-emerald-50">✓ Cetak</span>}
+          {(p.pcs_reject??0)>0&&<span className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-orange-600 bg-orange-50">Reject {p.pcs_reject}pcs</span>}
           <button onClick={onPrint}className="w-7 h-7 rounded-xl bg-violet-50 text-violet-500 flex items-center justify-center hover:bg-violet-100"title="Print"><Printer size={12}/></button>
+          {canManage&&!(p.pcs_reject>0)&&stCount<p.pcs_dipack&&<button onClick={onReject}className="w-7 h-7 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center hover:bg-orange-100"title="Laporkan Reject"><ShieldX size={11}/></button>}
           {canManage&&<button onClick={onEdit}className="w-7 h-7 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-100"title="Edit"><Edit2 size={11}/></button>}
           {canDelete&&<button onClick={onDelete}className="w-7 h-7 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100"title="Hapus"><Trash2 size={11}/></button>}
         </div>
@@ -329,7 +374,7 @@ function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint,onShieldtagC
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function PackingLogClient({packingList,siapPackingItems,shieldtagByPacking={},userRole,userName}:Props){
   const [isPending,startTransition]=useTransition()
-  const [modal,setModal]=useState<'create'|'edit'|'delete'|null>(null)
+  const [modal,setModal]=useState<'create'|'edit'|'delete'|'reject'|null>(null)
   const [active,setActive]=useState<any|null>(null)
   const [err,setErr]=useState('')
   const [search,setSearch]=useState('')
@@ -383,6 +428,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
   function handleCreate(fd:FormData){setErr('');startTransition(async()=>{const r=await createPacking(fd);if(r?.error){setErr(r.error);return}showToast(`✅ ${r?.kode} berhasil dicatat`);setModal(null)})}
   function handleEdit(fd:FormData){if(!active)return;setErr('');startTransition(async()=>{const r=await editPacking(active.id,active.kode,fd);if(r?.error){setErr(r.error);return}showToast('✅ Packing diperbarui');setModal(null)})}
   function handleDelete(){if(!active)return;startTransition(async()=>{const r=await voidPacking(active.id,active.kode);if(r?.error){showToast(r.error,false);return}showToast('🗑️ Packing dihapus');setModal(null)})}
+  function handleReject(pcs:number,gram:number){if(!active)return;setErr('');startTransition(async()=>{const r=await reportPackingReject(active.id,pcs,gram);if(r?.error){setErr(r.error);return}showToast(`✅ Reject ${pcs} pcs (${gram.toFixed(3)}gr) dicatat`);setModal(null)})}
 
   function handlePrint(p:any){
     markPrinted(p.id).catch(console.error)
@@ -499,7 +545,8 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
               onEdit={()=>{setActive(p);setErr('');setModal('edit')}}
               onDelete={()=>{setActive(p);setModal('delete')}}
               onPrint={()=>handlePrint(p)}
-              onShieldtagClick={()=>{ const list=shieldtagByPacking[p.id]??[]; if(list.length>0) setStModal({kode:p.kode,list}) }}/>
+              onShieldtagClick={()=>{ const list=shieldtagByPacking[p.id]??[]; if(list.length>0) setStModal({kode:p.kode,list}) }}
+              onReject={()=>{setActive(p);setErr('');setModal('reject')}}/>
           ))}
         </div>
 
@@ -558,12 +605,19 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
                       ):<span className="text-[12px] text-slate-300">—</span>}
                     </td>
                     <td className="px-4 py-3 align-middle text-center">
-                      <button type="button"
-                        onClick={()=>{ const list=shieldtagByPacking[p.id]??[]; if(list.length>0) setStModal({kode:p.kode,list}) }}
-                        disabled={stCount===0}
-                        className={cn('inline-block text-[12px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap transition-all',stCount>0?'text-emerald-700 bg-emerald-50 hover:ring-2 hover:ring-emerald-300 cursor-pointer':'text-slate-400 bg-slate-100 cursor-default')}>
-                        🏷 {stCount}/{p.pcs_dipack}
-                      </button>
+                      <div className="flex flex-col items-center gap-1">
+                        <button type="button"
+                          onClick={()=>{ const list=shieldtagByPacking[p.id]??[]; if(list.length>0) setStModal({kode:p.kode,list}) }}
+                          disabled={stCount===0}
+                          className={cn('inline-block text-[12px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap transition-all',stCount>0?'text-emerald-700 bg-emerald-50 hover:ring-2 hover:ring-emerald-300 cursor-pointer':'text-slate-400 bg-slate-100 cursor-default')}>
+                          🏷 {stCount}/{p.pcs_dipack}
+                        </button>
+                        {(p.pcs_reject??0)>0&&(
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-500 whitespace-nowrap">
+                            Reject {p.pcs_reject}pcs
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 align-middle text-center">
                       <span className={cn('inline-block text-[10px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap',isPrinted?'text-emerald-700 bg-emerald-50':'text-slate-500 bg-slate-100')}>
@@ -573,6 +627,9 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
                     <td className="px-4 py-3 align-middle">
                       <div className="flex items-center gap-1.5">
                         <button onClick={()=>handlePrint(p)} className={cn('w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110',isPrinted?'bg-emerald-50 text-emerald-500':'bg-violet-50 text-violet-500')} title="Print"><Printer size={13}/></button>
+                        {canManage&&!(p.pcs_reject>0)&&stCount<p.pcs_dipack&&(
+                          <button onClick={()=>{setActive(p);setErr('');setModal('reject')}}className="w-8 h-8 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center hover:scale-110 transition-all"title="Laporkan Reject"><ShieldX size={13}/></button>
+                        )}
                         {canManage&&<button onClick={()=>{setActive(p);setErr('');setModal('edit')}}className="w-8 h-8 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center hover:scale-110 transition-all"title="Edit"><Edit2 size={13}/></button>}
                         {canDelete&&<button onClick={()=>{setActive(p);setModal('delete')}}className="w-8 h-8 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:scale-110 transition-all"title="Hapus"><Trash2 size={13}/></button>}
                       </div>
@@ -615,6 +672,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
       )}
 
       {stModal && <ShieldtagListModal kode={stModal.kode} list={stModal.list} onClose={()=>setStModal(null)}/>}
+      {modal==='reject'&&active&&<RejectModal p={active} onClose={()=>{setModal(null);setErr('')}} onSubmit={handleReject} isPending={isPending} error={err}/>}
     </div>
   )
 }

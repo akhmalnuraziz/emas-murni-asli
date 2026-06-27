@@ -28,6 +28,7 @@ export default async function BahanBakuPage({
     { data: adminRows },
     { data: lossApprovalRows },
     { data: batchLossRows },
+    { data: packingRejectRaw },
   ] = await Promise.all([
     (() => {
       const bq = supabase.from('batch').select('*').order('created_at', { ascending: false })
@@ -65,6 +66,11 @@ export default async function BahanBakuPage({
       .select('ref_id, alasan, operator_nama, admin_nama, ttd_operator_url, ttd_admin_url, created_at')
       .eq('proses', 'batch_selisih')
       .eq('ref_table', 'batch')
+      .order('created_at', { ascending: false }),
+    supabase.from('packing')
+      .select('id, kode, gramasi, pcs_dipack, pcs_reject, gram_reject, gram_reject_dilebur, batch_kode')
+      .gt('pcs_reject', 0)
+      .is('voided_at', null)
       .order('created_at', { ascending: false }),
   ])
 
@@ -131,6 +137,16 @@ export default async function BahanBakuPage({
     if (r.batch_kode) rejectCountMap[r.batch_kode] = (rejectCountMap[r.batch_kode] ?? 0) + 1
   }
 
+  // Packing rejects yang belum dilebur
+  const packingRejectItems = (packingRejectRaw ?? []).filter(
+    (p: any) => Number(p.gram_reject ?? 0) > Number(p.gram_reject_dilebur ?? 0) + 0.001
+  )
+
+  const packingRejectCountMap: Record<string, number> = {}
+  for (const p of packingRejectItems) {
+    if (p.batch_kode) packingRejectCountMap[p.batch_kode] = (packingRejectCountMap[p.batch_kode] ?? 0) + 1
+  }
+
   return (
     <BahanBakuClient
       batches={batches ?? []}
@@ -138,6 +154,8 @@ export default async function BahanBakuPage({
       rejectItems={enrichedReject}
       produksiItems={produksiItems ?? []}
       rejectCountMap={rejectCountMap}
+      packingRejectItems={packingRejectItems}
+      packingRejectCountMap={packingRejectCountMap}
       toleransiPeleburan={parseFloat(tolPlbRow?.value ?? '0.05') || 0.05}
       tims={tims ?? []}
       adminList={adminRows ?? []}

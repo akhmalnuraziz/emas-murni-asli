@@ -17,7 +17,7 @@ import type { UserRole } from '@/lib/types/database'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
 import { TimPickerStd, AdminPickerStd } from '@/components/modules/produksi/serah-terima-modal'
 
-interface Props { batches: any[]; peleburanList?: any[]; rejectItems?: any[]; produksiItems?: any[]; rejectCountMap: Record<string, number>; toleransiPeleburan?: number; tims?: any[]; adminList?: any[]; userRole: UserRole; userName: string; batchLossMap?: Record<number, any>; currentQ?: string }
+interface Props { batches: any[]; peleburanList?: any[]; rejectItems?: any[]; produksiItems?: any[]; rejectCountMap: Record<string, number>; packingRejectItems?: any[]; packingRejectCountMap?: Record<string, number>; toleransiPeleburan?: number; tims?: any[]; adminList?: any[]; userRole: UserRole; userName: string; batchLossMap?: Record<number, any>; currentQ?: string }
 
 // ─── Selisih helper ──────────────────────────────────────────────────────────
 function hitungSelisih(pusat: number, gudang: number) {
@@ -331,7 +331,7 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
-export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[],produksiItems=[],rejectCountMap,toleransiPeleburan=0.05,tims=[],adminList=[],userRole,userName,batchLossMap={},currentQ=''}:Props){
+export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[],produksiItems=[],rejectCountMap,packingRejectItems=[],packingRejectCountMap={},toleransiPeleburan=0.05,tims=[],adminList=[],userRole,userName,batchLossMap={},currentQ=''}:Props){
   const [filter,setFilter]=useState<'semua'|'aktif'|'terkunci'>('semua')
   const router = useRouter()
   const [peleburanModalBatch,setPeleburanModalBatch]=useState<string|null>(null)
@@ -1022,6 +1022,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
           sisaMentahBelumLebur={mentahBelumLebur}
           hasilLeburBelumCetak={hasilLeburBelumCetak}
           rejectOptions={(rejectItems as any[]).filter((r:any)=>r.batch_kode===peleburanModalBatch)}
+          packingRejectOptions={(packingRejectItems as any[]).filter((r:any)=>r.batch_kode===peleburanModalBatch)}
           tims={tims} adminList={adminList}
           onClose={()=>{
             // Auto-expand batch card agar riwayat peleburan langsung terlihat
@@ -1099,10 +1100,10 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
 }
 
 // ─── Create Peleburan Modal (3 sumber: mentah / hasil lebur belum cetak / reject) ───
-function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasilLeburBelumCetak, rejectOptions, tims = [], adminList = [], onClose, showToast }: {
+function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasilLeburBelumCetak, rejectOptions, packingRejectOptions = [], tims = [], adminList = [], onClose, showToast }: {
   batchKode: string; batchNama: string
   sisaMentahBelumLebur: number; hasilLeburBelumCetak: number
-  rejectOptions: any[]; tims?: any[]; adminList?: any[]
+  rejectOptions: any[]; packingRejectOptions?: any[]; tims?: any[]; adminList?: any[]
   onClose: () => void; showToast: (m: string, ok?: boolean) => void
 }) {
   const [pend, start]     = useTransition()
@@ -1112,17 +1113,22 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
   const [mentahGram, setMentahGram]       = useState('')
   const [leburChecked, setLeburChecked]   = useState(false)
   const [leburGram, setLeburGram]         = useState('')
-  const [rejGram, setRejGram]   = useState<Record<number,string>>({})
+  const [rejGram, setRejGram]       = useState<Record<number,string>>({})
+  const [packRejGram, setPackRejGram] = useState<Record<number,string>>({})
   const router = useRouter()
 
   function toggleRej(id: number, berat: number) {
     setRejGram(prev => { const n={...prev}; if(n[id]!==undefined){delete n[id]}else{n[id]=Number(berat).toFixed(2)}; return n })
   }
+  function togglePackRej(id: number, gram: number) {
+    setPackRejGram(prev => { const n={...prev}; if(n[id]!==undefined){delete n[id]}else{n[id]=Number(gram).toFixed(3)}; return n })
+  }
 
   const totalDikasih =
     (mentahChecked ? (Number(mentahGram)||0) : 0) +
     (leburChecked ? (Number(leburGram)||0) : 0) +
-    Object.values(rejGram).reduce((s,v)=>s+(Number(v)||0),0)
+    Object.values(rejGram).reduce((s,v)=>s+(Number(v)||0),0) +
+    Object.values(packRejGram).reduce((s,v)=>s+(Number(v)||0),0)
 
   const mentahNaik = mentahChecked && (Number(mentahGram)||0) > sisaMentahBelumLebur && sisaMentahBelumLebur >= 0
 
@@ -1142,6 +1148,11 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
       const rej = rejectOptions.find((r:any)=>r.id===Number(id))
       if (rej && (Number(gram)||0) > 0)
         sumber.push({ tipe:'reject_cutting', ref_id:id, ref_label:rej.kode??rej.nama_item, gram_otomatis:Number(rej.sisa_reject_gram ?? rej.berat_reject), gram_aktual:Number(gram) })
+    }
+    for (const [id,gram] of Object.entries(packRejGram)) {
+      const pk = packingRejectOptions.find((r:any)=>r.id===Number(id))
+      if (pk && (Number(gram)||0) > 0)
+        sumber.push({ tipe:'reject_packing', ref_id:id, ref_label:pk.kode, gram_otomatis:Number(pk.gram_reject), gram_aktual:Number(gram) })
     }
     if (sumber.length === 0) { setErr('Pilih minimal satu sumber bahan'); return }
     fd.set('sumber_json', JSON.stringify(sumber))
@@ -1238,7 +1249,36 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                 </div>
               )}
 
-              {rejectOptions.length===0&&!mentahChecked&&!leburChecked&&(
+              {/* 4. Reject Packing */}
+              {packingRejectOptions.length>0&&(
+                <div>
+                  <p className="text-[12px] font-semibold text-slate-700 mb-2">Reject Packing (Shieldtag Gagal)</p>
+                  <div className="space-y-2">
+                    {packingRejectOptions.map((pk:any)=>{
+                      const sisaGram = Number(pk.gram_reject??0) - Number(pk.gram_reject_dilebur??0)
+                      return (
+                      <div key={pk.id}>
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input type="checkbox" checked={packRejGram[pk.id]!==undefined} onChange={()=>togglePackRej(pk.id,sisaGram)} className="w-4 h-4 rounded accent-violet-600"/>
+                          <span className="text-[12px] font-medium text-slate-700 font-mono">{pk.kode}</span>
+                          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-500">Reject Packing</span>
+                          <span className="text-[10px] text-slate-400">({pk.gramasi}gr · {pk.pcs_reject}pcs)</span>
+                          <span className="ml-auto text-[10px] text-red-400 font-semibold">{formatGram(sisaGram)}</span>
+                        </label>
+                        {packRejGram[pk.id]!==undefined&&(
+                          <div className="mt-1 pl-6">
+                            <input type="number" step="0.001" max={sisaGram} placeholder={`Max ${formatGram(sisaGram)}`}
+                              value={packRejGram[pk.id]} onChange={e=>setPackRejGram(p=>({...p,[pk.id]:e.target.value}))} className={inp}/>
+                          </div>
+                        )}
+                      </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {rejectOptions.length===0&&packingRejectOptions.length===0&&!mentahChecked&&!leburChecked&&(
                 <p className="text-[12px] text-slate-400 italic text-center py-2">Centang sumber bahan di atas</p>
               )}
 
