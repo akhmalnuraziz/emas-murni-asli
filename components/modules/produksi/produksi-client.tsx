@@ -2368,11 +2368,13 @@ function TerimaCuttingForm({ item, tims, adminList, toleransi, err, isPending, o
   const totalAcc = gramasiRows.reduce((s, r) => s + (parseFloat(r.acc_gram) || 0), 0)
   const lossNow = Math.max(0, Number(item.berat_awal ?? 0) - totalAcc - (parseFloat(reject) || 0))
   const overTol = gramasiRows.length > 0 && lossNow > toleransi + 0.0001
+  const gainNow = Math.max(0, (totalAcc + (parseFloat(reject) || 0)) - Number(item.berat_awal ?? 0))
+  const overGain = gramasiRows.length > 0 && gainNow > toleransi + 0.0001
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); const el = e.currentTarget as HTMLFormElement
-    if (overTol) {
-      if (!lossAlasan.trim()) { alert('Alasan loss wajib diisi'); return }
+    if (overTol || overGain) {
+      if (!lossAlasan.trim()) { alert(overGain ? 'Alasan timbangan naik wajib diisi' : 'Alasan loss wajib diisi'); return }
       if (!ttdOp) { alert('Tanda tangan operator wajib'); return }
       if (!ttdAdmin) { alert('Tanda tangan admin wajib'); return }
     }
@@ -2388,7 +2390,7 @@ function TerimaCuttingForm({ item, tims, adminList, toleransi, err, isPending, o
       gramasi: r.gramasi, pcs: parseInt(r.pcs) || 0,
       acc_gram: parseFloat(r.acc_gram) || 0, catatan: r.catatan || null,
     }))))
-    if (overTol) {
+    if (overTol || overGain) {
       fd.set('loss_alasan', lossAlasan)
       fd.set('loss_operator_nama', lossOpNama)
       fd.set('loss_admin_nama', lossAdminNama)
@@ -2483,16 +2485,17 @@ function TerimaCuttingForm({ item, tims, adminList, toleransi, err, isPending, o
             className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all" />
         </div>
 
-        {/* Indikator loss realtime + panel approval (sama seperti form Cutting/Peleburan) */}
+        {/* Indikator loss/gain realtime + panel approval (sama seperti form Cutting/Peleburan) */}
         {gramasiRows.length > 0 && (
-          <div className={cn('px-3 py-2 rounded-xl text-[12px] font-semibold flex items-center justify-between', overTol ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700')}>
-            <span>Loss: {lossNow.toFixed(2)} gr</span>
-            <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
+          <div className={cn('px-3 py-2 rounded-xl text-[12px] font-semibold flex items-center justify-between', (overTol || overGain) ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700')}>
+            <span>{overGain ? `Gain: ${gainNow.toFixed(2)} gr` : `Loss: ${lossNow.toFixed(2)} gr`}</span>
+            <span className="text-[10px]">{overGain ? `⚠️ timbangan naik melebihi toleransi ${toleransi} gr` : overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
           </div>
         )}
-        {overTol && (
+        {(overTol || overGain) && (
           <LossApprovalPanel
-            lossGram={lossNow} toleransiGram={toleransi} proses="Cutting"
+            gain={overGain}
+            lossGram={overGain ? gainNow : lossNow} toleransiGram={toleransi} proses="Cutting"
             alasan={lossAlasan} setAlasan={setLossAlasan}
             operatorNama={lossOpNama} setOperatorNama={setLossOpNama}
             adminNama={lossAdminNama} setAdminNama={setLossAdminNama}

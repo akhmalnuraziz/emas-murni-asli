@@ -253,6 +253,9 @@ export function TerimaModalStd({
   const [serbukVal, setSerbukVal] = useState(d.sisa_serbuk != null ? String(d.sisa_serbuk) : '0')
   const lossNow = Math.max(0, Number(serahGram) - (parseFloat(terimaVal) || 0) - (parseFloat(rejectVal) || 0) - (parseFloat(serbukVal) || 0))
   const overTol = terimaVal !== '' && lossNow > toleransi + 0.0001
+  // Gain (timbangan naik): total keluar > serah → emas bertambah, wajib disetujui juga
+  const gainNow = Math.max(0, ((parseFloat(terimaVal) || 0) + (parseFloat(rejectVal) || 0) + (parseFloat(serbukVal) || 0)) - Number(serahGram))
+  const overGain = terimaVal !== '' && gainNow > toleransi + 0.0001
   const [lossAlasan, setLossAlasan] = useState('')
   const [lossOpNama, setLossOpNama] = useState('')
   const [lossAdminNama, setLossAdminNama] = useState('')
@@ -262,8 +265,8 @@ export function TerimaModalStd({
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const formEl = e.currentTarget
-    if (overTol) {
-      if (!lossAlasan.trim()) { alert('Alasan loss wajib diisi'); return }
+    if (overTol || overGain) {
+      if (!lossAlasan.trim()) { alert(overGain ? 'Alasan timbangan naik wajib diisi' : 'Alasan loss wajib diisi'); return }
       if (!ttdOp) { alert('Tanda tangan operator wajib'); return }
       if (!ttdAdmin) { alert('Tanda tangan admin wajib'); return }
     }
@@ -273,7 +276,7 @@ export function TerimaModalStd({
       const fd = new FormData(formEl)
       fd.set('fotos_b64', JSON.stringify(b64))
       fd.set('existing_fotos', JSON.stringify(existingFotos))
-      if (overTol) {
+      if (overTol || overGain) {
         fd.set('loss_alasan', lossAlasan)
         fd.set('loss_operator_nama', lossOpNama)
         fd.set('loss_admin_nama', lossAdminNama)
@@ -394,17 +397,18 @@ export function TerimaModalStd({
             </div>
           </div>
 
-          {/* Loss indicator realtime */}
+          {/* Loss/Gain indicator realtime */}
           {terimaVal !== '' && (
-            <div className={`rounded-lg px-3 py-2 text-[12px] font-semibold flex items-center justify-between border ${overTol ? 'bg-red-50 border-red-100 text-red-600' : 'bg-green-50 border-green-100 text-green-700'}`}>
-              <span>Loss: {lossNow.toFixed(3)} gr</span>
-              <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
+            <div className={`rounded-lg px-3 py-2 text-[12px] font-semibold flex items-center justify-between border ${(overTol || overGain) ? 'bg-red-50 border-red-100 text-red-600' : 'bg-green-50 border-green-100 text-green-700'}`}>
+              <span>{overGain ? `Gain: ${gainNow.toFixed(3)} gr` : `Loss: ${lossNow.toFixed(3)} gr`}</span>
+              <span className="text-[10px]">{overGain ? `⚠️ timbangan naik melebihi toleransi ${toleransi} gr` : overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
             </div>
           )}
 
-          {overTol && (
+          {(overTol || overGain) && (
             <LossApprovalPanel
-              lossGram={lossNow} toleransiGram={toleransi} proses={prosesLabel}
+              gain={overGain}
+              lossGram={overGain ? gainNow : lossNow} toleransiGram={toleransi} proses={prosesLabel}
               alasan={lossAlasan} setAlasan={setLossAlasan}
               operatorNama={lossOpNama} setOperatorNama={setLossOpNama}
               adminNama={lossAdminNama} setAdminNama={setLossAdminNama}

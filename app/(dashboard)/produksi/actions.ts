@@ -661,6 +661,23 @@ export async function selesaiCutting(produksiId: number, produksiKode: string, f
     })
   }
 
+  // ── Validasi gain (timbangan naik): terima + reject > serah ────────────────
+  const gainCut = Math.max(0, (terimaGram + rejectGram) - serahGram)
+  if (gainCut > toleransi + 0.0001) {
+    const ttdOp = formData.get('loss_ttd_operator') as string
+    const ttdAdmin = formData.get('loss_ttd_admin') as string
+    if (!lossAlasan.trim()) return { error: `Timbangan naik ${gainCut.toFixed(3)}gr melebihi toleransi ${toleransi}gr. Alasan wajib diisi.` }
+    if (!ttdOp) return { error: 'Tanda tangan operator wajib.' }
+    if (!ttdAdmin) return { error: 'Tanda tangan admin/manager wajib.' }
+    await saveLossApproval(supabase, {
+      batchKode: produksi.batch_kode, proses: 'cutting', refTable: 'produksi_item', refId: produksiId,
+      timId: produksi.tim_id ?? null, timNama: produksi.tim_nama ?? null,
+      masukGram: serahGram, keluarGram: terimaGram + rejectGram, lossGram: gainCut, toleransiGram: toleransi,
+      alasan: `[Timbangan naik +${gainCut.toFixed(3)}gr] ${lossAlasan}`, ttdOperatorDataUrl: ttdOp, operatorNama: (formData.get('loss_operator_nama') as string) || produksi.operator || null,
+      ttdAdminDataUrl: ttdAdmin, adminUserId: user.id, adminNama: (formData.get('loss_admin_nama') as string) || profile?.name || null,
+    })
+  }
+
   // Insert event (Diterima Cutting)
   await supabase.from('produksi_event').insert({
     produksi_item_id: produksiId,
@@ -1165,9 +1182,6 @@ export async function terimaCuttingItem(itemId: number, formData: FormData) {
 
   const totalAcc = gramasiList.reduce((s, r) => s + r.acc_gram, 0)
   const beratSerahBatch = Number(item.berat_awal ?? 0)
-  if (totalAcc + rejectTotal > beratSerahBatch + 0.01) {
-    return { error: `Total ACC (${totalAcc.toFixed(2)}gr) + Reject (${rejectTotal}gr) melebihi berat serah (${beratSerahBatch}gr)` }
-  }
 
   const serahGram = Number(item.serah_gram ?? item.berat_awal ?? 0)
 
@@ -1187,6 +1201,23 @@ export async function terimaCuttingItem(itemId: number, formData: FormData) {
       timId: item.tim_id ?? null, timNama: item.tim_nama ?? null,
       masukGram: serahGram, keluarGram: totalAcc, lossGram: totalLoss, toleransiGram: toleransiCut,
       alasan: lossAlasan, ttdOperatorDataUrl: ttdOp, operatorNama: (formData.get('loss_operator_nama') as string) || item.operator || null,
+      ttdAdminDataUrl: ttdAdmin, adminUserId: user.id, adminNama: (formData.get('loss_admin_nama') as string) || profile?.name || null,
+    })
+  }
+
+  // ── Validasi gain (timbangan naik): total ACC + reject > serah ─────────────
+  const totalGain = Math.max(0, (totalAcc + rejectTotal) - serahGram)
+  if (totalGain > toleransiCut + 0.0001) {
+    const ttdOp = formData.get('loss_ttd_operator') as string
+    const ttdAdmin = formData.get('loss_ttd_admin') as string
+    if (!lossAlasan.trim()) return { error: `Timbangan naik ${totalGain.toFixed(3)}gr melebihi toleransi ${toleransiCut}gr. Alasan wajib diisi.` }
+    if (!ttdOp) return { error: 'Tanda tangan operator wajib.' }
+    if (!ttdAdmin) return { error: 'Tanda tangan admin/manager wajib.' }
+    await saveLossApproval(supabase, {
+      batchKode: item.batch_kode, proses: 'cutting', refTable: 'produksi_item', refId: itemId,
+      timId: item.tim_id ?? null, timNama: item.tim_nama ?? null,
+      masukGram: serahGram, keluarGram: totalAcc + rejectTotal, lossGram: totalGain, toleransiGram: toleransiCut,
+      alasan: `[Timbangan naik +${totalGain.toFixed(3)}gr] ${lossAlasan}`, ttdOperatorDataUrl: ttdOp, operatorNama: (formData.get('loss_operator_nama') as string) || item.operator || null,
       ttdAdminDataUrl: ttdAdmin, adminUserId: user.id, adminNama: (formData.get('loss_admin_nama') as string) || profile?.name || null,
     })
   }
