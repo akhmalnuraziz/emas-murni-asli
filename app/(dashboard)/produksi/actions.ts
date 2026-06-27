@@ -1139,6 +1139,12 @@ export async function terimaCuttingItem(itemId: number, formData: FormData) {
   const allFotosB64Raw = formData.get('fotos_b64') as string
   const allFotosB64: Record<string, string[]> = allFotosB64Raw ? JSON.parse(allFotosB64Raw) : {}
 
+  // Tim Yang Mengerjakan + anggota PIC + admin penerima dari form (fallback ke data item)
+  const terimaTimId = formData.get('terima_tim_id') ? Number(formData.get('terima_tim_id')) : (item.tim_id ?? null)
+  const terimaTimNama = (formData.get('terima_tim_nama') as string) || item.tim_nama || null
+  const terimaAnggota = (formData.get('terima_tim_anggota_aktif') as string) || item.tim_anggota_aktif || null
+  const terimaAdmin = (formData.get('terima_admin_input') as string) || item.admin_input || null
+
   const totalAcc = gramasiList.reduce((s, r) => s + r.acc_gram, 0)
   const beratSerahBatch = Number(item.berat_awal ?? 0)
   if (totalAcc + rejectTotal > beratSerahBatch + 0.01) {
@@ -1189,6 +1195,8 @@ export async function terimaCuttingItem(itemId: number, formData: FormData) {
       status_cutting: 'selesai',
       total_gram: row.acc_gram,
       foto_diterima_cutting: finalFotos,
+      tim_id: terimaTimId, tim_nama: terimaTimNama,
+      tim_anggota_aktif: terimaAnggota, admin_input: terimaAdmin,
     }
     if (row.catatan) updateData.catatan_terima = row.catatan
     if (rejectTotal > 0) {
@@ -1242,9 +1250,9 @@ export async function terimaCuttingItem(itemId: number, formData: FormData) {
         tanggal_mulai: item.tanggal_mulai, tanggal_selesai: tanggalSelesai,
         jam_mulai_cutting: item.jam_mulai_cutting, jam_selesai: jamSelesai,
         peleburan_id: item.peleburan_id, peleburan_kode: item.peleburan_kode,
-        sesi_id: sesiId, tim_id: item.tim_id, tim_nama: item.tim_nama,
-        tim_anggota_aktif: item.tim_anggota_aktif,
-        operator: item.operator, admin_input: item.admin_input,
+        sesi_id: sesiId, tim_id: terimaTimId, tim_nama: terimaTimNama,
+        tim_anggota_aktif: terimaAnggota,
+        operator: item.operator, admin_input: terimaAdmin,
         created_by: user.id, foto_diterima_cutting: fotoUrls,
         catatan_terima: row.catatan, catatan: item.catatan,
         berat_reject: rejectItem > 0 ? rejectItem : 0, status_reject: rejectItem > 0 ? 'belum_dilebur' : null,

@@ -17,7 +17,7 @@ import {
 } from '@/app/(dashboard)/produksi/actions'
 import type { UserRole } from '@/lib/types/database'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
-import { SerahModalStd, TerimaModalStd, AdminPickerStd } from '@/components/modules/produksi/serah-terima-modal'
+import { SerahModalStd, TerimaModalStd, AdminPickerStd, TimPickerStd } from '@/components/modules/produksi/serah-terima-modal'
 
 interface Props { produksiList: any[]; batches: any[]; peleburanByBatch: Record<string, any[]>; tims: any[]; toleransi: Record<string, number>; adminList: any[]; userRole: UserRole; userName: string; lossApprovals?: any[]; total?: number; page?: number; pageSize?: number; currentQ?: string; currentStatus?: string }
 
@@ -2449,13 +2449,7 @@ function TerimaCuttingForm({ item, tims, adminList, toleransi, err, isPending, o
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all" />
           </div>
         </div>
-        <div>
-          <label className="block text-[11px] font-medium text-slate-500 mb-1">Tim</label>
-          <select name="terima_tim_id" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] text-slate-900 focus:outline-none focus:border-violet-500 transition-all">
-            <option value="">— pilih tim —</option>
-            {tims.map((t: any) => <option key={t.id} value={t.id}>{t.nama}</option>)}
-          </select>
-        </div>
+        <TimPickerStd tims={tims} prefix="terima_" />
         <AdminPickerStd adminList={adminList} prefix="terima_" label="Admin Penerima" />
         {err && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</div>}
       </div>
