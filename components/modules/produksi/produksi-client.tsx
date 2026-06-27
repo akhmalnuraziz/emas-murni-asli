@@ -2052,119 +2052,22 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
           </div>
         )
       })()}
-      {modal==='sesiSerahStage' && activeSesi && (()=>{
-        const tl: Record<string,string> = {pas_berat:'Pas Berat',annealing:'Annealing',siap_packing:'Siap Packing'}
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-            <div className="w-full max-w-sm bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
-              <form onSubmit={e=>{e.preventDefault();handleSesiSerahStage(new FormData(e.currentTarget))}}>
-                <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-200">
-                  <div>
-                    <h2 className="text-[15px] font-bold text-slate-900">Serahkan ke {tl[activeSesi.tahap!]??activeSesi.tahap}</h2>
-                    <p className="text-[12px] text-slate-400 mt-0.5">{activeSesi.items.length} gramasi · sesi bersama</p>
-                  </div>
-                  <button type="button" onClick={()=>setModal(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><X size={16}/></button>
-                </div>
-                <div className="px-6 py-5 space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-medium text-slate-500 mb-1">Tanggal serah</label>
-                      <input name="serah_tanggal" type="date" required defaultValue={new Date().toISOString().split('T')[0]}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-medium text-slate-500 mb-1">Jam</label>
-                      <input name="serah_jam" type="time"
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-500 mb-1">Tim</label>
-                    <select name="serah_tim_id" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] text-slate-900 focus:outline-none focus:border-violet-500 transition-all">
-                      <option value="">— pilih tim —</option>
-                      {tims.map((t:any)=><option key={t.id} value={t.id}>{t.nama}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-500 mb-1">Admin</label>
-                    <AdminPickerStd prefix="serah_" adminList={adminList}/>
-                  </div>
-                  {err&&<div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</div>}
-                </div>
-                <div className="px-6 pb-5 flex gap-2">
-                  <button type="button" onClick={()=>setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-                  <button type="submit" disabled={isPending} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">{isPending?'Menyimpan…':`Serahkan ke ${tl[activeSesi.tahap!]??activeSesi.tahap}`}</button>
-                </div>
-              </form>
-            </div>
+      {modal==='sesiSerahStage' && activeSesi && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
+            <SesiSerahForm items={activeSesi.items} tahap={activeSesi.tahap!} tims={tims} adminList={adminList}
+              err={err} isPending={isPending} onCancel={()=>setModal(null)} onSubmit={handleSesiSerahStage} />
           </div>
-        )
-      })()}
-      {modal==='sesiTerimaStage' && activeSesi && (()=>{
-        const tl: Record<string,string> = {pas_berat:'Pas Berat',annealing:'Annealing',siap_packing:'Siap Packing'}
-        const isPb = activeSesi.tahap === 'pas_berat'
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-            <div className="w-full max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
-              <form onSubmit={e=>{e.preventDefault();handleSesiTerimaStage(new FormData(e.currentTarget))}}>
-                <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-200">
-                  <div>
-                    <h2 className="text-[15px] font-bold text-slate-900">Terima {tl[activeSesi.tahap!]??activeSesi.tahap} Sesi</h2>
-                    <p className="text-[12px] text-slate-400 mt-0.5">{activeSesi.items.length} gramasi · sesi bersama</p>
-                  </div>
-                  <button type="button" onClick={()=>setModal(null)} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><X size={16}/></button>
-                </div>
-                <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
-                  {[...activeSesi.items].sort((a,b)=>Number(a.gramasi)-Number(b.gramasi)).map(it=>{
-                    const sh = (it.stage_handover??[]).filter((h:any)=>!h.voided_at).find((h:any)=>h.tahap===activeSesi.tahap)
-                    return (
-                      <div key={it.id} className="rounded-xl border border-slate-200 p-3 space-y-2">
-                        <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">{it.gramasi}gr · diserahkan {fgr(sh?.serah_gram??it.total_gram)} gr</span>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="block text-[11px] font-medium text-slate-500 mb-1">Berat terima (gr)</label>
-                            <input name={`terima_gram_${it.id}`} type="number" step="0.001" required min="0.001"
-                              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
-                          </div>
-                          {isPb&&(
-                            <div>
-                              <label className="block text-[11px] font-medium text-slate-500 mb-1">Sisa serbuk (gr)</label>
-                              <input name={`sisa_serbuk_${it.id}`} type="number" step="0.001" min="0" defaultValue="0"
-                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-medium text-slate-500 mb-1">Tanggal terima</label>
-                      <input name="terima_tanggal" type="date" required defaultValue={new Date().toISOString().split('T')[0]}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-medium text-slate-500 mb-1">Jam</label>
-                      <input name="terima_jam" type="time"
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-500 mb-1">Catatan</label>
-                    <input name="terima_catatan" type="text" placeholder="Opsional"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] text-slate-900 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
-                  </div>
-                  {err&&<div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</div>}
-                </div>
-                <div className="px-6 pb-5 flex gap-2">
-                  <button type="button" onClick={()=>setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-                  <button type="submit" disabled={isPending} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">{isPending?'Menyimpan…':`Simpan Terima ${tl[activeSesi.tahap!]??activeSesi.tahap}`}</button>
-                </div>
-              </form>
-            </div>
+        </div>
+      )}
+      {modal==='sesiTerimaStage' && activeSesi && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
+            <SesiTerimaForm items={activeSesi.items} tahap={activeSesi.tahap!} tims={tims} adminList={adminList}
+              err={err} isPending={isPending} onCancel={()=>setModal(null)} onSubmit={handleSesiTerimaStage} />
           </div>
-        )
-      })()}
+        </div>
+      )}
       {modal==='terimaCuttingItem' && active && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
@@ -2280,6 +2183,171 @@ function SesiCuttingTerimaForm({ items, tims, adminList, err, isPending, onCance
       <div className="px-6 pb-5 flex gap-2">
         <button type="button" onClick={onCancel} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
         <button type="submit" disabled={isPending} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">{isPending ? 'Menyimpan…' : 'Simpan Terima Cutting'}</button>
+      </div>
+    </form>
+  )
+}
+
+// ─── SesiSerahForm — serah sesi (multi-gramasi) ke tahap berikutnya ─────────────
+function SesiSerahForm({ items, tahap, tims, adminList, err, isPending, onCancel, onSubmit }: {
+  items: any[]; tahap: string; tims: any[]; adminList: any[]; err: string; isPending: boolean;
+  onCancel: () => void; onSubmit: (fd: FormData) => void
+}) {
+  const TL: Record<string,string> = { pas_berat:'Pas Berat', annealing:'Annealing', siap_packing:'Siap Packing' }
+  const sorted = [...items].sort((a,b)=>Number(a.gramasi)-Number(b.gramasi))
+  const [fotos, setFotos] = useState<File[]>([])
+
+  function serahWeight(it:any) {
+    if (tahap==='pas_berat') return it.terima_gram ?? it.total_gram ?? it.berat_awal
+    const prevMap: Record<string,string> = { annealing:'pas_berat', siap_packing:'annealing' }
+    const ph = (it.stage_handover??[]).filter((h:any)=>!h.voided_at).find((h:any)=>h.tahap===prevMap[tahap] && h.status==='selesai')
+    return ph?.terima_gram ?? it.total_gram ?? it.berat_awal
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget as HTMLFormElement)
+    fd.set('fotos_b64', JSON.stringify(fotos.length>0 ? await filesToBase64(fotos) : []))
+    onSubmit(fd)
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-200">
+        <div>
+          <h2 className="text-[15px] font-bold text-slate-900">Serahkan ke {TL[tahap]??tahap}</h2>
+          <p className="text-[12px] text-slate-400 mt-0.5">{items.length} gramasi · sesi bersama</p>
+        </div>
+        <button type="button" onClick={onCancel} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><X size={16}/></button>
+      </div>
+      <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
+        <div className="flex flex-wrap gap-2">
+          {sorted.map(it=>(
+            <span key={it.id} className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-slate-100 text-slate-600 tabular-nums">
+              {it.gramasi}gr · {fgr(serahWeight(it))} gr
+            </span>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Tanggal serah</label>
+            <input name="serah_tanggal" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/>
+          </div>
+          <div>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Jam</label>
+            <input name="serah_jam" type="time" className={inp}/>
+          </div>
+        </div>
+        <TimPickerStd tims={tims} prefix="serah_" />
+        <AdminPickerStd adminList={adminList} prefix="serah_" label="Admin Yang Menyerahkan" />
+        <div>
+          <label className="block text-[11px] font-medium text-slate-500 mb-1">Catatan</label>
+          <input name="serah_catatan" type="text" placeholder="Opsional" className={inp}/>
+        </div>
+        <div>
+          <label className="text-[11px] font-medium text-slate-500 mb-1 block">Foto Serah (opsional)</label>
+          <FotoPicker files={fotos}
+            onAdd={ff=>setFotos(p=>[...p,...ff].slice(0,10))}
+            onRemove={i=>i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))}
+            label="Tambah foto" small />
+        </div>
+        {err&&<div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</div>}
+      </div>
+      <div className="px-6 pb-5 flex gap-2">
+        <button type="button" onClick={onCancel} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+        <button type="submit" disabled={isPending} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">{isPending?'Menyimpan…':`Serahkan ke ${TL[tahap]??tahap}`}</button>
+      </div>
+    </form>
+  )
+}
+
+// ─── SesiTerimaForm — terima sesi (multi-gramasi) per tahap ─────────────────────
+function SesiTerimaForm({ items, tahap, tims, adminList, err, isPending, onCancel, onSubmit }: {
+  items: any[]; tahap: string; tims: any[]; adminList: any[]; err: string; isPending: boolean;
+  onCancel: () => void; onSubmit: (fd: FormData) => void
+}) {
+  const TL: Record<string,string> = { pas_berat:'Pas Berat', annealing:'Annealing', siap_packing:'Siap Packing' }
+  const isPb = tahap==='pas_berat'
+  const sorted = [...items].sort((a,b)=>Number(a.gramasi)-Number(b.gramasi))
+  const [fotos, setFotos] = useState<File[]>([])
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget as HTMLFormElement)
+    fd.set('fotos_b64', JSON.stringify(fotos.length>0 ? await filesToBase64(fotos) : []))
+    onSubmit(fd)
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-slate-200">
+        <div>
+          <h2 className="text-[15px] font-bold text-slate-900">Terima {TL[tahap]??tahap} Sesi</h2>
+          <p className="text-[12px] text-slate-400 mt-0.5">{items.length} gramasi · sesi bersama</p>
+        </div>
+        <button type="button" onClick={onCancel} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"><X size={16}/></button>
+      </div>
+      <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
+        {sorted.map(it=>{
+          const sh = (it.stage_handover??[]).filter((h:any)=>!h.voided_at).find((h:any)=>h.tahap===tahap)
+          return (
+            <div key={it.id} className="rounded-xl border border-violet-200 bg-violet-50/30 p-3 space-y-2">
+              <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 tabular-nums">{it.gramasi}gr · diserahkan {fgr(sh?.serah_gram ?? it.total_gram)} gr</span>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1">Berat terima (gr)</label>
+                  <input name={`terima_gram_${it.id}`} type="number" step="0.001" required min="0.001"
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1">PCS</label>
+                  <input name={`terima_pcs_${it.id}`} type="number" min="0" placeholder={String(it.pcs_good ?? it.pcs ?? '')}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
+                </div>
+                {isPb && (
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-500 mb-1">Sisa serbuk (gr)</label>
+                    <input name={`sisa_serbuk_${it.id}`} type="number" step="0.001" min="0" defaultValue="0"
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
+                  </div>
+                )}
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1">Reject (gr)</label>
+                  <input name={`reject_gram_${it.id}`} type="number" step="0.001" min="0" defaultValue="0"
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Tanggal terima</label>
+            <input name="terima_tanggal" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/>
+          </div>
+          <div>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Jam</label>
+            <input name="terima_jam" type="time" className={inp}/>
+          </div>
+        </div>
+        <TimPickerStd tims={tims} prefix="terima_" />
+        <AdminPickerStd adminList={adminList} prefix="terima_" label="Admin Yang Menerima" />
+        <div>
+          <label className="block text-[11px] font-medium text-slate-500 mb-1">Catatan</label>
+          <input name="terima_catatan" type="text" placeholder="Opsional" className={inp}/>
+        </div>
+        <div>
+          <label className="text-[11px] font-medium text-slate-500 mb-1 block">Foto Terima (opsional)</label>
+          <FotoPicker files={fotos}
+            onAdd={ff=>setFotos(p=>[...p,...ff].slice(0,10))}
+            onRemove={i=>i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))}
+            label="Tambah foto" small />
+        </div>
+        {err&&<div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</div>}
+      </div>
+      <div className="px-6 pb-5 flex gap-2">
+        <button type="button" onClick={onCancel} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+        <button type="submit" disabled={isPending} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">{isPending?'Menyimpan…':`Terima ${TL[tahap]??tahap}`}</button>
       </div>
     </form>
   )
@@ -2516,10 +2584,20 @@ function SesiCard({ sesiId, items, canEdit, canDelete, expanded, toggleExp, onCu
               </button>
             )}
             {allCuttingSelesai && allAt('Cutting') && !hasAllSerah('pas_berat') && (
-              <button onClick={() => onSerahStage(items, 'pas_berat')}
-                className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-colors whitespace-nowrap">
-                Serah Pas Berat
-              </button>
+              <>
+                <button onClick={() => onSerahStage(items, 'pas_berat')}
+                  className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-colors whitespace-nowrap">
+                  Serah Pas Berat
+                </button>
+                <button onClick={() => onSerahStage(items, 'annealing')}
+                  className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-yellow-500 text-white hover:bg-yellow-600 transition-colors whitespace-nowrap">
+                  Serah Annealing
+                </button>
+                <button onClick={() => onSerahStage(items, 'siap_packing')}
+                  className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors whitespace-nowrap">
+                  Serah Siap Packing
+                </button>
+              </>
             )}
             {allAt('Pas Berat') && hasAllSerah('pas_berat') && !hasAllTerima('pas_berat') && (
               <button onClick={() => onTerimaStage(items, 'pas_berat')}
@@ -2527,11 +2605,17 @@ function SesiCard({ sesiId, items, canEdit, canDelete, expanded, toggleExp, onCu
                 Terima Pas Berat
               </button>
             )}
-            {allAt('Pas Berat') && hasAllTerima('pas_berat') && !hasAllSerah('annealing') && (
-              <button onClick={() => onSerahStage(items, 'annealing')}
-                className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-yellow-500 text-white hover:bg-yellow-600 transition-colors whitespace-nowrap">
-                Serah Annealing
-              </button>
+            {allAt('Pas Berat') && hasAllTerima('pas_berat') && !hasAllSerah('annealing') && !hasAllSerah('siap_packing') && (
+              <>
+                <button onClick={() => onSerahStage(items, 'annealing')}
+                  className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-yellow-500 text-white hover:bg-yellow-600 transition-colors whitespace-nowrap">
+                  Serah Annealing
+                </button>
+                <button onClick={() => onSerahStage(items, 'siap_packing')}
+                  className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors whitespace-nowrap">
+                  Serah Siap Packing
+                </button>
+              </>
             )}
             {allAt('Annealing') && hasAllSerah('annealing') && !hasAllTerima('annealing') && (
               <button onClick={() => onTerimaStage(items, 'annealing')}
@@ -2543,6 +2627,12 @@ function SesiCard({ sesiId, items, canEdit, canDelete, expanded, toggleExp, onCu
               <button onClick={() => onSerahStage(items, 'siap_packing')}
                 className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors whitespace-nowrap">
                 Serah Siap Packing
+              </button>
+            )}
+            {allAt('Siap Packing') && hasAllSerah('siap_packing') && !hasAllTerima('siap_packing') && (
+              <button onClick={() => onTerimaStage(items, 'siap_packing')}
+                className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors whitespace-nowrap">
+                Terima Siap Packing
               </button>
             )}
           </div>
@@ -2576,15 +2666,36 @@ function SesiCard({ sesiId, items, canEdit, canDelete, expanded, toggleExp, onCu
                   <div><span className="text-slate-400">Reject:</span> <span className={`font-semibold tabular-nums ${Number(it.reject_cutting_gram)>0?'text-red-500':'text-slate-400'}`}>{fgr(it.reject_cutting_gram)} gr</span></div>
                 </div>
                 {hs.length > 0 && (
-                  <div className="mt-2 space-y-1">
-                    {hs.map((h: any) => (
-                      <div key={h.id} className="flex items-center gap-2 text-[11px] text-slate-500">
-                        <span className="font-semibold text-slate-600">{h.tahap.replace(/_/g,' ')}</span>
-                        <span>{fgr(h.serah_gram)}→{fgr(h.terima_gram)} gr</span>
-                        {h.status==='proses'&&<span className="text-[10px] font-semibold text-blue-500">proses</span>}
-                        {h.status==='selesai'&&<span className="text-[10px] font-semibold text-green-500">✓</span>}
+                  <div className="mt-2 space-y-1.5">
+                    {hs.map((h: any) => {
+                      const fotos = [...(Array.isArray(h.serah_fotos)?h.serah_fotos:[]), ...(Array.isArray(h.terima_fotos)?h.terima_fotos:[])]
+                      return (
+                      <div key={h.id} className="rounded-lg bg-slate-50 px-2.5 py-1.5 text-[11px]">
+                        <div className="flex items-center gap-2 text-slate-600 flex-wrap">
+                          <span className="font-semibold capitalize">{h.tahap.replace(/_/g,' ')}</span>
+                          <span className="tabular-nums">{fgr(h.serah_gram)}→{fgr(h.terima_gram)} gr</span>
+                          {h.status==='proses'&&<span className="text-[10px] font-semibold text-blue-500">proses</span>}
+                          {h.status==='selesai'&&<span className="text-[10px] font-semibold text-green-500">✓</span>}
+                          {(h.serah_jam||h.terima_jam)&&<span className="text-[10px] text-slate-400">🕒 {h.serah_jam?String(h.serah_jam).slice(0,5):'—'}{h.terima_jam?` → ${String(h.terima_jam).slice(0,5)}`:''}</span>}
+                        </div>
+                        {(h.tim_nama||h.serah_operator||h.terima_operator)&&(
+                          <div className="text-[10px] text-slate-400 mt-0.5">👥 {h.tim_nama||h.serah_operator||h.terima_operator}{h.tim_anggota_aktif?`: ${h.tim_anggota_aktif}`:''}</div>
+                        )}
+                        {(h.serah_admin_input||h.terima_admin_input)&&(
+                          <div className="text-[10px] text-slate-400 mt-0.5">✍️ {[h.serah_admin_input,h.terima_admin_input].filter(Boolean).join(' · ')}</div>
+                        )}
+                        {fotos.length>0&&(
+                          <div className="flex gap-1.5 mt-1 flex-wrap">
+                            {fotos.map((u:string,i:number)=>(
+                              <a key={i} href={u} target="_blank" rel="noopener noreferrer" title="Klik untuk perbesar">
+                                <img src={u} alt="" className="w-10 h-10 rounded-lg object-cover border border-slate-200 cursor-zoom-in hover:scale-110 transition-transform"/>
+                              </a>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>

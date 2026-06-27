@@ -1495,6 +1495,8 @@ export async function terimaSesiStage(sesiId: string, tahap: string, formData: F
       terima_operator: (formData.get('terima_operator') as string) || profile?.name || null,
       tim_id: formData.get('terima_tim_id') ? Number(formData.get('terima_tim_id')) : handover.tim_id,
       tim_nama: (formData.get('terima_tim_nama') as string) || handover.tim_nama,
+      tim_anggota_aktif: (formData.get('terima_tim_anggota_aktif') as string) || handover.tim_anggota_aktif || null,
+      terima_admin_input: (formData.get('terima_admin_input') as string) || null,
     }).eq('id', handover.id)
 
     const updateItem: any = { total_gram: terimaGram, terima_gram: terimaGram }
