@@ -1575,18 +1575,8 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                       if (!sesiMap.has(key)) sesiMap.set(key, [])
                       sesiMap.get(key)!.push(it)
                     }
-                    return [...sesiMap.entries()].map(([sk, sItems]) => {
-                      if (sItems.length > 1) {
-                        return <SesiCard key={sk} sesiId={sk} items={sItems} canEdit={canEdit} canDelete={canDelete}
-                          expanded={expanded} toggleExp={toggleExp}
-                          onCuttingTerima={(items) => openSesiModal('sesiCuttingTerima', sk, items)}
-                          onSerahStage={(items, tahap) => openSesiModal('sesiSerahStage', sk, items, tahap)}
-                          onTerimaStage={(items, tahap) => openSesiModal('sesiTerimaStage', sk, items, tahap)}
-                          onEditItem={(item) => openModal('edit', item)}
-                          onDeleteItem={(item) => openModal('delete', item)}
-                        />
-                      }
-                      const item = sItems[0]
+                    // Multi-gramasi (SESI) dirender SAMA seperti single: tiap gramasi = 1 card standar
+                    return [...sesiMap.entries()].flatMap(([, sItems]) => sItems.map((item: any) => {
             const isExp     = expanded.has(item.id)
             const sc        = STATUS_COLOR[item.current_status] ?? {bg:'rgba(156,163,175,0.1)',text:'#6B7280',dot:'#9CA3AF'}
             const events: any[] = Array.isArray(item.produksi_event)?item.produksi_event.filter((e:any)=>!e.voided_at):[]
@@ -1927,7 +1917,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                 )}
               </div>
                 )
-              })
+              }))
             })()}
                 </div>
               )
