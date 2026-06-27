@@ -1,6 +1,25 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Routes accessible by each role — mirrors ROLE_ACCESS in lib/types/database.ts
+const ROLE_ROUTES: Record<string, string[]> = {
+  owner:            ['*'],
+  manager:          ['*'],
+  spv:              ['*'],
+  admin_produksi:   ['dashboard', 'bahan-baku', 'produksi', 'packing-log', 'shieldtag', 'kpi-tim', 'scrap'],
+  admin_gudang:     ['dashboard', 'inventory', 'mutasi', 'stock-opname', 'stok-cabang', 'po-cabang', 'po-vendor-packaging', 'prioritas-produksi'],
+  admin_accounting: ['dashboard', 'penjualan', 'retur-penjualan', 'pelanggan', 'buyback', 'pengeluaran', 'laporan'],
+}
+
+function canAccessRoute(role: string, pathname: string): boolean {
+  const allowed = ROLE_ROUTES[role]
+  if (!allowed) return false
+  if (allowed[0] === '*') return true
+  // Extract first segment of dashboard path, e.g. /packing-log/... → packing-log
+  const segment = pathname.replace(/^\//, '').split('/')[0]
+  return allowed.includes(segment)
+}
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -53,6 +72,22 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = user ? '/dashboard' : '/login'
     return NextResponse.redirect(url)
+  }
+
+  // Role-based route guard: only check dashboard paths (not API/auth/static)
+  if (user && !isPublicPath && !pathname.startsWith('/api/')) {
+    const { data: profile } = await supabase
+      .from('users_profile')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    const role = profile?.role ?? ''
+    if (role && !canAccessRoute(role, pathname)) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse

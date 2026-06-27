@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { toast as sonnerToast } from 'sonner'
 import {
   Plus, X, Check, Edit2, Trash2, ChevronDown, ChevronUp,
   Package2, Truck, ClipboardCheck, AlertTriangle, RotateCcw,
@@ -57,13 +58,8 @@ interface Props {
   canManage: boolean
 }
 
-function useToast() {
-  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
-  const show = (msg: string, ok = true) => {
-    setToast({ msg, ok })
-    setTimeout(() => setToast(null), 3500)
-  }
-  return { toast, show }
+function showToast(msg: string, ok = true) {
+  if (ok) sonnerToast.success(msg); else sonnerToast.error(msg)
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -284,7 +280,6 @@ export default function POVendorClient({
   vendors, produkList, kategoriRejectList, poList, poItems, batchList, batchItemsList, rejectList, sjList, stokList, monitoring,
   timAnggotaList, adminInputList, canManage,
 }: Props) {
-  const { toast, show: showToast } = useToast()
   const [tab, setTab] = useState<Tab>('monitoring')
   const [search, setSearch] = useState('')
 
@@ -324,12 +319,6 @@ export default function POVendorClient({
 
   return (
     <div className="space-y-4 pb-20">
-      {toast && (
-        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-xl text-[13px] font-semibold shadow-xl flex items-center gap-2 ${toast.ok ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
-          {toast.ok ? <CheckCircle2 size={15}/> : <XCircle size={15}/>}
-          {toast.msg}
-        </div>
-      )}
 
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">

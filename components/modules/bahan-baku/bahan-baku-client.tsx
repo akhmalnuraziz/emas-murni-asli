@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import {
   Plus, Search, Lock, Unlock, X, Check, AlertTriangle,
   Edit2, Trash2, Scale, Camera, Eye, EyeOff, ChevronDown, ChevronUp, Clock, Archive
@@ -348,7 +349,6 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
   const [delModal,setDelModal]=useState<any|null>(null)
   const [formError,setFormError]=useState('')
   const [isPending,startTransition]=useTransition()
-  const [toast,setToast]=useState<{msg:string;ok:boolean}|null>(null)
   const [showHPP,setShowHPP]=useState(false)
   const [editingSF,setEditingSF]=useState<number|null>(null)
   const [sfInput,setSfInput]=useState<Record<number,string>>({})
@@ -364,8 +364,6 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
 
   const canSeeHPP = CAN_SEE_HPP.includes(userRole)
 
-  function showToast(msg:string,ok=true){setToast({msg,ok});setTimeout(()=>setToast(null),3500)}
-
   // search already applied server-side; only status filter is client-side
   const filtered = batches.filter(b=>{
     if(getBatchStatus(b)==='dihapus') return false
@@ -375,17 +373,17 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
     return true
   })
 
-  function handleCreate(fd:FormData){setFormError('');startTransition(async()=>{const r=await createBatch(fd);if(r?.error){setFormError(r.error);return}showToast('✅ Batch berhasil disimpan');setShowCreate(false)})}
-  function handleRingkas(fd:FormData){setFormError('');startTransition(async()=>{const r=await createBatchRingkas(fd);if(r?.error){setFormError(r.error);return}showToast(`✅ Batch ringkas ${(r as any).kode} diimpor`);setShowRingkas(false)})}
-  function handleUpdate(fd:FormData){if(!editItem)return;setFormError('');startTransition(async()=>{const r=await updateBatch(editItem.id,editItem.kode,fd);if(r?.error){setFormError(r.error);return}showToast('✅ Batch diperbarui');setEditItem(null)})}
+  function handleCreate(fd:FormData){setFormError('');startTransition(async()=>{const r=await createBatch(fd);if(r?.error){setFormError(r.error);return}toast.success('Batch berhasil disimpan');setShowCreate(false)})}
+  function handleRingkas(fd:FormData){setFormError('');startTransition(async()=>{const r=await createBatchRingkas(fd);if(r?.error){setFormError(r.error);return}toast.success(`Batch ringkas ${(r as any).kode} diimpor`);setShowRingkas(false)})}
+  function handleUpdate(fd:FormData){if(!editItem)return;setFormError('');startTransition(async()=>{const r=await updateBatch(editItem.id,editItem.kode,fd);if(r?.error){setFormError(r.error);return}toast.success('Batch diperbarui');setEditItem(null)})}
 
   async function handleSisaFisik(batch:any, sisaSeharusnya:number, toleransi:number){
     const val=parseFloat(sfInput[batch.id]??'')
-    if(isNaN(val)||val<0){showToast('Nilai tidak valid',false);return}
+    if(isNaN(val)||val<0){toast.error('Nilai tidak valid');return}
     const selisih=Math.abs(val-sisaSeharusnya)
     const overTol=selisih>toleransi+0.0001
     if(overTol){
-      if(!sfTtdOp[batch.id]||!sfTtdAdmin[batch.id]){showToast('TTD Operator dan Admin wajib (selisih > toleransi)',false);return}
+      if(!sfTtdOp[batch.id]||!sfTtdAdmin[batch.id]){toast.error('TTD Operator dan Admin wajib (selisih > toleransi)');return}
     }
     setSfUploading(p=>({...p,[batch.id]:true}))
     try{
@@ -402,8 +400,8 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
       if(sfOpNama[batch.id])            fd.set('selisih_op_nama',sfOpNama[batch.id])
       if(sfAdminNama[batch.id])         fd.set('selisih_admin_nama',sfAdminNama[batch.id])
       const r=await updateSisaFisik(fd)
-      if(r?.error){showToast(r.error,false);return}
-      showToast('✅ Sisa fisik disimpan')
+      if(r?.error){toast.error(r.error);return}
+      toast.success('Sisa fisik disimpan')
       setSfFotos(p=>({...p,[batch.id]:[]}));setSfExisting(p=>({...p,[batch.id]:[]}))
       setSfCatatan(p=>({...p,[batch.id]:''}))
       setSfTtdOp(p=>({...p,[batch.id]:null}));setSfTtdAdmin(p=>({...p,[batch.id]:null}))
@@ -414,8 +412,8 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
   async function handleHapusSisaFisik(batch:any){
     if(!confirm('Hapus data sisa fisik batch ini?'))return
     const r=await hapusSisaFisik(batch.id,batch.kode)
-    if(r?.error){showToast(r.error,false);return}
-    showToast('✅ Sisa fisik dihapus')
+    if(r?.error){toast.error(r.error);return}
+    toast.success('Sisa fisik dihapus')
   }
 
   // ─── Duration helper ──────────────────────────────────────────────────────
@@ -430,8 +428,6 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
 
   return(
     <div className="space-y-5 pb-8">
-      {/* Toast */}
-      {toast&&<div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-xl text-[13px] font-semibold text-white shadow-2xl',toast.ok?'bg-emerald-600':'bg-red-600')}>{toast.ok?<Check size={15}/>:<AlertTriangle size={15}/>}{toast.msg}</div>}
 
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">
@@ -554,7 +550,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                       <button onClick={()=>setLockModal(batch)}className="w-8 h-8 rounded-xl bg-amber-50 text-amber-400 flex items-center justify-center hover:bg-amber-100 hover:scale-110 transition-all"title="Kunci"><Lock size={13}/></button>
                     </>}
                     {status==='terkunci'&&['owner','manager'].includes(userRole)&&(
-                      <button onClick={()=>startTransition(async()=>{await unlockBatch(batch.id,batch.kode);showToast('🔓 Batch dibuka')})}className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center hover:bg-emerald-100 hover:scale-110 transition-all"title="Buka"><Unlock size={13}/></button>
+                      <button onClick={()=>startTransition(async()=>{await unlockBatch(batch.id,batch.kode);toast.success('Batch dibuka')})}className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center hover:bg-emerald-100 hover:scale-110 transition-all"title="Buka"><Unlock size={13}/></button>
                     )}
                     {['owner','manager'].includes(userRole)&&(
                       <button onClick={()=>setDelModal(batch)}className="w-8 h-8 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 hover:scale-110 transition-all"title="Hapus"><Trash2 size={13}/></button>
@@ -1030,15 +1026,15 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
             if (targetBatch) setExpanded(targetBatch.id)
             setPeleburanModalBatch(null)
           }}
-          showToast={showToast}/>
+          />
       })()}
       {selesaiLeburItem&&<SelesaiLeburModal peleburan={selesaiLeburItem} toleransi={toleransiPeleburan} tims={tims} adminList={adminList} onClose={()=>{
             const targetBatch = batches.find((b:any)=>b.kode===selesaiLeburItem?.batch_kode)
             if (targetBatch) setExpanded(targetBatch.id)
             setSelesaiLeburItem(null)
-          }} showToast={showToast}/>}
-      {editPlbItem&&editPlbMode==='serah'&&<EditPeleburanSerahModal peleburan={editPlbItem} tims={tims} adminList={adminList} onClose={()=>setEditPlbItem(null)} showToast={showToast}/>}
-      {editPlbItem&&editPlbMode==='terima'&&<EditPeleburanTerimaModal peleburan={editPlbItem} tims={tims} adminList={adminList} toleransi={toleransiPeleburan} onClose={()=>setEditPlbItem(null)} showToast={showToast}/>}
+          }}/>}
+      {editPlbItem&&editPlbMode==='serah'&&<EditPeleburanSerahModal peleburan={editPlbItem} tims={tims} adminList={adminList} onClose={()=>setEditPlbItem(null)}/>}
+      {editPlbItem&&editPlbMode==='terima'&&<EditPeleburanTerimaModal peleburan={editPlbItem} tims={tims} adminList={adminList} toleransi={toleransiPeleburan} onClose={()=>setEditPlbItem(null)}/>}
       {editItem&&<BatchFormModal initial={editItem} onSubmit={handleUpdate} onClose={()=>setEditItem(null)} isPending={isPending} error={formError} isEdit/>}
 
       {lockModal&&(
@@ -1057,7 +1053,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
             </div>
             <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200">
               <button onClick={()=>setLockModal(null)}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-              <button onClick={()=>startTransition(async()=>{const r=await lockBatch(lockModal.id,lockModal.kode);if(r?.error)showToast(r.error,false);else{showToast('🔒 Batch dikunci');setLockModal(null)}})} disabled={isPending}
+              <button onClick={()=>startTransition(async()=>{const r=await lockBatch(lockModal.id,lockModal.kode);if(r?.error)toast.error(r.error);else{toast.success('Batch dikunci');setLockModal(null)}})} disabled={isPending}
                 className="flex-1 h-9 rounded-lg bg-amber-500 hover:bg-amber-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                 {isPending&&<span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
                 {isPending?'Memproses...':'Kunci'}
@@ -1086,7 +1082,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
             </div>
             <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200">
               <button onClick={()=>setDelModal(null)}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-              <button onClick={()=>startTransition(async()=>{const r=await deleteBatch(delModal.id,delModal.kode);if(r?.error)showToast(r.error,false);else{showToast('🗑️ Batch dihapus');setDelModal(null)}})} disabled={isPending}
+              <button onClick={()=>startTransition(async()=>{const r=await deleteBatch(delModal.id,delModal.kode);if(r?.error)toast.error(r.error);else{toast.success('Batch dihapus');setDelModal(null)}})} disabled={isPending}
                 className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                 {isPending&&<span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
                 {isPending?'Menghapus...':'Ya, Hapus'}
@@ -1100,11 +1096,11 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
 }
 
 // ─── Create Peleburan Modal (3 sumber: mentah / hasil lebur belum cetak / reject) ───
-function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasilLeburBelumCetak, rejectOptions, packingRejectOptions = [], tims = [], adminList = [], onClose, showToast }: {
+function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasilLeburBelumCetak, rejectOptions, packingRejectOptions = [], tims = [], adminList = [], onClose }: {
   batchKode: string; batchNama: string
   sisaMentahBelumLebur: number; hasilLeburBelumCetak: number
   rejectOptions: any[]; packingRejectOptions?: any[]; tims?: any[]; adminList?: any[]
-  onClose: () => void; showToast: (m: string, ok?: boolean) => void
+  onClose: () => void
 }) {
   const [pend, start]     = useTransition()
   const [err, setErr]     = useState('')
@@ -1164,7 +1160,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
     start(async () => {
       const r = await createPeleburan(fd)
       if (r?.error) { setErr(r.error); return }
-      showToast(`Peleburan ${r.kode} dibuat`)
+      toast.success(`Peleburan ${r.kode} dibuat`)
       onClose(); router.refresh()
     })
   }
@@ -1179,7 +1175,8 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
         </div>
-        <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden flex-1">
+        <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
 
           {/* SUMBER BAHAN — 3 pilihan */}
           <div className="rounded-lg overflow-hidden border border-slate-200">
@@ -1310,7 +1307,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                 <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Bahan Baku untuk di Lebur</label>
                 <FotoPicker files={fotos} onAdd={ff=>setFotos(p=>[...p,...ff].slice(0,10))} onRemove={i=>i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))} label="Tambah foto" />
               </div>
-              <AdminPickerStd adminList={adminList} prefix="" />
+              <AdminPickerStd adminList={adminList} prefix="serah_" label="Admin Yang Menyerahkan" />
               <div>
                 <label className="block text-[11px] font-medium text-slate-500 mb-1.5">
                   Catatan {mentahNaik&&<span className="text-red-500">* (wajib — timbangan naik)</span>}
@@ -1327,33 +1324,38 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
           </div>
 
           {err&&<div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13} className="flex-shrink-0"/><span>{err}</span></div>}
+        </div>
 
-          <div className="flex gap-2.5 pb-2">
-            <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-            <button type="submit" disabled={pend||totalDikasih<=0}
-              className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
-              {pend?'Menyimpan…':`Mulai Peleburan (${formatGram(totalDikasih)})`}
-            </button>
-          </div>
-        </form>
+        <div className="flex-shrink-0 px-5 py-4 border-t border-slate-200 flex gap-2.5">
+          <button type="button" onClick={onClose} className="flex-1 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+          <button type="submit" disabled={pend||totalDikasih<=0}
+            className="flex-1 h-9 rounded-xl bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
+            {pend?'Menyimpan…':`Mulai Peleburan (${formatGram(totalDikasih)})`}
+          </button>
+        </div>
+      </form>
       </div>
     </div>
   )
 }
 
 // ─── Selesai Lebur Modal ──────────────────────────────────────────────────────
-function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList = [], onClose, showToast }: {
-  peleburan: any; toleransi?: number; tims?: any[]; adminList?: any[]; onClose: () => void; showToast: (m: string, ok?: boolean) => void
+function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList = [], onClose }: {
+  peleburan: any; toleransi?: number; tims?: any[]; adminList?: any[]; onClose: () => void
 }) {
   const [pend, start]   = useTransition()
   const [err, setErr]   = useState('')
   const [fotos, setFotos] = useState<File[]>([])
   const router = useRouter()
 
-  // Loss realtime
+  // Loss/Gain realtime
   const [diterimaVal, setDiterimaVal] = useState('')
-  const lossNow = Math.max(0, Number(peleburan.dikasih_gram ?? 0) - (parseFloat(diterimaVal) || 0))
+  const dikasih = Number(peleburan.dikasih_gram ?? 0)
+  const diterimaNum = parseFloat(diterimaVal) || 0
+  const lossNow = Math.max(0, dikasih - diterimaNum)
+  const gainNow = Math.max(0, diterimaNum - dikasih)
   const overTol = diterimaVal !== '' && lossNow > toleransi + 0.0001
+  const isGain  = diterimaVal !== '' && gainNow > 0.001
   const [lossAlasan, setLossAlasan] = useState('')
   const [lossOpNama, setLossOpNama] = useState('')
   const [lossAdminNama, setLossAdminNama] = useState('')
@@ -1385,7 +1387,7 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
       const { selesaiLebur } = await import('@/app/(dashboard)/bahan-baku/actions')
       const r = await selesaiLebur(peleburan.id, fd)
       if (r?.error) { setErr(r.error); return }
-      showToast('Peleburan selesai — losses tercatat')
+      toast.success('Peleburan selesai — losses tercatat')
       onClose(); router.refresh()
     })
   }
@@ -1402,7 +1404,8 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
             <X size={14} className="text-slate-500"/>
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden flex-1">
+        <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700 flex items-center gap-2">
             <span>Diserahkan:</span>
             <span className="font-semibold">{formatGram(peleburan.dikasih_gram)}</span>
@@ -1444,10 +1447,16 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
             </div>
           </div>
 
-          {/* Loss indicator realtime */}
-          {diterimaVal !== '' && (
+          {/* Gain / Loss indicator realtime */}
+          {diterimaVal !== '' && isGain && (
+            <div className="rounded-lg px-3 py-2 text-[12px] font-semibold flex items-center justify-between bg-amber-50 border border-amber-100 text-amber-700">
+              <span>⚠️ Gain: +{gainNow.toFixed(3)} gr</span>
+              <span className="text-[10px]">Timbangan naik dari yang diserahkan</span>
+            </div>
+          )}
+          {diterimaVal !== '' && !isGain && (
             <div className={`rounded-lg px-3 py-2 text-[12px] font-semibold flex items-center justify-between ${overTol?'bg-red-50 border border-red-100 text-red-600':'bg-green-50 border border-green-100 text-green-700'}`}>
-              <span>Loss: {lossNow.toFixed(2)} gr</span>
+              <span>Loss: {lossNow.toFixed(3)} gr</span>
               <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
             </div>
           )}
@@ -1467,16 +1476,17 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
               <AlertTriangle size={13} className="flex-shrink-0"/><span>{err}</span>
             </div>
           )}
-          <div className="flex gap-2.5 pb-2">
-            <button type="button" onClick={onClose}
-              className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">
-              Batal
-            </button>
-            <button type="submit" disabled={pend}
-              className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
-              {pend ? 'Menyimpan…' : 'Konfirmasi Selesai'}
-            </button>
-          </div>
+        </div>
+        <div className="flex-shrink-0 px-5 py-4 border-t border-slate-200 flex gap-2.5">
+          <button type="button" onClick={onClose}
+            className="flex-1 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">
+            Batal
+          </button>
+          <button type="submit" disabled={pend}
+            className="flex-1 h-9 rounded-xl bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
+            {pend ? 'Menyimpan…' : 'Konfirmasi Selesai'}
+          </button>
+        </div>
         </form>
       </div>
     </div>
@@ -1484,8 +1494,8 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
 }
 
 // ─── Edit Peleburan Diserahkan Modal ─────────────────────────────────────────
-function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose, showToast }: {
-  peleburan: any; tims?: any[]; adminList?: any[]; onClose: () => void; showToast: (m: string, ok?: boolean) => void
+function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose }: {
+  peleburan: any; tims?: any[]; adminList?: any[]; onClose: () => void
 }) {
   const [pend, start] = useTransition()
   const [err, setErr] = useState('')
@@ -1509,7 +1519,7 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
     start(async () => {
       const r = await editPeleburanSerah(peleburan.id, fd)
       if (r?.error) { setErr(r.error); return }
-      showToast('✅ Data penyerahan diperbarui')
+      toast.success('Data penyerahan diperbarui')
       onClose(); router.refresh()
     })
   }
@@ -1526,7 +1536,8 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
         </div>
-        <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden flex-1">
+        <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           <div className="rounded-lg overflow-hidden border border-slate-200">
             <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-200">
               <span className="text-[11px] font-medium text-slate-500">📤 Diserahkan</span>
@@ -1565,7 +1576,9 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
                   <div className="flex flex-wrap gap-2">
                     {existingFotos.map((url,i) => (
                       <div key={i} className="relative">
-                        <img src={url} alt="" className="w-14 h-14 rounded-xl object-cover border border-violet-200"/>
+                        <a href={url} target="_blank" rel="noopener noreferrer">
+                          <img src={url} alt="" className="w-14 h-14 rounded-xl object-cover border border-violet-200 hover:opacity-80 transition-opacity cursor-pointer"/>
+                        </a>
                         <button type="button" onClick={() => setExistingFotos(p => p.filter((_,j) => j!==i))}
                           className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[12px] flex items-center justify-center">×</button>
                       </div>
@@ -1577,7 +1590,7 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
                 <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tambah Foto</label>
                 <FotoPicker files={newFotos} onAdd={ff=>setNewFotos(p=>[...p,...ff].slice(0,5))} onRemove={i=>i===-1?setNewFotos([]):setNewFotos(p=>p.filter((_,j)=>j!==i))} label="Tambah foto" />
               </div>
-              <AdminPickerStd adminList={adminList} prefix="" initialValue={peleburan.admin_input??''} />
+              <AdminPickerStd adminList={adminList} prefix="serah_" label="Admin Yang Menyerahkan" initialValue={peleburan.admin_input??''} />
               <div>
                 <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan</label>
                 <input name="keterangan_serahkan" type="text" defaultValue={peleburan.keterangan_serahkan??''} placeholder="Opsional" className={inp}/>
@@ -1585,12 +1598,13 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
             </div>
           </div>
           {err && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13} className="flex-shrink-0"/><span>{err}</span></div>}
-          <div className="flex gap-2.5 pb-2">
-            <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-            <button type="submit" disabled={pend} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
-              {pend ? 'Menyimpan…' : 'Simpan Perubahan'}
-            </button>
-          </div>
+        </div>
+        <div className="flex-shrink-0 px-5 py-4 border-t border-slate-200 flex gap-2.5">
+          <button type="button" onClick={onClose} className="flex-1 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+          <button type="submit" disabled={pend} className="flex-1 h-9 rounded-xl bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
+            {pend ? 'Menyimpan…' : 'Simpan Perubahan'}
+          </button>
+        </div>
         </form>
       </div>
     </div>
@@ -1598,8 +1612,8 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
 }
 
 // ─── Edit Peleburan Diterima Modal ──────────────────────────────────────────
-function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], toleransi = 0.05, onClose, showToast }: {
-  peleburan: any; tims?: any[]; adminList?: any[]; toleransi?: number; onClose: () => void; showToast: (m: string, ok?: boolean) => void
+function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], toleransi = 0.05, onClose }: {
+  peleburan: any; tims?: any[]; adminList?: any[]; toleransi?: number; onClose: () => void
 }) {
   const [pend, start] = useTransition()
   const [err, setErr] = useState('')
@@ -1610,9 +1624,13 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
   )
   const router = useRouter()
 
-  // Loss realtime
-  const lossNow = Math.max(0, Number(peleburan.dikasih_gram ?? 0) - (parseFloat(diterimaVal) || 0))
+  // Loss/Gain realtime
+  const dikasihEdit = Number(peleburan.dikasih_gram ?? 0)
+  const diterimaNumEdit = parseFloat(diterimaVal) || 0
+  const lossNow = Math.max(0, dikasihEdit - diterimaNumEdit)
+  const gainNowEdit = Math.max(0, diterimaNumEdit - dikasihEdit)
   const overTol = diterimaVal !== '' && lossNow > toleransi + 0.0001
+  const isGainEdit = diterimaVal !== '' && gainNowEdit > 0.001
 
   // Loss approval panel state
   const [lossAlasan, setLossAlasan] = useState(peleburan.loss_approval?.alasan ?? '')
@@ -1654,7 +1672,7 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
     start(async () => {
       const r = await editPeleburanTerima(peleburan.id, fd)
       if (r?.error) { setErr(r.error); return }
-      showToast('✅ Data penerimaan diperbarui')
+      toast.success('Data penerimaan diperbarui')
       onClose(); router.refresh()
     })
   }
@@ -1672,7 +1690,8 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
         </div>
-        <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+        <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden flex-1">
+        <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           {/* Info serah */}
           <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700 flex items-center gap-2">
             <span>Diserahkan:</span>
@@ -1703,12 +1722,12 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Selesai</label>
-                  <input name="tanggal_diterima" type="date" defaultValue={peleburan.tanggal_diterima ?? ''} className={inp}/>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Selesai *</label>
+                  <input name="tanggal_diterima" type="date" defaultValue={peleburan.tanggal_diterima ?? ''} className={inp} required/>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Selesai</label>
-                  <input name="jam_selesai" type="time" defaultValue={toTime(peleburan.jam_selesai)} className={inp}/>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Selesai *</label>
+                  <input name="jam_selesai" type="time" defaultValue={toTime(peleburan.jam_selesai)} className={inp} required/>
                 </div>
               </div>
               {existingFotosDiterima.length > 0 && (
@@ -1717,7 +1736,9 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
                   <div className="flex flex-wrap gap-2">
                     {existingFotosDiterima.map((url,i) => (
                       <div key={i} className="relative">
-                        <img src={url} alt="" className="w-14 h-14 rounded-xl object-cover border border-green-200"/>
+                        <a href={url} target="_blank" rel="noopener noreferrer">
+                          <img src={url} alt="" className="w-14 h-14 rounded-xl object-cover border border-green-200 hover:opacity-80 transition-opacity cursor-pointer"/>
+                        </a>
                         <button type="button" onClick={() => setExistingFotosDiterima(p => p.filter((_,j) => j!==i))}
                           className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[12px] flex items-center justify-center">×</button>
                       </div>
@@ -1749,10 +1770,16 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
             </div>
           </div>
 
-          {/* Loss realtime indicator */}
-          {diterimaVal !== '' && (
+          {/* Gain / Loss realtime indicator */}
+          {diterimaVal !== '' && isGainEdit && (
+            <div className="rounded-lg px-3 py-2 text-[12px] font-semibold flex items-center justify-between bg-amber-50 border border-amber-100 text-amber-700">
+              <span>⚠️ Gain: +{gainNowEdit.toFixed(3)} gr</span>
+              <span className="text-[10px]">Timbangan naik dari yang diserahkan</span>
+            </div>
+          )}
+          {diterimaVal !== '' && !isGainEdit && (
             <div className={`rounded-lg px-3 py-2 text-[12px] font-semibold flex items-center justify-between ${overTol?'bg-red-50 border border-red-100 text-red-600':'bg-green-50 border border-green-100 text-green-700'}`}>
-              <span>Loss: {lossNow.toFixed(2)} gr</span>
+              <span>Loss: {lossNow.toFixed(3)} gr</span>
               <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
             </div>
           )}
@@ -1769,12 +1796,13 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
           )}
 
           {err && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13} className="flex-shrink-0"/><span>{err}</span></div>}
-          <div className="flex gap-2.5 pb-2">
-            <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-            <button type="submit" disabled={pend} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
-              {pend ? 'Menyimpan…' : 'Simpan Perubahan'}
-            </button>
-          </div>
+        </div>
+        <div className="flex-shrink-0 px-5 py-4 border-t border-slate-200 flex gap-2.5">
+          <button type="button" onClick={onClose} className="flex-1 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+          <button type="submit" disabled={pend} className="flex-1 h-9 rounded-xl bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
+            {pend ? 'Menyimpan…' : 'Simpan Perubahan'}
+          </button>
+        </div>
         </form>
       </div>
     </div>

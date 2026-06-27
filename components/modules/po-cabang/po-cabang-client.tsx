@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import { Plus, X, Check, ChevronDown, ChevronUp, Trash2, ClipboardList } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import { createPO, updateStatusPO, updateQtyDikirim, deletePO } from '@/app/(dashboard)/po-cabang/actions'
@@ -29,9 +30,7 @@ export default function PoCabangClient({
   const [isPending, start] = useTransition()
   const [showCreate, setShowCreate] = useState(false)
   const [expanded, setExpanded] = useState<number | null>(null)
-  const [toast, setToast] = useState('')
   const [err, setErr] = useState('')
-  const showToast = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500) }
 
   const canApprove = ['owner', 'admin_pusat', 'spv'].includes(userRole)
   const canDelete  = ['owner', 'admin_pusat'].includes(userRole)
@@ -39,8 +38,8 @@ export default function PoCabangClient({
   function handleUpdateStatus(poId: number, status: 'diproses' | 'selesai' | 'ditolak', catatan?: string) {
     start(async () => {
       const r = await updateStatusPO(poId, status, catatan)
-      if (r?.error) { showToast('❌ ' + r.error); return }
-      showToast(`✅ Status PO diubah ke ${status}`)
+      if (r?.error) { toast.error(r.error); return }
+      toast.success(`Status PO diubah ke ${status}`)
     })
   }
 
@@ -48,8 +47,8 @@ export default function PoCabangClient({
     if (!confirm('Hapus PO ini?')) return
     start(async () => {
       const r = await deletePO(poId)
-      if (r?.error) { showToast('❌ ' + r.error); return }
-      showToast('✅ PO dihapus')
+      if (r?.error) { toast.error(r.error); return }
+      toast.success('PO dihapus')
     })
   }
 
@@ -61,10 +60,6 @@ export default function PoCabangClient({
 
   return (
     <div className="space-y-5">
-      {toast && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-xl text-[13px] font-semibold text-white shadow-lg bg-violet-700">{toast}</div>
-      )}
-
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -155,7 +150,7 @@ export default function PoCabangClient({
                                   <KonfirmasiTerimaInput
                                     itemId={it.id} poId={po.id}
                                     current={diterima} maxQty={dikirim}
-                                    onDone={() => showToast('✅ Penerimaan dicatat')}
+                                    onDone={() => toast.success('Penerimaan dicatat')}
                                   />
                                 ) : (
                                   <span className="text-slate-300 text-[12px]">Belum dikirim</span>
@@ -231,7 +226,7 @@ export default function PoCabangClient({
         <CreatePoModal
           cabangList={cabangList}
           onClose={() => setShowCreate(false)}
-          onCreated={(kode) => { showToast(`✅ PO ${kode} dibuat`); setShowCreate(false) }}
+          onCreated={(kode) => { toast.success(`PO ${kode} dibuat`); setShowCreate(false) }}
         />
       )}
     </div>

@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState, useTransition, useEffect, useRef } from 'react'
+import { toast } from 'sonner'
 import {
   Plus, Search, X, Check, AlertTriangle, Tag,
   Edit2, Trash2,
@@ -488,7 +489,6 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
   const [activeItem, setActiveItem] = useState<any | null>(null)
   const [err, setErr] = useState('')
   const [search, setSearch] = useState(currentQ)
-  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
   const [voidReason, setVoidReason] = useState('')
 
   // Server-side pagination helpers
@@ -514,9 +514,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
     navigate({ status: s === 'Semua' ? '' : s, page: '1' })
   }
 
-  function showToast(msg: string, ok = true) { setToast({ msg, ok }); setTimeout(() => setToast(null), 3500) }
-
-  function toggleSelect(id: number) {
+function toggleSelect(id: number) {
     setSelected(prev => { const s = new Set(prev); if (s.has(id)) s.delete(id); else s.add(id); return s })
   }
   function toggleAll() {
@@ -534,7 +532,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
     startTransition(async () => {
       const r = await registerShieldtags(fd)
       if (r?.error) { setErr(r.error); return }
-      showToast(`✅ ${r?.count} Shieldtag berhasil didaftarkan`)
+      toast.success(`${r?.count} Shieldtag berhasil didaftarkan`)
       setModal(null)
     })
   }
@@ -545,7 +543,7 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
     startTransition(async () => {
       const r = await editShieldtagKode(activeItem.id, newKode)
       if (r?.error) { setErr(r.error); return }
-      showToast('✅ Kode Shieldtag diperbarui')
+      toast.success('Kode Shieldtag diperbarui')
       setModal(null)
       router.refresh()
     })
@@ -555,8 +553,8 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
     if (selected.size === 0 || !bulkVoidReason.trim()) return
     startTransition(async () => {
       const r = await bulkVoidShieldtag(Array.from(selected), bulkVoidReason)
-      if (r?.error) { showToast(r.error, false); return }
-      showToast('🚫 ' + r?.count + ' Shieldtag di-VOID')
+      if (r?.error) { toast.error(r.error); return }
+      toast.success(r?.count + ' Shieldtag di-VOID')
       setModal(null); setSelected(new Set()); setBulkVoidReason('')
       router.refresh()
     })
@@ -566,8 +564,8 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
     if (!activeItem || !voidReason.trim()) return
     startTransition(async () => {
       const r = await voidShieldtag(activeItem.id, voidReason)
-      if (r?.error) { showToast(r.error, false); return }
-      showToast('🚫 Shieldtag di-VOID')
+      if (r?.error) { toast.error(r.error); return }
+      toast.success('Shieldtag di-VOID')
       setModal(null); setVoidReason('')
       router.refresh()
     })
@@ -575,13 +573,6 @@ export default function ShieldtagClient({ shieldtags, packingsWithSlots, userRol
 
   return (
     <div className="space-y-5 pb-8">
-      {toast && (
-        <div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-xl text-[13px] font-semibold text-white shadow-2xl',
-          toast.ok ? 'bg-emerald-600' : 'bg-red-600')}>
-          {toast.ok ? <Check size={15}/> : <AlertTriangle size={15}/>}{toast.msg}
-        </div>
-      )}
-
       <div className="space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">

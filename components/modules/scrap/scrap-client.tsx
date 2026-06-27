@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import { Plus, X, Trash2, Check, AlertTriangle, Search, Package } from 'lucide-react'
 import { createScrap, voidScrap, updateScrapStatus } from '@/app/(dashboard)/scrap/actions'
 import { formatDate } from '@/lib/utils'
@@ -33,13 +34,6 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
   const [voidModal, setVoidModal] = useState<any | null>(null)
   const [voidReason, setVoidReason] = useState('')
   const [err, setErr] = useState('')
-  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
-
-  const showToast = (msg: string, ok = true) => {
-    setToast({ msg, ok })
-    setTimeout(() => setToast(null), 3500)
-  }
-
   const filtered = scrapList.filter(s => {
     if (filterStatus !== 'semua' && s.status !== filterStatus) return false
     const q = search.toLowerCase()
@@ -54,7 +48,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
     startTransition(async () => {
       const r = await createScrap(fd)
       if (r?.error) { setErr(r.error); return }
-      showToast(`✅ Scrap ${(r as any).kode} ditambahkan`)
+      toast.success(`Scrap ${(r as any).kode} ditambahkan`)
       setModal(null)
     })
   }
@@ -63,12 +57,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
 
   return (
     <div className="space-y-5 pb-20">
-      {toast && (
-        <div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-xl text-[13px] font-semibold text-white shadow-2xl',
-          toast.ok ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 'bg-gradient-to-r from-red-500 to-rose-600')}>
-          {toast.ok ? <Check size={15}/> : <AlertTriangle size={15}/>}{toast.msg}
-        </div>
-      )}
+
 
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -155,7 +144,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
                         {canManage && s.status === 'tersedia' && (
                           <button onClick={async () => {
                             const r = await updateScrapStatus(s.id, 'dilebur', s.berat_gram)
-                            if (r?.error) showToast(r.error, false); else showToast('✅ Status diperbarui')
+                            if (r?.error) toast.error(r.error); else toast.success('Status diperbarui')
                           }} className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-violet-50 text-violet-600 hover:bg-violet-100 transition-colors">
                             Lebur
                           </button>
@@ -239,7 +228,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
                 onClick={() => {
                   startTransition(async () => {
                     const r = await voidScrap(voidModal.id, voidReason)
-                    if (r?.error) showToast(r.error, false); else { showToast('Scrap di-void'); setVoidModal(null) }
+                    if (r?.error) toast.error(r.error); else { toast.success('Scrap di-void'); setVoidModal(null) }
                   })
                 }}
                 className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">

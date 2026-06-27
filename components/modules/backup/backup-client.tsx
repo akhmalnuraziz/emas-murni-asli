@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import { Download, Database, Check, AlertTriangle, Loader2 } from 'lucide-react'
 import { fetchBackupData } from '@/app/(dashboard)/backup/actions'
 
@@ -51,31 +52,24 @@ function downloadCSV(filename: string, csv: string) {
 export default function BackupClient({ userRole }: { userRole: string }) {
   const [isPending, startTransition] = useTransition()
   const [status, setStatus] = useState<Record<string, 'idle' | 'loading' | 'done' | 'error'>>({})
-  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
-
-  const showToast = (msg: string, ok = true) => {
-    setToast({ msg, ok })
-    setTimeout(() => setToast(null), 3500)
-  }
-
   function downloadTable(key: string, label: string) {
     setStatus(s => ({ ...s, [key]: 'loading' }))
     startTransition(async () => {
       const r = await fetchBackupData(key)
       if (r.error || !r.data) {
         setStatus(s => ({ ...s, [key]: 'error' }))
-        showToast(`Gagal: ${r.error}`, false)
+        toast.error(`Gagal: ${r.error}`)
         return
       }
       const date = new Date().toISOString().split('T')[0]
       downloadCSV(`${key}_${date}.csv`, toCSV(r.data))
       setStatus(s => ({ ...s, [key]: 'done' }))
-      showToast(`✅ ${label} (${r.data.length} baris) diunduh`)
+      toast.success(`${label} (${r.data.length} baris) diunduh`)
     })
   }
 
   async function downloadAll() {
-    showToast('Mengunduh semua data...')
+    toast.info('Mengunduh semua data...')
     for (const t of TABLES) {
       setStatus(s => ({ ...s, [t.key]: 'loading' }))
       const r = await fetchBackupData(t.key)
@@ -88,19 +82,13 @@ export default function BackupClient({ userRole }: { userRole: string }) {
         setStatus(s => ({ ...s, [t.key]: 'error' }))
       }
     }
-    showToast('✅ Semua data selesai diunduh')
+    toast.success('Semua data selesai diunduh')
   }
 
   const groups = [...new Set(TABLES.map(t => t.group))]
 
   return (
     <div className="space-y-6 pb-16 max-w-3xl">
-      {toast && (
-        <div className={`fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-xl text-[13px] font-semibold text-white shadow-2xl ${toast.ok ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 'bg-gradient-to-r from-red-500 to-rose-600'}`}>
-          {toast.ok ? <Check size={15}/> : <AlertTriangle size={15}/>}{toast.msg}
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>

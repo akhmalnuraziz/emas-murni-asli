@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState, useEffect, useTransition } from 'react'
+import { toast } from 'sonner'
 import {
   Plus, Search, Edit2, Trash2, Printer, Check,
   AlertTriangle, X, Package, Camera, ShieldX
@@ -8,6 +9,7 @@ import {
 import { cn, formatDate } from '@/lib/utils'
 import { createPacking, editPacking, voidPacking, markPrinted, reportPackingReject } from '@/app/(dashboard)/packing-log/actions'
 import type { UserRole } from '@/lib/types/database'
+import { TimPickerStd, AdminPickerStd } from '@/components/modules/produksi/serah-terima-modal'
 
 interface Props {
   packingList: any[]
@@ -15,6 +17,8 @@ interface Props {
   shieldtagByPacking?: Record<number, { kode: string; status: string; lokasi: string | null }[]>
   userRole: UserRole
   userName: string
+  tims?: any[]
+  adminList?: any[]
 }
 
 const today = new Date().toISOString().split('T')[0]
@@ -153,8 +157,8 @@ function PrintView({p}:{p:any}){
 }
 
 // ─── Create Modal ─────────────────────────────────────────────────────────────
-function CreateModal({items,onClose,onSubmit,isPending,error}:{
-  items:any[];onClose:()=>void;onSubmit:(fd:FormData)=>void;isPending:boolean;error:string
+function CreateModal({items,tims,adminList,onClose,onSubmit,isPending,error}:{
+  items:any[];tims:any[];adminList:any[];onClose:()=>void;onSubmit:(fd:FormData)=>void;isPending:boolean;error:string
 }){
   const [selId,setSelId]=useState(String(items[0]?.id??''))
   const [fotos,setFotos]=useState<File[]>([])
@@ -172,7 +176,7 @@ function CreateModal({items,onClose,onSubmit,isPending,error}:{
   return(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 flex-shrink-0">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Catat Packing Baru</h2>
           </div>
@@ -196,11 +200,12 @@ function CreateModal({items,onClose,onSubmit,isPending,error}:{
               <input name="total_gram_aktual" type="number" step="0.001" placeholder="0.000" className={inp} required/>
             </F>
           </div>
-          <F label="Tanggal" req><input name="tanggal" type="date" defaultValue={today} className={inp} required/></F>
           <div className="grid grid-cols-2 gap-3">
-            <F label="Admin Yang Menyerahkan"><input name="admin_input" placeholder="Nama admin" className={inp}/></F>
-            <F label="Operator Packing"><input name="operator_packing" placeholder="Nama operator" className={inp}/></F>
+            <F label="Tanggal" req><input name="tanggal" type="date" defaultValue={today} className={inp} required/></F>
+            <F label="Jam" req><input name="jam" type="time" className={inp} required/></F>
           </div>
+          <TimPickerStd tims={tims} prefix="packing_" />
+          <AdminPickerStd adminList={adminList} prefix="serah_" label="Admin Yang Menyerahkan" />
           <F label="Catatan"><input name="catatan" placeholder="Keterangan tambahan..." className={inp}/></F>
           <F label="Foto Packing (max 10)">
             <FotoPicker files={fotos} onAdd={ff=>setFotos(p=>[...p,...ff].slice(0,10))} onRemove={i=>i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))} label="Tambah foto packing"/>
@@ -208,10 +213,10 @@ function CreateModal({items,onClose,onSubmit,isPending,error}:{
           {error&&<div className="flex items-center gap-2 rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600"><AlertTriangle size={14}/>{error}</div>}
           </div>
           <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
-            <button type="button"onClick={onClose}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-            <button type="submit" disabled={isPending||up}className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            <button type="button" onClick={onClose} className="flex-1 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+            <button type="submit" disabled={isPending||up} className="flex-1 h-9 rounded-xl bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {(isPending||up)&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
-              {up?'Kompres foto...':isPending?'Menyimpan...':'Simpan Packing'}
+              {up?'Kompres foto...':isPending?'Menyimpan…':'Simpan Packing'}
             </button>
           </div>
         </form>
@@ -221,10 +226,11 @@ function CreateModal({items,onClose,onSubmit,isPending,error}:{
 }
 
 // ─── Edit Modal ───────────────────────────────────────────────────────────────
-function EditModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;onSubmit:(fd:FormData)=>void;isPending:boolean;error:string}){
+function EditModal({p,tims,adminList,onClose,onSubmit,isPending,error}:{p:any;tims:any[];adminList:any[];onClose:()=>void;onSubmit:(fd:FormData)=>void;isPending:boolean;error:string}){
   const [fotos,setFotos]=useState<File[]>([])
   const [existFotos,setExistFotos]=useState<string[]>(Array.isArray(p.fotos)?p.fotos:[])
   const [up,setUp]=useState(false)
+  const toTime=(t:any)=>t?String(t).slice(0,5):''
 
   async function submit(e:React.FormEvent){
     e.preventDefault()
@@ -238,7 +244,7 @@ function EditModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;
   return(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
       <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 flex-shrink-0">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Edit Packing</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">{p.kode}</p>
@@ -251,11 +257,14 @@ function EditModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;
             <F label="PCS Dipack" req><input name="pcs_dipack" type="number" min="1" defaultValue={p.pcs_dipack} className={inp} required/></F>
             <F label="Total Gram Aktual" req><input name="total_gram_aktual" type="number" step="0.001" defaultValue={p.total_gram_aktual} className={inp} required/></F>
           </div>
-          <F label="Tanggal" req><input name="tanggal" type="date" defaultValue={p.tanggal} className={inp} required/></F>
           <div className="grid grid-cols-2 gap-3">
-            <F label="Admin Yang Menyerahkan"><input name="admin_input" defaultValue={p.admin_input??''} className={inp}/></F>
-            <F label="Operator Packing"><input name="operator_packing" defaultValue={p.pic_packing??p.pic??''} className={inp}/></F>
+            <F label="Tanggal" req><input name="tanggal" type="date" defaultValue={p.tanggal} className={inp} required/></F>
+            <F label="Jam" req><input name="jam" type="time" defaultValue={toTime(p.jam)} className={inp} required/></F>
           </div>
+          <TimPickerStd tims={tims} prefix="packing_"
+            initialTimId={p.tim_id!=null?String(p.tim_id):''}
+            initialAnggota={p.tim_anggota_aktif?p.tim_anggota_aktif.split(',').map((x:string)=>x.trim()).filter(Boolean):undefined}/>
+          <AdminPickerStd adminList={adminList} prefix="serah_" label="Admin Yang Menyerahkan" initialValue={p.admin_input??''} />
           <F label="Catatan"><input name="catatan" defaultValue={p.catatan??''} className={inp}/></F>
           <F label="Foto Packing (max 10)">
             <FotoPicker files={fotos} existing={existFotos}
@@ -267,10 +276,10 @@ function EditModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;
           {error&&<div className="flex items-center gap-2 rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600"><AlertTriangle size={14}/>{error}</div>}
           </div>
           <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
-            <button type="button"onClick={onClose}className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-            <button type="submit"disabled={isPending||up}className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            <button type="button" onClick={onClose} className="flex-1 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+            <button type="submit" disabled={isPending||up} className="flex-1 h-9 rounded-xl bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {(isPending||up)&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
-              {up?'Kompres...':isPending?'Menyimpan...':'Simpan'}
+              {up?'Kompres...':isPending?'Menyimpan…':'Simpan'}
             </button>
           </div>
         </form>
@@ -372,14 +381,13 @@ function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint,onShieldtagC
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
-export default function PackingLogClient({packingList,siapPackingItems,shieldtagByPacking={},userRole,userName}:Props){
+export default function PackingLogClient({packingList,siapPackingItems,shieldtagByPacking={},userRole,userName,tims=[],adminList=[]}:Props){
   const [isPending,startTransition]=useTransition()
   const [modal,setModal]=useState<'create'|'edit'|'delete'|'reject'|null>(null)
   const [active,setActive]=useState<any|null>(null)
   const [err,setErr]=useState('')
   const [search,setSearch]=useState('')
   const [lightbox,setLightbox]=useState<string|null>(null)
-  const [toast,setToast]=useState<{msg:string;ok:boolean}|null>(null)
   const [selectedIds,setSelectedIds]=useState<Set<number>>(new Set())
   const [stModal,setStModal]=useState<{kode:string;list:{kode:string;status:string;lokasi:string|null}[]}|null>(null)
 
@@ -390,7 +398,6 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
     setSelectedIds(allSel?new Set():new Set(ids))
   }
 
-  function showToast(msg:string,ok=true){setToast({msg,ok});setTimeout(()=>setToast(null),3500)}
   const canManage=['owner','admin_pusat','spv','operator_produksi'].includes(userRole)
   const canDelete=['owner','admin_pusat'].includes(userRole)
 
@@ -425,10 +432,10 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
   const totalSiapPackingPcs=siapPackingItems.reduce((s:number,i:any)=>s+(i.pcs_tersisa||0),0)
   const totalSudahPackingPcs=packingList.reduce((s:number,p:any)=>s+(p.pcs_dipack||0),0)
 
-  function handleCreate(fd:FormData){setErr('');startTransition(async()=>{const r=await createPacking(fd);if(r?.error){setErr(r.error);return}showToast(`✅ ${r?.kode} berhasil dicatat`);setModal(null)})}
-  function handleEdit(fd:FormData){if(!active)return;setErr('');startTransition(async()=>{const r=await editPacking(active.id,active.kode,fd);if(r?.error){setErr(r.error);return}showToast('✅ Packing diperbarui');setModal(null)})}
-  function handleDelete(){if(!active)return;startTransition(async()=>{const r=await voidPacking(active.id,active.kode);if(r?.error){showToast(r.error,false);return}showToast('🗑️ Packing dihapus');setModal(null)})}
-  function handleReject(pcs:number,gram:number){if(!active)return;setErr('');startTransition(async()=>{const r=await reportPackingReject(active.id,pcs,gram);if(r?.error){setErr(r.error);return}showToast(`✅ Reject ${pcs} pcs (${gram.toFixed(3)}gr) dicatat`);setModal(null)})}
+  function handleCreate(fd:FormData){setErr('');startTransition(async()=>{const r=await createPacking(fd);if(r?.error){setErr(r.error);return}toast.success(`${r?.kode} berhasil dicatat`);setModal(null)})}
+  function handleEdit(fd:FormData){if(!active)return;setErr('');startTransition(async()=>{const r=await editPacking(active.id,active.kode,fd);if(r?.error){setErr(r.error);return}toast.success('Packing diperbarui');setModal(null)})}
+  function handleDelete(){if(!active)return;startTransition(async()=>{const r=await voidPacking(active.id,active.kode);if(r?.error){toast.error(r.error);return}toast.success('Packing dihapus');setModal(null)})}
+  function handleReject(pcs:number,gram:number){if(!active)return;setErr('');startTransition(async()=>{const r=await reportPackingReject(active.id,pcs,gram);if(r?.error){setErr(r.error);return}toast.success(`Reject ${pcs} pcs (${gram.toFixed(3)}gr) dicatat`);setModal(null)})}
 
   function handlePrint(p:any){
     markPrinted(p.id).catch(console.error)
@@ -442,7 +449,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
 
   function handlePrintMulti(records:any[]){
     const selected=records.filter(p=>selectedIds.has(p.id))
-    if(selected.length===0){showToast('Pilih minimal 1 item untuk diprint',false);return}
+    if(selected.length===0){toast.error('Pilih minimal 1 item untuk diprint');return}
     selected.forEach(p=>markPrinted(p.id).catch(console.error))
     const parts=selected.map((p,i)=>{
       const el=document.getElementById(`print-${p.id}`)
@@ -454,14 +461,13 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
     w.document.write(`<!DOCTYPE html><html><head><title>Print Packing — ${selected.length} item</title><style>@media print{.pagebreak{page-break-after:always}body{margin:0;padding:0}}</style></head><body>${parts}<script>window.onload=()=>{window.print();window.close()}<\/script></body></html>`)
     w.document.close()
     setSelectedIds(new Set())
-    showToast(`✅ ${selected.length} surat dicetak`)
+    toast.success(`${selected.length} surat dicetak`)
   }
 
   return(
     <div className="space-y-5 pb-8">
       {filtered.map(p=><PrintView key={p.id} p={p}/>)}
       {lightbox&&<Lightbox url={lightbox} onClose={()=>setLightbox(null)}/>}
-      {toast&&<div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-xl text-[13px] font-semibold text-white shadow-2xl',toast.ok?'bg-emerald-600':'bg-red-600')}>{toast.ok?<Check size={15}/>:<AlertTriangle size={15}/>}{toast.msg}</div>}
 
       <div className="space-y-5">
         {/* Header */}
@@ -642,8 +648,8 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
         </div>
       </div>
 
-      {modal==='create'&&<CreateModal items={siapPackingItems} onClose={()=>setModal(null)} onSubmit={handleCreate} isPending={isPending} error={err}/>}
-      {modal==='edit'&&active&&<EditModal p={active} onClose={()=>setModal(null)} onSubmit={handleEdit} isPending={isPending} error={err}/>}
+      {modal==='create'&&<CreateModal items={siapPackingItems} tims={tims} adminList={adminList} onClose={()=>setModal(null)} onSubmit={handleCreate} isPending={isPending} error={err}/>}
+      {modal==='edit'&&active&&<EditModal p={active} tims={tims} adminList={adminList} onClose={()=>setModal(null)} onSubmit={handleEdit} isPending={isPending} error={err}/>}
       {modal==='delete'&&active&&(
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
           <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">

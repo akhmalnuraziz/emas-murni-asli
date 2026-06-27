@@ -1,6 +1,7 @@
-﻿'use client'
+'use client'
 
 import { useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import { Plus, Edit2, X, Check, ShieldCheck, Mail, Trash2 } from 'lucide-react'
 import {
   createCabang, updateCabang, toggleCabangAktif,
@@ -10,8 +11,8 @@ import {
 const inp = 'w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all'
 
 // ═══ CABANG SECTION ══════════════════════════════════════════════════════════
-export function CabangSection({ list, showToast, canManage }: {
-  list: any[]; showToast: (m: string) => void; canManage: boolean
+export function CabangSection({ list, canManage }: {
+  list: any[]; canManage: boolean
 }) {
   const [isPending, start] = useTransition()
   const [modal, setModal] = useState<'create' | number | null>(null)
@@ -23,7 +24,7 @@ export function CabangSection({ list, showToast, canManage }: {
       ? await updateCabang(modal, fd)
       : await createCabang(fd)
     if (r?.error) { setErr(r.error); return }
-    showToast(typeof modal === 'number' ? '✅ Cabang diperbarui' : '✅ Cabang ditambahkan')
+    toast.success(typeof modal === 'number' ? 'Cabang diperbarui' : 'Cabang ditambahkan')
     setModal(null)
   }
 
@@ -60,7 +61,7 @@ export function CabangSection({ list, showToast, canManage }: {
                   className="p-1.5 rounded-lg text-violet-500 hover:bg-violet-50"><Edit2 size={13}/></button>
                 <button onClick={async () => {
                   const r = await toggleCabangAktif(c.id, !c.aktif)
-                  if (r?.error) showToast(r.error); else showToast(c.aktif ? 'Cabang dinonaktifkan' : '✅ Cabang diaktifkan')
+                  if (r?.error) toast.error(r.error); else toast.success(c.aktif ? 'Cabang dinonaktifkan' : 'Cabang diaktifkan')
                 }} className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors ${c.aktif ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
                   {c.aktif ? 'Nonaktifkan' : 'Aktifkan'}
                 </button>
@@ -74,7 +75,7 @@ export function CabangSection({ list, showToast, canManage }: {
       {modal !== null && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
           <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 flex-shrink-0">
               <h2 className="text-[15px] font-semibold text-slate-900">{modal === 'create' ? 'Tambah Cabang' : 'Edit Cabang'}</h2>
               <button onClick={() => setModal(null)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X size={14}/></button>
             </div>
@@ -90,9 +91,9 @@ export function CabangSection({ list, showToast, canManage }: {
               {err && <p className="text-[12px] text-red-500 font-semibold">{err}</p>}
             </form>
             <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
-              <button type="button" onClick={() => setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-              <button type="submit" form="cabang-form" disabled={isPending} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
-                {isPending ? 'Menyimpan...' : 'Simpan'}
+              <button type="button" onClick={() => setModal(null)} className="flex-1 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+              <button type="submit" form="cabang-form" disabled={isPending} className="flex-1 h-9 rounded-xl bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
+                {isPending ? 'Menyimpan…' : 'Simpan'}
               </button>
             </div>
           </div>
@@ -123,8 +124,8 @@ const ROLE_COLOR: Record<string,string> = {
 
 type Confirm = { type: 'aktif' | 'nonaktif' | 'hapus'; userId: string; userName: string }
 
-export function UsersSection({ list, currentUserId, showToast, canManage }: {
-  list: any[]; currentUserId: string; showToast: (m: string) => void; canManage: boolean
+export function UsersSection({ list, currentUserId, canManage }: {
+  list: any[]; currentUserId: string; canManage: boolean
 }) {
   const [isPending, start] = useTransition()
   const [inviteModal, setInviteModal] = useState(false)
@@ -138,13 +139,13 @@ export function UsersSection({ list, currentUserId, showToast, canManage }: {
       let r
       if (confirm.type === 'hapus') {
         r = await deleteUser(confirm.userId)
-        if (!r?.error) showToast('✅ User dihapus')
+        if (!r?.error) toast.success('User dihapus')
       } else {
         const aktif = confirm.type === 'aktif'
         r = await toggleUserAktif(confirm.userId, aktif)
-        if (!r?.error) showToast(aktif ? '✅ User diaktifkan' : 'User dinonaktifkan')
+        if (!r?.error) toast.success(aktif ? 'User diaktifkan' : 'User dinonaktifkan')
       }
-      if (r?.error) showToast('❌ ' + r.error)
+      if (r?.error) toast.error(r.error)
       setConfirm(null)
     })
   }
@@ -205,7 +206,7 @@ export function UsersSection({ list, currentUserId, showToast, canManage }: {
                   <button onClick={async () => {
                     const sel = (document.getElementById(`role-${u.id}`) as HTMLSelectElement).value
                     const r = await updateUserRole(u.id, sel)
-                    if (r?.error) showToast('❌ ' + r.error); else { showToast('✅ Role diperbarui'); setEditRoleId(null) }
+                    if (r?.error) toast.error(r.error); else { toast.success('Role diperbarui'); setEditRoleId(null) }
                   }} className="px-3 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[12px] font-semibold transition-colors">
                     Simpan
                   </button>
@@ -244,12 +245,12 @@ export function UsersSection({ list, currentUserId, showToast, canManage }: {
             </div>
             <div className="flex gap-2 pt-1">
               <button onClick={() => setConfirm(null)}
-                className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">
+                className="flex-1 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">
                 Batal
               </button>
               <button onClick={handleConfirm} disabled={isPending}
-                className={`flex-1 h-9 rounded-lg text-[13px] font-semibold text-white transition-colors disabled:opacity-50 ${confirm.type === 'hapus' ? 'bg-red-500 hover:bg-red-600' : confirm.type === 'nonaktif' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-green-600 hover:bg-green-700'}`}>
-                {isPending ? 'Memproses...' : confirm.type === 'hapus' ? 'Ya, hapus' : confirm.type === 'nonaktif' ? 'Ya, nonaktifkan' : 'Ya, aktifkan'}
+                className={`flex-1 h-9 rounded-xl text-[13px] font-semibold text-white transition-colors disabled:opacity-50 ${confirm.type === 'hapus' ? 'bg-red-500 hover:bg-red-600' : confirm.type === 'nonaktif' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-green-600 hover:bg-green-700'}`}>
+                {isPending ? 'Memproses…' : confirm.type === 'hapus' ? 'Ya, hapus' : confirm.type === 'nonaktif' ? 'Ya, nonaktifkan' : 'Ya, aktifkan'}
               </button>
             </div>
           </div>
@@ -259,7 +260,7 @@ export function UsersSection({ list, currentUserId, showToast, canManage }: {
       {inviteModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
           <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 flex-shrink-0">
               <h2 className="text-[15px] font-semibold text-slate-900">Undang User Baru</h2>
               <button onClick={() => setInviteModal(false)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X size={14}/></button>
             </div>
@@ -268,7 +269,7 @@ export function UsersSection({ list, currentUserId, showToast, canManage }: {
               start(async () => {
                 const r = await inviteUser(new FormData(e.currentTarget))
                 if (r?.error) { setErr(r.error); return }
-                showToast('✅ Undangan terkirim ke email')
+                toast.success('Undangan terkirim ke email')
                 setInviteModal(false)
               })
             }} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
@@ -287,9 +288,9 @@ export function UsersSection({ list, currentUserId, showToast, canManage }: {
               {err && <p className="text-[12px] text-red-500 font-semibold">{err}</p>}
             </form>
             <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
-              <button type="button" onClick={() => setInviteModal(false)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-              <button type="submit" form="invite-form" disabled={isPending} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
-                {isPending ? 'Mengirim...' : 'Kirim Undangan'}
+              <button type="button" onClick={() => setInviteModal(false)} className="flex-1 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+              <button type="submit" form="invite-form" disabled={isPending} className="flex-1 h-9 rounded-xl bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
+                {isPending ? 'Mengirim…' : 'Kirim Undangan'}
               </button>
             </div>
           </div>

@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import { Plus, X, Check, AlertTriangle, RotateCcw, Clock, CheckCircle2, XCircle, Search } from 'lucide-react'
 import { createRetur, updateStatusRetur, deleteRetur } from '@/app/(dashboard)/retur-penjualan/actions'
 import { formatDate, formatRupiah, cn } from '@/lib/utils'
@@ -35,14 +36,9 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
   const [modal, setModal]   = useState<'form' | 'detail' | null>(null)
   const [active, setActive] = useState<Retur | null>(null)
   const [err, setErr]       = useState('')
-  const [toast, setToast]   = useState<{ msg: string; ok: boolean } | null>(null)
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('Semua')
   const [catatanInput, setCatatanInput] = useState('')
-
-  function showToast(msg: string, ok = true) {
-    setToast({ msg, ok }); setTimeout(() => setToast(null), 3500)
-  }
 
   const filtered = returList.filter(r => {
     if (filterStatus !== 'Semua' && r.status !== filterStatus) return false
@@ -59,7 +55,7 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
     startTransition(async () => {
       const res = await createRetur(fd)
       if (res?.error) { setErr(res.error); return }
-      showToast(`✅ Retur ${res.kode} berhasil dicatat`)
+      toast.success(`Retur ${res.kode} berhasil dicatat`)
       setModal(null)
     })
   }
@@ -68,8 +64,8 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
     if (!active) return
     startTransition(async () => {
       const res = await updateStatusRetur(active.id, status, catatanInput)
-      if (res?.error) { showToast(res.error, false); return }
-      showToast(`✅ Status diperbarui ke ${status}`)
+      if (res?.error) { toast.error(res.error); return }
+      toast.success(`Status diperbarui ke ${status}`)
       setModal(null)
     })
   }
@@ -78,13 +74,6 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
 
   return (
     <div className="space-y-5 pb-8">
-      {toast && (
-        <div className={cn('fixed top-4 right-4 z-[100] flex items-center gap-2.5 px-5 py-3.5 rounded-xl text-[13px] font-semibold text-white shadow-2xl',
-          toast.ok ? 'bg-emerald-600' : 'bg-red-600')}>
-          {toast.ok ? <Check size={15}/> : <AlertTriangle size={15}/>} {toast.msg}
-        </div>
-      )}
-
       <div className="space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">

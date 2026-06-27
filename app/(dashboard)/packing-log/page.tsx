@@ -14,6 +14,8 @@ export default async function PackingLogPage() {
     { data: packingList },
     { data: siapPacking },
     { data: shieldtagRows },
+    { data: timsRaw },
+    { data: adminListRaw },
   ] = await Promise.all([
     supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
     supabase.from('packing')
@@ -31,6 +33,8 @@ export default async function PackingLogPage() {
       .is('voided_at', null)
       .order('kode')
       .limit(5000),
+    supabase.from('tim_produksi').select('id, nama, anggota:tim_anggota(id, nama, aktif)').eq('aktif', true).order('nama'),
+    supabase.from('users_profile').select('id, name').eq('aktif', true).order('name'),
   ])
 
   // Kelompokkan shieldtag per packing_id untuk tracking
@@ -49,6 +53,9 @@ export default async function PackingLogPage() {
     return { ...item, pcs_tersisa: pcsTersisa }
   }).filter((item: any) => item.pcs_tersisa > 0)
 
+  const tims = (timsRaw ?? []).map((t: any) => ({ id: t.id, nama: t.nama, anggota: t.anggota ?? [] }))
+  const adminList = (adminListRaw ?? []).map((u: any) => ({ id: u.id, nama: u.name }))
+
   return (
     <PackingLogClient
       packingList={packingList ?? []}
@@ -56,6 +63,8 @@ export default async function PackingLogPage() {
       shieldtagByPacking={shieldtagByPacking}
       userRole={profile?.role ?? 'operator_produksi'}
       userName={profile?.name ?? ''}
+      tims={tims}
+      adminList={adminList}
     />
   )
 }

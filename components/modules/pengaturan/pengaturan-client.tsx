@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import {
   Users, Plus, Trash2, Edit2, X, Check, AlertTriangle,
   Sliders, UserCheck, Settings2, UserPlus, Building2, Scale,
@@ -32,9 +33,7 @@ export default function PengaturanClient({
   gramasiList: any[]
 }) {
   const [isPending, start] = useTransition()
-  const [toast, setToast] = useState('')
   const [tab, setTab] = useState<'tim' | 'admin' | 'umum' | 'packaging' | 'cabang' | 'users' | 'gramasi'>('tim')
-  const showToast = (m: string) => { setToast(m); setTimeout(() => setToast(''), 2500) }
   const canManage = userRole === 'owner'
   const isOwnerAdmin = userRole === 'owner'
 
@@ -50,10 +49,6 @@ export default function PengaturanClient({
 
   return (
     <div className="space-y-5 max-w-4xl">
-      {toast && (
-        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-xl text-[13px] font-semibold text-white shadow-lg bg-violet-600">{toast}</div>
-      )}
-
       <div className="flex gap-2 flex-wrap">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setTab(id)}
@@ -63,19 +58,19 @@ export default function PengaturanClient({
         ))}
       </div>
 
-      {tab === 'tim'       && <TimSection tims={tims} isPending={isPending} start={start} showToast={showToast} />}
-      {tab === 'admin'     && <AdminInputSection list={adminInputList} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
-      {tab === 'cabang'    && <CabangSection list={cabangList} showToast={showToast} canManage={isOwnerAdmin} />}
-      {tab === 'users'     && <UsersSection list={userList} currentUserId={currentUserId} showToast={showToast} canManage={isOwnerAdmin} />}
-      {tab === 'gramasi'   && <MasterGramasiSection list={gramasiList} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
-      {tab === 'umum'      && <PengaturanUmumSection pengaturan={pengaturan} tims={tims} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
-      {tab === 'packaging' && <BiayaPackagingSection pengaturan={pengaturan} isPending={isPending} start={start} showToast={showToast} canManage={canManage} />}
+      {tab === 'tim'       && <TimSection tims={tims} isPending={isPending} start={start} />}
+      {tab === 'admin'     && <AdminInputSection list={adminInputList} isPending={isPending} start={start} canManage={canManage} />}
+      {tab === 'cabang'    && <CabangSection list={cabangList} canManage={isOwnerAdmin} />}
+      {tab === 'users'     && <UsersSection list={userList} currentUserId={currentUserId} canManage={isOwnerAdmin} />}
+      {tab === 'gramasi'   && <MasterGramasiSection list={gramasiList} isPending={isPending} start={start} canManage={canManage} />}
+      {tab === 'umum'      && <PengaturanUmumSection pengaturan={pengaturan} tims={tims} isPending={isPending} start={start} canManage={canManage} />}
+      {tab === 'packaging' && <BiayaPackagingSection pengaturan={pengaturan} isPending={isPending} start={start} canManage={canManage} />}
     </div>
   )
 }
 
 // ═══ TIM SECTION ════════════════════════════════════════════════════════════
-function TimSection({ tims, isPending, start, showToast }: any) {
+function TimSection({ tims, isPending, start }: any) {
   const [adding, setAdding] = useState(false)
   const [newNama, setNewNama] = useState('')
   const [newWarna, setNewWarna] = useState(WARNA[0])
@@ -86,8 +81,8 @@ function TimSection({ tims, isPending, start, showToast }: any) {
     const fd = new FormData(); fd.set('nama', newNama); fd.set('warna', newWarna)
     start(async () => {
       const r = await createTim(fd)
-      if (r?.error) { showToast('❌ ' + r.error); return }
-      showToast('✅ Tim ditambahkan'); setNewNama(''); setNewWarna(WARNA[0]); setAdding(false)
+      if (r?.error) { toast.error(r.error); return }
+      toast.success('Tim ditambahkan'); setNewNama(''); setNewWarna(WARNA[0]); setAdding(false)
     })
   }
 
@@ -135,7 +130,7 @@ function TimSection({ tims, isPending, start, showToast }: any) {
 
       <div className="space-y-3">
         {tims.map((t: any) => (
-          <TimCard key={t.id} tim={t} isPending={isPending} start={start} showToast={showToast}
+          <TimCard key={t.id} tim={t} isPending={isPending} start={start}
             editing={editId === t.id} onEdit={() => setEditId(t.id)} onCancelEdit={() => setEditId(null)} />
         ))}
       </div>
@@ -143,7 +138,7 @@ function TimSection({ tims, isPending, start, showToast }: any) {
   )
 }
 
-function TimCard({ tim, isPending, start, showToast, editing, onEdit, onCancelEdit }: any) {
+function TimCard({ tim, isPending, start, editing, onEdit, onCancelEdit }: any) {
   const [nama, setNama] = useState(tim.nama)
   const [warna, setWarna] = useState(tim.warna || WARNA[0])
   const [newAnggota, setNewAnggota] = useState('')
@@ -167,8 +162,8 @@ function TimCard({ tim, isPending, start, showToast, editing, onEdit, onCancelEd
               const fd = new FormData(); fd.set('nama', nama); fd.set('warna', warna)
               start(async () => {
                 const r = await updateTim(tim.id, fd)
-                if (r?.error) { showToast('❌ ' + r.error); return }
-                showToast('✅ Tim diperbarui'); onCancelEdit()
+                if (r?.error) { toast.error(r.error); return }
+                toast.success('Tim diperbarui'); onCancelEdit()
               })
             }} disabled={isPending}
               className="px-5 py-2 rounded-xl text-[13px] font-semibold text-white disabled:opacity-50 bg-violet-600 hover:bg-violet-700">Simpan</button>
@@ -186,7 +181,7 @@ function TimCard({ tim, isPending, start, showToast, editing, onEdit, onCancelEd
             <button
               onClick={() => start(async () => {
                 await toggleTimAktif(tim.id, !tim.aktif)
-                showToast(tim.aktif ? 'Tim dinonaktifkan' : 'Tim diaktifkan')
+                toast.info(tim.aktif ? 'Tim dinonaktifkan' : 'Tim diaktifkan')
               })}
               className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold border ${tim.aktif ? 'text-emerald-500 border-emerald-200' : 'text-slate-400 border-slate-200'}`}>
               {tim.aktif ? 'Aktif' : 'Nonaktif'}
@@ -202,8 +197,8 @@ function TimCard({ tim, isPending, start, showToast, editing, onEdit, onCancelEd
                   {a.nama}
                   <button onClick={() => start(async () => {
                     const r = await deleteAnggota(a.id)
-                    if (r?.error) { showToast('❌ ' + r.error); return }
-                    showToast('✅ Anggota dihapus')
+                    if (r?.error) { toast.error(r.error); return }
+                    toast.success('Anggota dihapus')
                   })} className="text-slate-400 hover:text-red-500"><X size={11} /></button>
                 </span>
               ))}
@@ -216,8 +211,8 @@ function TimCard({ tim, isPending, start, showToast, editing, onEdit, onCancelEd
                   if (e.key === 'Enter') {
                     start(async () => {
                       const r = await addAnggota(tim.id, newAnggota.trim())
-                      if (r?.error) { showToast('❌ ' + r.error); return }
-                      showToast('✅ Anggota ditambahkan'); setNewAnggota('')
+                      if (r?.error) { toast.error(r.error); return }
+                      toast.success('Anggota ditambahkan'); setNewAnggota('')
                     })
                   }
                 }}
@@ -227,8 +222,8 @@ function TimCard({ tim, isPending, start, showToast, editing, onEdit, onCancelEd
                   if (!newAnggota.trim()) return
                   start(async () => {
                     const r = await addAnggota(tim.id, newAnggota.trim())
-                    if (r?.error) { showToast('❌ ' + r.error); return }
-                    showToast('✅ Anggota ditambahkan'); setNewAnggota('')
+                    if (r?.error) { toast.error(r.error); return }
+                    toast.success('Anggota ditambahkan'); setNewAnggota('')
                   })
                 }}
                 disabled={isPending || !newAnggota.trim()}
@@ -246,8 +241,8 @@ function TimCard({ tim, isPending, start, showToast, editing, onEdit, onCancelEd
               <button
                 onClick={() => start(async () => {
                   const r = await deleteTim(tim.id)
-                  if (r?.error) { showToast('❌ ' + r.error); return }
-                  showToast(r?.softDeleted ? '✅ Tim dinonaktifkan' : '✅ Tim dihapus')
+                  if (r?.error) { toast.error(r.error); return }
+                  toast.success(r?.softDeleted ? 'Tim dinonaktifkan' : 'Tim dihapus')
                   setConfirmDel(false)
                 })}
                 disabled={isPending}
@@ -261,7 +256,7 @@ function TimCard({ tim, isPending, start, showToast, editing, onEdit, onCancelEd
 }
 
 // ═══ MASTER ADMIN INPUT ════════════════════════════════════════════════════
-function AdminInputSection({ list, isPending, start, showToast, canManage }: any) {
+function AdminInputSection({ list, isPending, start, canManage }: any) {
   const [newNama, setNewNama] = useState('')
   const [editId, setEditId] = useState<number | null>(null)
   const [editNama, setEditNama] = useState('')
@@ -271,8 +266,8 @@ function AdminInputSection({ list, isPending, start, showToast, canManage }: any
     if (!newNama.trim()) return
     start(async () => {
       const r = await createAdminInput(newNama.trim())
-      if (r?.error) { showToast('❌ ' + r.error); return }
-      showToast('✅ Admin input ditambahkan'); setNewNama('')
+      if (r?.error) { toast.error(r.error); return }
+      toast.success('Admin input ditambahkan'); setNewNama('')
     })
   }
 
@@ -280,8 +275,8 @@ function AdminInputSection({ list, isPending, start, showToast, canManage }: any
     if (!editNama.trim()) return
     start(async () => {
       const r = await updateAdminInput(id, editNama.trim())
-      if (r?.error) { showToast('❌ ' + r.error); return }
-      showToast('✅ Diperbarui'); setEditId(null)
+      if (r?.error) { toast.error(r.error); return }
+      toast.success('Diperbarui'); setEditId(null)
     })
   }
 
@@ -342,7 +337,7 @@ function AdminInputSection({ list, isPending, start, showToast, canManage }: any
                     <button
                       onClick={() => start(async () => {
                         await toggleAdminInputAktif(a.id, !a.aktif)
-                        showToast(a.aktif ? 'Dinonaktifkan' : 'Diaktifkan')
+                        toast.info(a.aktif ? 'Dinonaktifkan' : 'Diaktifkan')
                       })}
                       className="px-2 py-1 rounded-lg text-[10px] border text-slate-400 hover:text-slate-600 border-slate-200">
                       {a.aktif ? 'Nonaktifkan' : 'Aktifkan'}
@@ -354,8 +349,8 @@ function AdminInputSection({ list, isPending, start, showToast, canManage }: any
                         <button
                           onClick={() => start(async () => {
                             const r = await deleteAdminInput(a.id)
-                            if (r?.error) { showToast('❌ ' + r.error); return }
-                            showToast('✅ Dihapus'); setConfirmDelId(null)
+                            if (r?.error) { toast.error(r.error); return }
+                            toast.success('Dihapus'); setConfirmDelId(null)
                           })}
                           disabled={isPending}
                           className="px-2 py-1 rounded-lg text-[12px] font-semibold text-white bg-red-500 disabled:opacity-50">Hapus</button>
@@ -376,7 +371,7 @@ function AdminInputSection({ list, isPending, start, showToast, canManage }: any
 }
 
 // ═══ PENGATURAN UMUM ════════════════════════════════════════════════════════
-function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, canManage }: any) {
+function PengaturanUmumSection({ pengaturan, tims, isPending, start, canManage }: any) {
   const [vals, setVals] = useState({
     toleransi_loss_peleburan:    pengaturan.toleransi_loss_peleburan    ?? '0.05',
     toleransi_loss_cutting:      pengaturan.toleransi_loss_cutting      ?? '0.05',
@@ -395,10 +390,10 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
     Object.entries(vals).forEach(([k, v]) => fd.set(k, v))
     start(async () => {
       const r = await updateToleransi(fd)
-      if (r?.error) { showToast('❌ ' + r.error); return }
+      if (r?.error) { toast.error(r.error); return }
       await updateTargetProduksi(Number(targetPacking) || 0)
       await updateSafetyStockGlobal(Number(safetyStockGlobal) || 10)
-      showToast('✅ Pengaturan disimpan')
+      toast.success('Pengaturan disimpan')
     })
   }
 
@@ -519,7 +514,7 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
                         const val = Number(e.target.value) || 0
                         start(async () => {
                           await updateKpiTargetTim(tim.id, val)
-                          showToast(`✅ Target ${tim.nama} disimpan`)
+                          toast.success(`Target ${tim.nama} disimpan`)
                         })
                       }}
                       className="w-28 h-10 px-3 bg-slate-50 rounded-xl text-[13px] text-slate-700 text-right border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-200 disabled:opacity-60" />
@@ -548,7 +543,7 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, showToast, 
 // ═══ BIAYA PACKAGING SECTION ════════════════════════════════════════════════
 const GRAMASI_LIST = ['0.1','0.5','1','2','5','10','20','25','50','100','250','500','1000']
 
-function BiayaPackagingSection({ pengaturan, isPending, start, showToast, canManage }: any) {
+function BiayaPackagingSection({ pengaturan, isPending, start, canManage }: any) {
   const init: Record<string, string> = {}
   for (const g of GRAMASI_LIST) {
     init[g] = pengaturan[`biaya_packaging_${g}`] ?? '10000'
@@ -559,8 +554,8 @@ function BiayaPackagingSection({ pengaturan, isPending, start, showToast, canMan
   function handleSave() {
     start(async () => {
       const r = await updateBiayaPackaging(GRAMASI_LIST, vals)
-      if (r?.error) { showToast('❌ ' + r.error); return }
-      showToast('✅ Biaya packaging disimpan')
+      if (r?.error) { toast.error(r.error); return }
+      toast.success('Biaya packaging disimpan')
     })
   }
 
@@ -620,7 +615,7 @@ function BiayaPackagingSection({ pengaturan, isPending, start, showToast, canMan
 }
 
 // === MASTER GRAMASI =========================================================
-function MasterGramasiSection({ list, isPending, start, showToast, canManage }: any) {
+function MasterGramasiSection({ list, isPending, start, canManage }: any) {
   const [newVal, setNewVal] = useState('')
   const [editId, setEditId] = useState<number | null>(null)
   const [editVal, setEditVal] = useState('')
@@ -630,16 +625,16 @@ function MasterGramasiSection({ list, isPending, start, showToast, canManage }: 
     if (!newVal.trim()) return
     start(async () => {
       const r = await createGramasi(newVal.trim())
-      if (r?.error) { showToast('❌ ' + r.error); return }
-      showToast('✅ Gramasi ditambahkan'); setNewVal('')
+      if (r?.error) { toast.error(r.error); return }
+      toast.success('Gramasi ditambahkan'); setNewVal('')
     })
   }
 
   function handleUpdate(id: number) {
     start(async () => {
       const r = await updateGramasi(id, editVal)
-      if (r?.error) { showToast('❌ ' + r.error); return }
-      showToast('✅ Diperbarui'); setEditId(null)
+      if (r?.error) { toast.error(r.error); return }
+      toast.success('Diperbarui'); setEditId(null)
     })
   }
 
@@ -700,7 +695,7 @@ function MasterGramasiSection({ list, isPending, start, showToast, canManage }: 
                     <div className="w-36 flex items-center justify-end gap-1.5">
                       <button onClick={() => start(async () => {
                         await toggleGramasiAktif(g.id, !g.aktif)
-                        showToast(g.aktif ? 'Dinonaktifkan' : 'Diaktifkan')
+                        toast.info(g.aktif ? 'Dinonaktifkan' : 'Diaktifkan')
                       })} className="px-2 py-1 rounded-lg text-[10px] border text-slate-400 hover:text-slate-600 border-slate-200">
                         {g.aktif ? 'Nonaktifkan' : 'Aktifkan'}
                       </button>
@@ -710,8 +705,8 @@ function MasterGramasiSection({ list, isPending, start, showToast, canManage }: 
                         <>
                           <button onClick={() => start(async () => {
                             const r = await deleteGramasi(g.id)
-                            if (r?.error) { showToast('❌ ' + r.error); return }
-                            showToast('✅ Dihapus'); setConfirmDelId(null)
+                            if (r?.error) { toast.error(r.error); return }
+                            toast.success('Dihapus'); setConfirmDelId(null)
                           })} disabled={isPending}
                             className="px-2 py-1 rounded-lg text-[10px] font-semibold text-white bg-red-500 disabled:opacity-50">Hapus</button>
                           <button onClick={() => setConfirmDelId(null)} className="px-2 py-1 rounded-lg text-[10px] text-slate-500 bg-slate-100">Batal</button>
@@ -739,3 +734,5 @@ function MasterGramasiSection({ list, isPending, start, showToast, canManage }: 
     </div>
   )
 }
+
+
