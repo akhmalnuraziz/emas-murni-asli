@@ -43,7 +43,7 @@ export default async function BahanBakuPage({
       .is('voided_at', null)
       .not('peleburan_id', 'is', null),
     supabase.from('produksi_item')
-      .select('id, kode, gramasi, nama_item, berat_reject, reject_cutting_gram, current_status, batch_kode')
+      .select('id, kode, gramasi, nama_item, berat_reject, berat_reject_dilebur, reject_cutting_gram, pcs_reject, pcs_reject_dilebur, current_status, batch_kode, stage_handover(tahap, reject_gram, reject_pcs, voided_at)')
       .eq('status_reject', 'belum_dilebur')
       .gt('berat_reject', 0)
       .is('voided_at', null)
@@ -93,8 +93,41 @@ export default async function BahanBakuPage({
     if (bla.ref_id != null && !batchLossMap[bla.ref_id]) batchLossMap[bla.ref_id] = bla
   }
 
+  // Hitung SISA reject (belum dilebur) + label sumber yang tersisa (FIFO: cutting → pas berat → annealing → siap packing)
+  // "Sudah dilebur" diambil dari berat_reject_dilebur (di-set semua jalur lebur: createPeleburan & leburReject)
+  const STAGE_LABEL: Record<string, string> = { pas_berat: 'Pas Berat', annealing: 'Annealing', siap_packing: 'Siap Packing' }
+  const enrichedReject = (rejectItems ?? []).map((r: any) => {
+    const dilebur = Number(r.berat_reject_dilebur ?? 0)
+    const sh = (r.stage_handover ?? []).filter((h: any) => !h.voided_at)
+    const sources = [
+      { label: 'Cutting', gram: Number(r.reject_cutting_gram ?? 0), pcs: 0 },
+      ...['pas_berat', 'annealing', 'siap_packing'].map(tahap => {
+        const h = sh.find((x: any) => x.tahap === tahap)
+        return { label: STAGE_LABEL[tahap], gram: Number(h?.reject_gram ?? 0), pcs: Number(h?.reject_pcs ?? 0) }
+      }),
+    ].filter(s => s.gram > 0.0001)
+    const stagePcs = sources.filter(s => s.label !== 'Cutting').reduce((a, s) => a + s.pcs, 0)
+    const cut = sources.find(s => s.label === 'Cutting')
+    if (cut) cut.pcs = Math.max(0, Number(r.pcs_reject ?? 0) - stagePcs)
+
+    let melted = dilebur
+    const remaining: { label: string; gram: number; pcs: number }[] = []
+    for (const s of sources) {
+      if (melted >= s.gram - 0.0001) { melted -= s.gram; continue } // sumber ini sudah habis dilebur
+      remaining.push({ label: s.label, gram: s.gram - melted, pcs: s.pcs })
+      melted = 0
+    }
+    const sisaGram = Math.max(0, Number(r.berat_reject ?? 0) - dilebur)
+    return {
+      ...r,
+      sisa_reject_gram: sisaGram,
+      sisa_pcs: remaining.reduce((a, s) => a + s.pcs, 0),
+      sisa_label: remaining.length ? 'Reject ' + remaining.map(s => s.label).join(', ') : 'Reject',
+    }
+  }).filter((r: any) => r.sisa_reject_gram > 0.0001)
+
   const rejectCountMap: Record<string, number> = {}
-  for (const r of rejectItems ?? []) {
+  for (const r of enrichedReject) {
     if (r.batch_kode) rejectCountMap[r.batch_kode] = (rejectCountMap[r.batch_kode] ?? 0) + 1
   }
 
@@ -102,7 +135,7 @@ export default async function BahanBakuPage({
     <BahanBakuClient
       batches={batches ?? []}
       peleburanList={peleburanList}
-      rejectItems={rejectItems ?? []}
+      rejectItems={enrichedReject}
       produksiItems={produksiItems ?? []}
       rejectCountMap={rejectCountMap}
       toleransiPeleburan={parseFloat(tolPlbRow?.value ?? '0.05') || 0.05}

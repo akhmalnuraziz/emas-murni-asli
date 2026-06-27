@@ -599,12 +599,31 @@ export async function createPeleburan(formData: FormData) {
     }).eq('kode', batchKode)
   }
 
-  // ── Update reject items → sudah_dilebur ──────────────────────────────────
-  const rejectIds = sumberList
+  // ── Update reject items: status berdasarkan SISA (dukung lebur sebagian) ──
+  const rejectIds = [...new Set(sumberList
     .filter(s => s.tipe === 'reject_cutting' && s.ref_id)
-    .map(s => parseInt(s.ref_id!))
-  if (rejectIds.length > 0)
-    await supabase.from('produksi_item').update({ status_reject: 'sudah_dilebur' }).in('id', rejectIds)
+    .map(s => parseInt(s.ref_id!)))]
+  if (rejectIds.length > 0) {
+    // Total reject yang sudah dilebur per item (semua peleburan aktif, termasuk yang baru)
+    const { data: allMelts } = await supabase.from('peleburan_sumber')
+      .select('ref_id, gram_aktual, peleburan:peleburan_id(voided_at)')
+      .eq('tipe', 'reject_cutting').in('ref_id', rejectIds.map(String))
+    const totalMelted: Record<number, number> = {}
+    for (const m of allMelts ?? []) {
+      if ((m as any).peleburan?.voided_at) continue
+      const id = Number(m.ref_id)
+      totalMelted[id] = (totalMelted[id] ?? 0) + Number(m.gram_aktual ?? 0)
+    }
+    const { data: rejItems } = await supabase.from('produksi_item').select('id, berat_reject').in('id', rejectIds)
+    for (const it of rejItems ?? []) {
+      const melted = totalMelted[it.id] ?? 0
+      const fully = melted >= Number(it.berat_reject ?? 0) - 0.001
+      await supabase.from('produksi_item').update({
+        status_reject: fully ? 'sudah_dilebur' : 'belum_dilebur',
+        berat_reject_dilebur: melted,
+      }).eq('id', it.id)
+    }
+  }
 
   await supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,

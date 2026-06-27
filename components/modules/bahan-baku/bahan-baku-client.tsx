@@ -1141,7 +1141,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
     for (const [id,gram] of Object.entries(rejGram)) {
       const rej = rejectOptions.find((r:any)=>r.id===Number(id))
       if (rej && (Number(gram)||0) > 0)
-        sumber.push({ tipe:'reject_cutting', ref_id:id, ref_label:rej.kode??rej.nama_item, gram_otomatis:Number(rej.berat_reject), gram_aktual:Number(gram) })
+        sumber.push({ tipe:'reject_cutting', ref_id:id, ref_label:rej.kode??rej.nama_item, gram_otomatis:Number(rej.sisa_reject_gram ?? rej.berat_reject), gram_aktual:Number(gram) })
     }
     if (sumber.length === 0) { setErr('Pilih minimal satu sumber bahan'); return }
     fd.set('sumber_json', JSON.stringify(sumber))
@@ -1214,26 +1214,20 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                   <p className="text-[12px] font-semibold text-slate-700 mb-2">Reject (Cutting / Pas Berat / Annealing)</p>
                   <div className="space-y-2">
                     {rejectOptions.map((rej:any)=>{
-                      // Tentukan asal reject berdasarkan data
-                      const rc = Number(rej.reject_cutting_gram ?? 0)
-                      const br = Number(rej.berat_reject ?? 0)
-                      const prosesLabel = rc > 0 && Math.abs(rc - br) < 0.001
-                        ? 'Reject Cutting'
-                        : rc > 0
-                          ? 'Reject Cutting + Reject Pas Berat'
-                          : `Reject ${rej.current_status ?? 'Proses'}`
+                      const sisa = Number(rej.sisa_reject_gram ?? rej.berat_reject ?? 0)
+                      const prosesLabel = rej.sisa_label ?? 'Reject'
                       return (
                       <div key={rej.id}>
                         <label className="flex items-center gap-2 cursor-pointer select-none">
-                          <input type="checkbox" checked={rejGram[rej.id]!==undefined} onChange={()=>toggleRej(rej.id,rej.berat_reject)} className="w-4 h-4 rounded accent-violet-600"/>
+                          <input type="checkbox" checked={rejGram[rej.id]!==undefined} onChange={()=>toggleRej(rej.id,sisa)} className="w-4 h-4 rounded accent-violet-600"/>
                           <span className="text-[12px] font-medium text-slate-700">{rej.kode??rej.nama_item}</span>
                           <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">{prosesLabel}</span>
                           <span className="text-[10px] text-slate-400">({rej.gramasi}gr)</span>
-                          <span className="ml-auto text-[10px] text-red-400 font-semibold">{formatGram(rej.berat_reject)}{rej.pcs_reject?` · ${rej.pcs_reject} pcs`:''}</span>
+                          <span className="ml-auto text-[10px] text-red-400 font-semibold">{formatGram(sisa)}{rej.sisa_pcs?` · ${rej.sisa_pcs} pcs`:''}</span>
                         </label>
                         {rejGram[rej.id]!==undefined&&(
                           <div className="mt-1 pl-6">
-                            <input type="number" step="0.001" max={rej.berat_reject} placeholder={`Max ${formatGram(rej.berat_reject)}`}
+                            <input type="number" step="0.001" max={sisa} placeholder={`Max ${formatGram(sisa)}`}
                               value={rejGram[rej.id]} onChange={e=>setRejGram(p=>({...p,[rej.id]:e.target.value}))} className={inp}/>
                           </div>
                         )}
