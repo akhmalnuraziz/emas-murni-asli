@@ -619,6 +619,100 @@ export async function createBatchPenerimaan(formData: FormData) {
   return { success: true, nomor, batchId: batch.id }
 }
 
+// ── EDIT BATCH PENERIMAAN (qty/tanggal/catatan) — nomor batch TIDAK berubah ──────
+// Hanya untuk batch yang BELUM di-QC. Total qty_diterima di PO ikut ter-update.
+export async function editBatchPenerimaan(batchId: number, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: batch } = await supabase.from('po_batch_penerimaan').select('*').eq('id', batchId).single()
+  if (!batch) return { error: 'Penerimaan tidak ditemukan' }
+  if (batch.is_pengganti) return { error: 'Batch pengganti tidak bisa diedit di sini' }
+  if (batch.status_qc === 'selesai') return { error: 'QC sudah selesai — tidak bisa edit qty. Gunakan Edit QC atau hapus batch.' }
+
+  const tanggal  = formData.get('tanggal_terima') as string
+  const itemsRaw = formData.get('items') as string
+  if (!tanggal)  return { error: 'Tanggal terima wajib diisi' }
+  if (!itemsRaw) return { error: 'Minimal satu produk harus diisi' }
+
+  const itemsInput: { po_item_id: number; qty_diterima: number }[] = JSON.parse(itemsRaw)
+  if (!itemsInput.length) return { error: 'Minimal satu produk harus diisi' }
+  for (const it of itemsInput) {
+    if (!it.po_item_id) return { error: 'Item produk wajib dipilih' }
+    if (!it.qty_diterima || it.qty_diterima <= 0) return { error: 'Qty diterima setiap produk wajib > 0' }
+  }
+
+  const itemIds = itemsInput.map(i => i.po_item_id)
+  const { data: poItems } = await supabase.from('po_packaging_items')
+    .select('id, produk_id, produk_kode, produk_nama, qty_po').in('id', itemIds)
+  if (!poItems || poItems.length !== itemIds.length) return { error: 'Satu atau lebih item PO tidak ditemukan' }
+
+  // qty yang sudah diambil oleh batch LAIN (exclude batch ini) per po_item
+  const { data: allBatchItems } = await supabase.from('po_batch_items')
+    .select('po_item_id, qty_diterima, qty_lebih, batch_id').in('po_item_id', itemIds)
+  const otherTaken: Record<number, number> = {}
+  for (const pi of poItems) {
+    otherTaken[pi.id] = (allBatchItems ?? [])
+      .filter((b: any) => b.po_item_id === pi.id && b.batch_id !== batchId)
+      .reduce((s: number, b: any) => s + (b.qty_diterima - (b.qty_lebih ?? 0)), 0)
+  }
+
+  // Hitung ulang qty_lebih untuk batch ini & qty_diterima final per po_item
+  const itemRows = itemsInput.map(it => {
+    const pi = poItems.find((p: any) => p.id === it.po_item_id)!
+    const sisa = pi.qty_po - (otherTaken[pi.id] ?? 0)
+    const qtyLebih = Math.max(0, it.qty_diterima - sisa)
+    return {
+      po_item_id: it.po_item_id,
+      produk_id: pi.produk_id, produk_kode: pi.produk_kode, produk_nama: pi.produk_nama,
+      qty_diterima: it.qty_diterima, qty_lebih: qtyLebih,
+    }
+  })
+
+  // Ganti child items batch ini
+  await supabase.from('po_batch_items').delete().eq('batch_id', batchId)
+  const { error: childErr } = await supabase.from('po_batch_items').insert(
+    itemRows.map(r => ({
+      batch_id: batchId, po_item_id: r.po_item_id,
+      produk_id: r.produk_id, produk_kode: r.produk_kode, produk_nama: r.produk_nama,
+      qty_diterima: r.qty_diterima, qty_lebih: r.qty_lebih,
+    }))
+  )
+  if (childErr) return { error: childErr.message }
+
+  // Update header batch (qty total, tanggal, catatan) — nomor_batch TETAP
+  const header = itemRows[0]
+  await supabase.from('po_batch_penerimaan').update({
+    po_item_id: itemRows.length === 1 ? header.po_item_id : null,
+    produk_id: header.produk_id, produk_kode: header.produk_kode, produk_nama: header.produk_nama,
+    tanggal_terima: tanggal,
+    qty_diterima: itemRows.reduce((s, r) => s + r.qty_diterima, 0),
+    qty_lebih: itemRows.reduce((s, r) => s + r.qty_lebih, 0),
+    catatan: (formData.get('catatan') as string) || null,
+  }).eq('id', batchId)
+
+  // Update qty_diterima final di po_packaging_items
+  for (const r of itemRows) {
+    const net = r.qty_diterima - r.qty_lebih
+    await supabase.from('po_packaging_items')
+      .update({ qty_diterima: (otherTaken[r.po_item_id] ?? 0) + net })
+      .eq('id', r.po_item_id)
+  }
+
+  // Update status PO
+  const { data: allItems } = await supabase.from('po_packaging_items')
+    .select('qty_po, qty_diterima').eq('po_id', batch.po_id)
+  const allDone = (allItems ?? []).every((i: any) => i.qty_diterima >= i.qty_po)
+  const anyDone = (allItems ?? []).some((i: any) => i.qty_diterima > 0)
+  await supabase.from('po_packaging')
+    .update({ status: allDone ? 'selesai' : anyDone ? 'partial' : 'menunggu' })
+    .eq('id', batch.po_id)
+
+  revalidatePath('/po-vendor-packaging')
+  return { success: true }
+}
+
 // ── BATCH PENGGANTI (dari SJ Retur) ────────────────────────────────────────────
 
 // Multi-item: items: [{ sj_item_id, qty_diterima }]

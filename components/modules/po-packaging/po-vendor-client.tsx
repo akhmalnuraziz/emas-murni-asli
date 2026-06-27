@@ -12,7 +12,7 @@ import {
   createProdukPackaging, updateProdukPackaging, toggleProdukAktif,
   createKategoriReject, updateKategoriReject, toggleKategoriRejectAktif, deleteKategoriReject,
   createPO, updatePO, voidPO, deletePO,
-  createBatchPenerimaan, createBatchPengganti, submitQC, deleteBatch, editQCResult,
+  createBatchPenerimaan, createBatchPengganti, submitQC, deleteBatch, editQCResult, editBatchPenerimaan,
   deleteRejectItem, resetRejectStatus, createSJRetur, updateSJRetur, deleteSJRetur,
 } from '@/app/(dashboard)/po-vendor-packaging/actions'
 
@@ -295,6 +295,7 @@ export default function POVendorClient({
   const [batchModal, setBatchModal]   = useState<number | null>(null)  // po_id
   const [qcModal, setQcModal]         = useState<any | null>(null)
   const [editQcModal, setEditQcModal] = useState<any | null>(null)
+  const [editBatchModal, setEditBatchModal] = useState<any | null>(null)  // penerimaan pending
   const [sjModal, setSjModal]         = useState<number | null>(null)
   const [voidPoId, setVoidPoId]       = useState<number | null>(null)
   const [expandedPO, setExpandedPO]   = useState<number | null>(null)
@@ -594,6 +595,12 @@ export default function POVendorClient({
                         <button onClick={() => setQcModal(b)}
                           className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-white rounded-lg bg-green-500 hover:bg-green-600">
                           <ClipboardCheck size={11}/> Input QC
+                        </button>
+                      )}
+                      {b.status_qc === 'pending' && !b.is_pengganti && (
+                        <button onClick={() => setEditBatchModal(b)}
+                          className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-violet-600 rounded-lg bg-violet-50 hover:bg-violet-100">
+                          <Edit2 size={11}/> Edit
                         </button>
                       )}
                       {b.status_qc === 'selesai' && (
@@ -1066,6 +1073,21 @@ export default function POVendorClient({
         />
       )}
 
+      {editBatchModal !== null && (
+        <EditBatchModal
+          batch={editBatchModal}
+          batchItems={batchItemsList.filter((bi: any) => bi.batch_id === editBatchModal.id)}
+          poItemsForPO={poItems.filter(i => i.po_id === editBatchModal.po_id)}
+          onClose={() => setEditBatchModal(null)}
+          onSave={async (fd) => {
+            const r = await editBatchPenerimaan(editBatchModal.id, fd)
+            if (r?.error) { showToast(r.error, false); return }
+            showToast(`✅ Penerimaan ${editBatchModal.nomor_batch} diperbarui`)
+            setEditBatchModal(null)
+          }}
+        />
+      )}
+
       {qcModal !== null && (
         <QCModal
           batch={qcModal}
@@ -1355,6 +1377,75 @@ function POModal({ mode, po, poItemsForEdit, vendors, produkList, allPoItems, al
         <button type="submit" disabled={loading || !valid}
           className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white disabled:opacity-50">
           {loading ? 'Menyimpan...' : mode === 'create' ? 'Buat PO' : 'Simpan Perubahan'}
+        </button>
+      </form>
+    </ModalShell>
+  )
+}
+
+// ── Edit Penerimaan Modal (qty/tanggal/catatan — nomor batch tetap) ─────────────
+function EditBatchModal({ batch, batchItems, poItemsForPO, onClose, onSave }: {
+  batch: any; batchItems: any[]; poItemsForPO: any[];
+  onClose: () => void; onSave: (fd: FormData) => Promise<void>
+}) {
+  const [loading, setLoading] = useState(false)
+  const rows = batchItems.filter((bi: any) => bi.po_item_id)
+  const effectiveRows = rows.length > 0
+    ? rows
+    : (batch.po_item_id ? [{ po_item_id: batch.po_item_id, produk_nama: batch.produk_nama, qty_diterima: batch.qty_diterima }] : [])
+  const [qty, setQty] = useState<Record<number, number>>(() => {
+    const m: Record<number, number> = {}
+    for (const r of effectiveRows) m[r.po_item_id] = r.qty_diterima
+    return m
+  })
+  const list = effectiveRows.map((r: any) => ({ po_item_id: r.po_item_id, qty_diterima: qty[r.po_item_id] ?? 0 }))
+  const totalQty = list.reduce((s, x) => s + x.qty_diterima, 0)
+  const valid = list.length > 0 && list.every(x => x.qty_diterima > 0)
+
+  return (
+    <ModalShell title={`Edit Penerimaan ${batch.nomor_batch}`} onClose={onClose}>
+      <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700 mb-4">
+        <p className="font-semibold">{batch.po_nomor} · {batch.vendor_nama}</p>
+        <p className="text-violet-500 mt-0.5 text-[11px]">Ubah qty diterima. Nomor batch tetap, total di PO ikut disesuaikan otomatis.</p>
+      </div>
+      <form onSubmit={async e => {
+        e.preventDefault()
+        if (!valid) return
+        setLoading(true)
+        const fd = new FormData(e.currentTarget)
+        fd.set('items', JSON.stringify(list))
+        await onSave(fd)
+        setLoading(false)
+      }} className="space-y-3">
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Terima *</label>
+          <input name="tanggal_terima" type="date" required
+            defaultValue={batch.tanggal_terima ? String(batch.tanggal_terima).slice(0, 10) : new Date().toISOString().split('T')[0]}
+            className={inp}/></div>
+        <div>
+          <p className="text-[11px] font-medium text-slate-500 mb-1.5">Produk Diterima ({fmtNum(totalQty)} pcs)</p>
+          <div className="space-y-2">
+            {effectiveRows.map((r: any) => {
+              const pi = poItemsForPO.find((p: any) => p.id === r.po_item_id)
+              return (
+                <div key={r.po_item_id} className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-semibold text-slate-700">{r.produk_nama}</p>
+                    {pi && <p className="text-[10px] text-slate-400">PO {fmtNum(pi.qty_po)} pcs</p>}
+                  </div>
+                  <input type="number" min="1" value={qty[r.po_item_id] ?? ''}
+                    onChange={e => setQty(p => ({ ...p, [r.po_item_id]: Math.max(1, parseInt(e.target.value) || 1) }))}
+                    className="w-24 h-8 rounded-lg border border-violet-200 px-2 text-[13px] font-semibold text-violet-700 bg-white focus:outline-none focus:ring-2 focus:ring-violet-300"/>
+                  <span className="text-[11px] text-slate-400">pcs</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+        <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan</label>
+          <textarea name="catatan" rows={2} defaultValue={batch.catatan ?? ''} className={inp}/></div>
+        <button type="submit" disabled={loading || !valid}
+          className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white disabled:opacity-50">
+          {loading ? 'Menyimpan...' : `Simpan Perubahan${totalQty > 0 ? ` (${fmtNum(totalQty)} pcs)` : ''}`}
         </button>
       </form>
     </ModalShell>
