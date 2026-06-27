@@ -955,6 +955,24 @@ export async function terimaStageProduksi(
     })
   }
 
+  // ── Validasi gain (timbangan naik): total keluar > serah → wajib disetujui ──
+  const gainStage = Math.max(0, (terimaGram + rejectGram + sisaSerbuk) - serahGramStage)
+  if (gainStage > toleransiStage + 0.0001) {
+    const ttdOp = formData.get('loss_ttd_operator') as string
+    const ttdAdmin = formData.get('loss_ttd_admin') as string
+    if (!lossAlasan.trim()) return { error: `Timbangan naik ${gainStage.toFixed(3)}gr melebihi toleransi ${toleransiStage}gr. Alasan wajib diisi.` }
+    if (!ttdOp) return { error: 'Tanda tangan operator wajib.' }
+    if (!ttdAdmin) return { error: 'Tanda tangan admin/manager wajib.' }
+    const { data: itemBatch } = await supabase.from('produksi_item').select('batch_kode').eq('id', produksiId).single()
+    await saveLossApproval(supabase, {
+      batchKode: itemBatch?.batch_kode ?? null, proses: tahap, refTable: 'stage_handover', refId: targetHandoverId,
+      timId: terimaTimId, timNama: terimaTimNama,
+      masukGram: serahGramStage, keluarGram: terimaGram + rejectGram + sisaSerbuk, lossGram: gainStage, toleransiGram: toleransiStage,
+      alasan: `[Timbangan naik +${gainStage.toFixed(3)}gr] ${lossAlasan}`, ttdOperatorDataUrl: ttdOp, operatorNama: (formData.get('loss_operator_nama') as string) || terimaOp,
+      ttdAdminDataUrl: ttdAdmin, adminUserId: user.id, adminNama: (formData.get('loss_admin_nama') as string) || profile?.name || null,
+    })
+  }
+
   // Update stage_handover record
   await supabase.from('stage_handover').update({
     terima_gram: terimaGram, terima_pcs: terimaPcs,

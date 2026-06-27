@@ -11,7 +11,7 @@ export default function LossApprovalPanel({
   operatorNama, setOperatorNama,
   adminNama, setAdminNama,
   setTtdOperator, setTtdAdmin,
-  hideAlasan,
+  hideAlasan, gain,
 }: {
   lossGram: number; toleransiGram: number; proses: string
   alasan: string; setAlasan: (v: string) => void
@@ -20,15 +20,17 @@ export default function LossApprovalPanel({
   setTtdOperator: (v: string | null) => void
   setTtdAdmin: (v: string | null) => void
   hideAlasan?: boolean
+  gain?: boolean
 }) {
+  const istilah = gain ? 'Gain (timbangan naik)' : 'Loss'
   return (
     <div className="rounded-lg overflow-hidden border border-red-200">
       <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-red-50 border-b border-red-100">
         <AlertTriangle size={16} className="text-red-500 flex-shrink-0" />
         <div>
-          <p className="text-[13px] font-semibold text-red-600">Loss melebihi toleransi!</p>
+          <p className="text-[13px] font-semibold text-red-600">{istilah} melebihi toleransi!</p>
           <p className="text-[11px] text-red-500 mt-0.5">
-            Loss <b>{lossGram.toFixed(3)} gr</b> &gt; toleransi <b>{toleransiGram.toFixed(3)} gr</b> untuk proses {proses}.
+            {istilah} <b>{lossGram.toFixed(3)} gr</b> &gt; toleransi <b>{toleransiGram.toFixed(3)} gr</b> untuk proses {proses}.
             Wajib alasan + tanda tangan operator & admin untuk melanjutkan.
           </p>
         </div>
