@@ -486,6 +486,23 @@ export async function deleteProduksi(produksiId: number, produksiKode: string) {
     }
   }
 
+  // Cek reject sudah masuk peleburan
+  const { count: rejectLeburCount } = await supabase
+    .from('peleburan_sumber')
+    .select('id, peleburan:peleburan_id(voided_at)', { count: 'exact', head: false })
+    .eq('tipe', 'reject_cutting')
+    .eq('ref_id', String(produksiId))
+  // filter manual karena head:false + join tidak bisa filter nested di count
+  const { data: rejectLeburRows } = await supabase
+    .from('peleburan_sumber')
+    .select('id, peleburan:peleburan_id(voided_at)')
+    .eq('tipe', 'reject_cutting')
+    .eq('ref_id', String(produksiId))
+  const activeRejectLebur = (rejectLeburRows ?? []).filter((r: any) => !r.peleburan?.voided_at)
+  if (activeRejectLebur.length > 0) {
+    return { error: 'Tidak bisa hapus — reject dari item ini sudah masuk Peleburan. Void Peleburan terkait terlebih dahulu.' }
+  }
+
   await supabase.from('produksi_item').update({
     voided_at: new Date().toISOString(), void_reason: 'DELETED_BY_USER',
   }).eq('id', produksiId)

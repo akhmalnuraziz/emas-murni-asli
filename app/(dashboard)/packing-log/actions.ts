@@ -214,6 +214,17 @@ export async function voidPacking(packingId: number, packingKode: string) {
     return { error: `Tidak bisa hapus — ada ${stCount} Shieldtag terdaftar. VOID semua Shieldtag terlebih dahulu.` }
   }
 
+  // Block if reject_packing sudah masuk peleburan
+  const { data: rejectLeburRows } = await supabase
+    .from('peleburan_sumber')
+    .select('id, peleburan:peleburan_id(voided_at)')
+    .eq('tipe', 'reject_packing')
+    .eq('ref_id', String(packingId))
+  const activeRejectLebur = (rejectLeburRows ?? []).filter((r: any) => !r.peleburan?.voided_at)
+  if (activeRejectLebur.length > 0) {
+    return { error: 'Tidak bisa hapus — reject packing ini sudah masuk Peleburan. Void Peleburan terkait terlebih dahulu.' }
+  }
+
   const { data: existing } = await supabase.from('packing').select('produksi_item_id').eq('id', packingId).single()
 
   await supabase.from('packing').update({
