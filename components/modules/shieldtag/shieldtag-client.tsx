@@ -8,7 +8,7 @@ import {
   MapPin, Package, Clock, Loader2,
 } from 'lucide-react'
 import { cn, formatDate, formatRupiah } from '@/lib/utils'
-import { registerShieldtags, editShieldtagKode, voidShieldtag, bulkVoidShieldtag, searchShieldtag } from '@/app/(dashboard)/shieldtag/actions'
+import { registerShieldtags, editShieldtagKode, voidShieldtag, bulkVoidShieldtag, searchShieldtag, uploadFotoProdukShieldtag } from '@/app/(dashboard)/shieldtag/actions'
 import type { UserRole } from '@/lib/types/database'
 import { useRouter } from 'next/navigation'
 
@@ -297,6 +297,65 @@ function EditKodeModal({ st, onClose, onSubmit, isPending, error }: {
   )
 }
 
+// ─── Foto Produk Section ───────────────────────────────────────────────────────
+function FotoProdukSection({ kode, fotoUrl, onUploaded }: {
+  kode: string
+  fotoUrl: string | null
+  onUploaded: (url: string) => void
+}) {
+  const [uploading, setUploading] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+    const reader = new FileReader()
+    reader.onload = async ev => {
+      const b64 = (ev.target?.result as string).split(',')[1]
+      const r = await uploadFotoProdukShieldtag(kode, b64, ext)
+      setUploading(false)
+      if (r.error) { toast.error(r.error); return }
+      toast.success('Foto produk berhasil diupload')
+      onUploaded(r.url!)
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
+
+  return (
+    <div className="px-6 pb-6 border-t border-slate-100 pt-5">
+      <p className="text-[10px] font-medium text-slate-400 mb-3 flex items-center gap-1.5">
+        <Package size={11}/> Foto Produk (tampil di halaman verifikasi customer)
+      </p>
+      <div className="flex items-start gap-4">
+        {fotoUrl ? (
+          <div className="relative w-24 h-28 rounded-xl overflow-hidden border border-slate-200 flex-shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={fotoUrl} alt="Foto produk" className="w-full h-full object-cover" />
+          </div>
+        ) : (
+          <div className="w-24 h-28 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center flex-shrink-0 bg-slate-50">
+            <span className="text-[10px] text-slate-400 text-center px-2">Belum ada foto</span>
+          </div>
+        )}
+        <div className="flex flex-col gap-2">
+          <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+          <button
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+            className="px-4 py-2 rounded-lg bg-violet-50 hover:bg-violet-100 text-[12px] font-semibold text-violet-700 border border-violet-200 transition-colors disabled:opacity-50 flex items-center gap-2">
+            {uploading ? <Loader2 size={13} className="animate-spin" /> : <Package size={13} />}
+            {fotoUrl ? 'Ganti Foto' : 'Upload Foto'}
+          </button>
+          <p className="text-[10px] text-slate-400">JPG/PNG, maks 5MB.<br/>Foto tampil di halaman scan QR customer.</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 // ─── Explorer Panel ────────────────────────────────────────────────────────────
 function ExplorerPanel() {
@@ -462,6 +521,9 @@ function ExplorerPanel() {
               )}
             </div>
           </div>
+
+          {/* Foto Produk */}
+          <FotoProdukSection kode={result.kode} fotoUrl={result.foto_produk ?? null} onUploaded={url => setResult((r: any) => ({ ...r, foto_produk: url }))} />
         </div>
       )}
 

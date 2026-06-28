@@ -282,6 +282,29 @@ export async function searchShieldtag(query: string): Promise<{ data: any | null
   return { data }
 }
 
+export async function uploadFotoProdukShieldtag(kode: string, base64: string, ext: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const path = `shieldtag-foto/${kode}.${ext}`
+  const buffer = Buffer.from(base64, 'base64')
+  const { error: upErr } = await supabase.storage.from('fotos').upload(path, buffer, {
+    contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}`,
+    upsert: true,
+  })
+  if (upErr) return { error: upErr.message }
+
+  const { data: urlData } = supabase.storage.from('fotos').getPublicUrl(path)
+  const url = urlData.publicUrl
+
+  const { error: dbErr } = await supabase.from('shieldtag').update({ foto_produk: url }).eq('kode', kode.toUpperCase())
+  if (dbErr) return { error: dbErr.message }
+
+  revalidatePath('/shieldtag')
+  return { url }
+}
+
 export async function bulkVoidShieldtag(ids: number[], reason: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

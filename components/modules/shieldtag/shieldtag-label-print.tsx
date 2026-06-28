@@ -72,7 +72,7 @@ export default function ShieldtagLabelPrint({
           <div key={tag.kode} className="label">
             <div className="qr-wrap">
               <QRCode
-                value={tag.kode}
+                value={`https://emas-murni-asli.vercel.app/cek/${tag.kode}`}
                 size={72}
                 level="M"
                 style={{ display: 'block' }}
