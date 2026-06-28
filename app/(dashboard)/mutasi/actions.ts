@@ -191,6 +191,8 @@ export async function kirimMutasiCabang(formData: FormData) {
   revalidatePath('/mutasi')
   revalidatePath('/inventory')
   revalidatePath('/shieldtag')
+  revalidatePath('/po-cabang')
+  revalidatePath('/stok-cabang')
   return { success: true, kode }
 }
 
@@ -332,6 +334,8 @@ export async function terimaMutasiCabang(formData: FormData) {
   revalidatePath('/mutasi')
   revalidatePath('/inventory')
   revalidatePath('/shieldtag')
+  revalidatePath('/po-cabang')
+  revalidatePath('/stok-cabang')
   return { success: true, isShort, hilangCount: hilangKodes.length }
 }
 

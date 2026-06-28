@@ -616,7 +616,7 @@ function NeracaTab({ neraca }: { neraca: Props['neraca'] }) {
       label: 'Transit ke Cabang',
       value: neraca.stokTransitGram,
       color: '#0EA5E9',
-      desc: 'Shieldtag status Terdistribusi, belum diterima',
+      desc: 'Shieldtag status Transit, dalam perjalanan ke cabang',
       href: '/mutasi',
     },
     {

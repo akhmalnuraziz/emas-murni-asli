@@ -89,7 +89,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
 
   // Shieldtag summary
   const stAktif    = shieldtags.filter(s => s.status === 'Aktif').length
-  const stDist     = shieldtags.filter(s => s.status === 'Terdistribusi').length
+  const stDist     = shieldtags.filter(s => s.status === 'Transit').length
   const stTerjual  = shieldtags.filter(s => s.status === 'Terjual').length
   const stTotal    = shieldtags.length
 
@@ -369,7 +369,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
               { label: 'Aktif', val: stAktif, color: '#22C55E' },
-              { label: 'Terdistribusi', val: stDist, color: '#3B82F6' },
+              { label: 'Transit', val: stDist, color: '#3B82F6' },
               { label: 'Terjual', val: stTerjual, color: '#8B5CF6' },
               { label: 'Total', val: stTotal, color: '#64748B' },
             ].map(s => (

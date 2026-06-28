@@ -107,9 +107,9 @@ export default async function LaporanPage({
   // MASUK: total emas dari semua batch
   const masukBatch = allBatches.reduce((s, b: any) => s + Number(b.timbangan_akhir ?? 0), 0)
 
-  // STOK: shieldtag aktif + terdistribusi (transit cabang)
+  // STOK: shieldtag aktif + transit cabang
   const stokAktifGram    = allShieldtag.filter(s => s.status === 'Aktif').reduce((s, t) => s + parseFloat(t.gramasi ?? '0'), 0)
-  const stokTransitGram  = allShieldtag.filter(s => s.status === 'Terdistribusi').reduce((s, t) => s + parseFloat(t.gramasi ?? '0'), 0)
+  const stokTransitGram  = allShieldtag.filter(s => s.status === 'Transit').reduce((s, t) => s + parseFloat(t.gramasi ?? '0'), 0)
 
   // KELUAR: terjual (gramasi × pcs dari penjualan)
   const gramTerjual = allPenjualan.reduce((s, p) => s + parseFloat(p.gramasi ?? '0') * (Number(p.pcs) || 1), 0)

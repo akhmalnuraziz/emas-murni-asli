@@ -42,7 +42,8 @@ export async function getStokSemuaCabang(cabangKodeFilter?: string): Promise<{ d
     cabangQuery,
     supabase.from('shieldtag')
       .select('gramasi, lokasi')
-      .eq('status', 'Terdistribusi')
+      .eq('status', 'Aktif')
+      .neq('lokasi', 'Gudang Pusat')
       .is('voided_at', null)
       .limit(5000),
     supabase.from('stok_cabang_adjustment')
@@ -87,7 +88,7 @@ export async function getStokSemuaCabang(cabangKodeFilter?: string): Promise<{ d
 
   const result: CabangStokSummary[] = []
   for (const cab of cabangList ?? []) {
-    const st  = stMap[cab.kode] ?? {}
+    const st  = stMap[cab.nama] ?? {}
     const adj = adjMap[cab.kode] ?? {}
     const po  = poMap[cab.kode] ?? {}
 
