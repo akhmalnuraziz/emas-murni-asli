@@ -1591,8 +1591,11 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                       if (!sesiMap.has(key)) sesiMap.set(key, [])
                       sesiMap.get(key)!.push(it)
                     }
-                    // Multi-gramasi (SESI) dirender SAMA seperti single: tiap gramasi = 1 card standar
-                    return [...sesiMap.entries()].flatMap(([, sItems]) => sItems.map((item: any) => {
+                    // Multi-gramasi (SESI): >1 item → 1 wrapper card, single item → standalone card
+                    return [...sesiMap.entries()].flatMap(([sesiKey, sItems]) => {
+                      const isSesi = sItems.length > 1
+                      const serahTotal = isSesi ? sItems.reduce((s: number, it: any) => s + Number(it.berat_awal ?? 0), 0) : 0
+                      const cards = sItems.map((item: any) => {
             const isExp     = expanded.has(item.id)
             const sc        = STATUS_COLOR[item.current_status] ?? {bg:'rgba(156,163,175,0.1)',text:'#6B7280',dot:'#9CA3AF'}
             const events: any[] = Array.isArray(item.produksi_event)?item.produksi_event.filter((e:any)=>!e.voided_at):[]
@@ -1617,7 +1620,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
 
             return (
               <div key={item.id}
-                className="bg-white border border-slate-200 rounded-xl overflow-hidden transition-all"
+                className={isSesi ? "bg-white overflow-hidden transition-all border-b border-slate-100 last:border-b-0" : "bg-white border border-slate-200 rounded-xl overflow-hidden transition-all"}
                 style={{borderLeft:`3px solid ${sc.dot}`}}>
 
                 {/* ── Card Header ─────────────────────────────────────────── */}
@@ -1933,7 +1936,19 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                 )}
               </div>
                 )
-              }))
+              })
+                      if (!isSesi) return cards
+                      return [
+                        <div key={sesiKey} className="rounded-xl border border-violet-200 overflow-hidden">
+                          <div className="bg-violet-50/60 px-5 py-2.5 border-b border-violet-100 flex items-center gap-2">
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 flex-shrink-0">SESI {sItems.length}×</span>
+                            <span className="text-[13px] font-semibold text-slate-800 truncate flex-1">{sItems[0].nama_item ?? sItems[0].kode}</span>
+                            <span className="text-[11px] text-violet-500 font-medium tabular-nums flex-shrink-0">{serahTotal.toFixed(2)} gr diserahkan</span>
+                          </div>
+                          {cards}
+                        </div>
+                      ]
+                    })
             })()}
                 </div>
               )
