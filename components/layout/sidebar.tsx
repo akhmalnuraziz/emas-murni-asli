@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Package, Hammer, Tag, Warehouse,
   ArrowLeftRight, ShoppingCart, FileText,
   ScrollText, Settings, LogOut, X,
-  TrendingUp, Star, Store, ClipboardList, RotateCcw, Truck, Wallet, Recycle, HardDrive, MapPin,
+  TrendingUp, TrendingDown, Star, Store, ClipboardList, RotateCcw, Truck, Wallet, Recycle, HardDrive, MapPin,
   Users, RefreshCcw,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
