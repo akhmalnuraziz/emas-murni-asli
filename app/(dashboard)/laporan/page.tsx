@@ -63,7 +63,7 @@ export default async function LaporanPage({
       return q
     })(),
     supabase.from('buyback').select('id, tanggal').gte('tanggal', dateFrom).lte('tanggal', dateTo).is('voided_at', null),
-    supabase.from('mutasi').select('pcs').eq('status_kirim', 'Sudah Dikirim').limit(5000),
+    supabase.from('mutasi').select('pcs').in('status', ['dikirim', 'SELESAI', 'SHORT_SHIP']).is('voided_at', null).limit(5000),
     supabase.from('batch').select('kode, tanggal, supplier, timbangan_akhir, hpp_gr, status').is('voided_at', null).order('created_at', { ascending: false }).limit(500),
     supabase.from('pengeluaran')
       .select('id, tanggal, nama, nominal, kategori:kategori_pengeluaran(nama, warna)')
