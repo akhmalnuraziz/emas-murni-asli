@@ -629,7 +629,7 @@ function TambahProduksiModal({ item, peleburanByBatch, tims, adminList, onClose,
   const nowTime = new Date().toTimeString().slice(0,5)
   const batchKode = item.batch_kode
   const plbList = peleburanByBatch[batchKode] ?? []
-  const [f, setF] = useState({ peleburan_id: plbList[0] ? String(plbList[0].id) : '', gramasi: '1', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime })
+  const [f, setF] = useState({ peleburan_id: plbList[0] ? String(plbList[0].id) : '', pcs: '', berat_awal: '', nama_item: '', status_awal: 'Cutting', tanggal_produksi: today, jam_mulai: nowTime })
   const [fotos, setFotos] = useState<File[]>([])
   const [up, setUp] = useState(false)
   const s = (k: string, v: string) => setF(p => ({ ...p, [k]: v }))
@@ -657,7 +657,7 @@ function TambahProduksiModal({ item, peleburanByBatch, tims, adminList, onClose,
         </div>
         <form onSubmit={submit} className="flex flex-col flex-1 overflow-hidden">
           <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
-          <F label="Nama / Label" req><input name="nama_item" value={f.nama_item} onChange={e => s('nama_item', e.target.value)} placeholder={`cth: LM REI ${f.gramasi}GR`} className={inp} required /></F>
+          <F label="Nama / Label" req><input name="nama_item" value={f.nama_item} onChange={e => s('nama_item', e.target.value)} placeholder="cth: Cetakan LM Tipe A" className={inp} required /></F>
 
           <F label="Pilih Bahan dari Peleburan" req>
             {plbList.length === 0 ? (
@@ -674,14 +674,7 @@ function TambahProduksiModal({ item, peleburanByBatch, tims, adminList, onClose,
             )}
           </F>
 
-          <div className="grid grid-cols-2 gap-3 items-end">
-            <F label="Gramasi" req>
-              <select name="gramasi" value={f.gramasi} onChange={e => { s('gramasi', e.target.value); s('nama_item', `LM REI ${e.target.value}GR`) }} className={inp} required>
-                {GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} gr</option>)}
-              </select>
-            </F>
-            <F label="Jumlah PCS"><input name="pcs" type="number" min="1" value={f.pcs} onChange={e => s('pcs', e.target.value)} placeholder="opsional" className={inp} /></F>
-          </div>
+          <F label="Jumlah PCS (Estimasi)"><input name="pcs" type="number" min="1" value={f.pcs} onChange={e => s('pcs', e.target.value)} placeholder="opsional" className={inp} /></F>
 
           <div className="grid grid-cols-2 gap-3 items-end">
             <F label="Total Bahan Diserahkan" req><input name="berat_awal" type="number" step="0.01" value={f.berat_awal} onChange={e => s('berat_awal', e.target.value)} placeholder="100.00" className={inp} required /></F>
