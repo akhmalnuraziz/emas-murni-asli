@@ -28,10 +28,13 @@ const CHANNEL_LABEL: Record<string, string> = {
   tiktok: 'TikTok', cabang: 'Cabang', raja_emas: 'Raja Emas',
 }
 
+const PAGE_SIZE = 20
+
 export default function PelangganClient({ pelangganList, canSeeRp }: Props) {
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
   const [sort, setSort] = useState<'belanja' | 'transaksi' | 'terakhir'>('belanja')
+  const [page, setPage] = useState(1)
 
   const filtered = pelangganList
     .filter(p => {
@@ -44,6 +47,9 @@ export default function PelangganClient({ pelangganList, canSeeRp }: Props) {
       if (sort === 'terakhir') return b.lastTanggal.localeCompare(a.lastTanggal)
       return b.totalBelanja - a.totalBelanja
     })
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const totalCustomer = pelangganList.length
   const repeatBuyer = pelangganList.filter(p => p.txCount > 1).length
@@ -80,14 +86,14 @@ export default function PelangganClient({ pelangganList, canSeeRp }: Props) {
         <div className="flex gap-3 flex-wrap items-center">
           <div className="relative flex-1 min-w-[200px]">
             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input value={search} onChange={e => setSearch(e.target.value)}
+            <input value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
               placeholder="Cari nama, no. HP, atau KTP..."
               className="w-full pl-9 pr-3 h-8 text-[12px] rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all" />
             {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2"><X size={13} className="text-slate-400" /></button>}
           </div>
           <div className="flex rounded-xl overflow-hidden border border-slate-200">
             {(['belanja', 'transaksi', 'terakhir'] as const).map(s => (
-              <button key={s} onClick={() => setSort(s)}
+              <button key={s} onClick={() => { setSort(s); setPage(1) }}
                 className={cn('px-3 py-2 text-[12px] font-semibold transition-colors',
                   sort === s ? 'bg-violet-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50')}>
                 {s === 'belanja' ? 'Omzet' : s === 'transaksi' ? 'Transaksi' : 'Terbaru'}
@@ -99,18 +105,17 @@ export default function PelangganClient({ pelangganList, canSeeRp }: Props) {
         {/* List */}
         <div className="space-y-2">
           {filtered.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-xl py-16 text-center"
-              >
+            <div className="bg-white border border-slate-200 rounded-xl py-16 text-center">
               <Users size={28} className="text-slate-200 mx-auto mb-2" />
               <p className="text-[13px] text-slate-400">Tidak ada pelanggan ditemukan</p>
             </div>
-          ) : filtered.map((p, i) => (
+          ) : paginated.map((p, i) => (
             <div key={p.key} className="bg-white border border-slate-200 rounded-xl overflow-hidden">
               <div className="p-4 flex items-center justify-between gap-3 cursor-pointer"
                 onClick={() => setExpanded(expanded === p.key ? null : p.key)}>
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 font-semibold text-[13px] text-violet-700 bg-violet-50">
-                    {i + 1}
+                    {(page - 1) * PAGE_SIZE + i + 1}
                   </div>
                   <div className="min-w-0">
                     <p className="font-semibold text-slate-800 text-[13px] truncate">{p.nama}</p>
@@ -151,6 +156,21 @@ export default function PelangganClient({ pelangganList, canSeeRp }: Props) {
               )}
             </div>
           ))}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-2">
+              <p className="text-[11px] text-slate-400">{filtered.length} pelanggan · Hal {page} dari {totalPages}</p>
+              <div className="flex gap-2">
+                <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}
+                  className="px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  ← Sebelumnya
+                </button>
+                <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}
+                  className="px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  Berikutnya →
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

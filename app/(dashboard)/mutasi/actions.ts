@@ -364,13 +364,17 @@ export async function fetchStokCabang(cabangKode: string) {
 }
 
 // ─── Fetch daftar mutasi ──────────────────────────────────────────────────────
-export async function fetchMutasiList() {
+export async function fetchMutasiList(page: number = 1, pageSize: number = 20) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { rows: [], error: 'Unauthorized' }
-  const { data } = await supabase.from('mutasi')
-    .select('*').is('voided_at', null).order('created_at', { ascending: false }).limit(100)
-  return { rows: data ?? [] }
+  if (!user) return { rows: [], total: 0, error: 'Unauthorized' }
+  const from = (page - 1) * pageSize
+  const { data, count } = await supabase.from('mutasi')
+    .select('*', { count: 'exact' })
+    .is('voided_at', null)
+    .order('created_at', { ascending: false })
+    .range(from, from + pageSize - 1)
+  return { rows: data ?? [], total: count ?? 0 }
 }
 
 // ─── Fetch PO cabang yang siap dilayani (pending/diproses) per cabang ────────

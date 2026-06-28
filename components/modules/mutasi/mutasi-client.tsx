@@ -596,21 +596,27 @@ function StokCabang({ cabangList, selectedCabang, setSelectedCabang }: {
 }
 
 // ─── RIWAYAT MUTASI ─────────────────────────────────────────────────────────────
+const MUTASI_PAGE_SIZE = 20
 function RiwayatMutasi({ cabangList }: { cabangList: Cabang[] }) {
   const [rows, setRows] = useState<any[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const cabangNama = (kode: string) => cabangList.find(c => c.kode === kode)?.nama ?? kode
+  const totalPages = Math.ceil(total / MUTASI_PAGE_SIZE)
 
   useEffect(() => {
-    (async () => {
-      const res = await fetchMutasiList()
+    setLoading(true)
+    ;(async () => {
+      const res = await fetchMutasiList(page, MUTASI_PAGE_SIZE)
       setRows(res.rows)
+      setTotal(res.total)
       setLoading(false)
     })()
-  }, [])
+  }, [page])
 
   if (loading) return <div className="py-12 text-center text-[13px] text-slate-400">Memuat riwayat…</div>
-  if (rows.length === 0) return (
+  if (rows.length === 0 && page === 1) return (
     <div className="py-12 text-center bg-white border border-slate-200 rounded-xl">
       <p className="text-[13px] text-slate-400">Belum ada mutasi.</p>
     </div>
@@ -645,6 +651,21 @@ function RiwayatMutasi({ cabangList }: { cabangList: Cabang[] }) {
           {m.catatan && <p className="text-[11px] text-slate-400 mt-2 italic">{m.catatan}</p>}
         </div>
       ))}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-[11px] text-slate-400">{total} mutasi · Hal {page} dari {totalPages}</p>
+          <div className="flex gap-2">
+            <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}
+              className="px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+              ← Sebelumnya
+            </button>
+            <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}
+              className="px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+              Berikutnya →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
