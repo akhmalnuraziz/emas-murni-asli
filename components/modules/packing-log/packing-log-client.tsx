@@ -297,7 +297,7 @@ function RejectModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>voi
   const stCount=p.shieldtag_count??0
   const maxPcs=p.pcs_dipack-stCount
   async function handleSubmit(){
-    const b64=await compressToBase64(fotoFiles)
+    const b64=await filesToBase64(fotoFiles)
     onSubmit(parseInt(pcs),parseFloat(gram),b64,catatan)
   }
   return(
