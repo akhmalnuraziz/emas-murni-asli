@@ -577,20 +577,6 @@ export async function createPeleburan(formData: FormData) {
 
   if (error) return { error: error.message }
 
-  // ── Insert sumber records ────────────────────────────────────────────────
-  if (sumberList.length > 0) {
-    await supabase.from('peleburan_sumber').insert(
-      sumberList.map(s => ({
-        peleburan_id: data.id,
-        tipe:         s.tipe,
-        ref_id:       s.ref_id,
-        ref_label:    s.ref_label,
-        gram_otomatis: s.gram_otomatis,
-        gram_aktual:   s.gram_aktual,
-      }))
-    )
-  }
-
   // ── Lebur ulang hasil lebur → kurangi bahan_siap_cetak ───────────────────
   if (sumberLeburGram > 0) {
     const siapCetakNow = Number(batchRow?.bahan_siap_cetak ?? 0)
@@ -599,30 +585,19 @@ export async function createPeleburan(formData: FormData) {
     }).eq('kode', batchKode)
   }
 
-  // ── Update reject items: status berdasarkan SISA (dukung lebur sebagian) ──
-  const rejectIds = [...new Set(sumberList
-    .filter(s => s.tipe === 'reject_cutting' && s.ref_id)
-    .map(s => parseInt(s.ref_id!)))]
-  if (rejectIds.length > 0) {
-    // Total reject yang sudah dilebur per item (semua peleburan aktif, termasuk yang baru)
-    const { data: allMelts } = await supabase.from('peleburan_sumber')
-      .select('ref_id, gram_aktual, peleburan:peleburan_id(voided_at)')
-      .eq('tipe', 'reject_cutting').in('ref_id', rejectIds.map(String))
-    const totalMelted: Record<number, number> = {}
-    for (const m of allMelts ?? []) {
-      if ((m as any).peleburan?.voided_at) continue
-      const id = Number(m.ref_id)
-      totalMelted[id] = (totalMelted[id] ?? 0) + Number(m.gram_aktual ?? 0)
-    }
-    const { data: rejItems } = await supabase.from('produksi_item').select('id, berat_reject').in('id', rejectIds)
-    for (const it of rejItems ?? []) {
-      const melted = totalMelted[it.id] ?? 0
-      const fully = melted >= Number(it.berat_reject ?? 0) - 0.001
-      await supabase.from('produksi_item').update({
-        status_reject: fully ? 'sudah_dilebur' : 'belum_dilebur',
-        berat_reject_dilebur: melted,
-      }).eq('id', it.id)
-    }
+  // ── Update reject_cutting: tambah berat_reject_dilebur, set status ────────
+  const rejectCuttingItems = sumberList.filter(s => s.tipe === 'reject_cutting' && s.ref_id)
+  for (const s of rejectCuttingItems) {
+    const itemId = parseInt(s.ref_id!)
+    const { data: rejItem } = await supabase.from('produksi_item')
+      .select('berat_reject, berat_reject_dilebur').eq('id', itemId).single()
+    const prevDilebur = Number(rejItem?.berat_reject_dilebur ?? 0)
+    const newDilebur  = prevDilebur + Number(s.gram_aktual)
+    const fully = newDilebur >= Number(rejItem?.berat_reject ?? 0) - 0.001
+    await supabase.from('produksi_item').update({
+      berat_reject_dilebur: newDilebur,
+      status_reject: fully ? 'sudah_dilebur' : 'belum_dilebur',
+    }).eq('id', itemId)
   }
 
   // ── Update reject_packing: tambahkan gram_reject_dilebur ─────────────────────
