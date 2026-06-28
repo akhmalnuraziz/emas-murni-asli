@@ -64,7 +64,6 @@ export default function PengaturanClient({
       {tab === 'users'     && <UsersSection list={userList} currentUserId={currentUserId} canManage={isOwnerAdmin} />}
       {tab === 'gramasi'   && <MasterGramasiSection list={gramasiList} isPending={isPending} start={start} canManage={canManage} />}
       {tab === 'umum'      && <PengaturanUmumSection pengaturan={pengaturan} tims={tims} isPending={isPending} start={start} canManage={canManage} />}
-      {tab === 'packaging' && <BiayaPackagingSection pengaturan={pengaturan} isPending={isPending} start={start} canManage={canManage} />}
     </div>
   )
 }
