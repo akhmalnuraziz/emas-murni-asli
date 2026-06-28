@@ -306,6 +306,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 const ALL = ['dashboard', 'bahan-baku', 'produksi', 'packing-log', 'shieldtag', 'kpi-tim', 'scrap',
   'inventory', 'mutasi', 'stock-opname', 'stok-cabang', 'po-cabang', 'po-vendor-packaging', 'prioritas-produksi',
   'penjualan', 'retur-penjualan', 'pelanggan', 'buyback', 'pengeluaran', 'laporan',
+  'laporan-batch', 'laporan-efisiensi',
   'pengaturan', 'audit-log', 'backup']
 
 export const ROLE_ACCESS: Record<UserRole, string[]> = {
