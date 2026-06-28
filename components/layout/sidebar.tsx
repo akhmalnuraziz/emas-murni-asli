@@ -40,9 +40,14 @@ const NAV_GROUPS = [
     ],
   },
   {
-    label: 'Lainnya',
+    label: 'Bisnis',
     items: [
-      { href: '/buyback', label: 'Buyback', icon: RotateCcw, module: 'buyback' },
+      { href: '/penjualan',       label: 'Penjualan',          icon: ShoppingCart, module: 'penjualan',       disabled: true },
+      { href: '/retur-penjualan', label: 'Retur Penjualan',    icon: RefreshCcw,   module: 'retur-penjualan', disabled: true },
+      { href: '/pelanggan',       label: 'Database Pelanggan', icon: Users,         module: 'pelanggan',       disabled: true },
+      { href: '/pengeluaran',     label: 'Pengeluaran',        icon: Wallet,        module: 'pengeluaran',     disabled: true },
+      { href: '/laporan',         label: 'Laporan',            icon: FileText,      module: 'laporan',         disabled: true },
+      { href: '/buyback',         label: 'Buyback',            icon: RotateCcw,     module: 'buyback' },
     ],
   },
 ]
@@ -85,10 +90,10 @@ export default function Sidebar({ mobileOpen, onClose, serverProfile }: SidebarP
       return (
         <div key={item.href}
           className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium text-slate-300 cursor-not-allowed select-none"
-          title="Segera hadir">
+          title="Sedang dinonaktifkan">
           <Icon size={16} className="text-slate-300 flex-shrink-0" />
           <span className="flex-1 truncate">{item.label}</span>
-          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-400">Segera</span>
+          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-400">Nonaktif</span>
         </div>
       )
     }
