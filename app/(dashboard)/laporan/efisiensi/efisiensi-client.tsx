@@ -119,8 +119,8 @@ export default function EfisiensiClient({ rows, dateFrom, dateTo }: { rows: Row[
             <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94a3b8' }} />
             <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} tickFormatter={v => `${v}%`} />
             <Tooltip
-              formatter={(value: number, name: any) => [`${value}%`, 'Loses']}
-              labelFormatter={(label, payload) => payload?.[0]?.payload?.full ?? label}
+              formatter={(value: any) => [`${value}%`, 'Loses']}
+              labelFormatter={(label: any, payload: any) => payload?.[0]?.payload?.full ?? label}
               contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e2e8f0' }}
             />
             <Bar dataKey="loses" radius={[4, 4, 0, 0]}>

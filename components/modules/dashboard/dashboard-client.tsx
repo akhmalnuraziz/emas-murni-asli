@@ -380,32 +380,14 @@ export default function DashboardClient({
           <span className="text-[11px] text-slate-400 font-medium">{stok.pcs} pcs total</span>
         </div>
         {gramasiChartData.length > 0 ? (
-          <>
-            {/* Text chips — angka eksplisit per gramasi */}
-            <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2 mb-4">
-              {gramasiChartData.map((d, i) => (
-                <div key={d.gramasi} className="rounded-xl border border-slate-100 bg-slate-50 px-2 py-2.5 text-center">
-                  <p className={cn('text-[16px] font-bold tabular-nums leading-none', i % 2 === 0 ? 'text-violet-700' : 'text-indigo-600')}>{d.pcs}</p>
-                  <p className="text-[10px] text-slate-400 font-medium mt-1">{d.gramasi}</p>
-                </div>
-              ))}
-            </div>
-            {/* Visual bar chart */}
-            <ResponsiveContainer width="100%" height={100}>
-              <BarChart data={gramasiChartData} barSize={18} margin={{ top: 0, bottom: 0, left: 0, right: 0 }}>
-                <XAxis dataKey="gramasi" tick={{ fontSize: 10, fill: '#9A9A94', fontFamily: 'Inter' }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{ borderRadius: 10, border: '1px solid #E4E4E0', fontSize: 12, fontFamily: 'Inter', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                  cursor={{ fill: 'rgba(100,80,214,0.05)' }}
-                />
-                <Bar dataKey="pcs" radius={[5, 5, 0, 0]}>
-                  {gramasiChartData.map((_, i) => (
-                    <Cell key={i} fill={i % 2 === 0 ? '#6450D6' : '#9585F5'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </>
+          <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2">
+            {gramasiChartData.map((d, i) => (
+              <div key={d.gramasi} className="rounded-xl border border-slate-100 bg-slate-50 px-2 py-2.5 text-center">
+                <p className={cn('text-[16px] font-bold tabular-nums leading-none', i % 2 === 0 ? 'text-violet-700' : 'text-indigo-600')}>{d.pcs}</p>
+                <p className="text-[10px] text-slate-400 font-medium mt-1">{d.gramasi}</p>
+              </div>
+            ))}
+          </div>
         ) : <EmptyState text="Belum ada stok shieldtag aktif" />}
       </Card>
 
