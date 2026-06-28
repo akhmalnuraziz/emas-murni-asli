@@ -103,7 +103,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
     gram: parseFloat(r.total_gram.toFixed(3)),
   }))
 
-  const isSelesai = batch.status === 'Selesai'
+  const isSelesai = batch.status === 'terkunci'
   const maxGram = Math.max(bahanMasuk, totalDikasih, totalDiterima, totalGramProduksi, 1)
 
   // Gram flow steps
@@ -171,7 +171,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
                   <h1 className="text-[22px] font-bold text-slate-900 font-mono">{batch.kode}</h1>
                   <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full ${isSelesai ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                     {isSelesai ? <CheckCircle2 size={10}/> : <Clock size={10}/>}
-                    {batch.status ?? 'Proses'}
+                    {batch.status === 'terkunci' ? 'Selesai' : batch.status === 'aktif' ? 'Aktif' : batch.status ?? '—'}
                   </span>
                 </div>
                 <p className="text-[13px] text-slate-400 mt-1">

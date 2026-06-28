@@ -50,7 +50,7 @@ export default async function LaporanPage({
     supabase.from('shieldtag').select('status, gramasi').is('voided_at', null).limit(5000),
     // All-time penjualan for ringkasan (filter cabang jika kepala_cabang)
     (() => {
-      let q = supabase.from('penjualan').select('gramasi, pcs, harga_jual').is('voided_at' as any, null)
+      let q = supabase.from('penjualan').select('gramasi, pcs, harga_jual, total_harga_jual').is('voided_at' as any, null)
       if (cabangFilter) q = (q as any).eq('cabang_kode', cabangFilter)
       return q
     })(),
@@ -85,7 +85,7 @@ export default async function LaporanPage({
   for (const p of penjualanAll ?? []) {
     const g = p.gramasi ?? '?'
     const cur = gMap.get(g) ?? { pcs: 0, total: 0 }
-    gMap.set(g, { pcs: cur.pcs + (p.pcs || 0), total: cur.total + (Number(p.harga_jual) || 0) })
+    gMap.set(g, { pcs: cur.pcs + (p.pcs || 0), total: cur.total + (Number(p.total_harga_jual ?? p.harga_jual) || 0) })
   }
   const penjualanByGramasi = [...gMap.entries()]
     .map(([gramasi, v]) => ({ gramasi, ...v }))

@@ -88,9 +88,8 @@ export default async function DashboardPage({
       .order('created_at', { ascending: false })
       .limit(5),
     supabase.from('mutasi')
-      .select('id, tujuan_cabang, pcs, tanggal_kirim, status_terima')
-      .eq('status_kirim', 'Sudah Dikirim')
-      .eq('status_terima', 'Belum Diterima')
+      .select('id, ke_lokasi, pcs_dikirim, tanggal_kirim, status')
+      .eq('status', 'dikirim')
       .is('voided_at', null)
       .order('tanggal_kirim', { ascending: false })
       .limit(10),

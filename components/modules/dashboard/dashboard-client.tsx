@@ -594,10 +594,10 @@ export default function DashboardClient({
               {mutasiTransit.map((m: any) => (
                 <div key={m.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
                   <div>
-                    <p className="text-[13px] font-medium text-slate-800">{m.tujuan_cabang ?? 'Cabang'}</p>
+                    <p className="text-[13px] font-medium text-slate-800">{m.ke_lokasi ?? m.tujuan_cabang ?? 'Cabang'}</p>
                     <p className="text-[11px] text-slate-400">{formatDate(m.tanggal_kirim)}</p>
                   </div>
-                  <span className="text-[13px] font-semibold text-sky-600 tabular-nums">{m.pcs} pcs</span>
+                  <span className="text-[13px] font-semibold text-sky-600 tabular-nums">{m.pcs_dikirim ?? m.pcs} pcs</span>
                 </div>
               ))}
             </div>

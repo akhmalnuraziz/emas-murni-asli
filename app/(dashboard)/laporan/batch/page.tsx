@@ -51,7 +51,7 @@ export default async function LaporanBatchListPage() {
   }
 
   const totalBatch = batches?.length ?? 0
-  const totalSelesai = batches?.filter(b => b.status === 'Selesai').length ?? 0
+  const totalSelesai = batches?.filter(b => b.status === 'terkunci').length ?? 0
   const totalPcs = Object.values(packMap).reduce((s, v) => s + v, 0)
   const totalShieldtag = Object.values(stMap).reduce((s, v) => s + v.total, 0)
 
@@ -91,7 +91,7 @@ export default async function LaporanBatchListPage() {
           const pcs = packMap[b.kode] ?? 0
           const leb = lebMap[b.kode] ?? { dikasih: 0, diterima: 0 }
           const loss = leb.dikasih > 0 ? ((leb.dikasih - leb.diterima) / leb.dikasih * 100) : 0
-          const isSelesai = b.status === 'Selesai'
+          const isSelesai = b.status === 'terkunci'
           // shieldtag distribution bar widths
           const stTotal = st.total || 1
           const wAktif   = Math.round(st.aktif   / stTotal * 100)
@@ -117,7 +117,7 @@ export default async function LaporanBatchListPage() {
                   </div>
                   <span className={`shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full ${isSelesai ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                     {isSelesai ? <CheckCircle2 size={9}/> : <Clock size={9}/>}
-                    {b.status ?? 'Proses'}
+                    {b.status === 'terkunci' ? 'Selesai' : b.status === 'aktif' ? 'Aktif' : b.status ?? 'Proses'}
                   </span>
                 </div>
 
