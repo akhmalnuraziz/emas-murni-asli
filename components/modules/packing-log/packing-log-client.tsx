@@ -75,6 +75,7 @@ async function filesToBase64(files: File[]): Promise<string[]> {
 }
 
 // ─── FotoPicker ───────────────────────────────────────────────────────────────
+const MAX_FOTO = 10
 function FotoPicker({files,existing=[],onAdd,onRemove,onRemoveExisting,label='Tambah foto',small=false}:{
   files:File[];existing?:string[];onAdd:(f:File[])=>void;onRemove:(i:number)=>void;onRemoveExisting?:(i:number)=>void;label?:string;small?:boolean
 }){
@@ -82,6 +83,13 @@ function FotoPicker({files,existing=[],onAdd,onRemove,onRemoveExisting,label='Ta
   const [lightbox,setLightbox]=useState<string|null>(null)
   useEffect(()=>{const u=files.map(f=>URL.createObjectURL(f));setPrev(u);return()=>u.forEach(u=>URL.revokeObjectURL(u))},[files])
   const s=small?'w-12 h-12':'w-16 h-16'
+  const totalUsed=existing.length+files.length
+  const sisa=MAX_FOTO-totalUsed
+  const isFull=sisa<=0
+  function handleAdd(picked:File[]){
+    if(sisa<=0)return
+    onAdd(picked.slice(0,sisa))
+  }
   return(
     <div className="space-y-2">
       {lightbox&&<Lightbox url={lightbox} onClose={()=>setLightbox(null)}/>}
@@ -102,11 +110,20 @@ function FotoPicker({files,existing=[],onAdd,onRemove,onRemoveExisting,label='Ta
           ))}
         </div>
       )}
-      <label className="flex items-center gap-2 px-3.5 py-2.5 border border-dashed border-violet-200 rounded-xl cursor-pointer hover:border-violet-400 hover:bg-violet-50/50 bg-white/40 transition-all">
-        <Camera size={13}className="text-violet-400 flex-shrink-0"/>
-        <span className={`text-slate-400 ${small?'text-[11px]':'text-[12px]'}`}>{files.length>0?`${files.length} foto baru — klik tambah`:label}</span>
-        <input type="file" accept="image/*" multiple className="hidden" onChange={e=>{onAdd(Array.from(e.target.files??[]));e.currentTarget.value=''}}/>
-      </label>
+      {!isFull?(
+        <label className="flex items-center gap-2 px-3.5 py-2.5 border border-dashed border-violet-200 rounded-xl cursor-pointer hover:border-violet-400 hover:bg-violet-50/50 bg-white/40 transition-all">
+          <Camera size={13}className="text-violet-400 flex-shrink-0"/>
+          <span className={`text-slate-400 ${small?'text-[11px]':'text-[12px]'}`}>
+            {totalUsed>0?`${totalUsed}/${MAX_FOTO} foto · sisa ${sisa} slot`:label}
+          </span>
+          <input type="file" accept="image/*" multiple className="hidden" onChange={e=>{handleAdd(Array.from(e.target.files??[]));e.currentTarget.value=''}}/>
+        </label>
+      ):(
+        <div className="flex items-center gap-2 px-3.5 py-2.5 border border-slate-200 rounded-xl bg-slate-50 text-[11px] text-slate-400">
+          <Camera size={13}className="flex-shrink-0"/>
+          Maksimal {MAX_FOTO} foto tercapai
+        </div>
+      )}
       {files.length>0&&<button type="button"onClick={()=>onRemove(-1)}className="text-[11px] text-red-400 hover:underline">Hapus semua foto baru</button>}
     </div>
   )
