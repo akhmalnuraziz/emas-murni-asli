@@ -390,9 +390,9 @@ export default function DashboardClient({
           </div>
           <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2">
             {gramasiChartData.map((d, i) => (
-              <div key={d.gramasi} className="rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-3 text-center">
-                <p className={cn('text-[18px] font-bold tabular-nums leading-none', i % 2 === 0 ? 'text-violet-700' : 'text-indigo-500')}>{d.pcs}</p>
-                <p className="text-[11px] text-slate-400 font-medium mt-1.5">{d.gramasi}</p>
+              <div key={d.gramasi} className="rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-3 text-center transition-all duration-200 hover:shadow-md hover:border-violet-300">
+                <p className={cn('text-[20px] font-bold tabular-nums leading-none', i % 2 === 0 ? 'text-violet-700' : 'text-indigo-500')}>{d.pcs}</p>
+                <p className="text-[11px] text-slate-400 font-semibold mt-1.5">{d.gramasi}</p>
               </div>
             ))}
           </div>
@@ -414,8 +414,8 @@ export default function DashboardClient({
                   <Icon size={16} className={color} />
                 </div>
                 <div>
-                  <p className="text-[22px] font-semibold text-slate-900 leading-none tabular-nums">{count}</p>
-                  <p className="text-[11px] text-slate-400 font-medium mt-0.5">{label}</p>
+                  <p className="text-[26px] font-bold text-slate-900 leading-none tabular-nums">{count}</p>
+                  <p className="text-[11px] font-semibold text-slate-400 mt-0.5 uppercase tracking-wide">{label}</p>
                 </div>
               </a>
             )
@@ -458,11 +458,11 @@ export default function DashboardClient({
           <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
             {stokAkrilik.map((s) => (
               <div key={s.produk_kode}
-                className="rounded-xl py-3 px-2 text-center bg-white border border-slate-200 transition-all">
-                <p className={cn('text-[18px] font-semibold leading-none tabular-nums', s.stok_qty > 0 ? 'text-slate-800' : 'text-slate-300')}>
+                className="rounded-xl py-3 px-2 text-center bg-white border border-slate-200 transition-all duration-200 hover:shadow-md hover:border-blue-300">
+                <p className={cn('text-[20px] font-bold leading-none tabular-nums', s.stok_qty > 0 ? 'text-slate-800' : 'text-slate-300')}>
                   {s.stok_qty.toLocaleString('id-ID')}
                 </p>
-                <p className="text-[10px] text-slate-400 mt-1 font-medium">{s.gramasi}gr</p>
+                <p className="text-[11px] text-slate-400 mt-1 font-semibold">{s.gramasi}gr</p>
               </div>
             ))}
           </div>
@@ -619,7 +619,7 @@ export default function DashboardClient({
                 </div>
               ))}
             </div>
-          ) : <EmptyState text="Tidak ada mutasi yang menunggu" icon="✓" success />}
+          ) : <EmptyState text="Tidak ada mutasi yang menunggu" success />}
         </Card>
 
         <Card>
@@ -705,26 +705,28 @@ function KpiCard({ label, value, sub, sub2, icon: Icon, iconColor, iconBg, alert
 }) {
   return (
     <div className={cn(
-      'bg-white border rounded-xl p-4 transition-all duration-150 hover:shadow-sm',
-      alert ? 'border-red-200' : 'border-slate-200'
+      'bg-white border rounded-xl p-4 transition-all duration-200 hover:shadow-md hover:border-slate-300',
+      alert ? 'border-red-200 hover:border-red-300' : 'border-slate-200'
     )}>
       <div className="flex items-start justify-between mb-3">
-        <p className="text-[11px] font-medium text-slate-500 leading-tight">{label}</p>
+        <p className="text-[11px] font-semibold text-slate-500 leading-tight uppercase tracking-wide">{label}</p>
         <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', iconBg)}>
           <Icon size={15} className={iconColor} />
         </div>
       </div>
-      <p className="text-[22px] font-semibold text-slate-900 leading-none tabular-nums">{value}</p>
+      <p className="text-[26px] font-bold text-slate-900 leading-none tabular-nums">{value}</p>
       {sub  && <p className="text-[11px] text-slate-400 mt-1.5 font-normal">{sub}</p>}
-      {sub2 && <p className="text-[11px] text-violet-600 font-medium">{sub2}</p>}
+      {sub2 && <p className="text-[11px] text-violet-600 font-semibold mt-0.5">{sub2}</p>}
     </div>
   )
 }
 
-function EmptyState({ text, icon = '—', success }: { text: string; icon?: string; success?: boolean }) {
+function EmptyState({ text, success }: { text: string; icon?: string; success?: boolean }) {
   return (
     <div className="h-20 flex items-center gap-2.5 text-slate-400">
-      <span className={cn('text-[16px]', success ? 'text-green-400' : 'opacity-30')}>{icon}</span>
+      {success
+        ? <CheckCircle2 size={16} className="text-green-400 flex-shrink-0" />
+        : <Package2 size={16} className="opacity-30 flex-shrink-0" />}
       <p className="text-[12px]">{text}</p>
     </div>
   )

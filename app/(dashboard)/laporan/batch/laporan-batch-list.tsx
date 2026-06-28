@@ -72,33 +72,40 @@ export default function LaporanBatchList({
           { label: 'Total Packing',   value: `${stats.totalPcs.toLocaleString()} pcs`,   bg: 'bg-blue-50',   text: 'text-blue-700',   border: 'border-blue-100',   icon: Package2 },
           { label: 'Total Shieldtag', value: stats.totalShieldtag.toLocaleString(),      bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-100', icon: Tag },
         ].map(({ label, value, bg, text, border, icon: Icon }) => (
-          <div key={label} className={`rounded-2xl p-4 border ${bg} ${border} flex items-center gap-3`}>
-            <Icon size={16} className={text} />
-            <div>
-              <p className="text-[10px] font-medium text-slate-400">{label}</p>
-              <p className={`text-[17px] font-bold tabular-nums ${text}`}>{value}</p>
+          <div key={label} className={`rounded-2xl p-4 border ${bg} ${border} flex flex-col gap-1.5 transition-all duration-200 hover:shadow-md`}>
+            <div className="flex items-center gap-1.5">
+              <Icon size={13} className={text} />
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">{label}</p>
             </div>
+            <p className={`text-[22px] font-bold tabular-nums leading-none ${text}`}>{value}</p>
           </div>
         ))}
       </div>
 
       {/* Search + Filter */}
       <div className="flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            value={q}
-            onChange={e => setQ(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && search()}
-            placeholder="Cari kode batch..."
-            className="w-full h-9 pl-8 pr-8 text-[12px] border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400/30 bg-white text-slate-800"
-          />
-          {q && (
-            <button onClick={() => { setQ(''); router.push(buildUrl({ q: '', page: 1 })) }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-              <X size={13} />
-            </button>
-          )}
+        <div className="relative flex-1 min-w-[200px] max-w-sm flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={q}
+              onChange={e => setQ(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && search()}
+              placeholder="Cari kode batch..."
+              className="w-full h-9 pl-8 pr-8 text-[12px] border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-400/30 bg-white text-slate-800"
+            />
+            {q && (
+              <button onClick={() => { setQ(''); router.push(buildUrl({ q: '', page: 1 })) }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                <X size={13} />
+              </button>
+            )}
+          </div>
+          <button onClick={search}
+            className="h-9 px-3 rounded-xl bg-violet-600 text-white text-[12px] font-semibold hover:bg-violet-700 transition-colors flex items-center gap-1.5 shrink-0">
+            <Search size={12} />
+            Cari
+          </button>
         </div>
         <div className="flex gap-1.5">
           {[
@@ -237,10 +244,13 @@ export default function LaporanBatchList({
         })}
 
         {batches.length === 0 && (
-          <div className="col-span-3 py-24 text-center text-slate-400">
+          <div className="col-span-full py-24 text-center text-slate-400">
             <Layers size={36} className="mx-auto mb-3 opacity-20"/>
-            <p className="text-[14px] font-medium">
+            <p className="text-[14px] font-semibold text-slate-500">
               {currentQ ? `Tidak ada batch untuk "${currentQ}"` : 'Belum ada batch terdaftar'}
+            </p>
+            <p className="text-[12px] text-slate-400 mt-1">
+              {currentQ ? 'Coba kata kunci lain atau hapus filter' : 'Tambahkan batch pertama melalui menu Bahan Baku'}
             </p>
           </div>
         )}
