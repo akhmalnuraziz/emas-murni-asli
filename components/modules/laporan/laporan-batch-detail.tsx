@@ -1,6 +1,6 @@
 'use client'
 
-import { Download, ArrowLeft, Package, Layers, Tag, Hammer, TrendingDown, CheckCircle2, Clock, FlaskConical, Shield } from 'lucide-react'
+import { Download, ArrowLeft, Package, Layers, Tag, Hammer, TrendingDown, CheckCircle2, Clock, FlaskConical, Shield, ArrowRight, CircleDot } from 'lucide-react'
 import Link from 'next/link'
 import { formatDate, formatRupiah, cn } from '@/lib/utils'
 import {
@@ -36,54 +36,11 @@ interface Props {
 
 const canSeeHpp = (r: string) => ['owner', 'admin_pusat', 'accounting', 'manager'].includes(r)
 const fg = (n: number | null | undefined, d = 3) => n != null ? Number(n).toFixed(d) : '—'
-const pct = (part: number, total: number) => total === 0 ? '0.00%' : (part / total * 100).toFixed(2) + '%'
-const fmtGr = (n: number) => n.toFixed(3) + ' gr'
+const pct = (part: number, total: number) => total === 0 ? '0.00' : (part / total * 100).toFixed(2)
 
 const PALETTE = {
   violet: '#7C3AED', green: '#16A34A', red: '#DC2626',
-  amber: '#D97706', blue: '#2563EB', cyan: '#0891B2', slate: '#64748B',
-}
-
-function StatCard({ label, value, sub, icon: Icon, accent }: {
-  label: string; value: string; sub?: string; icon: any; accent: string
-}) {
-  return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-start gap-3">
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-        style={{ background: accent + '15' }}>
-        <Icon size={18} style={{ color: accent }} />
-      </div>
-      <div className="min-w-0">
-        <p className="text-[11px] font-medium text-slate-400">{label}</p>
-        <p className="text-[19px] font-bold tabular-nums text-slate-900 leading-tight mt-0.5">{value}</p>
-        {sub && <p className="text-[11px] text-slate-400 mt-0.5">{sub}</p>}
-      </div>
-    </div>
-  )
-}
-
-function SectionHeader({ icon: Icon, title, sub, color }: { icon: any; title: string; sub?: string; color: string }) {
-  return (
-    <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
-      <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: color + '15' }}>
-        <Icon size={15} style={{ color }} />
-      </div>
-      <div>
-        <p className="text-[13px] font-bold text-slate-800">{title}</p>
-        {sub && <p className="text-[11px] text-slate-400">{sub}</p>}
-      </div>
-    </div>
-  )
-}
-
-const CustomTooltip = ({ active, payload }: any) => {
-  if (!active || !payload?.length) return null
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-lg px-3 py-2 text-[12px]">
-      <p className="font-semibold text-slate-800">{payload[0].name}</p>
-      <p className="text-slate-500">{fmtGr(payload[0].value)} · {payload[0].payload.pct}</p>
-    </div>
-  )
+  amber: '#D97706', blue: '#2563EB', cyan: '#0891B2',
 }
 
 const PieTooltip = ({ active, payload }: any) => {
@@ -132,14 +89,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
   const stTransit = shieldtags.filter(s => s.status === 'Transit').length
   const stTerjual = shieldtags.filter(s => s.status === 'Terjual').length
   const stTotal   = shieldtags.length
-
-  // Charts data
-  const flowData = [
-    { name: 'Bahan Masuk', gram: bahanMasuk, pct: '100%', fill: PALETTE.violet },
-    { name: 'Dikasih Lebur', gram: totalDikasih, pct: pct(totalDikasih, bahanMasuk), fill: PALETTE.cyan },
-    { name: 'Siap Cetak', gram: totalDiterima, pct: pct(totalDiterima, totalDikasih), fill: PALETTE.green },
-    { name: 'Gram Produksi', gram: totalGramProduksi, pct: pct(totalGramProduksi, totalDiterima), fill: '#15803D' },
-  ]
+  const terjualPct = stTotal > 0 ? (stTerjual / stTotal * 100).toFixed(0) : '0'
 
   const pieData = [
     { name: 'Aktif',   value: stAktif,   fill: '#16A34A' },
@@ -154,6 +104,15 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
   }))
 
   const isSelesai = batch.status === 'Selesai'
+  const maxGram = Math.max(bahanMasuk, totalDikasih, totalDiterima, totalGramProduksi, 1)
+
+  // Gram flow steps
+  const flowSteps = [
+    { label: 'Bahan Masuk',   gram: bahanMasuk,    color: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE', icon: Package },
+    { label: 'Dikasih Lebur', gram: totalDikasih,  color: '#0891B2', bg: '#ECFEFF', border: '#A5F3FC', icon: FlaskConical },
+    { label: 'Siap Cetak',    gram: totalDiterima, color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0', icon: CircleDot },
+    { label: 'Gram Produksi', gram: totalGramProduksi, color: '#15803D', bg: '#DCFCE7', border: '#86EFAC', icon: Hammer },
+  ]
 
   // Export CSV
   function exportCSV() {
@@ -166,7 +125,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
     rows.push(['Bahan Masuk', fg(bahanMasuk), 'gr'])
     rows.push(['Total Dikasih Lebur', fg(totalDikasih), 'gr'])
     rows.push(['Total Diterima (Siap Cetak)', fg(totalDiterima), 'gr'])
-    rows.push(['Losses Peleburan', fg(lossLebur), 'gr', pct(lossLebur, totalDikasih)])
+    rows.push(['Losses Peleburan', fg(lossLebur), 'gr', pct(lossLebur, totalDikasih) + '%'])
     rows.push([])
     rows.push(['PRODUKSI PER GRAMASI'])
     rows.push(['Gramasi', 'PCS', 'Total Gram', 'Sisa Serbuk'])
@@ -175,7 +134,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
     rows.push([])
     rows.push(['LOSSES'])
     rows.push(['Losses Produksi', fg(lossProduksi)])
-    rows.push(['TOTAL LOSSES', fg(totalLosses), pct(totalLosses, totalDikasih)])
+    rows.push(['TOTAL LOSSES', fg(totalLosses), pct(totalLosses, totalDikasih) + '%'])
     const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
     const a = document.createElement('a')
@@ -187,99 +146,148 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
   return (
     <div className="space-y-5 pb-16 max-w-5xl">
 
-      {/* ── Header ── */}
-      <div>
-        <Link href="/laporan/batch"
-          className="inline-flex items-center gap-1.5 text-[12px] text-slate-400 hover:text-violet-600 mb-4 transition-colors group">
-          <ArrowLeft size={12} className="group-hover:-translate-x-0.5 transition-transform" />
-          Kembali ke Laporan Batch
-        </Link>
+      {/* ── Back nav ── */}
+      <Link href="/laporan/batch"
+        className="inline-flex items-center gap-1.5 text-[12px] text-slate-400 hover:text-violet-600 transition-colors group">
+        <ArrowLeft size={12} className="group-hover:-translate-x-0.5 transition-transform" />
+        Kembali ke Laporan Batch
+      </Link>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          {/* Gradient bar */}
-          <div className={`h-1.5 ${isSelesai ? 'bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400' : 'bg-gradient-to-r from-violet-500 via-indigo-500 to-blue-500'}`} />
+      {/* ── Hero header card ── */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className={`h-1.5 ${isSelesai
+          ? 'bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400'
+          : 'bg-gradient-to-r from-violet-500 via-indigo-500 to-blue-500'}`} />
 
-          <div className="px-6 py-5 flex items-start justify-between gap-4 flex-wrap">
+        <div className="p-6">
+          {/* Top row: identity + export */}
+          <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isSelesai ? 'bg-green-50' : 'bg-violet-50'}`}>
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${isSelesai ? 'bg-green-50' : 'bg-violet-50'}`}>
                 <Layers size={22} className={isSelesai ? 'text-green-600' : 'text-violet-600'} />
               </div>
               <div>
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  <h1 className="text-[22px] font-bold text-slate-900 font-mono tracking-wide">{batch.kode}</h1>
-                  <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full ${isSelesai ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                    {isSelesai ? <CheckCircle2 size={11}/> : <Clock size={11}/>}
+                  <h1 className="text-[22px] font-bold text-slate-900 font-mono">{batch.kode}</h1>
+                  <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full ${isSelesai ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {isSelesai ? <CheckCircle2 size={10}/> : <Clock size={10}/>}
                     {batch.status ?? 'Proses'}
                   </span>
                 </div>
                 <p className="text-[13px] text-slate-400 mt-1">
                   {formatDate(batch.tanggal)}
-                  {batch.supplier && <> · <span className="text-slate-600">{batch.supplier}</span></>}
+                  {batch.supplier && <> · <span className="font-medium text-slate-600">{batch.supplier}</span></>}
                 </p>
-                {batch.catatan && <p className="text-[12px] text-slate-400 italic mt-0.5">"{batch.catatan}"</p>}
+                {batch.catatan && <p className="text-[11px] italic text-slate-400 mt-0.5">"{batch.catatan}"</p>}
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button onClick={exportCSV}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 bg-white text-[12px] font-semibold text-slate-600 hover:border-violet-300 hover:text-violet-700 transition-all">
-                <Download size={13} /> Export CSV
-              </button>
-            </div>
+            <button onClick={exportCSV}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 text-[12px] font-semibold text-slate-600 hover:border-violet-300 hover:text-violet-700 transition-all">
+              <Download size={13}/> Export CSV
+            </button>
+          </div>
+
+          {/* KPI strip inside header */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Bahan Masuk', val: `${fg(bahanMasuk, 2)} gr`, color: PALETTE.violet, bg: '#F5F3FF' },
+              { label: 'Siap Cetak', val: `${fg(totalDiterima, 2)} gr`, sub: `dari ${fg(totalDikasih,2)} gr lebur`, color: PALETTE.cyan, bg: '#ECFEFF' },
+              { label: 'Gram Produksi', val: `${fg(totalGramProduksi, 2)} gr`, sub: `${totalPcs} pcs`, color: PALETTE.green, bg: '#F0FDF4' },
+              { label: 'Total Losses', val: `${fg(totalLosses, 2)} gr`, sub: `${totalLossesPct.toFixed(2)}% dari bahan masuk`,
+                color: totalLosses > 0 ? PALETTE.red : '#64748B', bg: totalLosses > 0 ? '#FEF2F2' : '#F8FAFC' },
+            ].map(({ label, val, sub, color, bg }) => (
+              <div key={label} className="rounded-xl p-3.5 border" style={{ background: bg, borderColor: color + '30' }}>
+                <p className="text-[10px] font-medium text-slate-400">{label}</p>
+                <p className="text-[17px] font-bold tabular-nums mt-0.5" style={{ color }}>{val}</p>
+                {sub && <p className="text-[10px] text-slate-400 mt-0.5">{sub}</p>}
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* ── KPI Cards ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatCard label="Bahan Masuk" value={`${fg(bahanMasuk, 2)} gr`} icon={Package} accent={PALETTE.violet} />
-        <StatCard label="Siap Cetak" value={`${fg(totalDiterima, 2)} gr`}
-          sub={`dari ${fg(totalDikasih, 2)} gr lebur`} icon={FlaskConical} accent={PALETTE.cyan} />
-        <StatCard label="Total Produksi" value={`${fg(totalGramProduksi, 2)} gr`}
-          sub={`${totalPcs.toLocaleString()} pcs`} icon={Hammer} accent={PALETTE.green} />
-        <StatCard label="Total Losses"
-          value={`${fg(totalLosses, 2)} gr`}
-          sub={`${totalLossesPct.toFixed(2)}% dari bahan masuk`}
-          icon={TrendingDown}
-          accent={totalLosses > 0 ? PALETTE.red : PALETTE.slate} />
-      </div>
-
-      {/* ── Alur Gram Chart + Pie Shieldtag ── */}
+      {/* ── Gram Flow Funnel + Shieldtag ── */}
       <div className="grid sm:grid-cols-5 gap-4">
 
-        {/* Bar chart alur gram — 3 cols */}
+        {/* Gram flow — visual step funnel */}
         <div className="sm:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <SectionHeader icon={TrendingDown} title="Alur Gram Batch" sub="Dari bahan masuk hingga hasil produksi" color={PALETTE.violet} />
-          <div className="px-4 pt-2 pb-4">
-            <ResponsiveContainer width="100%" height={210}>
-              <BarChart data={flowData} barSize={32} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false}
-                  tickFormatter={v => v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v.toFixed(0)} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="gram" radius={[6, 6, 0, 0]} isAnimationActive>
-                  {flowData.map((d, i) => <Cell key={i} fill={d.fill} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
+            <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center">
+              <TrendingDown size={15} className="text-violet-600" />
+            </div>
+            <div>
+              <p className="text-[13px] font-bold text-slate-800">Alur Produksi Gram</p>
+              <p className="text-[11px] text-slate-400">Dari bahan masuk hingga hasil cetak</p>
+            </div>
+          </div>
 
-            {/* Losses row */}
-            <div className="mt-2 grid grid-cols-2 gap-2">
+          <div className="p-5 space-y-3">
+            {flowSteps.map((step, i) => {
+              const barW = maxGram > 0 ? (step.gram / maxGram * 100) : 0
+              const prevGram = i === 0 ? bahanMasuk : flowSteps[i - 1].gram
+              const stepPct = prevGram > 0 ? (step.gram / prevGram * 100) : 100
+              const Icon = step.icon
+              return (
+                <div key={step.label}>
+                  {/* Arrow connector */}
+                  {i > 0 && (
+                    <div className="flex items-center gap-2 px-2 py-1 mb-2">
+                      <div className="w-6 flex justify-center">
+                        <div className="w-px h-4 bg-slate-200" />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <ArrowRight size={10} className="text-slate-300" />
+                        <span className="text-[10px] font-medium text-slate-400">
+                          loss: {fg(flowSteps[i-1].gram - step.gram, 3)} gr
+                          ({(100 - stepPct).toFixed(2)}%)
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {/* Step card */}
+                  <div className="rounded-xl border p-3" style={{ borderColor: step.border, background: step.bg }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: step.color + '20' }}>
+                          <Icon size={11} style={{ color: step.color }} />
+                        </div>
+                        <p className="text-[11px] font-semibold text-slate-600">{step.label}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[17px] font-bold tabular-nums" style={{ color: step.color }}>
+                          {step.gram > 0 ? step.gram.toFixed(3) : '—'} <span className="text-[11px] font-normal">gr</span>
+                        </p>
+                        {i > 0 && (
+                          <p className="text-[10px] font-semibold" style={{ color: step.color }}>
+                            {stepPct.toFixed(2)}% dari sebelumnya
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {/* Progress bar */}
+                    <div className="h-1.5 rounded-full bg-white/70">
+                      <div className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${barW}%`, background: step.color }} />
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+
+            {/* Loss summary */}
+            <div className="mt-4 grid grid-cols-2 gap-2 pt-3 border-t border-slate-100">
               {[
-                { label: 'Loss Peleburan', val: lossLebur, of: totalDikasih, color: '#F59E0B' },
-                { label: 'Loss Produksi',  val: lossProduksi, of: totalDiterima, color: PALETTE.red },
-              ].map(({ label, val, of: ofVal, color }) => {
-                const p = ofVal > 0 ? val / ofVal * 100 : 0
+                { label: 'Loss Peleburan', val: lossLebur, ref: totalDikasih, color: '#F59E0B' },
+                { label: 'Loss Produksi',  val: lossProduksi, ref: totalDiterima, color: PALETTE.red },
+              ].map(({ label, val, ref, color }) => {
+                const p = ref > 0 ? val / ref * 100 : 0
                 return (
-                  <div key={label} className="rounded-xl px-3 py-2.5" style={{ background: color + '10', border: `1px solid ${color}20` }}>
+                  <div key={label} className="rounded-xl px-3 py-2.5" style={{ background: color + '0D', border: `1px solid ${color}25` }}>
                     <p className="text-[10px] font-medium text-slate-400">{label}</p>
-                    <div className="flex items-end justify-between mt-0.5">
-                      <p className="text-[14px] font-bold tabular-nums" style={{ color }}>{fg(val, 3)} gr</p>
-                      <p className="text-[11px] font-semibold" style={{ color }}>{p.toFixed(2)}%</p>
-                    </div>
-                    <div className="mt-1.5 h-1 rounded-full bg-white/60">
-                      <div className="h-full rounded-full" style={{ width: `${Math.min(100, p * 5)}%`, background: color }} />
-                    </div>
+                    <p className="text-[15px] font-bold tabular-nums mt-0.5" style={{ color }}>
+                      {fg(val, 3)} <span className="text-[10px] font-medium">gr</span>
+                    </p>
+                    <p className="text-[10px] font-semibold" style={{ color }}>{p.toFixed(2)}%</p>
                   </div>
                 )
               })}
@@ -287,96 +295,153 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
           </div>
         </div>
 
-        {/* Pie shieldtag — 2 cols */}
-        <div className="sm:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <SectionHeader icon={Shield} title="Shieldtag" sub={`${stTotal} total terdaftar`} color={PALETTE.green} />
-          <div className="px-4 pb-4">
-            {stTotal > 0 ? (
-              <>
-                <ResponsiveContainer width="100%" height={160}>
+        {/* Shieldtag donut + stats */}
+        <div className="sm:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
+            <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
+              <Shield size={15} className="text-green-600" />
+            </div>
+            <div>
+              <p className="text-[13px] font-bold text-slate-800">Status Shieldtag</p>
+              <p className="text-[11px] text-slate-400">{stTotal} total terdaftar</p>
+            </div>
+          </div>
+
+          {stTotal > 0 ? (
+            <div className="p-4 flex-1 flex flex-col">
+              {/* Donut */}
+              <div className="relative">
+                <ResponsiveContainer width="100%" height={170}>
                   <PieChart>
-                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={42} outerRadius={66}
+                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={46} outerRadius={70}
                       dataKey="value" paddingAngle={3} isAnimationActive>
                       {pieData.map((d, i) => <Cell key={i} fill={d.fill} />)}
                     </Pie>
                     <Tooltip content={<PieTooltip />} />
                   </PieChart>
                 </ResponsiveContainer>
-
-                <div className="space-y-2 mt-1">
-                  {[
-                    { label: 'Aktif', val: stAktif, color: '#16A34A' },
-                    { label: 'Terjual', val: stTerjual, color: PALETTE.violet },
-                    { label: 'Transit', val: stTransit, color: PALETTE.blue },
-                  ].filter(d => d.val > 0).map(({ label, val, color }) => (
-                    <div key={label} className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: color }} />
-                      <p className="text-[12px] text-slate-600 flex-1">{label}</p>
-                      <p className="text-[12px] font-bold tabular-nums text-slate-800">{val}</p>
-                      <p className="text-[10px] text-slate-400 w-12 text-right">{pct(val, stTotal)}</p>
-                    </div>
-                  ))}
+                {/* Center label */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <p className="text-[22px] font-bold text-slate-900 tabular-nums">{terjualPct}%</p>
+                  <p className="text-[10px] text-slate-400 font-medium">Terjual</p>
                 </div>
-              </>
-            ) : (
-              <div className="py-10 text-center text-slate-300">
-                <Shield size={28} className="mx-auto mb-2 opacity-40" />
-                <p className="text-[12px]">Belum ada shieldtag</p>
               </div>
-            )}
-          </div>
+
+              {/* Legend bars */}
+              <div className="space-y-2.5 mt-2">
+                {[
+                  { label: 'Aktif',   val: stAktif,   color: '#16A34A' },
+                  { label: 'Terjual', val: stTerjual, color: PALETTE.violet },
+                  { label: 'Transit', val: stTransit, color: PALETTE.blue },
+                ].filter(d => d.val > 0).map(({ label, val, color }) => {
+                  const p = stTotal > 0 ? val / stTotal * 100 : 0
+                  return (
+                    <div key={label}>
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2 h-2 rounded-full" style={{ background: color }} />
+                          <p className="text-[11px] font-medium text-slate-600">{label}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-[11px] font-bold tabular-nums text-slate-800">{val}</p>
+                          <p className="text-[10px] text-slate-400 w-10 text-right">{p.toFixed(1)}%</p>
+                        </div>
+                      </div>
+                      <div className="h-1 rounded-full bg-slate-100">
+                        <div className="h-full rounded-full" style={{ width: `${p}%`, background: color }} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Tag count */}
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                  <Tag size={11} /> Total Shieldtag
+                </div>
+                <p className="text-[18px] font-bold text-slate-900 tabular-nums">{stTotal}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center py-10 text-slate-300">
+              <Shield size={32} className="mb-2 opacity-30" />
+              <p className="text-[12px]">Belum ada shieldtag</p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ── Produksi per Gramasi Chart ── */}
+      {/* ── Produksi per Gramasi ── */}
       {gramasiRows.length > 0 && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <SectionHeader icon={Hammer} title="Produksi per Gramasi" sub={`${totalPcs} pcs · ${fg(totalGramProduksi, 2)} gr total`} color={PALETTE.violet} />
-          <div className="grid sm:grid-cols-2 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
-            {/* Chart */}
-            <div className="p-4">
-              <ResponsiveContainer width="100%" height={Math.max(160, gramasiRows.length * 40)}>
-                <BarChart data={gramasiChartData} layout="vertical" barSize={14} margin={{ left: 8, right: 20, top: 4, bottom: 4 }}>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center">
+                <Hammer size={15} className="text-violet-600" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Produksi per Gramasi</p>
+                <p className="text-[11px] text-slate-400">{totalPcs} pcs · {fg(totalGramProduksi, 2)} gr total</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-5 gap-0 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
+            {/* Horizontal bar chart */}
+            <div className="sm:col-span-3 p-4">
+              <ResponsiveContainer width="100%" height={Math.max(160, gramasiRows.length * 48)}>
+                <BarChart data={gramasiChartData} layout="vertical" barSize={12}
+                  margin={{ left: 4, right: 24, top: 4, bottom: 4 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
                   <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                  <YAxis type="category" dataKey="gramasi" tick={{ fontSize: 11, fill: '#475569', fontWeight: 600 }} axisLine={false} tickLine={false} width={36} />
-                  <Tooltip formatter={(v: any, name: any) => [name === 'pcs' ? `${v} pcs` : `${v} gr`, name === 'pcs' ? 'PCS' : 'Gram']} />
-                  <Bar dataKey="pcs" fill={PALETTE.violet} radius={[0, 4, 4, 0]} name="pcs" />
-                  <Bar dataKey="gram" fill={PALETTE.green} radius={[0, 4, 4, 0]} name="gram" />
+                  <YAxis type="category" dataKey="gramasi"
+                    tick={{ fontSize: 12, fill: '#475569', fontWeight: 700 }}
+                    axisLine={false} tickLine={false} width={40} />
+                  <Tooltip formatter={(v: any, name: any) => [
+                    name === 'pcs' ? `${v} pcs` : `${v} gr`,
+                    name === 'pcs' ? 'PCS' : 'Gram',
+                  ]} />
+                  <Bar dataKey="pcs" fill={PALETTE.violet} radius={[0, 6, 6, 0]} name="pcs" />
+                  <Bar dataKey="gram" fill={PALETTE.green} radius={[0, 6, 6, 0]} name="gram" />
                 </BarChart>
               </ResponsiveContainer>
-              <div className="flex gap-4 justify-center mt-2">
-                <span className="flex items-center gap-1.5 text-[10px] text-slate-500"><span className="w-3 h-2 rounded-sm bg-violet-600 inline-block"/>PCS</span>
-                <span className="flex items-center gap-1.5 text-[10px] text-slate-500"><span className="w-3 h-2 rounded-sm bg-green-600 inline-block"/>Gram</span>
+              <div className="flex gap-5 justify-center mt-1">
+                <span className="flex items-center gap-1.5 text-[10px] font-medium text-slate-500">
+                  <span className="w-3 h-2 rounded bg-violet-600 inline-block"/>PCS
+                </span>
+                <span className="flex items-center gap-1.5 text-[10px] font-medium text-slate-500">
+                  <span className="w-3 h-2 rounded bg-green-600 inline-block"/>Gram
+                </span>
               </div>
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto">
+            <div className="sm:col-span-2 overflow-x-auto">
               <table className="w-full text-[12px]">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-100">
+                  <tr className="bg-slate-50/80 border-b border-slate-100">
                     {['Gramasi', 'PCS', 'Gram', 'Serbuk'].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-[10px] font-medium text-slate-400 uppercase tracking-wide">{h}</th>
+                      <th key={h} className="px-3 py-3 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {gramasiRows.map(r => (
-                    <tr key={r.gramasi} className="hover:bg-slate-50/60">
-                      <td className="px-4 py-3 font-bold text-slate-800">{r.gramasi} gr</td>
-                      <td className="px-4 py-3 font-semibold tabular-nums text-violet-700">{r.pcs}</td>
-                      <td className="px-4 py-3 font-semibold tabular-nums text-green-700">{fg(r.total_gram, 3)}</td>
-                      <td className="px-4 py-3 font-semibold tabular-nums text-amber-600">{fg(r.sisa_serbuk, 3)}</td>
+                    <tr key={r.gramasi} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="px-3 py-3 font-bold text-slate-800">{r.gramasi} gr</td>
+                      <td className="px-3 py-3 font-bold tabular-nums text-violet-700">{r.pcs}</td>
+                      <td className="px-3 py-3 font-semibold tabular-nums text-green-700">{fg(r.total_gram, 3)}</td>
+                      <td className="px-3 py-3 font-semibold tabular-nums text-amber-600">{fg(r.sisa_serbuk, 3)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t-2 border-slate-200 bg-slate-50/80">
-                    <td className="px-4 py-3 text-[11px] font-bold text-slate-700 uppercase tracking-wide">Total</td>
-                    <td className="px-4 py-3 font-bold tabular-nums text-violet-700">{totalPcs}</td>
-                    <td className="px-4 py-3 font-bold tabular-nums text-green-700">{fg(totalGramProduksi, 3)}</td>
-                    <td className="px-4 py-3 font-bold tabular-nums text-amber-600">{fg(totalSerbuk, 3)}</td>
+                  <tr className="border-t-2 border-slate-200 bg-slate-50">
+                    <td className="px-3 py-3 text-[10px] font-bold text-slate-500 uppercase">Total</td>
+                    <td className="px-3 py-3 font-bold tabular-nums text-violet-700">{totalPcs}</td>
+                    <td className="px-3 py-3 font-bold tabular-nums text-green-700">{fg(totalGramProduksi, 3)}</td>
+                    <td className="px-3 py-3 font-bold tabular-nums text-amber-600">{fg(totalSerbuk, 3)}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -385,17 +450,24 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
         </div>
       )}
 
-      {/* ── Peleburan ── */}
+      {/* ── Peleburan detail ── */}
       {peleburans.length > 0 && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <SectionHeader icon={FlaskConical} title="Detail Peleburan"
-            sub={`${peleburans.length} sesi · loss rata-rata ${lossPct.toFixed(2)}%`} color={PALETTE.cyan} />
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
+            <div className="w-8 h-8 rounded-lg bg-cyan-50 flex items-center justify-center">
+              <FlaskConical size={15} className="text-cyan-600" />
+            </div>
+            <div>
+              <p className="text-[13px] font-bold text-slate-800">Detail Peleburan</p>
+              <p className="text-[11px] text-slate-400">{peleburans.length} sesi · loss rata-rata {lossPct.toFixed(2)}%</p>
+            </div>
+          </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[620px] text-[12px]">
+            <table className="w-full min-w-[580px] text-[12px]">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100">
                   {['Kode', 'Tanggal', 'Tim', 'Dikasih', 'Diterima', 'Loss', '%', 'Status'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-[10px] font-medium text-slate-400 uppercase tracking-wide whitespace-nowrap">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wide whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -403,7 +475,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
                 {peleburans.map(p => {
                   const loss = Number(p.dikasih_gram) - Number(p.diterima_gram ?? 0)
                   return (
-                    <tr key={p.id} className="hover:bg-cyan-50/20">
+                    <tr key={p.id} className="hover:bg-cyan-50/20 transition-colors">
                       <td className="px-4 py-3 font-mono font-bold text-cyan-700">{p.kode}</td>
                       <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatDate(p.tanggal)}</td>
                       <td className="px-4 py-3 text-slate-700">{p.tim_nama ?? '—'}</td>
@@ -414,8 +486,8 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
                       <td className="px-4 py-3 font-semibold tabular-nums text-red-500">
                         {p.diterima_gram != null ? fg(loss) : '—'}
                       </td>
-                      <td className="px-4 py-3 text-slate-400">
-                        {p.diterima_gram != null ? pct(loss, Number(p.dikasih_gram)) : '—'}
+                      <td className="px-4 py-3 text-slate-400 tabular-nums">
+                        {p.diterima_gram != null ? pct(loss, Number(p.dikasih_gram)) + '%' : '—'}
                       </td>
                       <td className="px-4 py-3">
                         <span className={cn('text-[10px] font-bold px-2 py-0.5 rounded-full',
@@ -430,12 +502,12 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
                 })}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-slate-200 bg-slate-50/80">
-                  <td className="px-4 py-3 text-[11px] font-bold text-slate-700 uppercase tracking-wide" colSpan={3}>Total</td>
+                <tr className="border-t-2 border-slate-200 bg-slate-50">
+                  <td className="px-4 py-3 text-[10px] font-bold text-slate-500 uppercase" colSpan={3}>Total</td>
                   <td className="px-4 py-3 font-bold tabular-nums text-slate-800">{fg(totalDikasih)}</td>
                   <td className="px-4 py-3 font-bold tabular-nums text-green-700">{fg(totalDiterima)}</td>
                   <td className="px-4 py-3 font-bold tabular-nums text-red-500">{fg(lossLebur)}</td>
-                  <td className="px-4 py-3 font-bold text-red-500">{pct(lossLebur, totalDikasih)}</td>
+                  <td className="px-4 py-3 font-bold text-red-500">{pct(lossLebur, totalDikasih)}%</td>
                   <td />
                 </tr>
               </tfoot>
@@ -447,20 +519,29 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
       {/* ── Packing ── */}
       {packings.length > 0 && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <SectionHeader icon={Package} title="Packing"
-            sub={`${packings.length} entry · ${packings.reduce((s, p) => s + p.pcs, 0)} pcs total`} color={PALETTE.blue} />
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+              <Package size={15} className="text-blue-600" />
+            </div>
+            <div>
+              <p className="text-[13px] font-bold text-slate-800">Packing</p>
+              <p className="text-[11px] text-slate-400">
+                {packings.length} entry · {packings.reduce((s, p) => s + p.pcs, 0)} pcs total
+              </p>
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[420px] text-[12px]">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100">
                   {['Kode', 'Tanggal', 'Gramasi', 'PCS', 'Total Gram', 'PIC'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-[10px] font-medium text-slate-400 uppercase tracking-wide whitespace-nowrap">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wide whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {packings.map(p => (
-                  <tr key={p.id} className="hover:bg-blue-50/10">
+                  <tr key={p.id} className="hover:bg-blue-50/10 transition-colors">
                     <td className="px-4 py-3 font-mono font-bold text-blue-700">{p.kode}</td>
                     <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatDate(p.tanggal)}</td>
                     <td className="px-4 py-3 font-semibold text-slate-800">{p.gramasi ?? '—'} gr</td>
@@ -475,19 +556,24 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
         </div>
       )}
 
-      {/* ── HPP info ── */}
+      {/* ── HPP ── */}
       {showHpp && batch.hpp_gr != null && (
-        <div className="bg-amber-50 rounded-2xl border border-amber-100 p-5">
-          <p className="text-[11px] font-semibold text-amber-600 uppercase tracking-wide mb-3">Informasi HPP (Rahasia)</p>
+        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-100 p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 rounded-lg bg-amber-100 flex items-center justify-center">
+              <Tag size={12} className="text-amber-700" />
+            </div>
+            <p className="text-[12px] font-bold text-amber-700 uppercase tracking-wide">Informasi HPP</p>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {[
               { label: 'HPP per Gram', value: formatRupiah(batch.hpp_gr) },
               { label: 'HPP Total Produksi', value: formatRupiah(batch.hpp_gr * totalGramProduksi) },
               ...(batch.harga_beli != null ? [{ label: 'Harga Beli', value: formatRupiah(batch.harga_beli) }] : []),
             ].map(({ label, value }) => (
-              <div key={label} className="bg-white/60 rounded-xl p-3 border border-amber-100">
-                <p className="text-[10px] font-medium text-amber-600">{label}</p>
-                <p className="text-[15px] font-bold text-amber-900 tabular-nums mt-0.5">{value}</p>
+              <div key={label} className="bg-white/70 rounded-xl p-3.5 border border-amber-100">
+                <p className="text-[10px] font-semibold text-amber-600">{label}</p>
+                <p className="text-[16px] font-bold text-amber-900 tabular-nums mt-1">{value}</p>
               </div>
             ))}
           </div>
