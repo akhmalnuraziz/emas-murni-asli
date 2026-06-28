@@ -115,7 +115,7 @@ export default async function KpiTimPage({
     const targetSerah = pengaturan[`kpi_target_tim_${tim.id}`] ?? 0
 
     if (!stats || stats.totalSerah === 0 || stats.count === 0) {
-      return { ...tim, kpi: null, bintang: 0, stats: null, targetSerah }
+      return { ...tim, kpi: null, bintang: 0, stats: null, targetSerah, achievementPct: null }
     }
 
     const gainGram     = stats.totalTerima - stats.totalSerah
