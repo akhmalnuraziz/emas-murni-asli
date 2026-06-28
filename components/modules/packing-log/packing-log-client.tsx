@@ -362,8 +362,8 @@ function RejectModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>voi
 }
 
 // ─── Packing Card (mobile) ────────────────────────────────────────────────────
-function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint,onShieldtagClick,onReject}:{
-  p:any;canManage:boolean;canDelete:boolean;onEdit:()=>void;onDelete:()=>void;onPrint:()=>void;onShieldtagClick?:()=>void;onReject?:()=>void
+function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint,onShieldtagClick,onReject,onRejectDetail}:{
+  p:any;canManage:boolean;canDelete:boolean;onEdit:()=>void;onDelete:()=>void;onPrint:()=>void;onShieldtagClick?:()=>void;onReject?:()=>void;onRejectDetail?:()=>void
 }){
   const [lightbox,setLightbox]=useState<string|null>(null)
   const fotos=Array.isArray(p.fotos)?p.fotos:[]
@@ -376,7 +376,7 @@ function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint,onShieldtagC
         <span className="text-[12px] font-mono font-semibold text-violet-600">{p.kode}</span>
         <div className="flex items-center gap-1.5">
           {isPrinted&&<span className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-emerald-700 bg-emerald-50">✓ Cetak</span>}
-          {(p.pcs_reject??0)>0&&<span className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-orange-600 bg-orange-50">Reject {p.pcs_reject}pcs</span>}
+          {(p.pcs_reject??0)>0&&<button type="button" onClick={onRejectDetail} className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-orange-600 bg-orange-50 hover:bg-orange-100 transition-colors cursor-pointer">Reject {p.pcs_reject}pcs</button>}
           <button onClick={onPrint}className="w-7 h-7 rounded-xl bg-violet-50 text-violet-500 flex items-center justify-center hover:bg-violet-100"title="Print"><Printer size={12}/></button>
           {canManage&&!(p.pcs_reject>0)&&stCount<p.pcs_dipack&&<button onClick={onReject}className="w-7 h-7 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center hover:bg-orange-100"title="Laporkan Reject"><ShieldX size={11}/></button>}
           {canManage&&<button onClick={onEdit}className="w-7 h-7 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-100"title="Edit"><Edit2 size={11}/></button>}
@@ -423,6 +423,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
   const [lightbox,setLightbox]=useState<string|null>(null)
   const [selectedIds,setSelectedIds]=useState<Set<number>>(new Set())
   const [stModal,setStModal]=useState<{kode:string;list:{kode:string;status:string;lokasi:string|null}[]}|null>(null)
+  const [rejectDetail,setRejectDetail]=useState<any|null>(null)
 
   function toggleSelect(id:number){setSelectedIds(prev=>{const s=new Set(prev);s.has(id)?s.delete(id):s.add(id);return s})}
   function toggleSelectAll(records:any[]){
@@ -592,7 +593,8 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
               onDelete={()=>{setActive(p);setModal('delete')}}
               onPrint={()=>handlePrint(p)}
               onShieldtagClick={()=>{ const list=shieldtagByPacking[p.id]??[]; if(list.length>0) setStModal({kode:p.kode,list}) }}
-              onReject={()=>{setActive(p);setErr('');setModal('reject')}}/>
+              onReject={()=>{setActive(p);setErr('');setModal('reject')}}
+              onRejectDetail={()=>setRejectDetail(p)}/>
           ))}
         </div>
 
@@ -659,9 +661,9 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
                           🏷 {stCount}/{p.pcs_dipack-(p.pcs_reject??0)}
                         </button>
                         {(p.pcs_reject??0)>0&&(
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-500 whitespace-nowrap">
+                          <button type="button" onClick={()=>setRejectDetail(p)} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-500 whitespace-nowrap hover:bg-orange-100 transition-colors cursor-pointer">
                             Reject {p.pcs_reject}pcs
-                          </span>
+                          </button>
                         )}
                       </div>
                     </td>
@@ -734,6 +736,51 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
 
       {stModal && <ShieldtagListModal kode={stModal.kode} list={stModal.list} onClose={()=>setStModal(null)}/>}
       {modal==='reject'&&active&&<RejectModal p={active} onClose={()=>{setModal(null);setErr('')}} onSubmit={handleReject} isPending={isPending} error={err}/>}
+      {rejectDetail&&<RejectDetailModal p={rejectDetail} onClose={()=>setRejectDetail(null)}/>}
+    </div>
+  )
+}
+
+// ─── Modal detail reject (foto + catatan) ─────────────────────────────────────
+function RejectDetailModal({p,onClose}:{p:any;onClose:()=>void}){
+  const [lightbox,setLightbox]=useState<string|null>(null)
+  const fotos:string[]=Array.isArray(p.foto_reject)?p.foto_reject:[]
+  return(
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      {lightbox&&<Lightbox url={lightbox} onClose={()=>setLightbox(null)}/>}
+      <div className="w-full sm:max-w-sm bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+          <div>
+            <h2 className="text-[15px] font-bold text-slate-900">Detail Reject</h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">{p.kode} · {p.pcs_reject} pcs · {Number(p.gram_reject??0).toFixed(3)} gr</p>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
+        </div>
+        <div className="px-5 py-4 space-y-4">
+          <div>
+            <p className="text-[11px] font-medium text-slate-500 mb-1.5">Alasan / Catatan</p>
+            <p className="text-[13px] text-slate-800 rounded-lg bg-orange-50 border border-orange-100 px-3 py-2">
+              {p.catatan_reject||<span className="text-slate-400 italic">Tidak ada catatan</span>}
+            </p>
+          </div>
+          {fotos.length>0?(
+            <div>
+              <p className="text-[11px] font-medium text-slate-500 mb-1.5">Foto Bukti ({fotos.length})</p>
+              <div className="flex gap-2 flex-wrap">
+                {fotos.map((u:string,i:number)=>(
+                  <img key={i} src={u} onClick={()=>setLightbox(u)}
+                    className="w-20 h-20 object-cover rounded-xl border border-orange-200 cursor-pointer hover:scale-105 transition-transform"/>
+                ))}
+              </div>
+            </div>
+          ):(
+            <p className="text-[12px] text-slate-400 italic">Tidak ada foto bukti</p>
+          )}
+        </div>
+        <div className="px-5 py-4 border-t border-slate-200">
+          <button onClick={onClose} className="w-full h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Tutup</button>
+        </div>
+      </div>
     </div>
   )
 }

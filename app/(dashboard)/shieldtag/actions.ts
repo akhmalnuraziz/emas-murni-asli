@@ -92,9 +92,10 @@ export async function registerShieldtags(formData: FormData) {
     .from('shieldtag').select('*', { count: 'exact', head: true })
     .eq('packing_id', packingId).is('voided_at', null)
 
-  const remaining = packing.pcs_dipack - (existingCount ?? 0)
+  const maxShieldtag = packing.pcs_dipack - (packing.pcs_reject ?? 0)
+  const remaining = maxShieldtag - (existingCount ?? 0)
   if (allCodes.length > remaining) {
-    return { error: `Hanya bisa registrasi ${remaining} Shieldtag lagi untuk packing ini (${existingCount} sudah terdaftar dari ${packing.pcs_dipack} PCS)` }
+    return { error: `Hanya bisa registrasi ${remaining} Shieldtag lagi untuk packing ini (${existingCount} sudah terdaftar dari ${maxShieldtag} PCS valid — ${packing.pcs_dipack} dipack − ${packing.pcs_reject ?? 0} reject)` }
   }
 
   // Check for duplicate codes globally
