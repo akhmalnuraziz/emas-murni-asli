@@ -596,6 +596,7 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
             <F label="Tanggal Mulai" req><input name="tanggal_produksi" type="date" value={f.tanggal_produksi} onChange={e => s('tanggal_produksi', e.target.value)} className={inp} required /></F>
             <F label="Jam Mulai" req><input name="jam_mulai" type="time" value={f.jam_mulai ?? ''} onChange={e => s('jam_mulai', e.target.value)} className={inp} required /></F>
           </div>
+          <TimPickerStd tims={tims} prefix="" />
           <AdminPickerStd adminList={adminList} prefix="" label="Admin Yang Menyerahkan" />
           <div>
             <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan Sebelum Diserahkan</label>
@@ -691,12 +692,12 @@ function TambahProduksiModal({ item, peleburanByBatch, tims, adminList, onClose,
             </F>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <F label="Tanggal Mulai" req><input name="tanggal_produksi" type="date" value={f.tanggal_produksi} onChange={e => s('tanggal_produksi', e.target.value)} className={inp} required /></F>
             <F label="Jam Mulai" req><input name="jam_mulai" type="time" value={f.jam_mulai} onChange={e => s('jam_mulai', e.target.value)} className={inp} required /></F>
-
           </div>
 
+          <TimPickerStd tims={tims} prefix="" />
           <AdminPickerStd adminList={adminList} prefix="" label="Admin Yang Menyerahkan" />
           <F label="Foto Bahan Baku Diserahkan (MAX 10)">
             <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto" />
