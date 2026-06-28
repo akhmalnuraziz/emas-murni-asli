@@ -56,7 +56,7 @@ export async function createPO(formData: FormData) {
 
   // Notif ke admin_pusat, spv, gudang
   const itemSummary = items.map(it => `${it.qty_diminta}pcs ${it.gramasi}gr`).join(', ')
-  await createNotif({
+  createNotif({
     judul: `PO Baru dari ${cabangNama}`,
     pesan: `${kode} — ${itemSummary}`,
     tipe: 'info',
@@ -88,7 +88,7 @@ export async function updateStatusPO(poId: number, status: 'diproses' | 'selesai
   if (po) {
     const statusLabel = status === 'diproses' ? 'sedang diproses' : status === 'selesai' ? 'selesai dikirim' : 'ditolak'
     const tipe = status === 'ditolak' ? 'warning' : status === 'selesai' ? 'success' : 'info'
-    await createNotif({
+    createNotif({
       judul: `PO ${po.kode} ${statusLabel}`,
       pesan: catatanAdmin ? `Catatan: ${catatanAdmin}` : `Status PO kamu dari ${po.cabang_nama} diperbarui`,
       tipe,

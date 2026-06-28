@@ -171,7 +171,7 @@ export async function createStockAdjustment(params: {
   })
   if (error) return { success: false, error: error.message }
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name,
     action: 'STOCK_ADJUSTMENT', module: 'stok_cabang',
     record_key: `${params.cabangKode}/${params.gramasi}`,
@@ -180,7 +180,7 @@ export async function createStockAdjustment(params: {
     reason: params.alasan,
   })
 
-  await createNotif({
+  createNotif({
     judul: `Stok Cabang Disesuaikan`,
     pesan: `${params.cabangNama} · ${params.gramasi}gr · ${params.qtyBefore} → ${params.qtyAfter} · ${params.alasan}`,
     tipe: 'info',

@@ -101,7 +101,7 @@ export async function createPengeluaran(formData: FormData) {
   })
   if (error) return { error: error.message }
 
-  await createNotif({
+  createNotif({
     judul: `Pengeluaran Baru: ${nama}`,
     pesan: `Rp${nominal.toLocaleString('id-ID')} · ${lokasi}`,
     tipe: 'info',
@@ -158,7 +158,7 @@ export async function voidPengeluaran(id: number, reason: string) {
   }).eq('id', id)
   if (error) return { error: error.message }
 
-  await createNotif({
+  createNotif({
     judul: `Pengeluaran #${id} Di-VOID`,
     pesan: `Alasan: ${reason.trim()}`,
     tipe: 'warning',

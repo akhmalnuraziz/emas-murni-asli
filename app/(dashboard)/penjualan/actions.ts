@@ -138,7 +138,7 @@ export async function createPenjualan(formData: FormData) {
   // Notif ke owner/admin_pusat/spv
   const itemSummary = itemRows.map(r => `${r.gramasi}gr`).join(', ')
   const channelLabel = channel === 'toko' ? 'Toko' : channel === 'cabang' ? `Cabang ${cabangNama ?? ''}` : channel
-  await createNotif({
+  createNotif({
     judul: `Penjualan Baru — ${noFaktur}`,
     pesan: `${items.length} pcs (${itemSummary}) via ${channelLabel} · Rp ${totalHargaJual.toLocaleString('id-ID')}`,
     tipe: 'success',
@@ -173,7 +173,7 @@ export async function voidPenjualan(penjualanId: number, reason: string) {
   revalidatePath('/penjualan')
   revalidatePath('/dashboard')
 
-  await createNotif({
+  createNotif({
     judul: `Penjualan Divoid`,
     pesan: `ID ${penjualanId} · alasan: ${reason}`,
     tipe: 'warning',

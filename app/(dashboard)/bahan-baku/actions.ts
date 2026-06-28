@@ -159,7 +159,7 @@ export async function createBatch(formData: FormData) {
       ttd_operator_url: ttdOpUrl, operator_nama: (formData.get('selisih_op_nama') as string) || null,
       ttd_admin_url: ttdAdminUrl, admin_user_id: user.id, admin_nama: (formData.get('selisih_admin_nama') as string) || profile?.name || null,
     })
-    await createNotif({
+    createNotif({
       judul: `Selisih Timbangan Batch ${kode}`,
       pesan: `Selisih ${Math.abs(selisih).toFixed(2)}gr melebihi toleransi ${toleransiBatch}gr · TTD tersimpan`,
       tipe: 'warning',
@@ -168,7 +168,7 @@ export async function createBatch(formData: FormData) {
     })
   }
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'CREATE_BATCH', module: 'BAHAN_BAKU',
     record_key: kode, after_data: { kode, fotos_count: fotoUrls.length },
@@ -223,7 +223,7 @@ export async function createBatchRingkas(formData: FormData) {
 
   if (error) return { error: error.message }
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'CREATE_BATCH_RINGKAS', module: 'BAHAN_BAKU',
     record_key: kode, after_data: { kode, berat },
@@ -319,7 +319,7 @@ export async function updateBatch(batchId: number, batchKode: string, formData: 
 
   await updateSisaSeharusnya(supabase, batchKode)
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'EDIT_BATCH', module: 'BAHAN_BAKU',
     record_key: batchKode, record_id: String(batchId),
@@ -347,7 +347,7 @@ export async function deleteBatch(batchId: number, batchKode: string) {
 
   await supabase.from('batch').update({ voided_at: new Date().toISOString(), void_reason: 'DELETED_BY_USER' }).eq('id', batchId)
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'DELETE_BATCH', module: 'BAHAN_BAKU', record_key: batchKode, record_id: String(batchId),
   })
@@ -370,12 +370,12 @@ export async function lockBatch(batchId: number, batchKode: string) {
     lock_reason: 'LOCKED_BY_USER',
   }).eq('id', batchId)
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'LOCK_BATCH', module: 'BAHAN_BAKU', record_key: batchKode, record_id: String(batchId),
   })
 
-  await createNotif({
+  createNotif({
     judul: `Batch ${batchKode} dikunci`,
     pesan: `Batch sudah final dan siap untuk referensi produksi. Dikunci oleh ${profile?.name ?? 'SPV'}.`,
     tipe: 'produksi',
@@ -395,7 +395,7 @@ export async function unlockBatch(batchId: number, batchKode: string) {
   if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
 
   await supabase.from('batch').update({ status: 'aktif', locked_at: null, locked_by: null, lock_reason: null }).eq('id', batchId)
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'UNLOCK_BATCH', module: 'BAHAN_BAKU', record_key: batchKode, record_id: String(batchId),
   })
@@ -463,7 +463,7 @@ export async function updateSisaFisik(formData: FormData) {
     ...(!isNaN(sisaSeharusnya) ? { losses_sisa_fisik: lossesSF, selisih_sisa_fisik: selisihSF } : {}),
   }).eq('id', batchId)
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'UPDATE_SISA_FISIK', module: 'BAHAN_BAKU',
     record_key: batchKode, record_id: String(batchId),
@@ -489,7 +489,7 @@ export async function hapusSisaFisik(batchId: number, batchKode: string) {
 
   await supabase.from('batch').update({ catatan_sisa_fisik: null }).eq('id', batchId)
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'HAPUS_SISA_FISIK', module: 'BAHAN_BAKU',
     record_key: batchKode, record_id: String(batchId),
@@ -622,7 +622,7 @@ export async function createPeleburan(formData: FormData) {
     }
   }
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'CREATE', module: 'peleburan', record_key: kode, record_id: String(data.id),
     after_data: { batch_kode: batchKode, dikasih: totalDikasih, sumber_count: sumberList.length, status: 'proses' },
@@ -711,7 +711,7 @@ export async function selesaiLebur(id: number, formData: FormData) {
     }
   }
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'EDIT', module: 'peleburan', record_key: plb.kode, record_id: String(id),
     after_data: { diterima, losses: Number(plb.dikasih_gram) - diterima, status: 'selesai' },
@@ -810,7 +810,7 @@ export async function editPeleburan(id: number, formData: FormData) {
 
   if (error) return { error: error.message }
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'EDIT', module: 'peleburan', record_key: plb.kode, record_id: String(id),
     before_data: { dikasih_gram: plb.dikasih_gram }, after_data: { dikasih_gram: dikasih },
@@ -1010,7 +1010,7 @@ export async function voidPeleburan(id: number, reason: string) {
     }
   }
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'VOID', module: 'peleburan', record_key: plb.kode, record_id: String(id), reason,
   })

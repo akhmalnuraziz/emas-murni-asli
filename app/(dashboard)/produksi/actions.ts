@@ -211,7 +211,7 @@ export async function createProduksi(formData: FormData) {
 
   await updateBatchSisaSeharusnya(supabase, batchKode)
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'CREATE', module: 'PRODUKSI', record_key: kode, record_id: String(produksi.id), after_data: produksi,
   })
@@ -219,7 +219,7 @@ export async function createProduksi(formData: FormData) {
   revalidatePath('/produksi')
   revalidatePath('/bahan-baku')
 
-  await createNotif({
+  createNotif({
     judul: `Item Produksi Baru — ${kode}`,
     pesan: `Dari batch ${batchKode} · ${beratAwal}gr (gramasi menyusul saat diterima)`,
     tipe: 'info',
@@ -276,7 +276,7 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
       status_reject: 'belum_dilebur',
     }).eq('id', produksiId)
 
-    await supabase.from('audit_log').insert({
+    supabase.from('audit_log').insert({
       user_id: user.id, user_name: profile?.name, user_role: profile?.role,
       action: 'INPUT_REJECT', module: 'PRODUKSI',
       record_key: produksiKode, record_id: String(produksiId),
@@ -321,7 +321,7 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
     current_status: statusBaru, total_gram: totalGramBaru,
   }).eq('id', produksiId)
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'UPDATE_STATUS', module: 'PRODUKSI',
     record_key: produksiKode, record_id: String(produksiId),
@@ -332,7 +332,7 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
   revalidatePath('/produksi')
 
   if (statusBaru === 'Siap Packing') {
-    await createNotif({
+    createNotif({
       judul: `Siap Packing — ${produksiKode}`,
       pesan: `${produksi.gramasi}gr dari batch ${produksi.batch_kode} · ${totalGramBaru}gr siap dipacking`,
       tipe: 'success',
@@ -340,7 +340,7 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
       untuk_role: ['owner', 'manager', 'spv', 'admin_produksi'],
     })
   } else if (statusBaru === 'Reject') {
-    await createNotif({
+    createNotif({
       judul: `Reject — ${produksiKode}`,
       pesan: `${produksi.gramasi}gr dari batch ${produksi.batch_kode} · belum dilebur`,
       tipe: 'warning',
@@ -397,7 +397,7 @@ export async function inputReject(produksiId: number, produksiKode: string, form
     current_status: produksi.current_status,
   }).eq('id', produksiId)
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'INPUT_REJECT', module: 'PRODUKSI',
     record_key: produksiKode, record_id: String(produksiId),
@@ -441,7 +441,7 @@ export async function leburReject(produksiId: number, produksiKode: string, batc
     pcs_reject_dilebur: totalRejectPcs,
   }).eq('id', produksiId)
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'LEBUR_REJECT', module: 'PRODUKSI',
     record_key: produksiKode, record_id: String(produksiId),
@@ -518,7 +518,7 @@ export async function deleteProduksi(produksiId: number, produksiKode: string) {
 
   if (existing.batch_kode) await updateBatchSisaSeharusnya(supabase, existing.batch_kode)
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'DELETE', module: 'PRODUKSI',
     record_key: produksiKode, record_id: String(produksiId), before_data: existing,
@@ -562,13 +562,13 @@ export async function createPacking(formData: FormData) {
 
   if (error) return { error: error.message }
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'CREATE_PACKING', module: 'PRODUKSI',
     record_key: kode, record_id: String(packing.id), after_data: packing,
   })
 
-  await createNotif({
+  createNotif({
     judul: `Packing Selesai — ${kode}`,
     pesan: `${pcsDispack} pcs ${produksi.gramasi}gr dari batch ${produksi.batch_kode} · ${totalGramAktual}gr`,
     tipe: 'success',
@@ -591,7 +591,7 @@ export async function voidPacking(packingId: number, packingKode: string) {
     voided_at: new Date().toISOString(), void_reason: 'VOIDED_BY_USER',
   }).eq('id', packingId)
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'VOID_PACKING', module: 'PRODUKSI',
     record_key: packingKode, record_id: String(packingId),
@@ -608,7 +608,7 @@ export async function updateSisaFisikBatch(batchKode: string, sisaFisik: number 
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
   const { error } = await supabase.from('batch').update({ sisa_fisik: sisaFisik }).eq('kode', batchKode)
   if (error) return { error: error.message }
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'UPDATE_SISA_FISIK', module: 'PRODUKSI',
     record_key: batchKode, after_data: { sisa_fisik: sisaFisik },
@@ -746,7 +746,7 @@ export async function selesaiCutting(produksiId: number, produksiKode: string, f
 
   revalidatePath('/produksi')
 
-  await createNotif({
+  createNotif({
     judul: `Cutting Selesai — ${produksiKode}`,
     pesan: `Terima ${terimaGram}gr · Reject ${rejectGram}gr · Loss ${losses.toFixed(2)}gr`,
     tipe: 'produksi',
@@ -818,7 +818,7 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
 
   if (error) return { error: error.message }
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'EDIT', module: 'PRODUKSI',
     record_key: produksiKode, record_id: String(produksiId),
@@ -1030,7 +1030,7 @@ export async function terimaStageProduksi(
   revalidatePath('/produksi')
 
   const TAHAP_LABEL: Record<string, string> = { pas_berat: 'Pas Berat', annealing: 'Annealing', siap_packing: 'Siap Packing' }
-  await createNotif({
+  createNotif({
     judul: `${TAHAP_LABEL[tahap] ?? tahap} Selesai — ${produksiKode}`,
     pesan: `Terima ${terimaGram}gr${rejectGram > 0 ? ` · Reject ${rejectGram}gr` : ''}`,
     tipe: tahap === 'siap_packing' ? 'success' : 'produksi',
@@ -1130,7 +1130,7 @@ export async function resetCutting(produksiId: number, produksiKode: string) {
     .update({ voided_at: new Date().toISOString() })
     .eq('produksi_item_id', produksiId).eq('status', 'Cutting').not('jam_mulai', 'is', null)
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'RESET_CUTTING', module: 'PRODUKSI',
     record_key: produksiKode, record_id: String(produksiId),
@@ -1340,7 +1340,7 @@ export async function terimaCuttingItem(itemId: number, formData: FormData) {
       })
     }
 
-    await supabase.from('audit_log').insert({
+    supabase.from('audit_log').insert({
       user_id: user.id, user_name: profile?.name, user_role: profile?.role,
       action: 'SPLIT_GRAMASI', module: 'PRODUKSI', record_key: item.kode, record_id: String(item.id),
       before_data: item, after_data: { gramasi_list: gramasiList, created: createdItems.map((ci: any) => ci.kode) },

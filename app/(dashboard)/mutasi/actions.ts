@@ -148,7 +148,7 @@ export async function kirimMutasiCabang(formData: FormData) {
   }).in('kode', shieldtagKodes)
 
   // Audit
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'KIRIM_MUTASI', module: 'MUTASI',
     record_key: kode, record_id: String(mutasi.id),
@@ -156,7 +156,7 @@ export async function kirimMutasiCabang(formData: FormData) {
   })
 
   // Notif ke kepala_cabang tujuan + gudang
-  await createNotif({
+  createNotif({
     judul: `Mutasi dikirim ke ${cabang?.nama ?? cabangKode}`,
     pesan: `${kode} — ${totalPcs} pcs dalam perjalanan`,
     tipe: 'info',
@@ -178,7 +178,7 @@ export async function kirimMutasiCabang(formData: FormData) {
       .select('*', { count: 'exact', head: true })
       .eq('gramasi', g).eq('status', 'Aktif').eq('lokasi', 'Gudang Pusat').is('voided_at', null)
     if ((count ?? 0) < SAFETY) {
-      await createNotif({
+      createNotif({
         judul: `Stok ${g}gr di bawah safety stock`,
         pesan: `Sisa ${count ?? 0} pcs di Gudang Pusat (min. ${SAFETY} pcs). Segera produksi.`,
         tipe: 'warning',
@@ -286,7 +286,7 @@ export async function terimaMutasiCabang(formData: FormData) {
         status: 'selesai', selesai_at: new Date().toISOString(),
         catatan_admin: 'Otomatis selesai — semua item terpenuhi via mutasi',
       }).eq('id', mutasi.po_id)
-      await createNotif({
+      createNotif({
         judul: `PO selesai otomatis`,
         pesan: `Semua item PO dari ${mutasi.cabang_tujuan} sudah diterima.`,
         tipe: 'success', link: '/po-cabang',
@@ -295,14 +295,14 @@ export async function terimaMutasiCabang(formData: FormData) {
     }
   }
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'TERIMA_MUTASI', module: 'MUTASI',
     record_key: mutasi.kode, record_id: String(mutasiId),
     after_data: { diterima: diterimaKodes, hilang: hilangKodes, pcs_diterima: diterimaKodes.length },
   })
   if (isShort) {
-    await supabase.from('audit_log').insert({
+    supabase.from('audit_log').insert({
       user_id: user.id, user_name: profile?.name, user_role: profile?.role,
       action: 'SHORT_SHIP_DETECTED', module: 'MUTASI',
       record_key: mutasi.kode, record_id: String(mutasiId),
@@ -312,7 +312,7 @@ export async function terimaMutasiCabang(formData: FormData) {
   }
 
   // Notif terima normal → admin_pusat + gudang
-  await createNotif({
+  createNotif({
     judul: `Mutasi ${mutasi.kode} diterima`,
     pesan: `${diterimaKodes.length} pcs dikonfirmasi diterima oleh ${profile?.name ?? 'penerima'}`,
     tipe: 'success',
@@ -322,7 +322,7 @@ export async function terimaMutasiCabang(formData: FormData) {
 
   // Notif short-shipment → owner + admin_pusat (lebih urgent)
   if (isShort) {
-    await createNotif({
+    createNotif({
       judul: `⚠️ Short-Shipment: ${mutasi.kode}`,
       pesan: `${hilangKodes.length} shieldtag tidak ditemukan saat penerimaan. Perlu investigasi.`,
       tipe: 'warning',

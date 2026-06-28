@@ -36,7 +36,7 @@ export async function createScrap(formData: FormData) {
   })
   if (error) return { error: error.message }
 
-  await createNotif({
+  createNotif({
     judul: `Scrap Baru: ${kode}`,
     pesan: `${berat}gr · ${(formData.get('sumber_proses') as string) || 'manual'}`,
     tipe: 'info',
@@ -82,7 +82,7 @@ export async function voidScrap(id: number, reason: string) {
   }).eq('id', id)
   if (error) return { error: error.message }
 
-  await createNotif({
+  createNotif({
     judul: `Scrap #${id} Di-VOID`,
     pesan: `Alasan: ${reason}`,
     tipe: 'warning',

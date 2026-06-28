@@ -79,7 +79,7 @@ export async function createBuyback(params: {
       await supabase.from('shieldtag').update({ status: 'RETURNED' }).eq('kode', params.shieldtagKode)
     }
 
-    await supabase.from('audit_log').insert({
+    supabase.from('audit_log').insert({
       user_id: user.id,
       user_name: userName,
       action: 'CREATE',
@@ -88,7 +88,7 @@ export async function createBuyback(params: {
       after_data: { nama_customer: params.namaCustomer, hasil_inspeksi: params.hasilInspeksi },
     })
 
-    await createNotif({
+    createNotif({
       judul: `Buyback Baru: ${kode}`,
       pesan: `${params.namaCustomer} · ${params.gramasi}gr · Rp${params.hargaBeli.toLocaleString('id-ID')}`,
       tipe: 'info',
@@ -135,7 +135,7 @@ export async function prossesBuyback(params: {
 
   if (error) return { success: false, error: error.message }
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id,
     user_name: userName,
     action: 'UPDATE',
@@ -145,7 +145,7 @@ export async function prossesBuyback(params: {
     reason: params.catatan,
   })
 
-  await createNotif({
+  createNotif({
     judul: `Buyback ${params.kode} Diproses`,
     pesan: `Status: ${params.aksi} · oleh ${userName}`,
     tipe: 'info',

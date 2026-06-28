@@ -141,7 +141,7 @@ export async function saveStockOpname(params: {
     if (error) return { success: false, error: error.message }
 
     // Audit log
-    await supabase.from('audit_log').insert({
+    supabase.from('audit_log').insert({
       user_id: user.id,
       user_name: userName,
       action: 'CREATE',
@@ -181,7 +181,7 @@ export async function approveStockOpname(params: {
 
   if (error) return { success: false, error: error.message }
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id,
     user_name: userName,
     action: params.approved ? 'APPROVE' : 'REJECT',

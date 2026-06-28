@@ -61,7 +61,7 @@ export async function createRetur(formData: FormData) {
   }).select('id').single()
   if (error) return { error: error.message }
 
-  await createNotif({
+  createNotif({
     judul: `Retur Masuk — ${kode}`,
     pesan: `${namaCustomer ?? 'Customer'} · ${kondisi} · ${alasan.slice(0, 60)}`,
     tipe: 'warning',

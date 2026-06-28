@@ -119,7 +119,7 @@ export async function createPacking(formData: FormData) {
       .eq('id', produksiItemId)
   }
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'CREATE_PACKING', module: 'PACKING',
     record_key: kode, record_id: String(packing.id), after_data: packing,
@@ -128,7 +128,7 @@ export async function createPacking(formData: FormData) {
   revalidatePath('/packing-log')
   revalidatePath('/produksi')
 
-  await createNotif({
+  createNotif({
     judul: `Packing Baru: ${kode}`,
     pesan: `${produksi.gramasi}gr · ${pcsDispack} pcs · oleh ${profile?.name ?? 'Admin'}`,
     tipe: 'success',
@@ -191,7 +191,7 @@ export async function editPacking(packingId: number, packingKode: string, formDa
   const newStatus = totalPacked >= pcsGood ? 'Sudah Packing' : 'Siap Packing'
   await supabase.from('produksi_item').update({ current_status: newStatus }).eq('id', produksiId)
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'EDIT_PACKING', module: 'PACKING',
     record_key: packingKode, record_id: String(packingId),
@@ -200,7 +200,7 @@ export async function editPacking(packingId: number, packingKode: string, formDa
   revalidatePath('/packing-log')
   revalidatePath('/produksi')
 
-  await createNotif({
+  createNotif({
     judul: `Packing ${packingKode} Diedit`,
     pesan: `${pcsDispack} pcs · oleh ${profile?.name ?? 'Admin'}`,
     tipe: 'info',
@@ -251,7 +251,7 @@ export async function voidPacking(packingId: number, packingKode: string) {
       .eq('id', existing.produksi_item_id)
   }
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'VOID_PACKING', module: 'PACKING',
     record_key: packingKode, record_id: String(packingId),
@@ -260,7 +260,7 @@ export async function voidPacking(packingId: number, packingKode: string) {
   revalidatePath('/packing-log')
   revalidatePath('/produksi')
 
-  await createNotif({
+  createNotif({
     judul: `Packing ${packingKode} Di-VOID`,
     pesan: `Dihapus oleh ${profile?.name ?? 'Admin'}`,
     tipe: 'warning',
@@ -301,7 +301,7 @@ export async function reportPackingReject(packingId: number, pcsReject: number, 
 
   await supabase.from('packing').update({ pcs_reject: pcsReject, gram_reject: gramReject }).eq('id', packingId)
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'REPORT_REJECT', module: 'PACKING',
     record_key: packing.kode, record_id: String(packingId),

@@ -148,7 +148,7 @@ export async function registerShieldtags(formData: FormData) {
     .update({ shieldtag_count: (existingCount ?? 0) + allCodes.length })
     .eq('id', packingId)
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'REGISTER_SHIELDTAG', module: 'SHIELDTAG',
     record_key: `PKG-${packingId}`,
@@ -158,7 +158,7 @@ export async function registerShieldtags(formData: FormData) {
   revalidatePath('/shieldtag')
   revalidatePath('/packing-log')
 
-  await createNotif({
+  createNotif({
     judul: `${allCodes.length} Shieldtag Didaftarkan`,
     pesan: `Packing ${packing.kode} · ${allCodes[0]}${allCodes.length > 1 ? ` s/d ${allCodes[allCodes.length - 1]}` : ''} · ${packing.gramasi}gr`,
     tipe: 'success',
@@ -200,7 +200,7 @@ export async function editShieldtagKode(shieldtagId: number, newKode: string) {
 
   revalidatePath('/shieldtag')
 
-  await createNotif({
+  createNotif({
     judul: `Kode Shieldtag Diubah`,
     pesan: `${st.kode} → ${newKodeUp} · diubah oleh ${profile?.name ?? 'Admin'}`,
     tipe: 'info',
@@ -247,7 +247,7 @@ export async function voidShieldtag(shieldtagId: number, reason: string) {
   revalidatePath('/shieldtag')
   revalidatePath('/packing-log')
 
-  await createNotif({
+  createNotif({
     judul: `Shieldtag ${st.kode} Di-VOID`,
     pesan: `Alasan: ${reason} · oleh ${profile?.name ?? 'Admin'}`,
     tipe: 'warning',
@@ -335,7 +335,7 @@ export async function bulkVoidShieldtag(ids: number[], reason: string) {
     await supabase.from('packing').update({ shieldtag_count: count ?? 0 }).eq('id', pid)
   }
 
-  await supabase.from('audit_log').insert({
+  supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'BULK_VOID_SHIELDTAG', module: 'SHIELDTAG',
     after_data: { count: ids.length, reason },
