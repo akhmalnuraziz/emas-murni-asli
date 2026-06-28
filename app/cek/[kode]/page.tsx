@@ -21,13 +21,20 @@ export default async function CekKodePage({ params }: { params: Promise<{ kode: 
 
   const { data: st } = await supabase
     .from('shieldtag')
-    .select('kode, gramasi, status, batch_kode, tgl_regis, foto_produk, lokasi, shieldtag_history, voided_at')
+    .select('kode, gramasi, status, batch_kode, tgl_regis, lokasi, shieldtag_history, voided_at')
     .eq('kode', kodeUp)
     .is('voided_at', null)
     .single()
 
   const found = !!st
   const terjual = st?.status === 'Terjual'
+
+  // Pull foto dari master per gramasi
+  const gramNum = st ? String(parseFloat(st.gramasi ?? '0')) : null
+  const { data: fotoMaster } = gramNum
+    ? await supabase.from('foto_produk_master').select('foto_urls').eq('gramasi', gramNum).single()
+    : { data: null }
+  const fotoUrl: string | null = fotoMaster?.foto_urls?.[0] ?? null
 
   // Cari tanggal terjual dari history
   let tglTerjual: string | null = null
@@ -107,13 +114,13 @@ export default async function CekKodePage({ params }: { params: Promise<{ kode: 
               </div>
             </div>
 
-            {/* Foto produk */}
-            {st.foto_produk ? (
+            {/* Foto produk — dari master per gramasi */}
+            {fotoUrl ? (
               <div className="flex justify-center py-6 px-6"
                 style={{ background: 'linear-gradient(180deg, rgba(201,168,76,0.04) 0%, transparent 100%)' }}>
                 <div className="relative w-44 h-56 rounded-2xl overflow-hidden border border-amber-500/20"
                   style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.6), 0 0 20px rgba(201,168,76,0.1)' }}>
-                  <Image src={st.foto_produk} alt="Foto produk" fill className="object-cover" />
+                  <Image src={fotoUrl} alt="Foto produk" fill className="object-cover" />
                 </div>
               </div>
             ) : (

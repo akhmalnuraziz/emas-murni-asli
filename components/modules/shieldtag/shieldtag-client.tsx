@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import {
   Plus, Search, X, Check, AlertTriangle, Tag,
   Edit2, Trash2,
-  MapPin, Package, Clock, Loader2,
+  MapPin, Package, Clock, Loader2, ImagePlus,
 } from 'lucide-react'
 import { cn, formatDate, formatRupiah } from '@/lib/utils'
 import { registerShieldtags, editShieldtagKode, voidShieldtag, bulkVoidShieldtag, searchShieldtag, uploadFotoProdukShieldtag } from '@/app/(dashboard)/shieldtag/actions'
@@ -661,6 +661,12 @@ function toggleSelect(id: number) {
                 className="flex items-center gap-1.5 h-8 px-3 text-[12px] font-semibold text-white rounded-lg bg-red-600 hover:bg-red-700 transition-colors">
                 <Trash2 size={13}/> VOID {selected.size}
               </button>
+            )}
+            {canRegister && (
+              <a href="/shieldtag/foto-master"
+                className="flex items-center gap-1.5 h-8 px-3 text-[12px] font-semibold text-violet-600 border border-violet-200 rounded-lg hover:bg-violet-50 transition-colors">
+                <ImagePlus size={13}/> Master Foto
+              </a>
             )}
             {canRegister && packingsWithSlots.length > 0 && view === 'list' && (
               <button onClick={() => { setModal('register'); setErr('') }}
