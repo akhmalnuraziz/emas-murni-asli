@@ -1,13 +1,9 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { FileText, ArrowRight, CheckCircle2, Clock } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Clock, Layers, TrendingDown, Tag, Package2 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
-
-function fg(n: number | null | undefined, d = 2) {
-  return n != null ? Number(n).toFixed(d) : '—'
-}
 
 export default async function LaporanBatchListPage() {
   const supabase = await createClient()
@@ -18,31 +14,26 @@ export default async function LaporanBatchListPage() {
     { data: batches },
     { data: stSummary },
     { data: packSummary },
+    { data: peleburanSummary },
   ] = await Promise.all([
     supabase.from('batch')
-      .select('kode, tanggal, supplier, bahan_dari_pusat, timbangan_akhir, hpp_gr, status, catatan')
+      .select('kode, tanggal, supplier, bahan_dari_pusat, timbangan_akhir, hpp_gr, status')
       .is('voided_at', null)
       .order('tanggal', { ascending: false })
       .limit(200),
-    // shieldtag count per batch
-    supabase.from('shieldtag')
-      .select('batch_kode, status')
-      .is('voided_at', null),
-    // packing pcs per batch
-    supabase.from('packing')
-      .select('batch_kode, pcs_dipack')
-      .is('voided_at', null),
+    supabase.from('shieldtag').select('batch_kode, status').is('voided_at', null),
+    supabase.from('packing').select('batch_kode, pcs_dipack').is('voided_at', null),
+    supabase.from('peleburan').select('batch_kode, dikasih_gram, diterima_gram').is('voided_at', null),
   ])
 
-  // Build summary maps
-  const stMap: Record<string, { aktif: number; transit: number; terjual: number; total: number }> = {}
+  const stMap: Record<string, { aktif: number; terjual: number; transit: number; total: number }> = {}
   for (const s of stSummary ?? []) {
     const k = s.batch_kode ?? ''
-    if (!stMap[k]) stMap[k] = { aktif: 0, transit: 0, terjual: 0, total: 0 }
+    if (!stMap[k]) stMap[k] = { aktif: 0, terjual: 0, transit: 0, total: 0 }
     stMap[k].total++
     if (s.status === 'Aktif') stMap[k].aktif++
-    else if (s.status === 'Transit') stMap[k].transit++
     else if (s.status === 'Terjual') stMap[k].terjual++
+    else if (s.status === 'Transit') stMap[k].transit++
   }
 
   const packMap: Record<string, number> = {}
@@ -51,87 +42,136 @@ export default async function LaporanBatchListPage() {
     packMap[k] = (packMap[k] ?? 0) + (p.pcs_dipack ?? 0)
   }
 
+  const lebMap: Record<string, { dikasih: number; diterima: number }> = {}
+  for (const l of peleburanSummary ?? []) {
+    const k = l.batch_kode ?? ''
+    if (!lebMap[k]) lebMap[k] = { dikasih: 0, diterima: 0 }
+    lebMap[k].dikasih += Number(l.dikasih_gram ?? 0)
+    lebMap[k].diterima += Number(l.diterima_gram ?? 0)
+  }
+
+  const totalBatch = batches?.length ?? 0
+  const totalSelesai = batches?.filter(b => b.status === 'Selesai').length ?? 0
+  const totalPcs = Object.values(packMap).reduce((s, v) => s + v, 0)
+  const totalShieldtag = Object.values(stMap).reduce((s, v) => s + v.total, 0)
+
   return (
-    <div className="space-y-5 pb-12">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[20px] font-semibold text-slate-800">Laporan Per Batch</h1>
-          <p className="text-[13px] text-slate-400 mt-0.5">{batches?.length ?? 0} batch terdaftar</p>
-        </div>
+    <div className="space-y-6 pb-12">
+
+      {/* ── Header ── */}
+      <div>
+        <h1 className="text-[22px] font-bold text-slate-900 tracking-tight">Laporan Per Batch</h1>
+        <p className="text-[13px] text-slate-400 mt-1">Ringkasan produksi dari setiap batch bahan baku emas</p>
       </div>
 
-      {/* Table */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/60">
-                <th className="text-left px-4 py-3 font-medium text-slate-500 text-[11px] uppercase tracking-wide">Batch</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-500 text-[11px] uppercase tracking-wide">Tanggal</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-500 text-[11px] uppercase tracking-wide">Supplier</th>
-                <th className="text-right px-4 py-3 font-medium text-slate-500 text-[11px] uppercase tracking-wide">Bahan Masuk</th>
-                <th className="text-right px-4 py-3 font-medium text-slate-500 text-[11px] uppercase tracking-wide">Packing</th>
-                <th className="text-right px-4 py-3 font-medium text-slate-500 text-[11px] uppercase tracking-wide">Shieldtag</th>
-                <th className="text-center px-4 py-3 font-medium text-slate-500 text-[11px] uppercase tracking-wide">Status</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {(batches ?? []).map(b => {
-                const st = stMap[b.kode] ?? { aktif: 0, transit: 0, terjual: 0, total: 0 }
-                const pcs = packMap[b.kode] ?? 0
-                const isSelesai = b.status === 'Selesai'
-                return (
-                  <tr key={b.kode} className="hover:bg-slate-50/60 transition-colors group">
-                    <td className="px-4 py-3">
-                      <span className="font-mono font-semibold text-slate-800">{b.kode}</span>
-                    </td>
-                    <td className="px-4 py-3 text-slate-500">
+      {/* ── Summary KPI strip ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'Total Batch', value: totalBatch, icon: Layers, color: 'violet', bg: 'bg-violet-50', text: 'text-violet-700', border: 'border-violet-100' },
+          { label: 'Selesai', value: totalSelesai, icon: CheckCircle2, color: 'green', bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-100' },
+          { label: 'Total Packing', value: `${totalPcs.toLocaleString()} pcs`, icon: Package2, color: 'blue', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-100' },
+          { label: 'Shieldtag', value: totalShieldtag.toLocaleString(), icon: Tag, color: 'amber', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-100' },
+        ].map(({ label, value, icon: Icon, bg, text, border }) => (
+          <div key={label} className={`rounded-2xl p-4 border ${bg} ${border} flex items-center gap-3`}>
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${bg}`}>
+              <Icon size={18} className={text} />
+            </div>
+            <div>
+              <p className="text-[11px] font-medium text-slate-400">{label}</p>
+              <p className={`text-[18px] font-bold tabular-nums ${text}`}>{value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Batch cards grid ── */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {(batches ?? []).map(b => {
+          const st = stMap[b.kode] ?? { aktif: 0, terjual: 0, transit: 0, total: 0 }
+          const pcs = packMap[b.kode] ?? 0
+          const leb = lebMap[b.kode] ?? { dikasih: 0, diterima: 0 }
+          const loss = leb.dikasih > 0 ? ((leb.dikasih - leb.diterima) / leb.dikasih * 100) : 0
+          const isSelesai = b.status === 'Selesai'
+          // shieldtag distribution bar widths
+          const stTotal = st.total || 1
+          const wAktif   = Math.round(st.aktif   / stTotal * 100)
+          const wTerjual = Math.round(st.terjual  / stTotal * 100)
+          const wTransit = Math.round(st.transit  / stTotal * 100)
+
+          return (
+            <Link key={b.kode} href={`/laporan/batch/${encodeURIComponent(b.kode)}`}
+              className="group bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-violet-300 hover:shadow-md transition-all duration-200 flex flex-col">
+
+              {/* Card top accent */}
+              <div className={`h-1 w-full ${isSelesai ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 'bg-gradient-to-r from-violet-500 to-indigo-500'}`} />
+
+              <div className="p-4 flex-1 flex flex-col gap-3">
+                {/* Kode + status */}
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-mono font-bold text-[15px] text-slate-900 group-hover:text-violet-700 transition-colors">{b.kode}</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
                       {b.tanggal ? new Date(b.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">{b.supplier ?? '—'}</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-slate-700">
-                      {fg(b.bahan_dari_pusat, 3)} gr
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      <span className="font-semibold text-slate-800">{pcs > 0 ? `${pcs} pcs` : '—'}</span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {st.total > 0 ? (
-                        <div className="flex items-center justify-end gap-1.5">
-                          <span className="tabular-nums font-semibold text-slate-800">{st.total}</span>
-                          {st.aktif > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-green-50 text-green-700 font-medium">{st.aktif} aktif</span>}
-                          {st.terjual > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 font-medium">{st.terjual} terjual</span>}
-                        </div>
-                      ) : <span className="text-slate-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${
-                        isSelesai ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
-                      }`}>
-                        {isSelesai ? <CheckCircle2 size={10}/> : <Clock size={10}/>}
-                        {b.status ?? 'Aktif'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link href={`/laporan/batch/${encodeURIComponent(b.kode)}`}
-                        className="inline-flex items-center gap-1 text-[12px] font-medium text-violet-600 hover:text-violet-800 opacity-0 group-hover:opacity-100 transition-all">
-                        Detail <ArrowRight size={12}/>
-                      </Link>
-                    </td>
-                  </tr>
-                )
-              })}
-              {(batches ?? []).length === 0 && (
-                <tr><td colSpan={8} className="px-4 py-12 text-center text-slate-400 text-[13px]">
-                  <FileText size={28} className="mx-auto mb-2 opacity-30"/>
-                  Belum ada batch terdaftar
-                </td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                      {b.supplier ? ` · ${b.supplier}` : ''}
+                    </p>
+                  </div>
+                  <span className={`shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-full ${isSelesai ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {isSelesai ? <CheckCircle2 size={9}/> : <Clock size={9}/>}
+                    {b.status ?? 'Proses'}
+                  </span>
+                </div>
+
+                {/* Gram stats */}
+                <div className="grid grid-cols-3 gap-1.5 text-center">
+                  {[
+                    { label: 'Bahan Masuk', val: b.bahan_dari_pusat, color: 'text-slate-700' },
+                    { label: 'Packing', val: pcs > 0 ? pcs + ' pcs' : null, raw: true, color: 'text-blue-700' },
+                    { label: 'Loss Lebur', val: loss > 0 ? loss.toFixed(2) + '%' : null, raw: true, color: loss > 2 ? 'text-red-600' : 'text-green-600' },
+                  ].map(({ label, val, raw, color }) => (
+                    <div key={label} className="bg-slate-50 rounded-xl p-2">
+                      <p className="text-[9px] font-medium text-slate-400 leading-tight">{label}</p>
+                      <p className={`text-[13px] font-bold tabular-nums mt-0.5 ${color}`}>
+                        {raw ? (val ?? '—') : val != null ? `${Number(val).toFixed(2)} gr` : '—'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Shieldtag distribution bar */}
+                {st.total > 0 && (
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <p className="text-[10px] font-medium text-slate-400">Shieldtag <span className="text-slate-600 font-semibold">{st.total}</span></p>
+                      <div className="flex items-center gap-2 text-[9px] font-medium text-slate-400">
+                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-green-400 inline-block"/>Aktif {st.aktif}</span>
+                        {st.terjual > 0 && <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-violet-400 inline-block"/>Terjual {st.terjual}</span>}
+                        {st.transit > 0 && <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-blue-400 inline-block"/>Transit {st.transit}</span>}
+                      </div>
+                    </div>
+                    <div className="h-1.5 rounded-full overflow-hidden bg-slate-100 flex">
+                      {wAktif   > 0 && <div className="bg-green-400  h-full transition-all" style={{ width: `${wAktif}%` }} />}
+                      {wTerjual > 0 && <div className="bg-violet-400 h-full transition-all" style={{ width: `${wTerjual}%` }} />}
+                      {wTransit > 0 && <div className="bg-blue-400   h-full transition-all" style={{ width: `${wTransit}%` }} />}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Card footer */}
+              <div className="px-4 py-2.5 border-t border-slate-100 flex items-center justify-between">
+                <p className="text-[11px] text-slate-400">Lihat detail laporan</p>
+                <ArrowRight size={13} className="text-slate-300 group-hover:text-violet-500 group-hover:translate-x-0.5 transition-all" />
+              </div>
+            </Link>
+          )
+        })}
+
+        {(batches ?? []).length === 0 && (
+          <div className="col-span-3 py-24 text-center text-slate-400">
+            <Layers size={36} className="mx-auto mb-3 opacity-20"/>
+            <p className="text-[14px] font-medium">Belum ada batch terdaftar</p>
+          </div>
+        )}
       </div>
     </div>
   )
