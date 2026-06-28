@@ -376,18 +376,28 @@ export default function DashboardClient({
             alert={reject.count > 0}
           />
         </div>
-        {/* Per-gramasi chips */}
-        {gramasiChartData.length > 0 && (
+      </Section>
+
+      {/* ── Stok per Gramasi ──────────────────────────────────────────── */}
+      {gramasiChartData.length > 0 && (
+        <Card>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <TrendingUp size={14} className="text-violet-500" />
+              <h3 className="text-[13px] font-semibold text-slate-800">Stok per Gramasi</h3>
+            </div>
+            <span className="text-[11px] text-slate-400">{stok.pcs} pcs total</span>
+          </div>
           <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2">
             {gramasiChartData.map((d, i) => (
-              <div key={d.gramasi} className="rounded-xl border border-slate-100 bg-slate-50 px-2 py-2.5 text-center">
-                <p className={cn('text-[16px] font-bold tabular-nums leading-none', i % 2 === 0 ? 'text-violet-700' : 'text-indigo-600')}>{d.pcs}</p>
-                <p className="text-[10px] text-slate-400 font-medium mt-1">{d.gramasi}</p>
+              <div key={d.gramasi} className="rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-3 text-center">
+                <p className={cn('text-[18px] font-bold tabular-nums leading-none', i % 2 === 0 ? 'text-violet-700' : 'text-indigo-500')}>{d.pcs}</p>
+                <p className="text-[11px] text-slate-400 font-medium mt-1.5">{d.gramasi}</p>
               </div>
             ))}
           </div>
-        )}
-      </Section>
+        </Card>
+      )}
 
       {/* ── Pipeline Produksi ─────────────────────────────────────────── */}
       <Section label="Pipeline Produksi" icon={<Hammer size={13} className="text-slate-400" />}>
