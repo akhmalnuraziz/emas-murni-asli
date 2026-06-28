@@ -55,6 +55,7 @@ export async function middleware(request: NextRequest) {
     || isAuthPage
     || pathname.startsWith('/reset-password')
     || pathname.startsWith('/auth/')
+    || pathname.startsWith('/cek/')
 
   if (!user && !isPublicPath) {
     const url = request.nextUrl.clone()
