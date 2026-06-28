@@ -22,6 +22,7 @@ const fmtRp = (n: number | null | undefined) => {
   return 'Rp ' + Math.round(n).toLocaleString('id-ID')
 }
 
+import PaginationBar from '@/components/ui/pagination-bar'
 const fmtNum = (n: number) => n.toLocaleString('id-ID')
 const fmtDate = (d: string | null | undefined) => {
   if (!d) return '—'
@@ -56,6 +57,12 @@ interface Props {
   userRole: string
   userName: string
   canManage: boolean
+  poPage?: number
+  poTotal?: number
+  poPageSize?: number
+  batchPage?: number
+  batchTotal?: number
+  batchPageSize?: number
 }
 
 function showToast(msg: string, ok = true) {
@@ -279,6 +286,8 @@ const inp = 'w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text
 export default function POVendorClient({
   vendors, produkList, kategoriRejectList, poList, poItems, batchList, batchItemsList, rejectList, sjList, stokList, monitoring,
   timAnggotaList, adminInputList, canManage,
+  poPage = 1, poTotal = 0, poPageSize = 20,
+  batchPage = 1, batchTotal = 0, batchPageSize = 20,
 }: Props) {
   const [tab, setTab] = useState<Tab>('monitoring')
   const [search, setSearch] = useState('')
@@ -554,6 +563,7 @@ export default function POVendorClient({
               )
             })}
           {poList.length === 0 && <Empty text="Belum ada PO" />}
+          <PaginationBar page={poPage} total={poTotal} pageSize={poPageSize} paramKey="po_page" label="PO" />
         </div>
       )}
 
@@ -649,6 +659,7 @@ export default function POVendorClient({
               </div>
             ))}
           {batchList.length === 0 && <Empty text="Belum ada penerimaan" />}
+          <PaginationBar page={batchPage} total={batchTotal} pageSize={batchPageSize} paramKey="batch_page" label="penerimaan" />
         </div>
       )}
 

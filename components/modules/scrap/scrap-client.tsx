@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Plus, X, Trash2, Check, AlertTriangle, Search, Package } from 'lucide-react'
 import { createScrap, voidScrap, updateScrapStatus } from '@/app/(dashboard)/scrap/actions'
 import { formatDate } from '@/lib/utils'
+import PaginationBar from '@/components/ui/pagination-bar'
 
 const cn = (...c: (string|undefined|false)[]) => c.filter(Boolean).join(' ')
 const fmtGram = (n: number) => `${Number(n).toFixed(3)} gr`
@@ -26,10 +27,13 @@ interface Props {
   canManage: boolean
 }
 
+const SCRAP_PAGE_SIZE = 50
+
 export default function ScrapClient({ scrapList, timList, adminList, canManage }: Props) {
   const [isPending, startTransition] = useTransition()
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('semua')
+  const [page, setPage] = useState(1)
   const [modal, setModal] = useState<'create' | null>(null)
   const [voidModal, setVoidModal] = useState<any | null>(null)
   const [voidReason, setVoidReason] = useState('')
@@ -39,6 +43,8 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
     const q = search.toLowerCase()
     return !q || s.kode?.toLowerCase().includes(q) || s.batch_kode?.toLowerCase().includes(q) || s.sumber_proses?.toLowerCase().includes(q)
   })
+  const totalPages = Math.ceil(filtered.length / SCRAP_PAGE_SIZE)
+  const paginated = filtered.slice((page - 1) * SCRAP_PAGE_SIZE, page * SCRAP_PAGE_SIZE)
 
   const totalBerat = scrapList.reduce((s, i) => s + Number(i.berat_gram ?? 0), 0)
   const totalSisa  = scrapList.filter(i => i.status === 'tersedia').reduce((s, i) => s + Number(i.berat_sisa ?? 0), 0)
@@ -90,7 +96,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
       {/* Filter + Search */}
       <div className="flex gap-2 flex-wrap items-center">
         {['semua','tersedia','terpakai','dilebur'].map(s => (
-          <button key={s} onClick={() => setFilterStatus(s)}
+          <button key={s} onClick={() => { setFilterStatus(s); setPage(1) }}
             className={`px-3 py-1.5 rounded-full text-[12px] font-semibold capitalize transition-all ${filterStatus === s ? 'text-white' : 'bg-white text-slate-500 border border-slate-300/50'}`}
             style={filterStatus === s
               ? { background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }
@@ -100,7 +106,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
         ))}
         <div className="relative ml-auto">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
-          <input value={search} onChange={e => setSearch(e.target.value)}
+          <input value={search} onChange={e => { setSearch(e.target.value); setPage(1) }}
             placeholder="Cari kode, batch, sumber..."
             className="pl-8 pr-3 h-9 w-52 bg-white border border-slate-200 rounded-xl text-[12px] text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-200"/>
         </div>
@@ -123,7 +129,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
                   <Package size={28} className="text-slate-200 mx-auto mb-2"/>
                   <p className="text-[13px] text-slate-400">Belum ada data scrap</p>
                 </td></tr>
-              ) : filtered.map((s, i) => {
+              ) : paginated.map((s, i) => {
                 const cfg = STATUS_CFG[s.status] ?? STATUS_CFG['tersedia']
                 return (
                   <tr key={s.id} className={cn('border-t border-slate-50 hover:bg-slate-50/50', i === 0 ? 'border-transparent' : '')}>
@@ -164,6 +170,21 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
           </table>
         </div>
       </div>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] text-slate-400">{filtered.length} item · Hal {page} dari {totalPages}</p>
+          <div className="flex gap-2">
+            <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}
+              className="px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+              ← Sebelumnya
+            </button>
+            <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}
+              className="px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+              Berikutnya →
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Create Modal */}
       {modal === 'create' && (

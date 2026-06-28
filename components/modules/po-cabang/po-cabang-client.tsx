@@ -6,6 +6,7 @@ import { Plus, X, Check, ChevronDown, ChevronUp, Trash2, ClipboardList } from 'l
 import { formatDate } from '@/lib/utils'
 import { createPO, updateStatusPO, updateQtyDikirim, deletePO } from '@/app/(dashboard)/po-cabang/actions'
 import { konfirmasiTerimaPoItem } from '@/app/(dashboard)/stok-cabang/actions'
+import PaginationBar from '@/components/ui/pagination-bar'
 
 const GRAMASI_OPTIONS = ['0.1','0.5','1','2','5','10','20','25','50','100','250','500','1000']
 const inp = 'w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all'
@@ -23,9 +24,10 @@ interface PoItem { id: number; produk_nama: string; gramasi: string; qty_diminta
 interface Po { id: number; kode: string; cabang_kode: string; cabang_nama: string; tanggal: string; status: string; catatan: string | null; catatan_admin: string | null; created_at: string; items: PoItem[] }
 
 export default function PoCabangClient({
-  poList, cabangList, userRole, userName,
+  poList, cabangList, userRole, userName, page = 1, total = 0, pageSize = 20,
 }: {
   poList: Po[]; cabangList: { kode: string; nama: string }[]; userRole: string; userName: string
+  page?: number; total?: number; pageSize?: number
 }) {
   const [isPending, start] = useTransition()
   const [showCreate, setShowCreate] = useState(false)
@@ -88,6 +90,7 @@ export default function PoCabangClient({
             <p className="text-slate-300 text-[13px]">Belum ada PO. Buat PO baru dari tombol di atas.</p>
           </div>
         )}
+        <PaginationBar page={page} total={total} pageSize={pageSize} label="PO" />
         {poList.map(po => {
           const cfg = STATUS_CFG[po.status] ?? STATUS_CFG.pending
           const isOpen = expanded === po.id
@@ -219,6 +222,7 @@ export default function PoCabangClient({
             </div>
           )
         })}
+        <PaginationBar page={page} total={total} pageSize={pageSize} label="PO" />
       </div>
 
       {/* Create modal */}

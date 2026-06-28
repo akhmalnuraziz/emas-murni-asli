@@ -381,12 +381,15 @@ function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint,onShieldtagC
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
+const PACKING_PAGE_SIZE = 50
+
 export default function PackingLogClient({packingList,siapPackingItems,shieldtagByPacking={},userRole,userName,tims=[],adminList=[]}:Props){
   const [isPending,startTransition]=useTransition()
   const [modal,setModal]=useState<'create'|'edit'|'delete'|'reject'|null>(null)
   const [active,setActive]=useState<any|null>(null)
   const [err,setErr]=useState('')
   const [search,setSearch]=useState('')
+  const [page,setPage]=useState(1)
   const [lightbox,setLightbox]=useState<string|null>(null)
   const [selectedIds,setSelectedIds]=useState<Set<number>>(new Set())
   const [stModal,setStModal]=useState<{kode:string;list:{kode:string;status:string;lokasi:string|null}[]}|null>(null)
@@ -426,6 +429,13 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
     else cutoff.setDate(now.getDate()-30)
     return records.filter(p=>new Date(p.tanggal)>=cutoff)
   }
+
+  const pagedFiltered=(records:any[])=>{
+    const dated=filteredByDate(records)
+    return dated.slice((page-1)*PACKING_PAGE_SIZE, page*PACKING_PAGE_SIZE)
+  }
+  const totalFilteredDated=filteredByDate(filtered).length
+  const totalPagesP=Math.ceil(totalFilteredDated/PACKING_PAGE_SIZE)
 
   // Summary - PCS based
   const totalRecord=packingList.length
@@ -541,12 +551,12 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
 
         {/* Mobile cards */}
         <div className="lg:hidden space-y-3">
-          {filteredByDate(filtered).length===0?(
+          {totalFilteredDated===0?(
             <div className="text-center py-12 rounded-xl bg-white border border-slate-200">
               <Package size={32}className="mx-auto text-violet-200 mb-3"/>
               <p className="text-[13px] font-medium text-slate-400">Belum ada record packing</p>
             </div>
-          ):filteredByDate(filtered).map(p=>(
+          ):pagedFiltered(filtered).map(p=>(
             <PackingCard key={p.id} p={p} canManage={canManage} canDelete={canDelete}
               onEdit={()=>{setActive(p);setErr('');setModal('edit')}}
               onDelete={()=>{setActive(p);setModal('delete')}}
@@ -562,10 +572,10 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50/60">
                 <th className="px-4 py-3 w-10">
-                  {filteredByDate(filtered).length>0&&(
+                  {totalFilteredDated>0&&(
                     <input type="checkbox" className="rounded accent-violet-600 cursor-pointer"
-                      checked={filteredByDate(filtered).length>0&&filteredByDate(filtered).every(p=>selectedIds.has(p.id))}
-                      onChange={()=>toggleSelectAll(filteredByDate(filtered))}/>
+                      checked={pagedFiltered(filtered).length>0&&pagedFiltered(filtered).every(p=>selectedIds.has(p.id))}
+                      onChange={()=>toggleSelectAll(pagedFiltered(filtered))}/>
                   )}
                 </th>
                 {([['Kode','left'],['Tanggal','left'],['Batch','center'],['Gramasi','center'],['PCS total','left'],['Dipack','left'],['Total gram','left'],['Admin','left'],['Operator','left'],['Foto','left'],['Shieldtag','center'],['Status','center'],['Aksi','left']] as const).map(([h,al])=>(
@@ -574,12 +584,12 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
               </tr>
             </thead>
             <tbody>
-              {filtered.length===0?(
+              {totalFilteredDated===0?(
                 <tr><td colSpan={13}className="text-center py-16">
                   <Package size={28}className="mx-auto text-violet-200 mb-3"/>
                   <p className="text-[13px] font-medium text-slate-400">Belum ada record packing</p>
                 </td></tr>
-              ):filteredByDate(filtered).map((p,idx)=>{
+              ):pagedFiltered(filtered).map((p,idx)=>{
                 const fotos=Array.isArray(p.fotos)?p.fotos:[]
                 const stCount=p.shieldtag_count??0
                 const isPrinted=p.status_surat==='sudah_cetak'
@@ -646,6 +656,21 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
             </tbody>
           </table>
         </div>
+        {totalPagesP > 1 && (
+          <div className="flex items-center justify-between pt-2">
+            <p className="text-[11px] text-slate-400">{totalFilteredDated} record · Hal {page} dari {totalPagesP}</p>
+            <div className="flex gap-2">
+              <button disabled={page<=1} onClick={()=>setPage(p=>p-1)}
+                className="px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                ← Sebelumnya
+              </button>
+              <button disabled={page>=totalPagesP} onClick={()=>setPage(p=>p+1)}
+                className="px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                Berikutnya →
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {modal==='create'&&<CreateModal items={siapPackingItems} tims={tims} adminList={adminList} onClose={()=>setModal(null)} onSubmit={handleCreate} isPending={isPending} error={err}/>}

@@ -4,10 +4,12 @@ import BahanBakuClient from '@/components/modules/bahan-baku/bahan-baku-client'
 
 export const dynamic = 'force-dynamic'
 
+const BATCH_PAGE_SIZE = 30
+
 export default async function BahanBakuPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>
+  searchParams: Promise<{ q?: string; page?: string }>
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -15,9 +17,11 @@ export default async function BahanBakuPage({
 
   const sp = await searchParams
   const q = sp.q?.trim() ?? ''
+  const page = Math.max(1, parseInt(sp.page ?? '1', 10))
+  const from = (page - 1) * BATCH_PAGE_SIZE
 
   const [
-    { data: batches },
+    { data: batches, count: batchTotal },
     { data: profile },
     { data: peleburanRaw },
     { data: produksiUsage },
@@ -31,8 +35,8 @@ export default async function BahanBakuPage({
     { data: packingRejectRaw },
   ] = await Promise.all([
     (() => {
-      const bq = supabase.from('batch').select('*').order('created_at', { ascending: false })
-      return q ? bq.or(`kode.ilike.%${q}%,nama_batch.ilike.%${q}%,supplier.ilike.%${q}%`).limit(200) : bq.limit(200)
+      const bq = supabase.from('batch').select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(from, from + BATCH_PAGE_SIZE - 1)
+      return q ? bq.or(`kode.ilike.%${q}%,nama_batch.ilike.%${q}%,supplier.ilike.%${q}%`) : bq
     })(),
     supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single(),
     supabase.from('peleburan')
@@ -163,6 +167,9 @@ export default async function BahanBakuPage({
       userName={profile?.name ?? ''}
       batchLossMap={batchLossMap}
       currentQ={q}
+      batchPage={page}
+      batchTotal={batchTotal ?? 0}
+      batchPageSize={BATCH_PAGE_SIZE}
     />
   )
 }

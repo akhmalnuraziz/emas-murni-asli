@@ -8,6 +8,7 @@ import {
   Edit2, Trash2, Scale, Camera, Eye, EyeOff, ChevronDown, ChevronUp, Clock, Archive
 } from 'lucide-react'
 import { cn, formatRupiah, formatDate, formatGram } from '@/lib/utils'
+import PaginationBar from '@/components/ui/pagination-bar'
 import {
   createBatch, updateBatch, deleteBatch,
   lockBatch, unlockBatch, updateSisaFisik, hapusSisaFisik,
@@ -18,7 +19,7 @@ import type { UserRole } from '@/lib/types/database'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
 import { TimPickerStd, AdminPickerStd } from '@/components/modules/produksi/serah-terima-modal'
 
-interface Props { batches: any[]; peleburanList?: any[]; rejectItems?: any[]; produksiItems?: any[]; rejectCountMap: Record<string, number>; packingRejectItems?: any[]; packingRejectCountMap?: Record<string, number>; toleransiPeleburan?: number; tims?: any[]; adminList?: any[]; userRole: UserRole; userName: string; batchLossMap?: Record<number, any>; currentQ?: string }
+interface Props { batches: any[]; peleburanList?: any[]; rejectItems?: any[]; produksiItems?: any[]; rejectCountMap: Record<string, number>; packingRejectItems?: any[]; packingRejectCountMap?: Record<string, number>; toleransiPeleburan?: number; tims?: any[]; adminList?: any[]; userRole: UserRole; userName: string; batchLossMap?: Record<number, any>; currentQ?: string; batchPage?: number; batchTotal?: number; batchPageSize?: number }
 
 // ─── Selisih helper ──────────────────────────────────────────────────────────
 function hitungSelisih(pusat: number, gudang: number) {
@@ -332,7 +333,7 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
-export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[],produksiItems=[],rejectCountMap,packingRejectItems=[],packingRejectCountMap={},toleransiPeleburan=0.05,tims=[],adminList=[],userRole,userName,batchLossMap={},currentQ=''}:Props){
+export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[],produksiItems=[],rejectCountMap,packingRejectItems=[],packingRejectCountMap={},toleransiPeleburan=0.05,tims=[],adminList=[],userRole,userName,batchLossMap={},currentQ='',batchPage=1,batchTotal=0,batchPageSize=30}:Props){
   const [filter,setFilter]=useState<'semua'|'aktif'|'terkunci'>('semua')
   const router = useRouter()
   const [peleburanModalBatch,setPeleburanModalBatch]=useState<string|null>(null)
@@ -1001,6 +1002,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
               </div>
             )
           })}
+          <PaginationBar page={batchPage} total={batchTotal} pageSize={batchPageSize} label="batch" />
         </div>
 
       {/* Modals */}
