@@ -1188,7 +1188,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
               {/* 1. Sisa Bahan Mentah Belum Dilebur */}
               <div>
                 <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input type="checkbox" checked={mentahChecked} onChange={e=>setMentahChecked(e.target.checked)} className="w-4 h-4 rounded accent-violet-600"/>
+                  <input type="checkbox" checked={mentahChecked} onChange={e=>{setMentahChecked(e.target.checked);if(e.target.checked&&!mentahGram)setMentahGram(sisaMentahBelumLebur.toFixed(3))}} className="w-4 h-4 rounded accent-violet-600"/>
                   <span className="text-[12px] font-semibold text-slate-700">Sisa Bahan Mentah Belum Dilebur</span>
                   <span className="ml-auto text-[10px] text-slate-400">{formatGram(sisaMentahBelumLebur)}</span>
                 </label>
@@ -1204,7 +1204,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
               {/* 2. Hasil Lebur Belum Dicetak */}
               <div>
                 <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input type="checkbox" checked={leburChecked} onChange={e=>setLeburChecked(e.target.checked)} className="w-4 h-4 rounded accent-violet-600"/>
+                  <input type="checkbox" checked={leburChecked} onChange={e=>{setLeburChecked(e.target.checked);if(e.target.checked&&!leburGram)setLeburGram(hasilLeburBelumCetak.toFixed(3))}} className="w-4 h-4 rounded accent-violet-600"/>
                   <span className="text-[12px] font-semibold text-slate-700">Hasil Lebur Belum Dicetak</span>
                   <span className="ml-auto text-[10px] text-violet-400 font-semibold">{formatGram(hasilLeburBelumCetak)}</span>
                 </label>

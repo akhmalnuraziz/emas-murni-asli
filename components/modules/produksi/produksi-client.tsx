@@ -1780,7 +1780,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   </div>
                                   <div className="flex items-center gap-2 mt-1 flex-wrap text-[11px] text-slate-500">
                                     {(item.tanggal_mulai||item.tanggal_produksi)&&<span>{new Date(item.tanggal_mulai||item.tanggal_produksi).toLocaleDateString('id-ID')}{item.jam_mulai_cutting?` · ${String(item.jam_mulai_cutting).slice(0,5)}`:''}{item.jam_selesai?` → ${String(item.jam_selesai).slice(0,5)}`:''}</span>}
-                                    {(item.tim_nama||item.operator)&&<span>· 👥 {item.tim_nama||item.operator}{item.tim_anggota_aktif?`: ${item.tim_anggota_aktif}`:''}</span>}
+                                    {(item.tim_nama||item.operator)&&<span>· 👥 {item.tim_nama||item.operator}{(item.tim_anggota_aktif||(item.tim_nama&&item.operator))?`: ${item.tim_anggota_aktif||item.operator}`:''}</span>}
                                     {item.admin_input&&<span>· ✍️ {item.admin_input}</span>}
                                   </div>
                                 </div>
@@ -1861,7 +1861,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   </div>
                                   <div className="flex items-center gap-2 mt-1 flex-wrap text-[11px] text-slate-500">
                                     {h.serah_tanggal&&<span>{new Date(h.serah_tanggal).toLocaleDateString('id-ID')}{h.serah_jam?` · ${String(h.serah_jam).slice(0,5)}`:''}{h.terima_jam?` → ${String(h.terima_jam).slice(0,5)}`:''}</span>}
-                                    {(h.tim_nama||h.serah_operator||h.terima_operator)&&<span>· 👥 {h.tim_nama||h.terima_operator||h.serah_operator}{h.tim_anggota_aktif?`: ${h.tim_anggota_aktif}`:''}</span>}
+                                    {(h.tim_nama||h.serah_operator||h.terima_operator)&&<span>· 👥 {h.tim_nama||h.terima_operator||h.serah_operator}{(h.tim_anggota_aktif||(h.tim_nama&&(h.terima_operator||h.serah_operator)))?`: ${h.tim_anggota_aktif||h.terima_operator||h.serah_operator}`:''}</span>}
                                     {(h.serah_admin_input||h.terima_admin_input)&&<span>· ✍️ {h.terima_admin_input||h.serah_admin_input}</span>}
                                   </div>
                                 </div>
@@ -2703,7 +2703,7 @@ function SesiCard({ sesiId, items, canEdit, canDelete, expanded, toggleExp, onCu
                           {(h.serah_jam||h.terima_jam)&&<span className="text-[10px] text-slate-400">🕒 {h.serah_jam?String(h.serah_jam).slice(0,5):'—'}{h.terima_jam?` → ${String(h.terima_jam).slice(0,5)}`:''}</span>}
                         </div>
                         {(h.tim_nama||h.serah_operator||h.terima_operator)&&(
-                          <div className="text-[10px] text-slate-400 mt-0.5">👥 {h.tim_nama||h.serah_operator||h.terima_operator}{h.tim_anggota_aktif?`: ${h.tim_anggota_aktif}`:''}</div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">👥 {h.tim_nama||h.serah_operator||h.terima_operator}{(h.tim_anggota_aktif||(h.tim_nama&&(h.terima_operator||h.serah_operator)))?`: ${h.tim_anggota_aktif||h.terima_operator||h.serah_operator}`:''}</div>
                         )}
                         {(h.serah_admin_input||h.terima_admin_input)&&(
                           <div className="text-[10px] text-slate-400 mt-0.5">✍️ {[h.serah_admin_input,h.terima_admin_input].filter(Boolean).join(' · ')}</div>
