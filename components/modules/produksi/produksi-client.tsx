@@ -1,5 +1,6 @@
 ﻿'use client'
 
+import { toast } from 'sonner'
 import { useState, useEffect, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createPortal } from 'react-dom'
@@ -349,10 +350,10 @@ function SisaFisikInput({ batchKode, initialValue }: { batchKode: string; initia
     setSaving(true)
     const r = await updateSisaFisikBatch(batchKode, parsed)
     setSaving(false)
-    if (r?.error) { showToast(r.error, false); return }
+    if (r?.error) { toast.error(r.error); return }
     setVal(parsed)
     setEditing(false)
-    showToast('✅ Sisa fisik disimpan')
+    toast.success('Sisa fisik disimpan')
   }
 
   if (saving) return <span className="text-[11px] text-violet-500 font-medium">Menyimpan…</span>
