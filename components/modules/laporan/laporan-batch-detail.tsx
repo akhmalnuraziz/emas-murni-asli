@@ -4,7 +4,7 @@ import { Download, ArrowLeft, Package, Layers, Tag, Hammer, TrendingDown, CheckC
 import Link from 'next/link'
 import { formatDate, formatRupiah, cn } from '@/lib/utils'
 import {
-  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
+  Cell, Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from 'recharts'
 
@@ -43,15 +43,6 @@ const PALETTE = {
   amber: '#D97706', blue: '#2563EB', cyan: '#0891B2',
 }
 
-const PieTooltip = ({ active, payload }: any) => {
-  if (!active || !payload?.length) return null
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-lg px-3 py-2 text-[12px]">
-      <p className="font-semibold" style={{ color: payload[0].payload.fill }}>{payload[0].name}</p>
-      <p className="text-slate-600">{payload[0].value} pcs</p>
-    </div>
-  )
-}
 
 export default function LaporanBatchDetail({ batch, peleburans, produksiItems, packings, shieldtags, userRole }: Props) {
   const showHpp = canSeeHpp(userRole)
@@ -89,14 +80,6 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
   const stTransit = shieldtags.filter(s => s.status === 'Transit').length
   const stTerjual = shieldtags.filter(s => s.status === 'Terjual').length
   const stTotal   = shieldtags.length
-  const terjualPct = stTotal > 0 ? (stTerjual / stTotal * 100).toFixed(0) : '0'
-
-  const pieData = [
-    { name: 'Aktif',   value: stAktif,   fill: '#16A34A' },
-    { name: 'Transit', value: stTransit, fill: '#2563EB' },
-    { name: 'Terjual', value: stTerjual, fill: PALETTE.violet },
-  ].filter(d => d.value > 0)
-
   const gramasiChartData = gramasiRows.map(r => ({
     gramasi: r.gramasi + 'gr',
     pcs: r.pcs,
@@ -308,64 +291,41 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
           </div>
 
           {stTotal > 0 ? (
-            <div className="p-4 flex-1 flex flex-col">
-              {/* Donut */}
-              <div className="relative">
-                <ResponsiveContainer width="100%" height={170}>
-                  <PieChart>
-                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={46} outerRadius={70}
-                      dataKey="value" paddingAngle={3} isAnimationActive>
-                      {pieData.map((d, i) => <Cell key={i} fill={d.fill} />)}
-                    </Pie>
-                    <Tooltip content={<PieTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
-                {/* Center label */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <p className="text-[22px] font-bold text-slate-900 tabular-nums">{terjualPct}%</p>
-                  <p className="text-[10px] text-slate-400 font-medium">Terjual</p>
-                </div>
-              </div>
-
-              {/* Legend bars */}
-              <div className="space-y-2.5 mt-2">
+            <div className="p-4">
+              {/* Big number tiles */}
+              <div className="grid grid-cols-3 gap-2 mb-4">
                 {[
-                  { label: 'Aktif',   val: stAktif,   color: '#16A34A' },
-                  { label: 'Terjual', val: stTerjual, color: PALETTE.violet },
-                  { label: 'Transit', val: stTransit, color: PALETTE.blue },
-                ].filter(d => d.val > 0).map(({ label, val, color }) => {
+                  { label: 'Aktif',   val: stAktif,   color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
+                  { label: 'Terjual', val: stTerjual, color: PALETTE.violet, bg: '#F5F3FF', border: '#DDD6FE' },
+                  { label: 'Transit', val: stTransit, color: PALETTE.blue,   bg: '#EFF6FF', border: '#BFDBFE' },
+                ].map(({ label, val, color, bg, border }) => {
                   const p = stTotal > 0 ? val / stTotal * 100 : 0
                   return (
-                    <div key={label}>
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-2 h-2 rounded-full" style={{ background: color }} />
-                          <p className="text-[11px] font-medium text-slate-600">{label}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-[11px] font-bold tabular-nums text-slate-800">{val}</p>
-                          <p className="text-[10px] text-slate-400 w-10 text-right">{p.toFixed(1)}%</p>
-                        </div>
-                      </div>
-                      <div className="h-1 rounded-full bg-slate-100">
-                        <div className="h-full rounded-full" style={{ width: `${p}%`, background: color }} />
-                      </div>
+                    <div key={label} className="rounded-xl p-3 text-center border" style={{ background: bg, borderColor: border }}>
+                      <p className="text-[22px] font-bold tabular-nums leading-none" style={{ color }}>{val}</p>
+                      <p className="text-[10px] font-medium text-slate-500 mt-1">{label}</p>
+                      <p className="text-[10px] font-semibold mt-0.5" style={{ color }}>{p.toFixed(0)}%</p>
                     </div>
                   )
                 })}
               </div>
-
-              {/* Tag count */}
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+              {/* Stacked bar */}
+              <div className="h-2.5 rounded-full overflow-hidden flex gap-0.5">
+                {stAktif   > 0 && <div className="h-full rounded-sm transition-all" style={{ width: `${stAktif/stTotal*100}%`,   background: '#16A34A' }} />}
+                {stTerjual > 0 && <div className="h-full rounded-sm transition-all" style={{ width: `${stTerjual/stTotal*100}%`, background: PALETTE.violet }} />}
+                {stTransit > 0 && <div className="h-full rounded-sm transition-all" style={{ width: `${stTransit/stTotal*100}%`, background: PALETTE.blue }} />}
+              </div>
+              {/* Footer */}
+              <div className="mt-3 flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-                  <Tag size={11} /> Total Shieldtag
+                  <Tag size={11} /> Total
                 </div>
-                <p className="text-[18px] font-bold text-slate-900 tabular-nums">{stTotal}</p>
+                <p className="text-[16px] font-bold text-slate-900 tabular-nums">{stTotal} pcs</p>
               </div>
             </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center py-10 text-slate-300">
-              <Shield size={32} className="mb-2 opacity-30" />
+            <div className="flex flex-col items-center justify-center py-8 text-slate-300">
+              <Shield size={28} className="mb-2 opacity-30" />
               <p className="text-[12px]">Belum ada shieldtag</p>
             </div>
           )}

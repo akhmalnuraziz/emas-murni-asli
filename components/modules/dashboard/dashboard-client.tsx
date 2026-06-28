@@ -343,12 +343,12 @@ export default function DashboardClient({
 
       {/* ── KPI Row 1: Stok Emas ─────────────────────────────────────── */}
       <Section label="Stok Emas — Shieldtag" icon={<Tag size={13} className="text-violet-500" />}>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           <KpiCard
             label="Stok Aktif"
             value={stok.pcs.toLocaleString('id-ID') + ' pcs'}
             sub={stok.gram.toFixed(2) + ' gr'}
-            sub2={canSeeRp ? formatRupiah(stok.nilaiRp) : undefined}
+            sub2={canSeeRp && stok.nilaiRp > 0 ? formatRupiah(stok.nilaiRp) : undefined}
             icon={Tag} iconColor="text-violet-600" iconBg="bg-violet-50"
           />
           <KpiCard
@@ -357,12 +357,6 @@ export default function DashboardClient({
             sub={transit.gram.toFixed(2) + ' gr'}
             icon={ArrowLeftRight} iconColor="text-sky-600" iconBg="bg-sky-50"
             alert={transit.pcs > 0}
-          />
-          <KpiCard
-            label="Buyback"
-            value={(penjualan.buybackCount ?? 0) + ' transaksi'}
-            sub={`periode ${periodLabel}`}
-            icon={RotateCcw} iconColor="text-amber-600" iconBg="bg-amber-50"
           />
           <KpiCard
             label="Reject Belum Dilebur"
@@ -378,26 +372,40 @@ export default function DashboardClient({
 
       {/* ── Stok Emas per Gramasi ─────────────────────────────────────── */}
       <Card>
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp size={15} className="text-violet-500" />
-          <h3 className="text-[13px] font-semibold text-slate-800">Stok Emas per Gramasi</h3>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <TrendingUp size={15} className="text-violet-500" />
+            <h3 className="text-[13px] font-semibold text-slate-800">Stok Emas per Gramasi</h3>
+          </div>
+          <span className="text-[11px] text-slate-400 font-medium">{stok.pcs} pcs total</span>
         </div>
         {gramasiChartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={gramasiChartData} barSize={22}>
-              <XAxis dataKey="gramasi" tick={{ fontSize: 11, fill: '#9A9A94', fontFamily: 'Inter' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#9A9A94', fontFamily: 'Inter' }} axisLine={false} tickLine={false} width={30} />
-              <Tooltip
-                contentStyle={{ borderRadius: 10, border: '1px solid #E4E4E0', fontSize: 12, fontFamily: 'Inter', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
-                cursor={{ fill: 'rgba(100,80,214,0.05)' }}
-              />
-              <Bar dataKey="pcs" radius={[5, 5, 0, 0]}>
-                {gramasiChartData.map((_, i) => (
-                  <Cell key={i} fill={i % 2 === 0 ? '#6450D6' : '#9585F5'} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <>
+            {/* Text chips — angka eksplisit per gramasi */}
+            <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2 mb-4">
+              {gramasiChartData.map((d, i) => (
+                <div key={d.gramasi} className="rounded-xl border border-slate-100 bg-slate-50 px-2 py-2.5 text-center">
+                  <p className={cn('text-[16px] font-bold tabular-nums leading-none', i % 2 === 0 ? 'text-violet-700' : 'text-indigo-600')}>{d.pcs}</p>
+                  <p className="text-[10px] text-slate-400 font-medium mt-1">{d.gramasi}</p>
+                </div>
+              ))}
+            </div>
+            {/* Visual bar chart */}
+            <ResponsiveContainer width="100%" height={100}>
+              <BarChart data={gramasiChartData} barSize={18} margin={{ top: 0, bottom: 0, left: 0, right: 0 }}>
+                <XAxis dataKey="gramasi" tick={{ fontSize: 10, fill: '#9A9A94', fontFamily: 'Inter' }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ borderRadius: 10, border: '1px solid #E4E4E0', fontSize: 12, fontFamily: 'Inter', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                  cursor={{ fill: 'rgba(100,80,214,0.05)' }}
+                />
+                <Bar dataKey="pcs" radius={[5, 5, 0, 0]}>
+                  {gramasiChartData.map((_, i) => (
+                    <Cell key={i} fill={i % 2 === 0 ? '#6450D6' : '#9585F5'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </>
         ) : <EmptyState text="Belum ada stok shieldtag aktif" />}
       </Card>
 
@@ -605,28 +613,49 @@ export default function DashboardClient({
         </Card>
 
         <Card>
-          <div className="flex items-center gap-2 mb-4">
-            <Layers size={14} className="text-amber-500" />
-            <h3 className="text-[13px] font-semibold text-slate-800">Batch Emas Terbaru</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Layers size={14} className="text-amber-500" />
+              <h3 className="text-[13px] font-semibold text-slate-800">Batch Emas Terbaru</h3>
+            </div>
+            <a href="/bahan-baku" className="text-[11px] text-violet-600 font-semibold hover:text-violet-700 flex items-center gap-1">
+              Lihat semua <ChevronRight size={11} />
+            </a>
           </div>
           {batchTerbaru.length > 0 ? (
-            <div className="space-y-2">
-              {batchTerbaru.map((b: any) => (
-                <div key={b.kode} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
-                  <div>
-                    <p className="text-[12px] font-mono font-semibold text-violet-700">{b.kode}</p>
-                    <p className="text-[11px] text-slate-400">{formatDate(b.tanggal)} · {b.supplier ?? '—'}</p>
+            <div className="space-y-0 divide-y divide-slate-50">
+              {batchTerbaru.map((b: any) => {
+                const sisaBahan = Number(b.bahan_siap_cetak ?? 0)
+                return (
+                  <div key={b.kode} className="flex items-center justify-between py-2.5">
+                    <div>
+                      <p className="text-[12px] font-mono font-semibold text-violet-700">{b.kode}</p>
+                      <p className="text-[11px] text-slate-400">{formatDate(b.tanggal)} · {b.supplier ?? '—'}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[12px] font-semibold text-slate-700 tabular-nums">
+                        {b.timbangan_akhir ? `${Number(b.timbangan_akhir).toFixed(2)} gr` : '—'}
+                      </p>
+                      {sisaBahan > 0 && (
+                        <p className="text-[10px] text-amber-600 font-medium tabular-nums">sisa {sisaBahan.toFixed(2)} gr</p>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[12px] font-semibold text-slate-700 tabular-nums">
-                      {b.timbangan_akhir ? `${Number(b.timbangan_akhir).toFixed(2)} gr` : '—'}
-                    </p>
-                    <StatusBadge status={b.status ?? 'Proses'} />
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           ) : <EmptyState text="Belum ada batch" />}
+          {/* Total sisa bahan aktif */}
+          {(() => {
+            const totalSisa = batchTerbaru.reduce((s: number, b: any) => s + Number(b.bahan_siap_cetak ?? 0), 0)
+            if (totalSisa <= 0) return null
+            return (
+              <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+                <p className="text-[11px] text-slate-400">Total sisa bahan (aktif batch)</p>
+                <p className="text-[13px] font-bold text-amber-700 tabular-nums">{totalSisa.toFixed(2)} gr</p>
+              </div>
+            )
+          })()}
         </Card>
       </div>
 
