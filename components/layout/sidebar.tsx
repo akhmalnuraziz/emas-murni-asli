@@ -40,14 +40,9 @@ const NAV_GROUPS = [
     ],
   },
   {
-    label: 'Bisnis',
+    label: 'Lainnya',
     items: [
-      { href: '/penjualan',       label: 'Penjualan',           icon: ShoppingCart, module: 'penjualan'       },
-      { href: '/retur-penjualan', label: 'Retur Penjualan',    icon: RefreshCcw,   module: 'retur-penjualan' },
-      { href: '/pelanggan',       label: 'Database Pelanggan', icon: Users,        module: 'pelanggan'       },
-      { href: '/buyback',         label: 'Buyback',             icon: RotateCcw,    module: 'buyback'         },
-      { href: '/pengeluaran',     label: 'Pengeluaran',         icon: Wallet,       module: 'pengeluaran'     },
-      { href: '/laporan',         label: 'Laporan',             icon: FileText,     module: 'laporan'         },
+      { href: '/buyback', label: 'Buyback', icon: RotateCcw, module: 'buyback' },
     ],
   },
 ]

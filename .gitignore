@@ -34,3 +34,4 @@ AppData/
 *.log
 
 .vercel
+.env*

@@ -70,8 +70,7 @@ export default async function DashboardPage({
     supabase.from('users_profile').select('name, role').eq('id', user?.id ?? '').single(),
     supabase.from('shieldtag').select('gramasi, hpp').eq('status', 'Aktif').is('voided_at', null),
     Promise.resolve({ data: null, error: null }), // transit handled by get_balance_summary RPC
-    supabase.from('penjualan').select('gramasi, pcs, harga_jual, tanggal')
-      .gte('tanggal', dateFrom).lte('tanggal', dateTo).is('voided_at' as any, null),
+    Promise.resolve({ data: [] as any[] }),   // penjualan dinonaktifkan
     supabase.from('buyback').select('id, tanggal')
       .gte('tanggal', dateFrom).lte('tanggal', dateTo).is('voided_at', null),
     supabase.from('produksi_item')
@@ -104,9 +103,7 @@ export default async function DashboardPage({
     supabase.from('stok_packaging')
       .select('stok_qty, produk_kode, produk_nama, produk:produk_packaging(gramasi)')
       .order('produk_id'),
-    // Pengeluaran
-    supabase.from('pengeluaran').select('nominal, kategori')
-      .gte('tanggal', dateFrom).lte('tanggal', dateTo).is('voided_at', null),
+    Promise.resolve({ data: [] as any[] }),   // pengeluaran dinonaktifkan
     // Trend produksi harian (dari packing)
     supabase.from('packing')
       .select('tanggal, gramasi, pcs_dipack')

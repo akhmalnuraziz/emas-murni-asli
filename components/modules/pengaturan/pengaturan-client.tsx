@@ -33,7 +33,7 @@ export default function PengaturanClient({
   gramasiList: any[]
 }) {
   const [isPending, start] = useTransition()
-  const [tab, setTab] = useState<'tim' | 'admin' | 'umum' | 'packaging' | 'cabang' | 'users' | 'gramasi'>('tim')
+  const [tab, setTab] = useState<'tim' | 'admin' | 'umum' | 'cabang' | 'users' | 'gramasi'>('tim')
   const canManage = userRole === 'owner'
   const isOwnerAdmin = userRole === 'owner'
 
@@ -44,7 +44,7 @@ export default function PengaturanClient({
     { id: 'cabang'    as const, label: 'Cabang',             icon: Building2 },
     { id: 'users'     as const, label: 'Manajemen User',     icon: UserPlus  },
     { id: 'umum'      as const, label: 'Pengaturan Umum',    icon: Settings2 },
-    { id: 'packaging' as const, label: 'Biaya Packaging',    icon: Sliders   },
+    // { id: 'packaging' as const, label: 'Biaya Packaging', icon: Sliders }, // nonaktif — penjualan pakai Accurate
   ]
 
   return (

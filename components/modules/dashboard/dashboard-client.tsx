@@ -359,11 +359,10 @@ export default function DashboardClient({
             alert={transit.pcs > 0}
           />
           <KpiCard
-            label={`Terjual — ${periodLabel}`}
-            value={penjualan.pcs.toLocaleString('id-ID') + ' pcs'}
-            sub={canSeeRp ? formatRupiah(penjualan.omzetRp) : undefined}
-            sub2={penjualan.buybackCount > 0 ? `${penjualan.buybackCount} buyback` : undefined}
-            icon={ShoppingCart} iconColor="text-green-600" iconBg="bg-green-50"
+            label="Buyback"
+            value={(penjualan.buybackCount ?? 0) + ' transaksi'}
+            sub={`periode ${periodLabel}`}
+            icon={RotateCcw} iconColor="text-amber-600" iconBg="bg-amber-50"
           />
           <KpiCard
             label="Reject Belum Dilebur"
@@ -579,24 +578,6 @@ export default function DashboardClient({
         </Section>
       )}
 
-      {/* ── Finansial ─────────────────────────────────────────────────── */}
-      {canSeeRp && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <KpiCard label={`Omzet — ${periodLabel}`}
-            value={formatRupiah(penjualan.omzetRp)} sub={penjualan.pcs + ' pcs terjual'}
-            icon={ShoppingCart} iconColor="text-green-600" iconBg="bg-green-50" />
-          <KpiCard label={`Pengeluaran — ${periodLabel}`}
-            value={formatRupiah(totalPengeluaran)} sub="biaya operasional"
-            icon={Wallet} iconColor="text-red-600" iconBg="bg-red-50"
-            alert={totalPengeluaran > 0} />
-          <KpiCard label="Estimasi Profit"
-            value={formatRupiah(Math.max(0, penjualan.omzetRp - totalPengeluaran))}
-            sub="omzet − pengeluaran"
-            icon={TrendingUp}
-            iconColor={penjualan.omzetRp > totalPengeluaran ? 'text-green-600' : 'text-red-600'}
-            iconBg={penjualan.omzetRp > totalPengeluaran ? 'bg-green-50' : 'bg-red-50'} />
-        </div>
-      )}
 
       {/* ── Trend Produksi ─────────────────────────────────────────────── */}
       <TrendProduksi trend={produksiTrend} />
