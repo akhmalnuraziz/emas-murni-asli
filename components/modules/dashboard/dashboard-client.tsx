@@ -379,15 +379,15 @@ export default function DashboardClient({
       </Section>
 
       {/* ── Stok per Gramasi ──────────────────────────────────────────── */}
-      {gramasiChartData.length > 0 && (
-        <Card>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <TrendingUp size={14} className="text-violet-500" />
-              <h3 className="text-[13px] font-semibold text-slate-800">Stok per Gramasi</h3>
-            </div>
-            <span className="text-[11px] text-slate-400">{stok.pcs} pcs total</span>
+      <Card>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <TrendingUp size={14} className="text-violet-500" />
+            <h3 className="text-[13px] font-semibold text-slate-800">Stok per Gramasi</h3>
           </div>
+          <span className="text-[11px] text-slate-400">{stok.pcs} pcs total</span>
+        </div>
+        {gramasiChartData.length > 0 ? (
           <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2">
             {gramasiChartData.map((d, i) => (
               <div key={d.gramasi} className="rounded-xl border border-slate-200 bg-white shadow-sm px-3 py-3 text-center transition-all duration-200 hover:shadow-md hover:border-violet-300">
@@ -396,8 +396,13 @@ export default function DashboardClient({
               </div>
             ))}
           </div>
-        </Card>
-      )}
+        ) : (
+          <div className="h-16 flex items-center gap-2.5 text-slate-300">
+            <Tag size={16} className="flex-shrink-0" />
+            <p className="text-[12px]">Belum ada stok emas aktif</p>
+          </div>
+        )}
+      </Card>
 
       {/* ── Pipeline Produksi ─────────────────────────────────────────── */}
       <Section label="Pipeline Produksi" icon={<Hammer size={13} className="text-slate-400" />}>
