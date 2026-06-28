@@ -234,8 +234,10 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
-  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  const { data: produksi } = await supabase.from('produksi_item').select('*').eq('id', produksiId).single()
+  const [{ data: profile }, { data: produksi }] = await Promise.all([
+    supabase.from('users_profile').select('name, role').eq('id', user.id).single(),
+    supabase.from('produksi_item').select('*').eq('id', produksiId).single(),
+  ])
   if (!produksi) return { error: 'Item produksi tidak ditemukan' }
 
   const statusBaru = formData.get('status') as string
@@ -259,22 +261,23 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
 
     const newTotalGram = Math.max(0, beratSebelumnya - beratReject)
 
-    await supabase.from('produksi_event').insert({
-      produksi_item_id: produksiId, tanggal, status: 'Reject',
-      total_gram: newTotalGram, berat_sebelumnya: beratSebelumnya,
-      losses: beratReject, jam_mulai: jamMulai,
-      catatan: formData.get('catatan') as string || null,
-      user_name: profile?.name || null,
-    })
-
-    await supabase.from('produksi_item').update({
-      current_status: produksi.current_status,
-      total_gram: newTotalGram,
-      pcs_reject: (Number(produksi.pcs_reject) || 0) + pcsReject,
-      pcs_good: pcsGoodNow - pcsReject,
-      berat_reject: (Number(produksi.berat_reject) || 0) + beratReject,
-      status_reject: 'belum_dilebur',
-    }).eq('id', produksiId)
+    await Promise.all([
+      supabase.from('produksi_event').insert({
+        produksi_item_id: produksiId, tanggal, status: 'Reject',
+        total_gram: newTotalGram, berat_sebelumnya: beratSebelumnya,
+        losses: beratReject, jam_mulai: jamMulai,
+        catatan: formData.get('catatan') as string || null,
+        user_name: profile?.name || null,
+      }),
+      supabase.from('produksi_item').update({
+        current_status: produksi.current_status,
+        total_gram: newTotalGram,
+        pcs_reject: (Number(produksi.pcs_reject) || 0) + pcsReject,
+        pcs_good: pcsGoodNow - pcsReject,
+        berat_reject: (Number(produksi.berat_reject) || 0) + beratReject,
+        status_reject: 'belum_dilebur',
+      }).eq('id', produksiId),
+    ])
 
     supabase.from('audit_log').insert({
       user_id: user.id, user_name: profile?.name, user_role: profile?.role,
@@ -305,21 +308,22 @@ export async function updateStatusProduksi(produksiId: number, produksiKode: str
 
   const kategoriLosses = (formData.get('kategori_losses') as string) || null
 
-  await supabase.from('produksi_event').insert({
-    produksi_item_id: produksiId, tanggal, status: statusBaru,
-    total_gram: totalGramBaru, berat_sebelumnya: beratSebelumnya,
-    sisa_serbuk: sisaSerbuk, losses,
-    kategori_losses: kategoriLosses,
-    jam_mulai: jamMulai,
-    catatan: formData.get('catatan') as string || null,
-    user_name: profile?.name || null,
-    fotos: fotoUrls,
-    fotos_sisa_serbuk: fotoSerbukUrls,
-  })
-
-  await supabase.from('produksi_item').update({
-    current_status: statusBaru, total_gram: totalGramBaru,
-  }).eq('id', produksiId)
+  await Promise.all([
+    supabase.from('produksi_event').insert({
+      produksi_item_id: produksiId, tanggal, status: statusBaru,
+      total_gram: totalGramBaru, berat_sebelumnya: beratSebelumnya,
+      sisa_serbuk: sisaSerbuk, losses,
+      kategori_losses: kategoriLosses,
+      jam_mulai: jamMulai,
+      catatan: formData.get('catatan') as string || null,
+      user_name: profile?.name || null,
+      fotos: fotoUrls,
+      fotos_sisa_serbuk: fotoSerbukUrls,
+    }),
+    supabase.from('produksi_item').update({
+      current_status: statusBaru, total_gram: totalGramBaru,
+    }).eq('id', produksiId),
+  ])
 
   supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,

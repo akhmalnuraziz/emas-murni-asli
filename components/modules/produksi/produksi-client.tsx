@@ -1442,7 +1442,12 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
   }
 
   function setFilter(tab: string) { navigateProd({ status: tab === 'Semua' ? '' : tab, page: '1' }) }
-  const [expanded, setExpanded] = useState<Set<number>>(new Set())
+  const [expanded, setExpanded] = useState<Set<number>>(() => {
+    try {
+      const saved = sessionStorage.getItem('produksi_expanded')
+      return saved ? new Set<number>(JSON.parse(saved)) : new Set<number>()
+    } catch { return new Set<number>() }
+  })
   const [modal, setModal]       = useState<'create'|'tambahProduksi'|'edit'|'update'|'delete'|'cuttingTerima'|'editCutting'|'serahStage'|'terimaStage'|'editHandover'|'editSerahStage'|'deleteHandover'|'deleteCutting'|'sesiCuttingTerima'|'sesiSerahStage'|'sesiTerimaStage'|'terimaCuttingItem'|null>(null)
   const [activeSesi, setActiveSesi] = useState<{sesiId: string; items: any[]; tahap?: string} | null>(null)
   const [active, setActive]     = useState<any>(null)
@@ -1464,7 +1469,14 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
   function openEditHandover(item: any, h: any) { setActive(item); setActiveTahap(h.tahap); setActiveHandoverId(h.id); setActiveHandoverData(h); setErr(''); setModal('editHandover') }
   function openEditSerahStage(item: any, h: any) { setActive(item); setActiveTahap(h.tahap); setActiveHandoverId(h.id); setActiveHandoverData(h); setErr(''); setModal('editSerahStage') }
   function openDeleteHandover(item: any, h: any) { setActive(item); setActiveTahap(h.tahap); setActiveHandoverId(h.id); setActiveHandoverData(h); setErr(''); setModal('deleteHandover') }
-  function toggleExp(id: number) { setExpanded(prev => { const n=new Set(prev); n.has(id)?n.delete(id):n.add(id); return n }) }
+  function toggleExp(id: number) {
+    setExpanded(prev => {
+      const n = new Set(prev)
+      n.has(id) ? n.delete(id) : n.add(id)
+      try { sessionStorage.setItem('produksi_expanded', JSON.stringify([...n])) } catch {}
+      return n
+    })
+  }
 
   function handleCreate(fd: FormData) { setErr(''); start(async()=>{ const r=await createProduksi(fd); if(r?.error){setErr(r.error);return}; showToast(r.count && r.count > 1 ? `✅ ${r.count} item produksi dibuat (${r.kode} dst)` : `✅ ${r.kode} dibuat`); setModal(null) }) }
   function handleTambahProduksi(fd: FormData) { setErr(''); start(async()=>{ const r=await createProduksi(fd); if(r?.error){setErr(r.error);return}; showToast(`✅ ${r.kode} ditambahkan`); setModal(null) }) }
