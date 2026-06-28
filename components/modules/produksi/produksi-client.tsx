@@ -2513,7 +2513,7 @@ function TerimaCuttingForm({ item, tims, adminList, toleransi, err, isPending, o
       </div>
       <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
         <div className="rounded-lg px-3 py-2 bg-blue-50 border border-blue-100 text-blue-700 text-[12px] font-medium">
-          Berat Bahan Diserahkan: <span className="font-bold">{fgr(item.berat_awal)} gr</span> · Total ACC + Total Reject harus sesuai
+          Berat Bahan Diserahkan: <span className="font-bold">{fgr(item.berat_awal)} gr</span> · Total ACC + Total Reject harus sesuai agar tidak ada selisih
         </div>
         {/* Gramasi pills */}
         <div>
