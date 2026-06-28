@@ -596,12 +596,12 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
           </div>
           <AdminPickerStd adminList={adminList} prefix="" label="Admin Yang Menyerahkan" />
           <div>
-            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan (opsional)</label>
-            <input name="catatan" placeholder="Catatan serah" className={inp} />
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan Sebelum Diserahkan</label>
+            <input name="catatan" placeholder="Opsional" className={inp} />
           </div>
           <div>
-            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto serah (opsional)</label>
-            <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0,5))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_,j) => j !== i))} label="Foto serah" small />
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Bahan Baku Diserahkan (MAX 10)</label>
+            <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0,5))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_,j) => j !== i))} label="Foto Diserahkan" small />
           </div>
 
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/>{error}</div>}
@@ -692,11 +692,11 @@ function TambahProduksiModal({ item, peleburanByBatch, tims, adminList, onClose,
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <F label="Tanggal Mulai" req><input name="tanggal_produksi" type="date" value={f.tanggal_produksi} onChange={e => s('tanggal_produksi', e.target.value)} className={inp} required /></F>
             <F label="Jam Mulai" req><input name="jam_mulai" type="time" value={f.jam_mulai} onChange={e => s('jam_mulai', e.target.value)} className={inp} required /></F>
-  
+
           </div>
 
           <AdminPickerStd adminList={adminList} prefix="" label="Admin Yang Menyerahkan" />
-          <F label="Foto Bahan Diserahkan (Max 10 Foto)">
+          <F label="Foto Bahan Baku Diserahkan (MAX 10)">
             <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto" />
           </F>
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/>{error}</div>}
@@ -757,7 +757,7 @@ function EditModal({ item, tims, adminList, onClose, onSubmit, isPending, error 
           <F label="Nama / Label Batch"><input name="nama_item" value={f.nama_item} onChange={e => s('nama_item', e.target.value)} placeholder="cth: LM REI 10GR BATCH 26" className={inp} /></F>
           <div className="grid grid-cols-2 gap-3 items-end">
             <F label="Pilih Gramasi" req><select name="gramasi" value={f.gramasi} onChange={e => { s('gramasi', e.target.value); s('nama_item', `LM REI ${e.target.value}GR`) }} className={inp}>{GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} gr</option>)}</select></F>
-            <F label="Jumlah PCS (opsional saat diserahkan)"><input name="pcs" type="number" min="1" value={f.pcs} onChange={e => s('pcs', e.target.value)} placeholder="Isi saat sudah diterima" className={inp} /></F>
+            <F label="Jumlah PCS"><input name="pcs" type="number" min="1" value={f.pcs} onChange={e => s('pcs', e.target.value)} placeholder="Opsional" className={inp} /></F>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <F label="Total Berat (gr)" req><input name="berat_awal" type="number" step="0.01" value={f.berat_awal} onChange={e => s('berat_awal', e.target.value)} className={inp} /></F>
@@ -767,7 +767,7 @@ function EditModal({ item, tims, adminList, onClose, onSubmit, isPending, error 
           <AdminPickerStd adminList={adminList} prefix="" initialValue={item.admin_input ?? item.operator ?? ''} label="Admin Yang Menyerahkan" />
           <F label="Catatan"><input name="catatan" value={f.catatan} onChange={e => s('catatan', e.target.value)} placeholder="Catatan tambahan…" className={inp} /></F>
           <div>
-            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Bahan Diserahkan (Max 10 Foto)</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Bahan Baku Diserahkan (MAX 10)</label>
             {existingFotos.length > 0 && (
               <div className="flex gap-2 mb-2 flex-wrap">
                 {existingFotos.map((url, i) => (
@@ -869,12 +869,12 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Selesai *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Selesai <span className="text-red-500">*</span></label>
               <input name="tanggal_selesai" type="date" defaultValue={isEdit&&item.tanggal_selesai?item.tanggal_selesai:new Date().toISOString().split('T')[0]}
                 className={inp} required />
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Selesai *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Selesai <span className="text-red-500">*</span></label>
               <input name="jam_selesai" type="time" defaultValue={isEdit&&item.jam_selesai?String(item.jam_selesai).slice(0,5):undefined} className={inp} required />
             </div>
           </div>
@@ -888,9 +888,9 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
           </div>
 
           <div>
-            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Reject Cutting (gr)</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Reject Cutting (gr) <span className="text-red-500">*</span></label>
             <input name="reject_cutting_gram" type="number" step="0.001"
-              value={rejectVal} onChange={e => setRejectVal(e.target.value)} className={inp} />
+              value={rejectVal} onChange={e => setRejectVal(e.target.value)} className={inp} required />
           </div>
 
           {/* Loss indicator realtime */}
@@ -1041,11 +1041,11 @@ function SerahStageModal({ item, tahap, tims, onClose, onSubmit, isPending, erro
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Serah *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Mulai <span className="text-red-500">*</span></label>
               <input name="serah_tanggal" type="date" defaultValue={new Date().toISOString().split('T')[0]} className={inp} required/>
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Serah *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Mulai <span className="text-red-500">*</span></label>
               <input name="serah_jam" type="time" className={inp} required/>
             </div>
           </div>
@@ -1059,8 +1059,8 @@ function SerahStageModal({ item, tahap, tims, onClose, onSubmit, isPending, erro
             <input name="serah_catatan" type="text" placeholder="Opsional" className={inp}/>
           </div>
           <div>
-            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Bahan Diserahkan (Max 10 Foto)</label>
-            <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto (opsional)" />
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Bahan Baku Diserahkan (MAX 10)</label>
+            <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto" />
           </div>
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/><span>{error}</span></div>}
           </div>
@@ -1169,11 +1169,11 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Terima *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Selesai <span className="text-red-500">*</span></label>
               <input name="terima_tanggal" type="date" defaultValue={new Date().toISOString().split('T')[0]} className={inp} required/>
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Terima *</label>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Selesai <span className="text-red-500">*</span></label>
               <input name="terima_jam" type="time" className={inp} required/>
             </div>
           </div>
@@ -1242,10 +1242,10 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
           </div>
 
           <div>
-            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Bahan Diserahkan (Max 10 Foto)</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Bahan Diterima (MAX 10)</label>
             <label className="flex items-center gap-2 h-11 px-4 bg-slate-50 rounded-xl cursor-pointer hover:bg-violet-50 transition-colors border border-slate-200">
               <Camera size={14} className="text-slate-400 flex-shrink-0"/>
-              <span className="text-[12px] text-slate-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto (opsional, max 5)'}</span>
+              <span className="text-[12px] text-slate-400">{fotos.length > 0 ? `${fotos.length} foto dipilih` : 'Tambah foto'}</span>
               <input type="file" accept="image/*" multiple className="hidden" onChange={e=>setFotos(p=>[...p,...Array.from(e.target.files??[])].slice(0,10))}/>
             </label>
             {fotos.length > 0 && (
@@ -1895,7 +1895,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                 <div>
                                   <p className="text-[10px] font-medium text-slate-400">Diterima</p>
                                   <p className="text-[13px] font-semibold text-slate-800 tabular-nums mt-0.5">{h.terima_gram?`${parseFloat(h.terima_gram).toFixed(2)} gr`:'—'}{h.terima_pcs?` · ${h.terima_pcs} pcs`:''}</p>
-                                  {hSerbuk>0&&<p className="text-[10px] text-slate-500 mt-0.5">Sisa Serbuk: <span className="font-semibold text-slate-700 tabular-nums">{hSerbuk.toFixed(2)} gr</span></p>}
+                                  {hSerbuk>0&&<p className="text-[10px] text-blue-500 mt-0.5">Sisa Serbuk: <span className="font-semibold text-blue-600 tabular-nums">{hSerbuk.toFixed(2)} gr</span></p>}
                                 </div>
                                 <div>
                                   <p className="text-[10px] font-medium text-slate-400">Reject {tl[h.tahap]??h.tahap}</p>
@@ -2156,7 +2156,7 @@ function SesiCuttingTerimaForm({ items, tims, adminList, err, isPending, onCance
                   className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all" placeholder={fgr(it.berat_awal)} />
               </div>
               <div>
-                <label className="block text-[11px] font-medium text-slate-500 mb-1">PCS good</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1">Jumlah PCS</label>
                 <input name={`pcs_${it.id}`} type="number" min="0" placeholder={String(it.pcs ?? '')}
                   className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all" />
               </div>
@@ -2175,19 +2175,19 @@ function SesiCuttingTerimaForm({ items, tims, adminList, err, isPending, onCance
           </div>
         ))}
         <div>
-          <label className="block text-[11px] font-medium text-slate-500 mb-1">Total reject (gr) — dibagi proporsional</label>
-          <input name="reject_cutting_gram" type="number" step="0.001" min="0" defaultValue="0"
+          <label className="block text-[11px] font-medium text-slate-500 mb-1">Total Reject Cutting (gr) <span className="text-red-500">*</span></label>
+          <input name="reject_cutting_gram" type="number" step="0.001" min="0" defaultValue="0" required
             className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all" />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[11px] font-medium text-slate-500 mb-1">Tanggal selesai</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Tanggal Selesai <span className="text-red-500">*</span></label>
             <input name="tanggal_selesai" type="date" required defaultValue={new Date().toISOString().split('T')[0]}
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all" />
           </div>
           <div>
-            <label className="block text-[11px] font-medium text-slate-500 mb-1">Jam</label>
-            <input name="jam_selesai" type="time"
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Jam Selesai <span className="text-red-500">*</span></label>
+            <input name="jam_selesai" type="time" required
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all" />
           </div>
         </div>
@@ -2198,7 +2198,7 @@ function SesiCuttingTerimaForm({ items, tims, adminList, err, isPending, onCance
             {tims.map((t: any) => <option key={t.id} value={t.id}>{t.nama}</option>)}
           </select>
         </div>
-        <AdminPickerStd adminList={adminList} prefix="terima_" label="Admin Penerima" />
+        <AdminPickerStd adminList={adminList} prefix="terima_" label="Admin Yang Menerima" />
         {err && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</div>}
       </div>
       <div className="px-6 pb-5 flex gap-2">
@@ -2251,12 +2251,12 @@ function SesiSerahForm({ items, tahap, tims, adminList, err, isPending, onCancel
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[11px] font-medium text-slate-500 mb-1">Tanggal serah</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Tanggal Mulai <span className="text-red-500">*</span></label>
             <input name="serah_tanggal" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/>
           </div>
           <div>
-            <label className="block text-[11px] font-medium text-slate-500 mb-1">Jam</label>
-            <input name="serah_jam" type="time" className={inp}/>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Jam Mulai <span className="text-red-500">*</span></label>
+            <input name="serah_jam" type="time" required className={inp}/>
           </div>
         </div>
         <TimPickerStd tims={tims} prefix="serah_" />
@@ -2266,7 +2266,7 @@ function SesiSerahForm({ items, tahap, tims, adminList, err, isPending, onCancel
           <input name="serah_catatan" type="text" placeholder="Opsional" className={inp}/>
         </div>
         <div>
-          <label className="text-[11px] font-medium text-slate-500 mb-1 block">Foto Serah (opsional)</label>
+          <label className="text-[11px] font-medium text-slate-500 mb-1 block">Foto Bahan Baku Diserahkan (MAX 10)</label>
           <FotoPicker files={fotos}
             onAdd={ff=>setFotos(p=>[...p,...ff].slice(0,10))}
             onRemove={i=>i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))}
@@ -2316,24 +2316,24 @@ function SesiTerimaForm({ items, tahap, tims, adminList, err, isPending, onCance
               <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 tabular-nums">{it.gramasi}gr · diserahkan {fgr(sh?.serah_gram ?? it.total_gram)} gr</span>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1">Berat terima (gr)</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1">Berat Diterima (gr) <span className="text-red-500">*</span></label>
                   <input name={`terima_gram_${it.id}`} type="number" step="0.001" required min="0.001"
                     className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1">PCS</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1">Jumlah PCS</label>
                   <input name={`terima_pcs_${it.id}`} type="number" min="0" placeholder={String(it.pcs_good ?? it.pcs ?? '')}
                     className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
                 </div>
                 {isPb && (
                   <div>
-                    <label className="block text-[11px] font-medium text-slate-500 mb-1">Sisa serbuk (gr)</label>
+                    <label className="block text-[11px] font-medium text-slate-500 mb-1">Sisa Serbuk (gr)</label>
                     <input name={`sisa_serbuk_${it.id}`} type="number" step="0.001" min="0" defaultValue="0"
                       className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
                   </div>
                 )}
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1">Reject (gr)</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1">Berat Reject (gr)</label>
                   <input name={`reject_gram_${it.id}`} type="number" step="0.001" min="0" defaultValue="0"
                     className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
                 </div>
@@ -2343,12 +2343,12 @@ function SesiTerimaForm({ items, tahap, tims, adminList, err, isPending, onCance
         })}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[11px] font-medium text-slate-500 mb-1">Tanggal terima</label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Tanggal Selesai <span className="text-red-500">*</span></label>
             <input name="terima_tanggal" type="date" required defaultValue={new Date().toISOString().split('T')[0]} className={inp}/>
           </div>
           <div>
-            <label className="block text-[11px] font-medium text-slate-500 mb-1">Jam</label>
-            <input name="terima_jam" type="time" className={inp}/>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Jam Selesai <span className="text-red-500">*</span></label>
+            <input name="terima_jam" type="time" required className={inp}/>
           </div>
         </div>
         <TimPickerStd tims={tims} prefix="terima_" />
@@ -2358,7 +2358,7 @@ function SesiTerimaForm({ items, tahap, tims, adminList, err, isPending, onCance
           <input name="terima_catatan" type="text" placeholder="Opsional" className={inp}/>
         </div>
         <div>
-          <label className="text-[11px] font-medium text-slate-500 mb-1 block">Foto Terima (opsional)</label>
+          <label className="text-[11px] font-medium text-slate-500 mb-1 block">Foto Bahan Diterima (MAX 10)</label>
           <FotoPicker files={fotos}
             onAdd={ff=>setFotos(p=>[...p,...ff].slice(0,10))}
             onRemove={i=>i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))}
@@ -2439,7 +2439,7 @@ function TerimaCuttingForm({ item, tims, adminList, toleransi, err, isPending, o
       </div>
       <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
         <div className="rounded-lg px-3 py-2 bg-blue-50 border border-blue-100 text-blue-700 text-[12px] font-medium">
-          Berat bahan: <span className="font-bold">{fgr(item.berat_awal)} gr</span> — Total ACC + Reject harus sama
+          Berat Bahan Diserahkan: <span className="font-bold">{fgr(item.berat_awal)} gr</span> · Total ACC + Total Reject harus sesuai
         </div>
         {/* Gramasi pills */}
         <div>
@@ -2472,7 +2472,7 @@ function TerimaCuttingForm({ item, tims, adminList, toleransi, err, isPending, o
               <div className="flex-1">
                 <input type="number" min="1" value={row.pcs}
                   onChange={e => updateRow(idx, { pcs: e.target.value })}
-                  placeholder="Jml PCS (opsional)"
+                  placeholder="Jumlah PCS"
                   className="w-full h-7 px-2.5 rounded-md border border-slate-200 bg-white text-[12px] text-slate-800 placeholder:text-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-400/30 focus:border-violet-400 transition-all" />
               </div>
               <button type="button"
@@ -2506,9 +2506,9 @@ function TerimaCuttingForm({ item, tims, adminList, toleransi, err, isPending, o
           <p className="text-[11px] text-violet-500 font-medium">Total ACC: <span className="font-semibold">{totalAcc.toFixed(2)} gr</span></p>
         )}
         <div>
-          <label className="block text-[11px] font-medium text-slate-500 mb-1">Total reject (gr) — akumulasi</label>
+          <label className="block text-[11px] font-medium text-slate-500 mb-1">Total Reject Cutting (gr) <span className="text-red-500">*</span></label>
           <input name="reject_cutting_gram" type="number" step="0.001" min="0" value={reject}
-            onChange={e => setReject(e.target.value)}
+            onChange={e => setReject(e.target.value)} required
             className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all" />
         </div>
 
@@ -2536,13 +2536,13 @@ function TerimaCuttingForm({ item, tims, adminList, toleransi, err, isPending, o
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all" />
           </div>
           <div>
-            <label className="block text-[11px] font-medium text-slate-500 mb-1">Jam</label>
-            <input name="jam_selesai" type="time"
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Jam Selesai <span className="text-red-500">*</span></label>
+            <input name="jam_selesai" type="time" required
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all" />
           </div>
         </div>
         <TimPickerStd tims={tims} prefix="terima_" />
-        <AdminPickerStd adminList={adminList} prefix="terima_" label="Admin Penerima" />
+        <AdminPickerStd adminList={adminList} prefix="terima_" label="Admin Yang Menerima" />
         {err && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">{err}</div>}
       </div>
       <div className="px-6 pb-5 flex gap-2">

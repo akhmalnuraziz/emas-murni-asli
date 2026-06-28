@@ -1137,7 +1137,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
     type SI = { tipe:string; ref_id:string|null; ref_label:string; gram_otomatis:number; gram_aktual:number }
     const sumber: SI[] = []
     if (mentahChecked && (Number(mentahGram)||0) > 0)
-      sumber.push({ tipe:'batch_mentah', ref_id:null, ref_label:'Sisa Bahan Mentah Belum Di Lebur', gram_otomatis:sisaMentahBelumLebur, gram_aktual:Number(mentahGram) })
+      sumber.push({ tipe:'batch_mentah', ref_id:null, ref_label:'Sisa Bahan Mentah Belum Dilebur', gram_otomatis:sisaMentahBelumLebur, gram_aktual:Number(mentahGram) })
     if (leburChecked && (Number(leburGram)||0) > 0)
       sumber.push({ tipe:'sisa_peleburan', ref_id:null, ref_label:'Hasil Lebur Belum Dicetak', gram_otomatis:hasilLeburBelumCetak, gram_aktual:Number(leburGram) })
     for (const [id,gram] of Object.entries(rejGram)) {
@@ -1185,11 +1185,11 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
             </div>
             <div className="p-4 space-y-4">
 
-              {/* 1. Sisa Bahan Mentah Belum Di Lebur */}
+              {/* 1. Sisa Bahan Mentah Belum Dilebur */}
               <div>
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input type="checkbox" checked={mentahChecked} onChange={e=>setMentahChecked(e.target.checked)} className="w-4 h-4 rounded accent-violet-600"/>
-                  <span className="text-[12px] font-semibold text-slate-700">Sisa Bahan Mentah Belum Di Lebur</span>
+                  <span className="text-[12px] font-semibold text-slate-700">Sisa Bahan Mentah Belum Dilebur</span>
                   <span className="ml-auto text-[10px] text-slate-400">{formatGram(sisaMentahBelumLebur)}</span>
                 </label>
                 {mentahChecked&&(
@@ -1295,22 +1295,22 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
             <div className="p-4 space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Mulai *</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Mulai <span className="text-red-500">*</span></label>
                   <input name="tanggal" type="date" defaultValue={new Date().toISOString().split('T')[0]} className={inp} required/>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Mulai *</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Mulai <span className="text-red-500">*</span></label>
                   <input name="jam_mulai" type="time" className={inp} required/>
                 </div>
               </div>
               <div>
-                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Bahan Baku untuk di Lebur</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Bahan Baku Sebelum Dilebur (MAX 10)</label>
                 <FotoPicker files={fotos} onAdd={ff=>setFotos(p=>[...p,...ff].slice(0,10))} onRemove={i=>i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))} label="Tambah foto" />
               </div>
               <AdminPickerStd adminList={adminList} prefix="serah_" label="Admin Yang Menyerahkan" />
               <div>
                 <label className="block text-[11px] font-medium text-slate-500 mb-1.5">
-                  Catatan {mentahNaik&&<span className="text-red-500">* (wajib — timbangan naik)</span>}
+                  Catatan Sebelum Lebur {mentahNaik&&<span className="text-red-500">* (wajib — timbangan naik)</span>}
                 </label>
                 <input name="keterangan_serahkan" type="text"
                   placeholder={mentahNaik?'Jelaskan alasan timbangan naik...':'Opsional'}
@@ -1424,19 +1424,19 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Selesai *</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Selesai <span className="text-red-500">*</span></label>
                   <input name="tanggal_diterima" type="date"
                     defaultValue={new Date().toISOString().split('T')[0]}
                     className={inp} required/>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Selesai *</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Selesai <span className="text-red-500">*</span></label>
                   <input name="jam_selesai" type="time" className={inp} required/>
                 </div>
               </div>
               <div>
-                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Bukti</label>
-                <FotoPicker files={fotos} onAdd={ff=>setFotos(p=>[...p,...ff].slice(0,10))} onRemove={i=>i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))} label="Tambah foto bukti" />
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Bahan Baku Selesai Dilebur (MAX 10)</label>
+                <FotoPicker files={fotos} onAdd={ff=>setFotos(p=>[...p,...ff].slice(0,10))} onRemove={i=>i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))} label="Tambah foto" />
               </div>
               <TimPickerStd tims={tims} prefix="terima_" />
               <AdminPickerStd adminList={adminList} prefix="terima_" label="Admin Yang Menerima" />
@@ -1562,17 +1562,17 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Mulai *</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Mulai <span className="text-red-500">*</span></label>
                   <input name="tanggal" type="date" defaultValue={peleburan.tanggal} className={inp} required/>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Mulai *</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Mulai <span className="text-red-500">*</span></label>
                   <input name="jam_mulai" type="time" defaultValue={toTime(peleburan.jam_mulai)} className={inp} required/>
                 </div>
               </div>
               {existingFotos.length > 0 && (
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto saat ini</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Sebelumnya</label>
                   <div className="flex flex-wrap gap-2">
                     {existingFotos.map((url,i) => (
                       <div key={i} className="relative">
@@ -1592,7 +1592,7 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
               </div>
               <AdminPickerStd adminList={adminList} prefix="serah_" label="Admin Yang Menyerahkan" initialValue={peleburan.admin_input??''} />
               <div>
-                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan Sebelum Lebur</label>
                 <input name="keterangan_serahkan" type="text" defaultValue={peleburan.keterangan_serahkan??''} placeholder="Opsional" className={inp}/>
               </div>
             </div>
@@ -1722,17 +1722,17 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Selesai *</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Selesai <span className="text-red-500">*</span></label>
                   <input name="tanggal_diterima" type="date" defaultValue={peleburan.tanggal_diterima ?? ''} className={inp} required/>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Selesai *</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Selesai <span className="text-red-500">*</span></label>
                   <input name="jam_selesai" type="time" defaultValue={toTime(peleburan.jam_selesai)} className={inp} required/>
                 </div>
               </div>
               {existingFotosDiterima.length > 0 && (
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto diterima saat ini</label>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Sebelumnya</label>
                   <div className="flex flex-wrap gap-2">
                     {existingFotosDiterima.map((url,i) => (
                       <div key={i} className="relative">
