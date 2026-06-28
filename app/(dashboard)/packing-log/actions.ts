@@ -278,7 +278,10 @@ export async function markPrinted(packingId: number) {
   return { success: true }
 }
 
-export async function reportPackingReject(packingId: number, pcsReject: number, gramReject: number) {
+export async function reportPackingReject(
+  packingId: number, pcsReject: number, gramReject: number,
+  fotosB64: string[] = [], catatan: string = ''
+) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
@@ -299,13 +302,19 @@ export async function reportPackingReject(packingId: number, pcsReject: number, 
   if (pcsReject + stCount > packing.pcs_dipack)
     return { error: `Total shieldtag (${stCount}) + reject (${pcsReject}) melebihi PCS dipack (${packing.pcs_dipack})` }
 
-  await supabase.from('packing').update({ pcs_reject: pcsReject, gram_reject: gramReject }).eq('id', packingId)
+  const fotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, packing.kode) : []
+
+  await supabase.from('packing').update({
+    pcs_reject: pcsReject, gram_reject: gramReject,
+    foto_reject: fotoUrls,
+    catatan_reject: catatan || null,
+  }).eq('id', packingId)
 
   supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'REPORT_REJECT', module: 'PACKING',
     record_key: packing.kode, record_id: String(packingId),
-    after_data: { pcs_reject: pcsReject, gram_reject: gramReject },
+    after_data: { pcs_reject: pcsReject, gram_reject: gramReject, foto_count: fotoUrls.length, catatan },
   })
 
   revalidatePath('/packing-log')

@@ -289,22 +289,28 @@ function EditModal({p,tims,adminList,onClose,onSubmit,isPending,error}:{p:any;ti
 }
 
 // ─── Reject Modal ─────────────────────────────────────────────────────────────
-function RejectModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;onSubmit:(pcs:number,gram:number)=>void;isPending:boolean;error:string}){
+function RejectModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;onSubmit:(pcs:number,gram:number,fotosB64:string[],catatan:string)=>void;isPending:boolean;error:string}){
   const [pcs,setPcs]=useState('')
   const [gram,setGram]=useState('')
+  const [catatan,setCatatan]=useState('')
+  const [fotoFiles,setFotoFiles]=useState<File[]>([])
   const stCount=p.shieldtag_count??0
   const maxPcs=p.pcs_dipack-stCount
+  async function handleSubmit(){
+    const b64=await compressToBase64(fotoFiles)
+    onSubmit(parseInt(pcs),parseFloat(gram),b64,catatan)
+  }
   return(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
-      <div className="w-full sm:max-w-sm bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+      <div className="w-full sm:max-w-sm bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 flex-shrink-0">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Laporkan Reject Packing</h2>
-            <p className="text-[11px] text-slate-400 mt-0.5">{p.kode} · {stCount}/{p.pcs_dipack} shieldtag berhasil</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">{p.kode} · {stCount}/{p.pcs_dipack - (p.pcs_reject??0)} shieldtag berhasil</p>
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
         </div>
-        <div className="px-5 py-4 space-y-4">
+        <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           <div className="rounded-lg px-3 py-2 bg-amber-50 border border-amber-100 text-[12px] text-amber-700">
             <span className="font-semibold">Maks {maxPcs} PCS reject</span> (dari {p.pcs_dipack} dipack − {stCount} shieldtag). Emas reject ini akan bisa dimasukkan ke Peleburan.
           </div>
@@ -316,11 +322,18 @@ function RejectModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>voi
               <input type="number" step="0.001" min="0.001" value={gram} onChange={e=>setGram(e.target.value)} placeholder="0.000" className={inp}/>
             </F>
           </div>
+          <F label="Alasan / Catatan Reject" req>
+            <textarea value={catatan} onChange={e=>setCatatan(e.target.value)} rows={2}
+              placeholder="Contoh: Permukaan baret, ukuran tidak presisi..." className={inp+' h-auto py-2 resize-none'}/>
+          </F>
+          <F label="Foto Bukti Reject">
+            <FotoPicker files={fotoFiles} onAdd={f=>setFotoFiles(p=>[...p,...f])} onRemove={i=>setFotoFiles(p=>p.filter((_,j)=>j!==i))} label="Tambah foto reject" small/>
+          </F>
           {error&&<div className="flex items-center gap-2 rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600"><AlertTriangle size={14}/>{error}</div>}
         </div>
-        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200">
+        <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
           <button type="button" onClick={onClose} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
-          <button disabled={isPending||!pcs||!gram} onClick={()=>onSubmit(parseInt(pcs),parseFloat(gram))}
+          <button disabled={isPending||!pcs||!gram||!catatan.trim()} onClick={handleSubmit}
             className="flex-1 h-9 rounded-lg bg-orange-500 hover:bg-orange-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
             {isPending&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
             {isPending?'Menyimpan...':'Simpan Reject'}
@@ -362,7 +375,7 @@ function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint,onShieldtagC
         <div>
           <p className="text-[10px] text-slate-400">Shieldtag</p>
           <button type="button" onClick={()=>{ if(stCount>0&&onShieldtagClick) onShieldtagClick() }} disabled={stCount===0}
-            className={cn('text-[12px] font-semibold',stCount>0?'text-emerald-600 underline decoration-dotted cursor-pointer':'text-slate-400 cursor-default')}>🏷 {stCount}/{p.pcs_dipack}</button>
+            className={cn('text-[12px] font-semibold',stCount>0?'text-emerald-600 underline decoration-dotted cursor-pointer':'text-slate-400 cursor-default')}>🏷 {stCount}/{p.pcs_dipack-(p.pcs_reject??0)}</button>
         </div>
       </div>
       <div className="flex items-center gap-3 pt-1 border-t border-slate-100 flex-wrap">
@@ -445,7 +458,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
   function handleCreate(fd:FormData){setErr('');startTransition(async()=>{const r=await createPacking(fd);if(r?.error){setErr(r.error);return}toast.success(`${r?.kode} berhasil dicatat`);setModal(null)})}
   function handleEdit(fd:FormData){if(!active)return;setErr('');startTransition(async()=>{const r=await editPacking(active.id,active.kode,fd);if(r?.error){setErr(r.error);return}toast.success('Packing diperbarui');setModal(null)})}
   function handleDelete(){if(!active)return;startTransition(async()=>{const r=await voidPacking(active.id,active.kode);if(r?.error){toast.error(r.error);return}toast.success('Packing dihapus');setModal(null)})}
-  function handleReject(pcs:number,gram:number){if(!active)return;setErr('');startTransition(async()=>{const r=await reportPackingReject(active.id,pcs,gram);if(r?.error){setErr(r.error);return}toast.success(`Reject ${pcs} pcs (${gram.toFixed(3)}gr) dicatat`);setModal(null)})}
+  function handleReject(pcs:number,gram:number,fotosB64:string[],catatan:string){if(!active)return;setErr('');startTransition(async()=>{const r=await reportPackingReject(active.id,pcs,gram,fotosB64,catatan);if(r?.error){setErr(r.error);return}toast.success(`Reject ${pcs} pcs (${gram.toFixed(3)}gr) dicatat`);setModal(null)})}
 
   function handlePrint(p:any){
     markPrinted(p.id).catch(console.error)
@@ -626,7 +639,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
                           onClick={()=>{ const list=shieldtagByPacking[p.id]??[]; if(list.length>0) setStModal({kode:p.kode,list}) }}
                           disabled={stCount===0}
                           className={cn('inline-block text-[12px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap transition-all',stCount>0?'text-emerald-700 bg-emerald-50 hover:ring-2 hover:ring-emerald-300 cursor-pointer':'text-slate-400 bg-slate-100 cursor-default')}>
-                          🏷 {stCount}/{p.pcs_dipack}
+                          🏷 {stCount}/{p.pcs_dipack-(p.pcs_reject??0)}
                         </button>
                         {(p.pcs_reject??0)>0&&(
                           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-500 whitespace-nowrap">
