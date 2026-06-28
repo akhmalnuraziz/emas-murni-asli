@@ -47,7 +47,7 @@ export default function DashboardShell({
 
   return (
     <IdleLogoutProvider>
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-100 via-violet-50/30 to-indigo-50/20">
         <Sidebar
           mobileOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
