@@ -486,13 +486,7 @@ export async function deleteProduksi(produksiId: number, produksiKode: string) {
     }
   }
 
-  // Cek reject sudah masuk peleburan
-  const { count: rejectLeburCount } = await supabase
-    .from('peleburan_sumber')
-    .select('id, peleburan:peleburan_id(voided_at)', { count: 'exact', head: false })
-    .eq('tipe', 'reject_cutting')
-    .eq('ref_id', String(produksiId))
-  // filter manual karena head:false + join tidak bisa filter nested di count
+  // Cek reject sudah masuk peleburan aktif
   const { data: rejectLeburRows } = await supabase
     .from('peleburan_sumber')
     .select('id, peleburan:peleburan_id(voided_at)')
@@ -1105,6 +1099,17 @@ export async function resetCutting(produksiId: number, produksiKode: string) {
     .eq('produksi_item_id', produksiId).is('voided_at', null)
   if ((pkCount ?? 0) > 0) {
     return { error: 'Tidak dapat menghapus Cutting karena sudah ada Packing Log. Hapus Packing Log terlebih dahulu.' }
+  }
+
+  // Tidak boleh kalau reject sudah masuk peleburan aktif
+  const { data: rcRows } = await supabase
+    .from('peleburan_sumber')
+    .select('id, peleburan:peleburan_id(voided_at)')
+    .eq('tipe', 'reject_cutting')
+    .eq('ref_id', String(produksiId))
+  const activeRC = (rcRows ?? []).filter((r: any) => !r.peleburan?.voided_at)
+  if (activeRC.length > 0) {
+    return { error: 'Tidak dapat menghapus Cutting — reject dari item ini sudah masuk Peleburan. Void Peleburan terkait terlebih dahulu.' }
   }
 
   // Kembalikan kontribusi reject cutting dari total berat_reject
