@@ -542,25 +542,45 @@ export default function DashboardClient({
       </Section>
 
       {/* ── Siap Packing ─────────────────────────────────────────────── */}
-      {siapPacking.length > 0 && (
-        <Section label={`Siap Packing — ${siapPacking.length} item menunggu`} icon={<CheckCircle2 size={13} className="text-green-500" />}>
-          <a href="/produksi" className="block">
-            <Card hoverable>
-              <div className="flex flex-wrap gap-2">
-                {siapPacking.map((item) => (
-                  <div key={item.id} className="bg-white border border-slate-200 rounded-lg px-2.5 py-2">
-                    <p className="text-[11px] font-mono font-semibold text-slate-800">{item.kode}</p>
-                    <p className="text-[10px] text-slate-400">{item.gramasi}gr · {item.batch_kode}</p>
-                  </div>
-                ))}
-              </div>
-              {siapPacking.length >= 30 && (
-                <p className="text-[11px] text-slate-400 mt-3 text-center">Tampil 30 teratas · klik untuk lihat semua →</p>
-              )}
-            </Card>
-          </a>
-        </Section>
-      )}
+      {siapPacking.length > 0 && (() => {
+        // Group by gramasi
+        const byGramasi: Record<string, { pcs: number; batches: string[] }> = {}
+        for (const item of siapPacking) {
+          const g = item.gramasi ?? '?'
+          if (!byGramasi[g]) byGramasi[g] = { pcs: 0, batches: [] }
+          byGramasi[g].pcs++
+          if (item.batch_kode && !byGramasi[g].batches.includes(item.batch_kode))
+            byGramasi[g].batches.push(item.batch_kode)
+        }
+        const totalPcs = siapPacking.length
+        const entries = Object.entries(byGramasi).sort((a, b) => parseFloat(a[0]) - parseFloat(b[0]))
+        return (
+          <Section label={`Siap Packing — ${totalPcs} pcs menunggu`} icon={<CheckCircle2 size={13} className="text-green-500" />}>
+            <a href="/produksi" className="block">
+              <Card hoverable>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[22px] font-bold text-green-700 tabular-nums leading-none">{totalPcs} pcs</p>
+                  <span className="text-[11px] text-green-600 bg-green-50 px-2.5 py-1 rounded-full font-semibold border border-green-100">Siap Packing</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                  {entries.map(([g, v]) => (
+                    <div key={g} className="bg-green-50 border border-green-100 rounded-xl p-3">
+                      <p className="text-[18px] font-bold text-green-700 tabular-nums leading-none">{v.pcs} pcs</p>
+                      <p className="text-[11px] font-semibold text-green-600 mt-0.5">{g} gram</p>
+                      <p className="text-[9px] text-slate-400 mt-1 truncate">
+                        {v.batches.slice(0, 2).join(', ')}{v.batches.length > 2 ? ` +${v.batches.length - 2}` : ''}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                {siapPacking.length >= 30 && (
+                  <p className="text-[11px] text-slate-400 text-center">Tampil 30 teratas · klik untuk lihat semua →</p>
+                )}
+              </Card>
+            </a>
+          </Section>
+        )
+      })()}
 
       {/* ── Reject Belum Dilebur ──────────────────────────────────────── */}
       {rejectList.length > 0 && (
@@ -814,7 +834,7 @@ function TrendProduksi({ trend }: {
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th className="sticky left-0 bg-slate-50 px-4 py-2.5 text-left font-semibold text-slate-500 border-r border-slate-200 min-w-[60px] text-[11px]">
-                  Gramasi
+                  Gramasi / Tgl
                 </th>
                 {allDays.map(d => (
                   <th key={d} className={cn(
