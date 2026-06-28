@@ -26,7 +26,7 @@ export default async function PrioritasProduksiPage() {
     // Stok aktif per gramasi
     supabase.from('shieldtag').select('gramasi').eq('status', 'Aktif').is('voided_at', null).limit(5000),
     // Stok transit per gramasi
-    supabase.from('shieldtag').select('gramasi').eq('status', 'Terdistribusi').is('voided_at', null).limit(5000),
+    supabase.from('shieldtag').select('gramasi').eq('status', 'Transit').is('voided_at', null).limit(5000),
     // WIP: produksi_item yang sedang berjalan (belum jadi shieldtag)
     supabase.from('produksi_item')
       .select('gramasi')

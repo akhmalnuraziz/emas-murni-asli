@@ -51,11 +51,11 @@ export async function getStokSistem(lokasi: string): Promise<StokRow[]> {
         selisih_gram: 0,
       }))
   } else {
-    // Stok cabang: dari stok_cabang_log computed view atau shieldtag Terdistribusi
+    // Stok cabang: ShieldTag status Aktif yang lokasinya di cabang tersebut
     const { data: tags } = await supabase
       .from('shieldtag')
       .select('gramasi')
-      .eq('status', 'Terdistribusi')
+      .eq('status', 'Aktif')
       .eq('lokasi', lokasi)
       .is('voided_at', null)
 

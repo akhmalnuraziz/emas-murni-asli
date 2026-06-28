@@ -8,11 +8,13 @@ import {
 import {
   fetchShieldtagSiapMutasi, kirimMutasiCabang, fetchStokCabang,
   fetchMutasiList, fetchMutasiPendingTerima, terimaMutasiCabang,
+  fetchPoCabangSiap,
 } from '@/app/(dashboard)/mutasi/actions'
 
 interface Cabang { kode: string; nama: string }
 interface Shieldtag { id: number; kode: string; gramasi: string; batch_kode: string }
 interface StokRow { id?: number; gramasi: string; stok_ready: number; po_pcs: number }
+interface PoSiap { id: number; kode: string; status: string; items: { gramasi: string; qty_diminta: number; qty_dikirim: number }[] }
 interface MutasiRow {
   id: number; kode: string; cabang_tujuan: string | null; tanggal_kirim: string | null
   shieldtag_kodes: string[] | null; pcs: number | null; pcs_diterima: number | null
@@ -163,6 +165,8 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
   const [tanggal, setTanggal] = useState(new Date().toISOString().split('T')[0])
   const [noSurat, setNoSurat] = useState('')
   const [catatan, setCatatan] = useState('')
+  const [poId, setPoId] = useState<string>('')
+  const [poList, setPoList] = useState<PoSiap[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
@@ -174,6 +178,12 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
     setLoading(false)
   }
   useEffect(() => { load() }, [])
+
+  useEffect(() => {
+    if (!cabang) return
+    setPoId('')
+    fetchPoCabangSiap(cabang).then(list => setPoList(list as PoSiap[]))
+  }, [cabang])
 
   // Group by gramasi
   const grouped = new Map<string, Shieldtag[]>()
@@ -209,6 +219,7 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
     fd.set('no_surat', noSurat)
     fd.set('catatan', catatan)
     fd.set('shieldtag_kodes', JSON.stringify([...selected]))
+    if (poId) fd.set('po_id', poId)
     const res = await kirimMutasiCabang(fd)
     setSubmitting(false)
     if (res.error) { setMsg({ type: 'err', text: res.error }); return }
@@ -236,6 +247,15 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
         </Field>
         <Field label="Catatan">
           <input value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Opsional" className={inp} />
+        </Field>
+        <Field label="Link ke PO (Opsional)">
+          <select value={poId} onChange={e => setPoId(e.target.value)} className={inp}>
+            <option value="">— Tidak ada PO —</option>
+            {poList.map(po => {
+              const sisa = po.items.map(it => `${it.gramasi}gr: sisa ${it.qty_diminta - (it.qty_dikirim ?? 0)}`).join(', ')
+              return <option key={po.id} value={String(po.id)}>{po.kode} ({sisa})</option>
+            })}
+          </select>
         </Field>
       </div>
 
