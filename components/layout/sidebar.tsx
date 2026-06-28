@@ -47,7 +47,7 @@ const NAV_GROUPS = [
       { href: '/pelanggan',       label: 'Database Pelanggan', icon: Users,         module: 'pelanggan',       disabled: true },
       { href: '/pengeluaran',     label: 'Pengeluaran',        icon: Wallet,        module: 'pengeluaran',     disabled: true },
       { href: '/laporan',         label: 'Laporan',            icon: FileText,      module: 'laporan',         disabled: true },
-      { href: '/buyback',         label: 'Buyback',            icon: RotateCcw,     module: 'buyback' },
+      { href: '/buyback',         label: 'Buyback',            icon: RotateCcw,     module: 'buyback',     disabled: true },
     ],
   },
 ]
