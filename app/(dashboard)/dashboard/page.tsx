@@ -218,6 +218,10 @@ export default async function DashboardPage({
     totalPcs: Object.values(dailyTotal).reduce((a, b) => a + b, 0),
   }
 
+  const { count: batchAktifCount } = await supabase
+    .from('batch').select('kode', { count: 'exact', head: true })
+    .eq('status', 'aktif').is('voided_at', null)
+
   const canSeeRp = ['owner', 'admin_pusat', 'accounting'].includes(profile?.role ?? '')
 
   return (
@@ -251,6 +255,7 @@ export default async function DashboardPage({
       siapPacking={siapPackingItems ?? []}
       rejectList={rejectBelumDilebur ?? []}
       balanceSelisih={balanceSelisih}
+      batchAktifCount={batchAktifCount ?? 0}
       targetPackingHarian={Number((targetRow as any)?.value ?? 0)}
     />
   )

@@ -43,6 +43,7 @@ interface Props {
   rejectList: { id: number; kode: string; gramasi: string; berat_reject: number; batch_kode: string }[]
   balanceSelisih: number
   targetPackingHarian: number
+  batchAktifCount: number
   produksiTrend: {
     gramasi: string[]
     trendMap: Record<string, Record<number, number>>
@@ -130,7 +131,7 @@ export default function DashboardClient({
   userName, canSeeRp, period, dateFrom, dateTo,
   stok, transit, penjualan, reject, pipeline, gramasiChartData, batchTerbaru, mutasiTransit,
   poPackaging, stokAkrilik, totalPengeluaran, produksiTrend,
-  packingHariIni, siapPacking, rejectList, balanceSelisih, targetPackingHarian,
+  packingHariIni, siapPacking, rejectList, balanceSelisih, targetPackingHarian, batchAktifCount,
 }: Props) {
   const [aiAnalysis, setAiAnalysis] = useState<string>('')
   const [aiLoading, setAiLoading] = useState(false)
@@ -343,7 +344,8 @@ export default function DashboardClient({
 
       {/* ── KPI Row 1: Stok Emas ─────────────────────────────────────── */}
       <Section label="Stok Emas — Shieldtag" icon={<Tag size={13} className="text-violet-500" />}>
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+        {/* 4 KPI cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
           <KpiCard
             label="Stok Aktif"
             value={stok.pcs.toLocaleString('id-ID') + ' pcs'}
@@ -352,11 +354,17 @@ export default function DashboardClient({
             icon={Tag} iconColor="text-violet-600" iconBg="bg-violet-50"
           />
           <KpiCard
-            label="Transit Cabang"
-            value={transit.pcs.toLocaleString('id-ID') + ' pcs'}
-            sub={transit.gram.toFixed(2) + ' gr'}
-            icon={ArrowLeftRight} iconColor="text-sky-600" iconBg="bg-sky-50"
-            alert={transit.pcs > 0}
+            label="Siap Packing"
+            value={siapPacking.length + ' pcs'}
+            sub="Menunggu dipack"
+            icon={Package2} iconColor="text-green-600" iconBg="bg-green-50"
+            alert={siapPacking.length > 0}
+          />
+          <KpiCard
+            label="Batch Aktif"
+            value={batchAktifCount + ' batch'}
+            sub="Produksi berjalan"
+            icon={Layers} iconColor="text-amber-600" iconBg="bg-amber-50"
           />
           <KpiCard
             label="Reject Belum Dilebur"
@@ -368,18 +376,8 @@ export default function DashboardClient({
             alert={reject.count > 0}
           />
         </div>
-      </Section>
-
-      {/* ── Stok Emas per Gramasi ─────────────────────────────────────── */}
-      <Card>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <TrendingUp size={15} className="text-violet-500" />
-            <h3 className="text-[13px] font-semibold text-slate-800">Stok Emas per Gramasi</h3>
-          </div>
-          <span className="text-[11px] text-slate-400 font-medium">{stok.pcs} pcs total</span>
-        </div>
-        {gramasiChartData.length > 0 ? (
+        {/* Per-gramasi chips */}
+        {gramasiChartData.length > 0 && (
           <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2">
             {gramasiChartData.map((d, i) => (
               <div key={d.gramasi} className="rounded-xl border border-slate-100 bg-slate-50 px-2 py-2.5 text-center">
@@ -388,8 +386,8 @@ export default function DashboardClient({
               </div>
             ))}
           </div>
-        ) : <EmptyState text="Belum ada stok shieldtag aktif" />}
-      </Card>
+        )}
+      </Section>
 
       {/* ── Pipeline Produksi ─────────────────────────────────────────── */}
       <Section label="Pipeline Produksi" icon={<Hammer size={13} className="text-slate-400" />}>
