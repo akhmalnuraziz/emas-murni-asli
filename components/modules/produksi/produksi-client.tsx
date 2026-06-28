@@ -1813,7 +1813,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                 </div>
                                 <div>
                                   <p className="text-[10px] font-medium text-slate-400">Diterima</p>
-                                  <p className="text-[13px] font-semibold text-slate-800 tabular-nums mt-0.5">{item.terima_gram?`${parseFloat(item.terima_gram).toFixed(2)} gr`:'—'}{item.terima_pcs?` · ${item.terima_pcs} pcs`:''}</p>
+                                  <p className="text-[13px] font-semibold text-slate-800 tabular-nums mt-0.5">{item.terima_gram?`${parseFloat(item.terima_gram).toFixed(2)} gr`:'—'}{(item.pcs_good??item.terima_pcs)?` · ${item.pcs_good??item.terima_pcs} pcs`:''}</p>
                                 </div>
                                 <div>
                                   <p className="text-[10px] font-medium text-slate-400">Reject Cutting</p>
