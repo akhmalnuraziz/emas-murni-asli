@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 export default async function LaporanBatchListPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ q?: string; status?: string }>
+  searchParams?: Promise<{ q?: string; status?: string; page?: string }>
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -16,30 +16,35 @@ export default async function LaporanBatchListPage({
   const sp = await searchParams
   const q = (sp?.q ?? '').trim().toUpperCase()
   const statusFilter = sp?.status ?? 'semua'
+  const PAGE_SIZE = 12
+  const page = Math.max(1, parseInt(sp?.page ?? '1'))
+  const offset = (page - 1) * PAGE_SIZE
 
   let batchQuery = supabase
     .from('batch')
-    .select('kode, tanggal, supplier, bahan_dari_pusat, bahan_siap_cetak, timbangan_akhir, hpp_gr, status')
+    .select('kode, tanggal, supplier, bahan_dari_pusat, bahan_siap_cetak, timbangan_akhir, hpp_gr, status', { count: 'exact' })
     .is('voided_at', null)
     .order('tanggal', { ascending: false })
   if (q) batchQuery = batchQuery.ilike('kode', `%${q}%`)
   if (statusFilter === 'aktif') batchQuery = batchQuery.eq('status', 'aktif')
-  else if (statusFilter === 'selesai') batchQuery = batchQuery.eq('status', 'terkunci')
+  else if (statusFilter === 'tidak-aktif') batchQuery = batchQuery.eq('status', 'terkunci')
 
   const [
-    { data: batches },
+    { data: batches, count: totalCount },
     { data: stSummary },
     { data: packSummary },
     { data: peleburanSummary },
     { data: pipelineSummary },
+    { count: totalAktifAll },
+    { count: totalTidakAktifAll },
   ] = await Promise.all([
-    batchQuery.limit(500),
+    batchQuery.range(offset, offset + PAGE_SIZE - 1),
     supabase.from('shieldtag').select('batch_kode, status').is('voided_at', null),
     supabase.from('packing').select('batch_kode, pcs_dipack').is('voided_at', null),
     supabase.from('peleburan').select('batch_kode, dikasih_gram, diterima_gram').is('voided_at', null),
-    supabase.from('produksi_item')
-      .select('batch_kode, current_status, pcs')
-      .is('voided_at', null),
+    supabase.from('produksi_item').select('batch_kode, current_status, pcs').is('voided_at', null),
+    supabase.from('batch').select('kode', { count: 'exact', head: true }).eq('status', 'aktif').is('voided_at', null),
+    supabase.from('batch').select('kode', { count: 'exact', head: true }).eq('status', 'terkunci').is('voided_at', null),
   ])
 
   // Shieldtag per batch
@@ -70,7 +75,6 @@ export default async function LaporanBatchListPage({
   }
 
   // Pipeline status per batch
-  const PIPELINE_STAGES = ['Cutting', 'Annealing', 'Pas Berat', 'QC', 'Siap Packing', 'Sudah Packing', 'Reject']
   const pipelineMap: Record<string, Record<string, number>> = {}
   for (const p of pipelineSummary ?? []) {
     const k = p.batch_kode ?? ''
@@ -79,11 +83,9 @@ export default async function LaporanBatchListPage({
     pipelineMap[k][s] = (pipelineMap[k][s] ?? 0) + (p.pcs ?? 1)
   }
 
-  const totalBatch = batches?.length ?? 0
-  const totalAktif = batches?.filter(b => b.status === 'aktif').length ?? 0
-  const totalSelesai = batches?.filter(b => b.status === 'terkunci').length ?? 0
   const totalPcs = Object.values(packMap).reduce((s, v) => s + v, 0)
   const totalShieldtag = Object.values(stMap).reduce((s, v) => s + v.total, 0)
+  const totalPages = Math.ceil((totalCount ?? 0) / PAGE_SIZE)
 
   return (
     <LaporanBatchList
@@ -92,9 +94,18 @@ export default async function LaporanBatchListPage({
       packMap={packMap}
       lebMap={lebMap}
       pipelineMap={pipelineMap}
-      stats={{ totalBatch, totalAktif, totalSelesai, totalPcs, totalShieldtag }}
+      stats={{
+        totalBatch: totalCount ?? 0,
+        totalAktif: totalAktifAll ?? 0,
+        totalTidakAktif: totalTidakAktifAll ?? 0,
+        totalPcs,
+        totalShieldtag,
+      }}
       currentQ={q}
       currentStatus={statusFilter}
+      page={page}
+      totalPages={totalPages}
+      pageSize={PAGE_SIZE}
     />
   )
 }
