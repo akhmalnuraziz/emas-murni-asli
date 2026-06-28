@@ -460,7 +460,10 @@ function ExplorerPanel() {
               </p>
               <InfoRow label="Kode" value={<span className="font-mono">{result.kode}</span>}/>
               <InfoRow label="Gramasi" value={`${result.gramasi} gr`}/>
-              <InfoRow label="Batch" value={<span className="font-mono">{result.batch_kode}</span>}/>
+              <InfoRow label="Batch" value={
+                <a href={`/laporan/batch/${encodeURIComponent(result.batch_kode ?? '')}`}
+                  className="font-mono text-violet-600 hover:underline">{result.batch_kode}</a>
+              }/>
               <InfoRow label="Status" value={
                 <span className="px-2.5 py-0.5 rounded-full text-[12px] font-semibold"
                   style={{ background: cfg.bg, color: cfg.text }}>{result.status}</span>

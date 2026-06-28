@@ -23,6 +23,7 @@ const NAV_GROUPS = [
       { href: '/produksi',            label: 'Produksi',             icon: Hammer,          module: 'produksi'           },
       { href: '/packing-log',         label: 'Packing Log',          icon: Package,         module: 'packing-log'        },
       { href: '/shieldtag',           label: 'Shieldtag',            icon: Tag,             module: 'shieldtag'          },
+      { href: '/laporan/batch',       label: 'Laporan Batch',        icon: FileText,        module: 'laporan-batch'      },
       { href: '/kpi-tim',             label: 'KPI Tim',              icon: Star,            module: 'kpi-tim'            },
       { href: '/scrap',               label: 'Scrap Inventory',      icon: Recycle,         module: 'scrap'              },
     ],

@@ -152,8 +152,8 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <Link href="/laporan?tab=batch" className="inline-flex items-center gap-1.5 text-[12px] text-slate-400 hover:text-violet-600 mb-3 transition-colors">
-            <ArrowLeft size={12} /> Kembali ke Laporan
+          <Link href="/laporan/batch" className="inline-flex items-center gap-1.5 text-[12px] text-slate-400 hover:text-violet-600 mb-3 transition-colors">
+            <ArrowLeft size={12} /> Kembali ke Laporan Batch
           </Link>
           <h1 className="text-[20px] font-semibold text-slate-800 font-mono">{batch.kode}</h1>
           <p className="text-[13px] text-slate-400 mt-0.5">
