@@ -801,7 +801,7 @@ export async function editProduksi(produksiId: number, produksiKode: string, for
   const adminInputEdit = (formData.get('admin_input') as string) || undefined
   const updateData: any = {
     gramasi, berat_awal: beratAwal,
-    serah_gram: beratAwal, total_gram: beratAwal,
+    serah_gram: beratAwal, total_gram: sudahDiterima ? (Number(before?.terima_gram) || beratAwal) : beratAwal,
     nama_item: namaItemBaru,
     operator: formData.get('operator') as string || operator || null,
     catatan: catatan || null,

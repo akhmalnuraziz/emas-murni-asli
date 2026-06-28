@@ -267,9 +267,9 @@ export async function updateBatch(batchId: number, batchKode: string, formData: 
   const existing    = existingRaw ? JSON.parse(existingRaw) : []
   const newB64Raw   = formData.get('new_fotos_b64') as string
   const newB64s     = newB64Raw ? JSON.parse(newB64Raw) : []
-  const fotoUrls    = newB64s.length > 0
+  const { urls: fotoUrls } = newB64s.length > 0
     ? await uploadBase64Fotos(supabase, newB64s, batchKode, existing)
-    : existing
+    : { urls: existing }
 
   const { data: before } = await supabase.from('batch').select('*').eq('id', batchId).single()
 
@@ -341,6 +341,10 @@ export async function deleteBatch(batchId: number, batchKode: string) {
     .select('*', { count: 'exact', head: true }).eq('batch_kode', batchKode).is('voided_at', null)
   if ((prodCount ?? 0) > 0) return { error: `Batch memiliki ${prodCount} data produksi. Hapus produksi terlebih dahulu.` }
 
+  const { count: plbCount } = await supabase.from('peleburan')
+    .select('*', { count: 'exact', head: true }).eq('batch_kode', batchKode).eq('status', 'proses')
+  if ((plbCount ?? 0) > 0) return { error: 'Batch memiliki peleburan yang masih proses. Selesaikan atau batalkan peleburan terlebih dahulu.' }
+
   await supabase.from('batch').update({ voided_at: new Date().toISOString(), void_reason: 'DELETED_BY_USER' }).eq('id', batchId)
 
   await supabase.from('audit_log').insert({
@@ -408,6 +412,7 @@ export async function updateSisaFisik(formData: FormData) {
   const batchId        = parseInt(formData.get('batch_id') as string)
   const batchKode      = formData.get('batch_kode') as string
   const sisaFisik      = parseFloat(formData.get('sisa_fisik') as string)
+  if (isNaN(sisaFisik)) return { error: 'Nilai sisa fisik tidak valid' }
   const sisaSeharusnya = parseFloat(formData.get('sisa_seharusnya') as string)
   const existingRaw    = formData.get('existing_fotos') as string
   const existing       = existingRaw ? JSON.parse(existingRaw) : []

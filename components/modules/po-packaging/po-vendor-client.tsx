@@ -500,18 +500,48 @@ export default function POVendorClient({
                                 : `${bChild.length} produk · total ${fmtNum(b.qty_diterima)} pcs`
                             return (
                               <div key={b.id} className="rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 bg-white border border-slate-200">
-                                <div>
+                                <div className="min-w-0 flex-1">
                                   <p className="text-[12px] font-mono font-semibold text-slate-700">{b.nomor_batch}</p>
                                   <p className="text-[10px] text-slate-400">
                                     {desc} · {fmtDate(b.tanggal_terima)}
                                     {b.status_qc === 'selesai' ? ` · ✅ ACC ${fmtNum(b.qty_acc ?? 0)} / Reject ${fmtNum(b.qty_reject ?? 0)}` : ' · ⏳ Pending QC'}
                                   </p>
                                 </div>
-                                {canManage && b.status_qc === 'pending' && (
-                                  <button onClick={() => setQcModal(b)}
-                                    className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-white rounded-lg bg-green-500 hover:bg-green-600">
-                                    <ClipboardCheck size={10}/> QC
-                                  </button>
+                                {canManage && (
+                                  <div className="flex items-center gap-1 flex-shrink-0">
+                                    {b.status_qc === 'pending' && (
+                                      <button onClick={() => setQcModal(b)}
+                                        className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-white rounded-lg bg-green-500 hover:bg-green-600">
+                                        <ClipboardCheck size={10}/> QC
+                                      </button>
+                                    )}
+                                    {b.status_qc === 'selesai' && (
+                                      <button onClick={() => setEditQcModal(b)}
+                                        className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-violet-600 rounded-lg bg-violet-50 hover:bg-violet-100">
+                                        <Edit2 size={9}/> Edit QC
+                                      </button>
+                                    )}
+                                    {b.status_qc === 'pending' && !b.is_pengganti && (
+                                      <button onClick={() => setEditBatchModal(b)}
+                                        className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-violet-600 rounded-lg bg-violet-50 hover:bg-violet-100">
+                                        <Edit2 size={9}/> Edit
+                                      </button>
+                                    )}
+                                    <button onClick={() => askConfirm({
+                                      title: `Hapus batch ${b.nomor_batch}?`,
+                                      message: b.status_qc === 'selesai'
+                                        ? 'Stok ACC dari batch ini akan dikurangi kembali. Reject & SJ Retur terkait juga akan dihapus.'
+                                        : 'Aksi ini tidak bisa dibatalkan.',
+                                      danger: true, confirmLabel: 'Ya, Hapus Batch',
+                                      onConfirm: async () => {
+                                        const r = await deleteBatch(b.id)
+                                        if (r?.error) showToast(r.error, false)
+                                        else showToast('✅ Batch dihapus')
+                                      },
+                                    })} className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-red-500 rounded-lg bg-red-50 hover:bg-red-100">
+                                      <Trash2 size={9}/> Hapus
+                                    </button>
+                                  </div>
                                 )}
                               </div>
                             )

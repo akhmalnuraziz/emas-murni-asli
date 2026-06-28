@@ -347,10 +347,12 @@ function SisaFisikInput({ batchKode, initialValue }: { batchKode: string; initia
   async function save() {
     const parsed = draft.trim() === '' ? null : parseFloat(draft)
     setSaving(true)
-    await updateSisaFisikBatch(batchKode, parsed)
-    setVal(parsed)
+    const r = await updateSisaFisikBatch(batchKode, parsed)
     setSaving(false)
+    if (r?.error) { showToast(r.error, false); return }
+    setVal(parsed)
     setEditing(false)
+    showToast('✅ Sisa fisik disimpan')
   }
 
   if (saving) return <span className="text-[11px] text-violet-500 font-medium">Menyimpan…</span>
@@ -601,7 +603,7 @@ function CreateModal({ batches, peleburanByBatch, tims, adminList, onClose, onSu
           </div>
           <div>
             <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto Bahan Baku Diserahkan (MAX 10)</label>
-            <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0,5))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_,j) => j !== i))} label="Foto Diserahkan" small />
+            <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0,10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_,j) => j !== i))} label="Foto Diserahkan" small />
           </div>
 
           {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13}/>{error}</div>}
