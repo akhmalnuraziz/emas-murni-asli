@@ -676,7 +676,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                     {/* ─── Rekonsiliasi (iOS card style) ─────────────── */}
                     {(()=>{
                       const plbList = (peleburanList as any[]).filter((p:any)=>p.batch_kode===batch.kode)
-                      const sudahDilebur = plbList.reduce((s:number,p:any)=>s+Number(p.dikasih_gram??0),0)
+                      const sudahDilebur = plbList.reduce((s:number,p:any)=>s+Number(p.sumber_batch_gram??0),0)
                       const losses      = plbList.filter((p:any)=>p.status==='selesai').reduce((s:number,p:any)=>s+Number(p.losses_gram??0),0)
                       const terpakai    = batchProdItems.reduce((s:number,i:any)=>s+Number(i.total_gram??0),0)
                       const bahanMasuk  = timbAkhir
@@ -1009,7 +1009,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
       {peleburanModalBatch&&(()=>{
         const pb = batches.find((b:any)=>b.kode===peleburanModalBatch)
         const plbBatch = (peleburanList as any[]).filter((p:any)=>p.batch_kode===peleburanModalBatch)
-        const totalDilebur = plbBatch.reduce((s:number,p:any)=>s+Number(p.dikasih_gram??0),0)
+        const totalDilebur = plbBatch.reduce((s:number,p:any)=>s+Number(p.sumber_batch_gram??0),0)
         const mentahBelumLebur = Math.max(0, Number(pb?.timbangan_akhir??0) - totalDilebur)
         const hasilLeburBelumCetak = Number(pb?.bahan_siap_cetak??0)
         return <CreatePeleburanModal
