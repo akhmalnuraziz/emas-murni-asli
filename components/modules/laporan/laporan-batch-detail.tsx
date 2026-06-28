@@ -340,7 +340,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
                   <XAxis type="number" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                   <YAxis type="category" dataKey="gramasi" tick={{ fontSize: 11, fill: '#475569', fontWeight: 600 }} axisLine={false} tickLine={false} width={36} />
-                  <Tooltip formatter={(v: any, name: string) => [name === 'pcs' ? `${v} pcs` : `${v} gr`, name === 'pcs' ? 'PCS' : 'Gram']} />
+                  <Tooltip formatter={(v: any, name: any) => [name === 'pcs' ? `${v} pcs` : `${v} gr`, name === 'pcs' ? 'PCS' : 'Gram']} />
                   <Bar dataKey="pcs" fill={PALETTE.violet} radius={[0, 4, 4, 0]} name="pcs" />
                   <Bar dataKey="gram" fill={PALETTE.green} radius={[0, 4, 4, 0]} name="gram" />
                 </BarChart>
