@@ -31,7 +31,7 @@ export async function fetchInventoryGudang(): Promise<{ rows: GudangRow[]; error
   // 1. Total pcs per gramasi dari packing (yang belum void) = total masuk gudang
   const { data: packings } = await supabase
     .from('packing')
-    .select('gramasi, pcs, total_gram, voided_at')
+    .select('gramasi, pcs_dipack, total_gram, voided_at')
     .is('voided_at', null)
 
   // 2. Shieldtag aktif di gudang per gramasi = yang sudah tershieldtag & masih di gudang
@@ -46,7 +46,7 @@ export async function fetchInventoryGudang(): Promise<{ rows: GudangRow[]; error
   for (const p of packings ?? []) {
     const g = String(p.gramasi)
     const cur = packedMap.get(g) ?? { pcs: 0, gram: 0 }
-    cur.pcs += Number(p.pcs ?? 0)
+    cur.pcs += Number(p.pcs_dipack ?? 0)
     cur.gram += Number(p.total_gram ?? 0)
     packedMap.set(g, cur)
   }
