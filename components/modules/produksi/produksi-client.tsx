@@ -2084,7 +2084,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
       {modal==='sesiTerimaStage' && activeSesi && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
-            <SesiTerimaForm items={activeSesi.items} tahap={activeSesi.tahap!} tims={tims} adminList={adminList}
+            <SesiTerimaForm items={activeSesi.items} tahap={activeSesi.tahap!} toleransi={toleransi[activeSesi.tahap!]??0.05} tims={tims} adminList={adminList}
               err={err} isPending={isPending} onCancel={()=>setModal(null)} onSubmit={handleSesiTerimaStage} />
           </div>
         </div>
@@ -2283,8 +2283,8 @@ function SesiSerahForm({ items, tahap, tims, adminList, err, isPending, onCancel
 }
 
 // ─── SesiTerimaForm — terima sesi (multi-gramasi) per tahap ─────────────────────
-function SesiTerimaForm({ items, tahap, tims, adminList, err, isPending, onCancel, onSubmit }: {
-  items: any[]; tahap: string; tims: any[]; adminList: any[]; err: string; isPending: boolean;
+function SesiTerimaForm({ items, tahap, toleransi, tims, adminList, err, isPending, onCancel, onSubmit }: {
+  items: any[]; tahap: string; toleransi: number; tims: any[]; adminList: any[]; err: string; isPending: boolean;
   onCancel: () => void; onSubmit: (fd: FormData) => void
 }) {
   const TL: Record<string,string> = { pas_berat:'Pas Berat', annealing:'Annealing', siap_packing:'Siap Packing' }
@@ -2292,12 +2292,58 @@ function SesiTerimaForm({ items, tahap, tims, adminList, err, isPending, onCance
   const sorted = [...items].sort((a,b)=>Number(a.gramasi)-Number(b.gramasi))
   const [fotos, setFotos] = useState<File[]>([])
 
+  // per-item gram state untuk deteksi loss real-time
+  const [terimaVals, setTerimaVals] = useState<Record<number,string>>({})
+  const [rejectVals, setRejectVals] = useState<Record<number,string>>({})
+  const [serbukVals, setSerbukVals] = useState<Record<number,string>>({})
+
+  // loss approval state
+  const [lossAlasan, setLossAlasan]     = useState('')
+  const [lossOpNama, setLossOpNama]     = useState('')
+  const [lossAdminNama, setLossAdminNama] = useState('')
+  const [ttdOp, setTtdOp]   = useState<string|null>(null)
+  const [ttdAdmin, setTtdAdmin] = useState<string|null>(null)
+
+  // hitung worst loss/gain across all items
+  const worstLoss = sorted.reduce((max, it) => {
+    const sh = (it.stage_handover??[]).filter((h:any)=>!h.voided_at).find((h:any)=>h.tahap===tahap)
+    const serahGram = Number(sh?.serah_gram ?? it.total_gram ?? 0)
+    const terima = parseFloat(terimaVals[it.id]||'0')
+    const reject = parseFloat(rejectVals[it.id]||'0')
+    const serbuk = parseFloat(serbukVals[it.id]||'0')
+    return Math.max(max, Math.max(0, serahGram - terima - reject - serbuk))
+  }, 0)
+  const worstGain = sorted.reduce((max, it) => {
+    const sh = (it.stage_handover??[]).filter((h:any)=>!h.voided_at).find((h:any)=>h.tahap===tahap)
+    const serahGram = Number(sh?.serah_gram ?? it.total_gram ?? 0)
+    const terima = parseFloat(terimaVals[it.id]||'0')
+    const reject = parseFloat(rejectVals[it.id]||'0')
+    const serbuk = parseFloat(serbukVals[it.id]||'0')
+    return Math.max(max, Math.max(0, (terima + reject + serbuk) - serahGram))
+  }, 0)
+  const anyOverTol  = Object.keys(terimaVals).length > 0 && worstLoss > toleransi + 0.0001
+  const anyOverGain = Object.keys(terimaVals).length > 0 && worstGain > toleransi + 0.0001
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (anyOverTol || anyOverGain) {
+      if (!lossAlasan.trim()) { alert(anyOverGain ? 'Alasan timbangan naik wajib diisi' : 'Alasan loss wajib diisi'); return }
+      if (!ttdOp)    { alert('Tanda tangan operator wajib'); return }
+      if (!ttdAdmin) { alert('Tanda tangan admin wajib'); return }
+    }
     const fd = new FormData(e.currentTarget as HTMLFormElement)
     fd.set('fotos_b64', JSON.stringify(fotos.length>0 ? await filesToBase64(fotos) : []))
+    if (anyOverTol || anyOverGain) {
+      fd.set('loss_alasan', lossAlasan)
+      fd.set('loss_operator_nama', lossOpNama)
+      fd.set('loss_admin_nama', lossAdminNama)
+      if (ttdOp)    fd.set('loss_ttd_operator', ttdOp)
+      if (ttdAdmin) fd.set('loss_ttd_admin', ttdAdmin)
+    }
     onSubmit(fd)
   }
+
+  const iCls = 'w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all'
 
   return (
     <form onSubmit={handleSubmit}>
@@ -2311,36 +2357,61 @@ function SesiTerimaForm({ items, tahap, tims, adminList, err, isPending, onCance
       <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
         {sorted.map(it=>{
           const sh = (it.stage_handover??[]).filter((h:any)=>!h.voided_at).find((h:any)=>h.tahap===tahap)
+          const serahGram = Number(sh?.serah_gram ?? it.total_gram ?? 0)
+          const terima = parseFloat(terimaVals[it.id]||'0')
+          const reject = parseFloat(rejectVals[it.id]||'0')
+          const serbuk = parseFloat(serbukVals[it.id]||'0')
+          const lossIt = terima > 0 ? Math.max(0, serahGram - terima - reject - serbuk) : null
+          const gainIt = terima > 0 ? Math.max(0, (terima + reject + serbuk) - serahGram) : null
+          const overIt = lossIt != null && (lossIt > toleransi + 0.0001 || (gainIt??0) > toleransi + 0.0001)
           return (
-            <div key={it.id} className="rounded-xl border border-violet-200 bg-violet-50/30 p-3 space-y-2">
-              <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 tabular-nums">{it.gramasi}gr · diserahkan {fgr(sh?.serah_gram ?? it.total_gram)} gr</span>
+            <div key={it.id} className={`rounded-xl border p-3 space-y-2 ${overIt ? 'border-red-200 bg-red-50/30' : 'border-violet-200 bg-violet-50/30'}`}>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 tabular-nums">{it.gramasi}gr · diserahkan {fgr(serahGram)} gr</span>
+                {lossIt != null && overIt && <span className="text-[10px] text-red-500 font-semibold">⚠ {gainIt! > toleransi + 0.0001 ? `naik +${gainIt!.toFixed(2)}gr` : `loss ${lossIt.toFixed(2)}gr`}</span>}
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-[11px] font-medium text-slate-500 mb-1">Berat Diterima (gr) <span className="text-red-500">*</span></label>
                   <input name={`terima_gram_${it.id}`} type="number" step="0.001" required min="0.001"
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
+                    value={terimaVals[it.id]??''} onChange={e=>setTerimaVals(p=>({...p,[it.id]:e.target.value}))} className={iCls}/>
                 </div>
                 <div>
                   <label className="block text-[11px] font-medium text-slate-500 mb-1">Jumlah PCS</label>
-                  <input name={`terima_pcs_${it.id}`} type="number" min="0" placeholder={String(it.pcs_good ?? it.pcs ?? '')}
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
+                  <input name={`terima_pcs_${it.id}`} type="number" min="0" placeholder={String(it.pcs_good ?? it.pcs ?? '')} className={iCls}/>
                 </div>
                 {isPb && (
                   <div>
                     <label className="block text-[11px] font-medium text-slate-500 mb-1">Sisa Serbuk (gr)</label>
                     <input name={`sisa_serbuk_${it.id}`} type="number" step="0.001" min="0" defaultValue="0"
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
+                      onChange={e=>setSerbukVals(p=>({...p,[it.id]:e.target.value}))} className={iCls}/>
                   </div>
                 )}
                 <div>
                   <label className="block text-[11px] font-medium text-slate-500 mb-1">Berat Reject (gr)</label>
                   <input name={`reject_gram_${it.id}`} type="number" step="0.001" min="0" defaultValue="0"
-                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 transition-all"/>
+                    onChange={e=>setRejectVals(p=>({...p,[it.id]:e.target.value}))} className={iCls}/>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1">PCS Reject</label>
+                  <input name={`reject_pcs_${it.id}`} type="number" min="0" defaultValue="0" className={iCls}/>
                 </div>
               </div>
             </div>
           )
         })}
+
+        {(anyOverTol || anyOverGain) && (
+          <LossApprovalPanel
+            lossGram={Math.max(worstLoss, worstGain)} toleransiGram={toleransi}
+            proses={TL[tahap]??tahap}
+            alasan={lossAlasan} setAlasan={setLossAlasan}
+            operatorNama={lossOpNama} setOperatorNama={setLossOpNama}
+            adminNama={lossAdminNama} setAdminNama={setLossAdminNama}
+            setTtdOperator={setTtdOp} setTtdAdmin={setTtdAdmin}
+          />
+        )}
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-[11px] font-medium text-slate-500 mb-1">Tanggal Selesai <span className="text-red-500">*</span></label>

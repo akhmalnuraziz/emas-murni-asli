@@ -1526,11 +1526,14 @@ export async function terimaSesiStage(sesiId: string, tahap: string, formData: F
     .select('*, stage_handover(*)').eq('sesi_id', sesiId).is('voided_at', null)
   if (!items?.length) return { error: 'Sesi tidak ditemukan' }
 
-  const { data: profile } = await supabase.from('users_profile').select('name').eq('id', user.id).single()
-  const terimaTanggal = formData.get('terima_tanggal') as string
-  const terimaJam = (formData.get('terima_jam') as string) || null
-  const terimaCatatan = (formData.get('terima_catatan') as string) || null
+  const [{ data: profile }, tolMap] = await Promise.all([
+    supabase.from('users_profile').select('name').eq('id', user.id).single(),
+    getToleransiLoss(),
+  ])
 
+  const terimaTanggal = formData.get('terima_tanggal') as string
+  const terimaJam     = (formData.get('terima_jam') as string) || null
+  const terimaCatatan = (formData.get('terima_catatan') as string) || null
   if (!terimaTanggal) return { error: 'Tanggal diterima wajib diisi' }
 
   const fotosB64Raw = formData.get('fotos_b64') as string
@@ -1540,42 +1543,91 @@ export async function terimaSesiStage(sesiId: string, tahap: string, formData: F
     : []
 
   const nextStatusMap: Record<string,string> = { pas_berat: 'Annealing', annealing: 'Siap Packing', siap_packing: 'Siap Packing' }
+  const terimaOp    = (formData.get('terima_operator') as string) || profile?.name || null
+  const terimaTimId  = formData.get('terima_tim_id') ? Number(formData.get('terima_tim_id')) : null
+  const terimaTimNama = (formData.get('terima_tim_nama') as string) || null
+  const lossAlasan   = (formData.get('loss_alasan') as string) || ''
 
+  // ── Pass 1: parse semua item & validasi loss/gain sebelum menyimpan ───────────
+  type IP = { item: any; handover: any; terimaGram: number; terimaPcs: number|null; sisaSerbuk: number; rejectGram: number; rejectPcs: number; serahGram: number; losses: number; gain: number; tol: number }
+  const proc: IP[] = []
   for (const item of items) {
     const handovers = (item.stage_handover ?? []).filter((h: any) => !h.voided_at)
-    const handover = handovers.find((h: any) => h.tahap === tahap && h.status === 'proses')
+    const handover  = handovers.find((h: any) => h.tahap === tahap && h.status === 'proses')
     if (!handover) continue
 
     const terimaGram = parseFloat(formData.get(`terima_gram_${item.id}`) as string || '0')
     if (!terimaGram || terimaGram <= 0) return { error: `Berat terima untuk ${item.gramasi}gr wajib diisi` }
 
-    const sisaSerbuk = tahap === 'pas_berat'
-      ? parseFloat(formData.get(`sisa_serbuk_${item.id}`) as string || '0')
-      : 0
+    const sisaSerbuk = tahap === 'pas_berat' ? parseFloat(formData.get(`sisa_serbuk_${item.id}`) as string || '0') : 0
     const rejectGram = parseFloat(formData.get(`reject_gram_${item.id}`) as string || '0') || 0
-    const terimaPcs = parseInt(formData.get(`terima_pcs_${item.id}`) as string || '0') || null
+    const rejectPcs  = parseInt(formData.get(`reject_pcs_${item.id}`) as string || '0') || 0
+    const terimaPcs  = parseInt(formData.get(`terima_pcs_${item.id}`) as string || '0') || null
+    const serahGram  = Number(handover.serah_gram ?? 0)
+    const losses     = Math.max(0, serahGram - terimaGram - sisaSerbuk - rejectGram)
+    const gain       = Math.max(0, (terimaGram + sisaSerbuk + rejectGram) - serahGram)
+    const tol        = tolMap[tahap] ?? 0.05
+    proc.push({ item, handover, terimaGram, terimaPcs, sisaSerbuk, rejectGram, rejectPcs, serahGram, losses, gain, tol })
+  }
 
-    const serahGram = Number(handover.serah_gram ?? 0)
-    const losses = Math.max(0, serahGram - terimaGram - sisaSerbuk - rejectGram)
+  const needsTTD = proc.some(x => x.losses > x.tol + 0.0001 || x.gain > x.tol + 0.0001)
+  if (needsTTD) {
+    const ttdOp    = formData.get('loss_ttd_operator') as string
+    const ttdAdmin = formData.get('loss_ttd_admin') as string
+    const worstVal = proc.reduce((m, x) => Math.max(m, x.losses, x.gain), 0)
+    const isGain   = proc.some(x => x.gain > x.tol + 0.0001)
+    if (!lossAlasan.trim()) return { error: `${isGain ? 'Timbangan naik' : 'Loss'} ${worstVal.toFixed(3)}gr melebihi toleransi. Alasan wajib diisi.` }
+    if (!ttdOp)    return { error: 'Tanda tangan operator wajib.' }
+    if (!ttdAdmin) return { error: 'Tanda tangan admin/manager wajib.' }
+  }
+
+  // ── Pass 2: simpan semua ──────────────────────────────────────────────────────
+  for (const { item, handover, terimaGram, terimaPcs, sisaSerbuk, rejectGram, rejectPcs, serahGram, losses, gain, tol } of proc) {
+    if (losses > tol + 0.0001) {
+      await saveLossApproval(supabase, {
+        batchKode: item.batch_kode ?? null, proses: tahap, refTable: 'stage_handover', refId: handover.id,
+        timId: terimaTimId, timNama: terimaTimNama,
+        masukGram: serahGram, keluarGram: terimaGram, lossGram: losses, toleransiGram: tol,
+        alasan: lossAlasan, ttdOperatorDataUrl: formData.get('loss_ttd_operator') as string,
+        operatorNama: (formData.get('loss_operator_nama') as string) || terimaOp,
+        ttdAdminDataUrl: formData.get('loss_ttd_admin') as string,
+        adminUserId: user.id, adminNama: (formData.get('loss_admin_nama') as string) || profile?.name || null,
+      })
+    }
+    if (gain > tol + 0.0001) {
+      await saveLossApproval(supabase, {
+        batchKode: item.batch_kode ?? null, proses: tahap, refTable: 'stage_handover', refId: handover.id,
+        timId: terimaTimId, timNama: terimaTimNama,
+        masukGram: serahGram, keluarGram: terimaGram + sisaSerbuk + rejectGram, lossGram: gain, toleransiGram: tol,
+        alasan: `[Timbangan naik +${gain.toFixed(3)}gr] ${lossAlasan}`, ttdOperatorDataUrl: formData.get('loss_ttd_operator') as string,
+        operatorNama: (formData.get('loss_operator_nama') as string) || terimaOp,
+        ttdAdminDataUrl: formData.get('loss_ttd_admin') as string,
+        adminUserId: user.id, adminNama: (formData.get('loss_admin_nama') as string) || profile?.name || null,
+      })
+    }
 
     await supabase.from('stage_handover').update({
       terima_gram: terimaGram, terima_pcs: terimaPcs,
       terima_tanggal: terimaTanggal, terima_jam: terimaJam,
       terima_catatan: terimaCatatan, terima_fotos: fotoUrls,
       sisa_serbuk: sisaSerbuk, losses, status: 'selesai',
-      terima_operator: (formData.get('terima_operator') as string) || profile?.name || null,
-      tim_id: formData.get('terima_tim_id') ? Number(formData.get('terima_tim_id')) : handover.tim_id,
-      tim_nama: (formData.get('terima_tim_nama') as string) || handover.tim_nama,
+      terima_operator: terimaOp,
+      tim_id: terimaTimId ?? handover.tim_id,
+      tim_nama: terimaTimNama ?? handover.tim_nama,
       tim_anggota_aktif: (formData.get('terima_tim_anggota_aktif') as string) || handover.tim_anggota_aktif || null,
       terima_admin_input: (formData.get('terima_admin_input') as string) || null,
     }).eq('id', handover.id)
 
     const updateItem: any = { total_gram: terimaGram, terima_gram: terimaGram }
     if (terimaPcs) { updateItem.pcs_good = terimaPcs; updateItem.pcs = terimaPcs }
-    if (rejectGram > 0) { updateItem.berat_reject = Number(item.berat_reject ?? 0) + rejectGram; updateItem.status_reject = 'belum_dilebur' }
+    if (rejectGram > 0 || rejectPcs > 0) {
+      updateItem.berat_reject  = Number(item.berat_reject ?? 0) + rejectGram
+      updateItem.pcs_reject    = Number(item.pcs_reject ?? 0) + rejectPcs
+      updateItem.status_reject = 'belum_dilebur'
+    }
     if (sisaSerbuk > 0) updateItem.sisa_serbuk = sisaSerbuk
 
-    // Tentukan status berikutnya
+    const handovers = (item.stage_handover ?? []).filter((h: any) => !h.voided_at)
     const STAGE_ORDER = ['pas_berat', 'annealing', 'siap_packing']
     const nextStageDone = STAGE_ORDER.slice(STAGE_ORDER.indexOf(tahap) + 1)
     const anyNext = handovers.find((h: any) => nextStageDone.includes(h.tahap) && h.status !== 'voided')
