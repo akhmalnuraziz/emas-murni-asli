@@ -697,7 +697,6 @@ function TambahProduksiModal({ item, peleburanByBatch, tims, adminList, onClose,
             <F label="Jam Mulai" req><input name="jam_mulai" type="time" value={f.jam_mulai} onChange={e => s('jam_mulai', e.target.value)} className={inp} required /></F>
           </div>
 
-          <TimPickerStd tims={tims} prefix="" />
           <AdminPickerStd adminList={adminList} prefix="" label="Admin Yang Menyerahkan" />
           <F label="Foto Bahan Baku Diserahkan (MAX 10)">
             <FotoPicker files={fotos} onAdd={ff => setFotos(p => [...p, ...ff].slice(0, 10))} onRemove={i => i === -1 ? setFotos([]) : setFotos(p => p.filter((_, j) => j !== i))} label="Tambah foto" />
