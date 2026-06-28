@@ -42,7 +42,7 @@ export default async function LaporanPage({
     { data: penjualanPeriode },
     { data: buybackPeriode },
     { data: mutasiRaw },
-    { data: batches },
+    { data: batchesNeraca },
     { data: pengeluaranPeriode },
   ] = await Promise.all([
     supabase.from('produksi_item').select('total_gram, current_status, berat_reject, status_reject').is('voided_at', null).limit(5000),
@@ -64,7 +64,7 @@ export default async function LaporanPage({
     })(),
     supabase.from('buyback').select('id, tanggal').gte('tanggal', dateFrom).lte('tanggal', dateTo).is('voided_at', null),
     supabase.from('mutasi').select('pcs').in('status', ['dikirim', 'SELESAI', 'SHORT_SHIP']).is('voided_at', null).limit(5000),
-    supabase.from('batch').select('kode, tanggal, supplier, timbangan_akhir, hpp_gr, status').is('voided_at', null).order('created_at', { ascending: false }).limit(500),
+    supabase.from('batch').select('timbangan_akhir').is('voided_at', null),
     supabase.from('pengeluaran')
       .select('id, tanggal, nama, nominal, kategori:kategori_pengeluaran(nama, warna)')
       .gte('tanggal', dateFrom)
@@ -102,10 +102,8 @@ export default async function LaporanPage({
   const allItems = produksiItems ?? []
   const allShieldtag = shieldtags ?? []
   const allPenjualan = penjualanAll ?? []
-  const allBatches = batches ?? []
-
   // MASUK: total emas dari semua batch
-  const masukBatch = allBatches.reduce((s, b: any) => s + Number(b.timbangan_akhir ?? 0), 0)
+  const masukBatch = (batchesNeraca ?? []).reduce((s, b: any) => s + Number(b.timbangan_akhir ?? 0), 0)
 
   // STOK: shieldtag aktif + transit cabang
   const stokAktifGram    = allShieldtag.filter(s => s.status === 'Aktif').reduce((s, t) => s + parseFloat(t.gramasi ?? '0'), 0)
@@ -197,7 +195,6 @@ export default async function LaporanPage({
       summary={{ totalProduksiGram, totalPackingPcs, totalShieldtagAktif, totalTerjual, totalBuyback, totalMutasiKeluar }}
       penjualanByGramasi={penjualanByGramasi}
       penjualanByGramasiPeriode={penjualanByGramasiPeriode}
-      batchList={(batches ?? []) as any}
       userRole={profile?.role ?? 'operator_produksi'}
       period={period}
       dateFrom={dateFrom}

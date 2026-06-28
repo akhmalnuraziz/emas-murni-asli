@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   FileText, TrendingUp, Package, ArrowLeftRight, RotateCcw,
-  ShoppingCart, Layers, Wallet, TrendingDown, Calendar, ExternalLink, Download,
+  ShoppingCart, Wallet, TrendingDown, Calendar, ExternalLink, Download,
   Scale, AlertTriangle, CheckCircle2,
 } from 'lucide-react'
 import { formatRupiah, formatDate, cn } from '@/lib/utils'
@@ -21,10 +21,6 @@ interface Props {
   }
   penjualanByGramasi: Array<{ gramasi: string; pcs: number; total: number }>
   penjualanByGramasiPeriode: Array<{ gramasi: string; pcs: number; omzet: number; hpp: number; profit: number; margin: number }>
-  batchList: Array<{
-    kode: string; tanggal: string; supplier: string | null
-    timbangan_akhir: number | null; hpp_gr: number | null; status: string | null
-  }>
   userRole: string
   period: string
   dateFrom: string
@@ -168,11 +164,11 @@ function PeriodSelector({ period, dateFrom, dateTo }: { period: string; dateFrom
 }
 
 export default function LaporanClient({
-  summary, penjualanByGramasi, penjualanByGramasiPeriode, batchList, userRole,
+  summary, penjualanByGramasi, penjualanByGramasiPeriode, userRole,
   period, dateFrom, dateTo,
   labaRugi, channelBreakdown, penjualanList, pengeluaranList, neraca,
 }: Props) {
-  const [tab, setTab] = useState<'laba-rugi' | 'penjualan' | 'batch' | 'ringkasan' | 'neraca'>('laba-rugi')
+  const [tab, setTab] = useState<'laba-rugi' | 'penjualan' | 'ringkasan' | 'neraca'>('laba-rugi')
   const showHpp = canSeeHpp(userRole)
 
   const periodLabel = period === 'today' ? 'Hari Ini'
@@ -183,7 +179,6 @@ export default function LaporanClient({
   const TABS = [
     ...(showHpp ? [['laba-rugi', 'Laba Rugi', TrendingUp]] : []),
     ['penjualan', 'Per Gramasi', ShoppingCart],
-    ['batch', 'Batch', Layers],
     ['ringkasan', 'Ringkasan', Package],
     ['neraca', 'Neraca Emas', Scale],
   ] as const
@@ -216,8 +211,7 @@ export default function LaporanClient({
         />
       )}
       {tab === 'penjualan' && <PenjualanTab rowsAllTime={penjualanByGramasi} rowsPeriode={penjualanByGramasiPeriode} showHpp={showHpp} periodLabel={periodLabel} />}
-      {tab === 'batch'     && <BatchTab rows={batchList} showHpp={showHpp} />}
-      {tab === 'ringkasan' && <RingkasanTab summary={summary} />}
+{tab === 'ringkasan' && <RingkasanTab summary={summary} />}
       {tab === 'neraca'    && <NeracaTab neraca={neraca} />}
     </div>
   )
@@ -539,54 +533,6 @@ function PenjualanTab({
   )
 }
 
-// ── Batch Tab ─────────────────────────────────────────────────────────────────
-
-function BatchTab({ rows, showHpp }: { rows: Props['batchList']; showHpp: boolean }) {
-  if (rows.length === 0) return <Empty text="Belum ada batch." />
-  return (
-    <div className="rounded-xl overflow-hidden"
-      >
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[520px] text-[13px]">
-          <thead>
-            <tr className="bg-violet-50/20 border-b border-violet-500/10">
-              {['Kode Batch', 'Tanggal', 'Supplier', 'Berat Akhir', showHpp ? 'HPP/gr' : null, 'Status'].filter(Boolean).map(h => (
-                <th key={h!} className="px-4 py-3.5 text-left text-[10px] font-medium text-slate-400 whitespace-nowrap">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((b, i) => (
-              <tr key={b.kode} className={`hover:bg-violet-50/10 ${i > 0 ? 'border-t border-slate-200' : ''}`}>
-                <td className="px-4 py-3.5">
-                  <Link href={`/laporan/batch/${encodeURIComponent(b.kode)}`}
-                    className="font-mono font-semibold text-violet-700 text-[12px] hover:underline flex items-center gap-1">
-                    {b.kode} <ExternalLink size={9} />
-                  </Link>
-                </td>
-                <td className="px-4 py-3.5 text-slate-600 whitespace-nowrap">{formatDate(b.tanggal)}</td>
-                <td className="px-4 py-3.5 text-slate-600">{b.supplier ?? '—'}</td>
-                <td className="px-4 py-3.5 font-semibold text-slate-800">
-                  {b.timbangan_akhir ? `${Number(b.timbangan_akhir).toFixed(3)} gr` : '—'}
-                </td>
-                {showHpp && (
-                  <td className="px-4 py-3.5 font-semibold text-amber-700">
-                    {b.hpp_gr ? formatRupiah(b.hpp_gr) : '—'}
-                  </td>
-                )}
-                <td className="px-4 py-3.5">
-                  <span className={`text-[10px] font-semibold px-2 py-1 rounded-full ${
-                    b.status === 'Selesai' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
-                  }`}>{b.status ?? 'Proses'}</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
 
 function Empty({ text }: { text: string }) {
   return (
