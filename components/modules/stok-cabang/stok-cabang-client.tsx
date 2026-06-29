@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import {
   Store, Package, Clock, TrendingUp, RefreshCw,
   ChevronDown, ChevronRight, SlidersHorizontal,
-  History, AlertTriangle, CheckCircle2, X, Download,
+  History, AlertTriangle, CheckCircle2, X, Download, Search,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { CabangStokSummary } from '@/app/(dashboard)/stok-cabang/actions'
@@ -29,6 +29,11 @@ export default function StokCabangClient({ stokData, canAdjust, isCabangView }: 
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [expanded, setExpanded] = useState<string | null>(stokData[0]?.kode ?? null)
+  const [search, setSearch] = useState('')
+
+  const filteredData = search.trim()
+    ? stokData.filter(c => c.nama.toLowerCase().includes(search.toLowerCase()) || c.kode.toLowerCase().includes(search.toLowerCase()))
+    : stokData
   const [adjModal, setAdjModal] = useState<{ cabang: CabangStokSummary; gramasi?: string } | null>(null)
   const [histModal, setHistModal] = useState<{ cabang: CabangStokSummary } | null>(null)
   const [histData, setHistData] = useState<any[]>([])
@@ -97,6 +102,21 @@ export default function StokCabangClient({ stokData, canAdjust, isCabangView }: 
         <KpiCard label="Total Stok" value={totalStokAll} sub="ready + PO" color="#7C3AED" bg="rgba(124,58,237,0.08)" icon={<TrendingUp size={16}/>} />
       </div>
 
+      {/* Search */}
+      <div className="relative">
+        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+        <input
+          type="text" value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Cari nama atau kode cabang..."
+          className="w-full h-9 pl-8 pr-3 text-[12px] border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-violet-300/40"
+        />
+        {search && (
+          <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+            <X size={12} />
+          </button>
+        )}
+      </div>
+
       {/* List cabang */}
       {stokData.length === 0 ? (
         <div className="rounded-xl py-16 text-center border border-slate-200 bg-white/70">
@@ -104,9 +124,13 @@ export default function StokCabangClient({ stokData, canAdjust, isCabangView }: 
           <p className="text-[13px] text-slate-400">Belum ada data cabang</p>
           <p className="text-[12px] text-slate-300 mt-1">Tambah cabang dulu di Pengaturan</p>
         </div>
+      ) : filteredData.length === 0 ? (
+        <div className="rounded-xl py-12 text-center border border-slate-200 bg-white/70">
+          <p className="text-[13px] text-slate-400">Tidak ada cabang cocok dengan "{search}"</p>
+        </div>
       ) : (
         <div className="space-y-3">
-          {stokData.map(cab => (
+          {filteredData.map(cab => (
             <CabangCard
               key={cab.kode}
               cabang={cab}
