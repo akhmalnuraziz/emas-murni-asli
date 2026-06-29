@@ -14,7 +14,8 @@ const inp = 'w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text
 const today = new Date().toISOString().split('T')[0]
 
 const STATUS_CFG: Record<string, { label: string; bg: string; text: string }> = {
-  pending:   { label: 'Pending',   bg: 'rgba(245,158,11,0.1)',  text: '#D97706' },
+  menunggu:  { label: 'Menunggu',  bg: 'rgba(245,158,11,0.1)',  text: '#D97706' },
+  pending:   { label: 'Menunggu',  bg: 'rgba(245,158,11,0.1)',  text: '#D97706' }, // legacy fallback
   diproses:  { label: 'Diproses',  bg: 'rgba(59,130,246,0.1)',  text: '#2563EB' },
   partial:   { label: 'Sebagian',  bg: 'rgba(249,115,22,0.1)',  text: '#EA580C' },
   selesai:   { label: 'Selesai',   bg: 'rgba(34,197,94,0.1)',   text: '#16A34A' },
@@ -57,7 +58,7 @@ export default function PoCabangClient({
   }
 
   const counts = {
-    pending:  poList.filter(p => p.status === 'pending').length,
+    pending:  poList.filter(p => p.status === 'menunggu' || p.status === 'pending').length,
     diproses: poList.filter(p => p.status === 'diproses').length,
     selesai:  poList.filter(p => p.status === 'selesai').length,
   }
@@ -193,7 +194,7 @@ export default function PoCabangClient({
                   {/* Actions */}
                   {canApprove && (
                     <div className="flex flex-wrap gap-2 pt-1">
-                      {po.status === 'pending' && (
+                      {(po.status === 'menunggu' || po.status === 'pending') && (
                         <>
                           <button onClick={() => handleUpdateStatus(po.id, 'diproses')} disabled={isPending}
                             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold text-white bg-blue-500 hover:bg-blue-600">

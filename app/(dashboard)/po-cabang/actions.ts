@@ -37,7 +37,7 @@ export async function createPO(formData: FormData) {
 
   const { data: po, error } = await supabase.from('po_cabang').insert({
     kode, cabang_kode: cabangKode, cabang_nama: cabangNama,
-    tanggal, status: 'pending', catatan: catatan || null,
+    tanggal, status: 'menunggu', catatan: catatan || null,
     created_by: user.id,
   }).select('id').single()
   if (error) return { error: error.message }
