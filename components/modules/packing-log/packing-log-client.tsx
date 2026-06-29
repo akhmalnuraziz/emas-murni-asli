@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useTransition } from 'react'
 import { useRealtimeRefresh } from '@/lib/supabase/use-realtime-refresh'
@@ -131,49 +131,40 @@ function FotoPicker({files,existing=[],onAdd,onRemove,onRemoveExisting,label='Ta
 }
 
 // ─── Print View ───────────────────────────────────────────────────────────────
-function PrintView({p}:{p:any}){
-  return(
-    <div id={`print-${p.id}`}className="hidden">
-      <div style={{fontFamily:'Arial,sans-serif',padding:'32px',maxWidth:'600px',margin:'0 auto',border:'2px solid #333'}}>
-        <div style={{textAlign:'center',borderBottom:'2px solid #333',paddingBottom:'16px',marginBottom:'20px',display:'flex',alignItems:'center',justifyContent:'center',gap:'12px'}}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Logo" style={{width:'48px',height:'48px',objectFit:'contain'}}/>
-          <div style={{textAlign:'left'}}>
-            <h1 style={{fontSize:'20px',fontWeight:'900',margin:'0'}}>PT EMAS MURNI ASLI</h1>
-            <p style={{fontSize:'13px',color:'#666',margin:'4px 0 0'}}>Surat Packing Produksi</p>
-          </div>
-        </div>
-        <table style={{width:'100%',borderCollapse:'collapse',fontSize:'12px',marginBottom:'20px'}}>
-          <tbody>
-            {[
-              ['No. Packing', p.kode],
-              ['Tanggal', formatDate(p.tanggal)],
-              ['Item / Batch', `${p.produksi_item?.nama_item||p.produksi_item?.kode||'—'} · ${p.batch_kode}`],
-              ['Gramasi', `${p.gramasi} gr`],
-              ['PCS Dipack', `${p.pcs_dipack} PCS`],
-              ['Total Gram Aktual', `${Number(p.total_gram_aktual).toFixed(3)} gr`],
-              ['Admin Yang Menyerahkan', p.admin_input||'—'],
-              ['Operator Packing', p.pic_packing||p.pic||'—'],
-              ['Catatan', p.catatan||'—'],
-            ].map(([k,v])=>(
-              <tr key={k}>
-                <td style={{padding:'6px 12px',border:'1px solid #ddd',fontWeight:'600',background:'#f9f9f9',width:'40%'}}>{k}</td>
-                <td style={{padding:'6px 12px',border:'1px solid #ddd'}}>{v}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'40px',marginTop:'40px',textAlign:'center',fontSize:'12px'}}>
-          {['Dibuat','Diperiksa','Disetujui'].map(l=>(
-            <div key={l}><p style={{fontWeight:'600',marginBottom:'50px'}}>{l}</p><div style={{borderTop:'1px solid #333'}}/><p style={{color:'#999',marginTop:'4px'}}>(................)</p></div>
-          ))}
-        </div>
-        <p style={{textAlign:'center',fontSize:'11px',color:'#999',marginTop:'20px'}}>Dicetak: {new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}</p>
-      </div>
-    </div>
-  )
+function buildPrintBody(p: any): string {
+  const tgl = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })
+  const rows = [
+    ['No. Packing', p.kode ?? ''],
+    ['Tanggal', formatDate(p.tanggal)],
+    ['Item / Batch', (p.produksi_item?.nama_item ?? p.produksi_item?.kode ?? '—') + ' · ' + (p.batch_kode ?? '')],
+    ['Gramasi', p.gramasi + ' gr'],
+    ['PCS Dipack', p.pcs_dipack + ' PCS'],
+    ['Total Gram Aktual', Number(p.total_gram_aktual).toFixed(3) + ' gr'],
+    ['Admin Yang Menyerahkan', p.admin_input ?? '—'],
+    ['Operator Packing', p.pic_packing ?? p.pic ?? '—'],
+    ['Catatan', p.catatan ?? '—'],
+  ].map(([k, v]) => '<tr><td style="padding:6px 12px;border:1px solid #ddd;font-weight:600;background:#f9f9f9;width:40%">' + k + '</td><td style="padding:6px 12px;border:1px solid #ddd">' + v + '</td></tr>').join('')
+  const sigs = ['Dibuat', 'Diperiksa', 'Disetujui'].map(l => '<div style="text-align:center"><p style="font-weight:600;margin-bottom:50px">' + l + '</p><div style="border-top:1px solid #333"></div><p style="color:#999;margin-top:4px">(................)</p></div>').join('')
+  return '<div style="font-family:Arial,sans-serif;padding:32px;max-width:600px;margin:0 auto;border:2px solid #333">'
+    + '<div style="border-bottom:2px solid #333;padding-bottom:16px;margin-bottom:20px;display:flex;align-items:center;gap:12px">'
+    + '<img src="' + location.origin + '/logo.png" alt="Logo" style="width:48px;height:48px;object-fit:contain"/>'
+    + '<div><h1 style="font-size:20px;font-weight:900;margin:0">PT EMAS MURNI ASLI</h1><p style="font-size:13px;color:#666;margin:4px 0 0">Surat Packing Produksi</p></div>'
+    + '</div>'
+    + '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px"><tbody>' + rows + '</tbody></table>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px;margin-top:40px;font-size:12px">' + sigs + '</div>'
+    + '<p style="text-align:center;font-size:11px;color:#999;margin-top:20px">Dicetak: ' + tgl + '</p>'
+    + '</div>'
 }
 
+function openPrintWindow(bodyHtml: string, title: string) {
+  const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + title + '</title>'
+    + '<style>body{margin:0}@media print{.pagebreak{page-break-after:always}}</style></head>'
+    + '<body>' + bodyHtml + '<script>window.onload=function(){window.print()}<\/script></body></html>'
+  const blob = new Blob([html], { type: 'text/html' })
+  const url = URL.createObjectURL(blob)
+  window.open(url, '_blank')
+  setTimeout(function() { URL.revokeObjectURL(url) }, 10000)
+}
 // ─── Create Modal ─────────────────────────────────────────────────────────────
 function CreateModal({items,tims,adminList,onClose,onSubmit,isPending,error}:{
   items:any[];tims:any[];adminList:any[];onClose:()=>void;onSubmit:(fd:FormData)=>void;isPending:boolean;error:string
@@ -482,34 +473,22 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
 
   function handlePrint(p:any){
     markPrinted(p.id).catch(console.error)
-    const el=document.getElementById(`print-${p.id}`)
-    if(!el)return
-    const w=window.open('','_blank')
-    if(!w)return
-    w.document.write(`<!DOCTYPE html><html><head><title>${p.kode}</title><style>@media print{.pagebreak{page-break-after:always}}</style></head><body>${el.innerHTML}<script>window.onload=()=>{window.print();window.close()}<\/script></body></html>`)
-    w.document.close()
+    openPrintWindow(buildPrintBody(p), p.kode)
   }
 
   function handlePrintMulti(records:any[]){
     const selected=records.filter(p=>selectedIds.has(p.id))
     if(selected.length===0){toast.error('Pilih minimal 1 item untuk diprint');return}
     selected.forEach(p=>markPrinted(p.id).catch(console.error))
-    const parts=selected.map((p,i)=>{
-      const el=document.getElementById(`print-${p.id}`)
-      const html=el?el.innerHTML:''
-      return i<selected.length-1?`${html}<div class="pagebreak"></div>`:html
-    }).join('')
-    const w=window.open('','_blank')
-    if(!w)return
-    w.document.write(`<!DOCTYPE html><html><head><title>Print Packing — ${selected.length} item</title><style>@media print{.pagebreak{page-break-after:always}body{margin:0;padding:0}}</style></head><body>${parts}<script>window.onload=()=>{window.print();window.close()}<\/script></body></html>`)
-    w.document.close()
+    const parts=selected.map((p,i)=>buildPrintBody(p)+(i<selected.length-1?'<div class="pagebreak"></div>':'')).join('')
+    openPrintWindow(parts,'Print Packing — '+selected.length+' item')
     setSelectedIds(new Set())
-    toast.success(`${selected.length} surat dicetak`)
+    toast.success(selected.length+' surat dicetak')
   }
 
   return(
     <div className="space-y-5 pb-8">
-      {filtered.map(p=><PrintView key={p.id} p={p}/>)}
+
       {lightbox&&<Lightbox url={lightbox} onClose={()=>setLightbox(null)}/>}
 
       <div className="space-y-5">
