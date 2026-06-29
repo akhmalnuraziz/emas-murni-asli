@@ -30,7 +30,7 @@ export default async function LaporanBatchPage({ params }: { params: Promise<{ k
       .is('voided_at', null)
       .order('tanggal'),
     supabase.from('packing')
-      .select('id, kode, gramasi, pcs, total_gram, tanggal, pic')
+      .select('id, kode, gramasi, pcs, total_gram, tanggal, pic, produksi_item_id')
       .eq('batch_kode', kode)
       .is('voided_at', null)
       .order('tanggal'),
@@ -42,28 +42,36 @@ export default async function LaporanBatchPage({ params }: { params: Promise<{ k
 
   if (!batch) notFound()
 
-  // Query produksi_items: coba batch_kode dulu, fallback ke peleburan_id
-  const peleburanIds = (peleburans ?? []).map(p => p.id)
+  const COLS = 'id, kode, gramasi, pcs, total_gram, current_status, peleburan_id, sisa_serbuk, berat_reject, berat_reject_dilebur'
+
+  // Coba 3 cara untuk dapat produksi_items — pakai yang pertama memberikan hasil
   let produksiItems: any[] = []
 
   const { data: byBatch } = await supabase
-    .from('produksi_item')
-    .select('id, kode, gramasi, pcs, total_gram, current_status, peleburan_id, sisa_serbuk, berat_reject, berat_reject_dilebur')
-    .eq('batch_kode', kode)
-    .is('voided_at', null)
-    .order('gramasi')
+    .from('produksi_item').select(COLS)
+    .eq('batch_kode', kode).is('voided_at', null).order('gramasi')
 
   if (byBatch && byBatch.length > 0) {
     produksiItems = byBatch
-  } else if (peleburanIds.length > 0) {
-    // fallback: ambil via peleburan_id
-    const { data: byPeleburan } = await supabase
-      .from('produksi_item')
-      .select('id, kode, gramasi, pcs, total_gram, current_status, peleburan_id, sisa_serbuk, berat_reject, berat_reject_dilebur')
-      .in('peleburan_id', peleburanIds)
-      .is('voided_at', null)
-      .order('gramasi')
-    produksiItems = byPeleburan ?? []
+  } else {
+    const peleburanIds = (peleburans ?? []).map(p => p.id)
+    if (peleburanIds.length > 0) {
+      const { data: byPlb } = await supabase
+        .from('produksi_item').select(COLS)
+        .in('peleburan_id', peleburanIds).is('voided_at', null).order('gramasi')
+      produksiItems = byPlb ?? []
+    }
+  }
+
+  if (produksiItems.length === 0) {
+    // Fallback: via produksi_item_id dari packing records
+    const itemIds = [...new Set((packings ?? []).map((p: any) => p.produksi_item_id).filter(Boolean))]
+    if (itemIds.length > 0) {
+      const { data: byPacking } = await supabase
+        .from('produksi_item').select(COLS)
+        .in('id', itemIds).is('voided_at', null).order('gramasi')
+      produksiItems = byPacking ?? []
+    }
   }
 
   return (
