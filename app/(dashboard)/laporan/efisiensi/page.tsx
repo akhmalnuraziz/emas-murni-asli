@@ -34,10 +34,12 @@ export default async function EfisiensiPage({
     { data: batches },
     { data: produksiItems },
     { data: peleburans },
+    { data: packingRejects },
   ] = await Promise.all([
     batchQ,
     supabase.from('produksi_item').select('batch_kode, total_gram, current_status, peleburan_id').is('voided_at', null),
     supabase.from('peleburan').select('batch_kode, dikasih_gram, diterima_gram').is('voided_at', null),
+    supabase.from('packing').select('batch_kode, gram_reject, gram_reject_dilebur').gt('gram_reject', 0).is('voided_at', null),
   ])
 
   // Produksi Jadi per batch = sum of total_gram (semua item yg diproduksi)
@@ -51,6 +53,14 @@ export default async function EfisiensiPage({
     } else if (p.current_status !== 'Reject') {
       itemMap[k].produksiJadi += gr
     }
+  }
+  // Tambah packing reject yang belum dilebur
+  for (const pk of packingRejects ?? []) {
+    const k = pk.batch_kode ?? ''
+    if (!k) continue
+    if (!itemMap[k]) itemMap[k] = { produksiJadi: 0, rejectBelumLebur: 0 }
+    const sisa = Math.max(0, Number(pk.gram_reject ?? 0) - Number(pk.gram_reject_dilebur ?? 0))
+    itemMap[k].rejectBelumLebur += sisa
   }
 
   // Serbuk per batch = losses dari peleburan (dikasih - diterima)

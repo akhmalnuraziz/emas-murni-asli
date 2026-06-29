@@ -19,6 +19,7 @@ export default function EfisiensiClient({ rows, dateFrom, dateTo }: { rows: Row[
   const router = useRouter()
   const [from, setFrom] = useState(dateFrom)
   const [to, setTo]     = useState(dateTo)
+  const [search, setSearch] = useState('')
 
   function applyFilter() {
     const p = new URLSearchParams()
@@ -27,24 +28,29 @@ export default function EfisiensiClient({ rows, dateFrom, dateTo }: { rows: Row[
     router.push(`/laporan/efisiensi?${p.toString()}`)
   }
 
+  const filtered = search.trim()
+    ? rows.filter(r => r.kode.toUpperCase().includes(search.trim().toUpperCase()))
+    : rows
+
   if (rows.length === 0) return (
     <div className="space-y-4">
-      <Header from={from} to={to} setFrom={setFrom} setTo={setTo} onApply={applyFilter} />
+      <Header from={from} to={to} setFrom={setFrom} setTo={setTo} onApply={applyFilter} search={search} setSearch={setSearch} />
       <div className="text-center py-20 text-slate-400">Tidak ada data batch pada rentang tanggal ini.</div>
     </div>
   )
 
-  const efisiensiRata  = rows.reduce((s, r) => s + r.efisiensiPct, 0) / rows.length
-  const losesRata      = rows.reduce((s, r) => s + r.losesPct, 0) / rows.length
-  const totalBahan     = rows.reduce((s, r) => s + r.bahanBaku, 0)
-  const totalProduksi  = rows.reduce((s, r) => s + r.produksiJadi, 0)
-  const totalLoses     = rows.reduce((s, r) => s + r.totalLoses, 0)
-  const best  = [...rows].sort((a, b) => a.losesPct - b.losesPct)[0]
-  const worst = [...rows].sort((a, b) => b.losesPct - a.losesPct)[0]
-  const baikCount = rows.filter(r => r.efisiensiPct >= 85).length
-  const tidakBaik = rows.length - baikCount
+  const display = filtered.length > 0 ? filtered : rows
+  const efisiensiRata  = display.reduce((s, r) => s + r.efisiensiPct, 0) / display.length
+  const losesRata      = display.reduce((s, r) => s + r.losesPct, 0) / display.length
+  const totalBahan     = display.reduce((s, r) => s + r.bahanBaku, 0)
+  const totalProduksi  = display.reduce((s, r) => s + r.produksiJadi, 0)
+  const totalLoses     = display.reduce((s, r) => s + r.totalLoses, 0)
+  const best  = [...display].sort((a, b) => a.losesPct - b.losesPct)[0]
+  const worst = [...display].sort((a, b) => b.losesPct - a.losesPct)[0]
+  const baikCount = display.filter(r => r.efisiensiPct >= 85).length
+  const tidakBaik = display.length - baikCount
 
-  const chartData = [...rows].sort((a, b) => b.losesPct - a.losesPct).slice(0, 20).map(r => ({
+  const chartData = [...display].sort((a, b) => b.losesPct - a.losesPct).slice(0, 20).map(r => ({
     name: r.kode.replace(/^[A-Z]+\/\d+\/\d+\//, '').replace(/^BATCH\s*/i, 'B'),
     loses: parseFloat(r.losesPct.toFixed(2)),
     full: r.kode,
@@ -61,7 +67,7 @@ export default function EfisiensiClient({ rows, dateFrom, dateTo }: { rows: Row[
         <p className="text-[13px] text-slate-400 mt-1">Perbandingan bahan baku masuk vs produksi jadi, serbuk, dan loses fisik</p>
       </div>
 
-      <Header from={from} to={to} setFrom={setFrom} setTo={setTo} onApply={applyFilter} />
+      <Header from={from} to={to} setFrom={setFrom} setTo={setTo} onApply={applyFilter} search={search} setSearch={setSearch} />
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -159,7 +165,10 @@ export default function EfisiensiClient({ rows, dateFrom, dateTo }: { rows: Row[
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {rows.map(r => {
+              {filtered.length === 0 && search.trim() ? (
+                <tr><td colSpan={10} className="text-center py-10 text-slate-400 text-[12px]">Tidak ada batch cocok dengan "{search}"</td></tr>
+              ) : null}
+              {(filtered.length > 0 ? filtered : rows).map(r => {
                 const isGood = r.efisiensiPct >= 85
                 const isBest  = r.kode === best.kode
                 const isWorst = r.kode === worst.kode
@@ -205,9 +214,9 @@ export default function EfisiensiClient({ rows, dateFrom, dateTo }: { rows: Row[
                 <td className="px-4 py-3 sticky left-0 bg-slate-100 text-slate-600">TOTAL / RATA-RATA</td>
                 <td className="px-3 py-3 text-right tabular-nums text-slate-800">{fmt2(totalBahan)}</td>
                 <td className="px-3 py-3 text-right tabular-nums text-slate-800">{fmt2(totalProduksi)}</td>
-                <td className="px-3 py-3 text-right tabular-nums text-amber-700">{fmt2(rows.reduce((s, r) => s + r.sb, 0))}</td>
-                <td className="px-3 py-3 text-right tabular-nums">{fmt2(rows.reduce((s, r) => s + r.serbuk, 0))}</td>
-                <td className="px-3 py-3 text-right tabular-nums">{fmt2(rows.reduce((s, r) => s + r.reject, 0))}</td>
+                <td className="px-3 py-3 text-right tabular-nums text-amber-700">{fmt2(display.reduce((s, r) => s + r.sb, 0))}</td>
+                <td className="px-3 py-3 text-right tabular-nums">{fmt2(display.reduce((s, r) => s + r.serbuk, 0))}</td>
+                <td className="px-3 py-3 text-right tabular-nums">{fmt2(display.reduce((s, r) => s + r.reject, 0))}</td>
                 <td className="px-3 py-3 text-right tabular-nums text-red-700">{fmt2(totalLoses)}</td>
                 <td className="px-3 py-3 text-right tabular-nums text-red-700">{fmtPct(losesRata)}</td>
                 <td className="px-3 py-3 text-right tabular-nums text-green-700">{fmtPct(efisiensiRata)}</td>
@@ -221,14 +230,21 @@ export default function EfisiensiClient({ rows, dateFrom, dateTo }: { rows: Row[
   )
 }
 
-function Header({ from, to, setFrom, setTo, onApply }: {
+function Header({ from, to, setFrom, setTo, onApply, search, setSearch }: {
   from: string; to: string
   setFrom: (v: string) => void; setTo: (v: string) => void
   onApply: () => void
+  search: string; setSearch: (v: string) => void
 }) {
   return (
     <div className="flex flex-wrap items-center gap-3 bg-white border border-slate-200 rounded-2xl px-4 py-3">
-      <p className="text-[12px] font-semibold text-slate-500">Filter Tanggal:</p>
+      <input
+        type="text" value={search} onChange={e => setSearch(e.target.value)}
+        placeholder="Cari batch..."
+        className="h-8 px-3 text-[11px] border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-300/40 w-36"
+      />
+      <span className="text-slate-300 text-[11px]">|</span>
+      <p className="text-[12px] font-semibold text-slate-500">Tanggal:</p>
       <div className="flex items-center gap-2">
         <label className="text-[11px] text-slate-400">Dari</label>
         <input type="date" value={from} onChange={e => setFrom(e.target.value)}
