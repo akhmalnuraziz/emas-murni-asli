@@ -1,6 +1,7 @@
-﻿'use client'
+'use client'
 
 import { useState, useTransition } from 'react'
+import { useRealtimeRefresh } from '@/lib/supabase/use-realtime-refresh'
 import { toast } from 'sonner'
 import { Plus, X, Trash2, Check, AlertTriangle, Search, Package } from 'lucide-react'
 import { createScrap, voidScrap, updateScrapStatus } from '@/app/(dashboard)/scrap/actions'
@@ -30,6 +31,7 @@ interface Props {
 const SCRAP_PAGE_SIZE = 50
 
 export default function ScrapClient({ scrapList, timList, adminList, canManage }: Props) {
+  useRealtimeRefresh(['scrap_inventory'])
   const [isPending, startTransition] = useTransition()
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('semua')

@@ -1,6 +1,7 @@
-﻿'use client'
+'use client'
 
 import { useState, useTransition } from 'react'
+import { useRealtimeRefresh } from '@/lib/supabase/use-realtime-refresh'
 import { toast } from 'sonner'
 import { Plus, X, Check, ChevronDown, ChevronUp, Trash2, ClipboardList } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
@@ -29,6 +30,7 @@ export default function PoCabangClient({
   poList: Po[]; cabangList: { kode: string; nama: string }[]; userRole: string; userName: string
   page?: number; total?: number; pageSize?: number
 }) {
+  useRealtimeRefresh(['po_cabang','po_cabang_item'])
   const [isPending, start] = useTransition()
   const [showCreate, setShowCreate] = useState(false)
   const [expanded, setExpanded] = useState<number | null>(null)

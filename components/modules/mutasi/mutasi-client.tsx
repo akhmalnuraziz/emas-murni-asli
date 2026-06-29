@@ -1,6 +1,7 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
+import { useRealtimeRefresh } from '@/lib/supabase/use-realtime-refresh'
 import {
   ArrowLeftRight, Send, Store, ShieldCheck, X, RefreshCw, Check,
   Truck, PackageCheck, AlertTriangle, Search, ListChecks, ChevronRight, Printer
@@ -24,6 +25,7 @@ interface MutasiRow {
 const GRAMASI_ORDER = ['0.1','0.5','1','2','5','10','20','25','50','100','250','500','1000']
 
 export default function MutasiClient({ cabangList }: { cabangList: Cabang[] }) {
+  useRealtimeRefresh(['mutasi'])
   const [tab, setTab] = useState<'kirim' | 'terima' | 'stok' | 'riwayat'>('kirim')
   const [selectedCabang, setSelectedCabang] = useState(cabangList[0]?.kode ?? '')
 

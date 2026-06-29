@@ -1,6 +1,8 @@
-﻿'use client'
+
+  useRealtimeRefresh(['batch','peleburan','packing'])'use client'
 
 import { useState, useTransition, useEffect } from 'react'
+import { useRealtimeRefresh } from '@/lib/supabase/use-realtime-refresh'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import {

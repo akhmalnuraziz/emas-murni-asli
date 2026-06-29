@@ -1,6 +1,7 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect, useTransition } from 'react'
+import { useRealtimeRefresh } from '@/lib/supabase/use-realtime-refresh'
 import { toast } from 'sonner'
 import {
   Plus, Search, Edit2, Trash2, Printer, Check,
@@ -414,6 +415,7 @@ function PackingCard({p,canManage,canDelete,onEdit,onDelete,onPrint,onShieldtagC
 const PACKING_PAGE_SIZE = 50
 
 export default function PackingLogClient({packingList,siapPackingItems,shieldtagByPacking={},userRole,userName,tims=[],adminList=[]}:Props){
+  useRealtimeRefresh(['packing','shieldtag'])
   const [isPending,startTransition]=useTransition()
   const [modal,setModal]=useState<'create'|'edit'|'delete'|'reject'|null>(null)
   const [active,setActive]=useState<any|null>(null)

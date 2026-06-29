@@ -1,6 +1,7 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
+import { useRealtimeRefresh } from '@/lib/supabase/use-realtime-refresh'
 import { Users, Search, Phone, CreditCard, ShoppingCart, TrendingUp, X, ChevronDown, ChevronUp } from 'lucide-react'
 import { formatRupiah, formatDate, cn } from '@/lib/utils'
 
@@ -31,6 +32,7 @@ const CHANNEL_LABEL: Record<string, string> = {
 const PAGE_SIZE = 20
 
 export default function PelangganClient({ pelangganList, canSeeRp }: Props) {
+  useRealtimeRefresh(['customer'])
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
   const [sort, setSort] = useState<'belanja' | 'transaksi' | 'terakhir'>('belanja')

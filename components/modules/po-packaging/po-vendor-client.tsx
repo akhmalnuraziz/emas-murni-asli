@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { useRealtimeRefresh } from '@/lib/supabase/use-realtime-refresh'
 import { toast as sonnerToast } from 'sonner'
 import {
   Plus, X, Check, Edit2, Trash2, ChevronDown, ChevronUp,
@@ -289,6 +290,7 @@ export default function POVendorClient({
   poPage = 1, poTotal = 0, poPageSize = 20,
   batchPage = 1, batchTotal = 0, batchPageSize = 20,
 }: Props) {
+  useRealtimeRefresh(['po_packaging','po_batch_penerimaan'])
   const [tab, setTab] = useState<Tab>('monitoring')
   const [search, setSearch] = useState('')
 
