@@ -169,7 +169,7 @@ function RegisterModal({ packings, onClose, onSubmit, isPending, error }: {
           {selPacking && (
             <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700">
               <Tag size={12}/>
-              {selPacking.batch_kode} · {selPacking.gramasi}gr · {selPacking.pcs_dipack} PCS dipack ·
+              {selPacking.batch_kode} · {selPacking.gramasi}gr · {selPacking.pcs_dipack - (selPacking.pcs_reject ?? 0)} PCS valid ·
               <span className="font-semibold">{selPacking.pcs_tersisa} slot Shieldtag tersisa</span>
             </div>
           )}

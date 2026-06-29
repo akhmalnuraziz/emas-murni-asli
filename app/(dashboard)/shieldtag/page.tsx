@@ -39,17 +39,18 @@ export default async function ShieldtagPage({
     supabase.from('users_profile').select('role, name').eq('id', user.id).single(),
     query,
     supabase.from('packing')
-      .select('id, kode, batch_kode, gramasi, pcs_dipack, shieldtag_count, tanggal, produksi_item(kode, nama_item)')
+      .select('id, kode, batch_kode, gramasi, pcs_dipack, pcs_reject, shieldtag_count, tanggal, produksi_item(kode, nama_item)')
       .is('voided_at', null)
       .order('created_at', { ascending: false }),
   ])
 
   const packingsWithSlots = (packingsForReg ?? []).filter((p: any) => {
-    const remaining = (p.pcs_dipack ?? 0) - (p.shieldtag_count ?? 0)
+    const maxSt = (p.pcs_dipack ?? 0) - (p.pcs_reject ?? 0)
+    const remaining = maxSt - (p.shieldtag_count ?? 0)
     return remaining > 0
   }).map((p: any) => ({
     ...p,
-    pcs_tersisa: (p.pcs_dipack ?? 0) - (p.shieldtag_count ?? 0),
+    pcs_tersisa: (p.pcs_dipack ?? 0) - (p.pcs_reject ?? 0) - (p.shieldtag_count ?? 0),
   }))
 
   return (
