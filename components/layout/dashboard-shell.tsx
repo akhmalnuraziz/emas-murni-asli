@@ -15,6 +15,7 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
   '/shieldtag':             { title: 'Shieldtag',             subtitle: 'Registrasi dan distribusi ID unik per PCS' },
   '/inventory':             { title: 'Inventory',             subtitle: 'Stok per lokasi berbasis Shieldtag — realtime' },
   '/mutasi':                { title: 'Pemindahan Barang',     subtitle: 'Keluar (cabang/toko) & masuk (buyback/retur)' },
+  '/barang-keluar':         { title: 'Barang Keluar',         subtitle: 'Distribusi & penjualan dari Gudang Pusat — berbasis Shieldtag' },
   '/penjualan':             { title: 'Penjualan',             subtitle: 'Rekap dari Accurate + cetak receipt' },
   '/stok-cabang':           { title: 'Stok Cabang',           subtitle: 'Ready stock, outstanding PO, dan adjustment per cabang' },
   '/po-cabang':             { title: 'PO Cabang',             subtitle: 'Purchase order dari cabang ke pusat' },

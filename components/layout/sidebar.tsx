@@ -34,6 +34,7 @@ const NAV_GROUPS = [
     items: [
       { href: '/inventory',             label: 'Inventory',             icon: Warehouse,      module: 'inventory'            },
       { href: '/mutasi',                label: 'Pemindahan Barang',     icon: ArrowLeftRight, module: 'mutasi'               },
+      { href: '/barang-keluar',         label: 'Barang Keluar',         icon: TrendingDown,   module: 'barang-keluar'        },
       { href: '/stock-opname',          label: 'Stock Opname',          icon: ClipboardList,  module: 'stock-opname'         },
       { href: '/stok-cabang',           label: 'Stok Cabang',          icon: MapPin,         module: 'stok-cabang'          },
       { href: '/po-cabang',             label: 'PO Cabang',            icon: Store,          module: 'po-cabang'            },
