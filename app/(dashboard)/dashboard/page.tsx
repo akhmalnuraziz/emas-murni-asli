@@ -66,6 +66,8 @@ export default async function DashboardPage({
     { data: _balanceProduksi },
     { data: _balanceShieldtag },
     { data: _balancePenjualan },
+    { data: packingRejectRows },
+    { data: packingRejectDilebur },
   ] = await Promise.all([
     supabase.from('users_profile').select('name, role').eq('id', user?.id ?? '').single(),
     supabase.from('shieldtag').select('gramasi, hpp').eq('status', 'Aktif').is('voided_at', null),
@@ -129,6 +131,15 @@ export default async function DashboardPage({
     Promise.resolve({ data: null, error: null }),
     Promise.resolve({ data: null, error: null }),
     Promise.resolve({ data: null, error: null }),
+    // Packing reject belum dilebur
+    supabase.from('packing')
+      .select('id, kode, gramasi, gram_reject, pcs_reject, batch_kode')
+      .gt('gram_reject', 0)
+      .is('voided_at', null),
+    // Packing reject yang sudah masuk peleburan aktif
+    supabase.from('peleburan_sumber')
+      .select('ref_id, peleburan:peleburan_id(voided_at)')
+      .eq('tipe', 'reject_packing'),
   ])
 
   // ── Build stats ──────────────────────────────────────────────────────────
@@ -144,8 +155,33 @@ export default async function DashboardPage({
   const terjualPcs    = (penjualanPeriode ?? []).reduce((s, p) => s + (Number(p.pcs) || 0), 0)
   const omzetPeriode  = (penjualanPeriode ?? []).reduce((s, p) => s + (Number(p.harga_jual) || 0), 0)
 
-  const rejectPcs  = (rejectBelumDilebur ?? []).length
-  const rejectGram = (rejectBelumDilebur ?? []).reduce((s, r) => s + Math.max(0, Number(r.berat_reject ?? 0) - Number(r.berat_reject_dilebur ?? 0)), 0)
+  // Packing reject: exclude yang sudah masuk peleburan aktif
+  const packingRejectDiLeburIds = new Set(
+    (packingRejectDilebur ?? [])
+      .filter((r: any) => !r.peleburan?.voided_at)
+      .map((r: any) => String(r.ref_id))
+  )
+  const packingRejectBelumDilebur = (packingRejectRows ?? [])
+    .filter((r: any) => !packingRejectDiLeburIds.has(String(r.id)))
+    .map((r: any) => ({
+      id: r.id,
+      kode: r.kode,
+      gramasi: r.gramasi ?? '—',
+      berat_reject: Number(r.gram_reject ?? 0),
+      batch_kode: r.batch_kode,
+    }))
+
+  const produksiRejectList = (rejectBelumDilebur ?? []).map((r: any) => ({
+    id: r.id,
+    kode: r.kode,
+    gramasi: r.gramasi,
+    berat_reject: Math.max(0, Number(r.berat_reject ?? 0) - Number(r.berat_reject_dilebur ?? 0)),
+    batch_kode: r.batch_kode,
+  }))
+
+  const allRejectList = [...produksiRejectList, ...packingRejectBelumDilebur]
+  const rejectPcs  = allRejectList.length
+  const rejectGram = allRejectList.reduce((s, r) => s + r.berat_reject, 0)
 
   const pipeline: Record<string, number> = {}
   for (const p of produksiPipeline ?? []) {
@@ -253,7 +289,7 @@ export default async function DashboardPage({
       produksiTrend={produksiTrend}
       packingHariIni={packingHariIni ?? []}
       siapPacking={siapPackingItems ?? []}
-      rejectList={rejectBelumDilebur ?? []}
+      rejectList={allRejectList}
       balanceSelisih={balanceSelisih}
       batchAktifCount={batchAktifCount ?? 0}
       targetPackingHarian={Number((targetRow as any)?.value ?? 0)}
