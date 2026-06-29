@@ -1261,10 +1261,10 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                       <div key={pk.id}>
                         <label className="flex items-center gap-2 cursor-pointer select-none">
                           <input type="checkbox" checked={packRejGram[pk.id]!==undefined} onChange={()=>togglePackRej(pk.id,sisaGram)} className="w-4 h-4 rounded accent-violet-600"/>
-                          <span className="text-[12px] font-medium text-slate-700 font-mono">{pk.kode}</span>
-                          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-500">Reject Packing</span>
-                          <span className="text-[10px] text-slate-400">({pk.gramasi}gr · {pk.pcs_reject}pcs)</span>
-                          <span className="ml-auto text-[10px] text-red-400 font-semibold">{formatGram(sisaGram)}</span>
+                          <span className="text-[12px] font-medium text-slate-700">{pk.kode}</span>
+                          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">Reject Packing</span>
+                          <span className="text-[10px] text-slate-400">({pk.gramasi}gr)</span>
+                          <span className="ml-auto text-[10px] text-red-400 font-semibold">{formatGram(sisaGram)}{pk.pcs_reject?' · '+pk.pcs_reject+' pcs':''}</span>
                         </label>
                         {packRejGram[pk.id]!==undefined&&(
                           <div className="mt-1 pl-6">
