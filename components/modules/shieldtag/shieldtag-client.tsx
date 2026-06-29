@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import {
   Plus, Search, X, Check, AlertTriangle, Tag,
   Edit2, Trash2,
-  MapPin, Package, Clock, Loader2, ImagePlus,
+  MapPin, Package, Clock, Loader2, ImagePlus, FileSpreadsheet,
 } from 'lucide-react'
 import { cn, formatDate, formatRupiah } from '@/lib/utils'
 import { registerShieldtags, editShieldtagKode, voidShieldtag, bulkVoidShieldtag, searchShieldtag, uploadFotoProdukShieldtag } from '@/app/(dashboard)/shieldtag/actions'
@@ -108,6 +108,36 @@ function RegisterModal({ packings, onClose, onSubmit, isPending, error }: {
   const [editMode, setEditMode] = useState(false) // true = edit individual codes
   const [editCodes, setEditCodes] = useState<string[]>([])
   const [tanggal, setTanggal] = useState(today)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  async function handleExcelUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const { read, utils } = await import('xlsx')
+    const buf = await file.arrayBuffer()
+    const wb = read(buf)
+    const codes: string[] = []
+    for (const sheetName of wb.SheetNames) {
+      const rows: any[][] = utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 })
+      for (const row of rows) {
+        for (const cell of row) {
+          if (cell == null) continue
+          const v = String(cell).trim().toUpperCase()
+          // ponytail: filter alphanumeric 4-10 char — shieldtag code pattern
+          if (/^[A-Z0-9]{4,10}$/.test(v)) codes.push(v)
+        }
+      }
+    }
+    const unique = [...new Set(codes)]
+    if (unique.length === 0) { toast.error('Tidak ada kode shieldtag ditemukan di file Excel'); return }
+    setEditCodes(unique)
+    setPreview(unique)
+    setPreviewCount(unique.length)
+    setPreviewError('')
+    setEditMode(true)
+    toast.success(`${unique.length} kode terbaca dari Excel`)
+    e.target.value = ''
+  }
 
   function updatePreview(newRanges: typeof ranges) {
     let all: string[] = []
@@ -184,8 +214,15 @@ function RegisterModal({ packings, onClose, onSubmit, isPending, error }: {
               <label className="block text-[11px] font-medium text-slate-500">
                 Range kode Shieldtag
               </label>
-              <button type="button" onClick={() => setRanges(p => [...p, { start: '', end: '' }])}
-                className="text-[12px] text-violet-600 font-semibold hover:underline">+ Tambah range</button>
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={() => fileRef.current?.click()}
+                  className="flex items-center gap-1 text-[12px] text-emerald-600 font-semibold hover:underline">
+                  <FileSpreadsheet size={12}/> Upload Excel
+                </button>
+                <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleExcelUpload}/>
+                <button type="button" onClick={() => setRanges(p => [...p, { start: '', end: '' }])}
+                  className="text-[12px] text-violet-600 font-semibold hover:underline">+ Tambah range</button>
+              </div>
             </div>
             {ranges.map((r, i) => (
               <RangeRow key={i} idx={i} start={r.start} end={r.end}
