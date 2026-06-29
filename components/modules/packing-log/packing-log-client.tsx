@@ -8,7 +8,7 @@ import {
   AlertTriangle, X, Package, Camera, ShieldX
 } from 'lucide-react'
 import { cn, formatDate } from '@/lib/utils'
-import { createPacking, editPacking, voidPacking, markPrinted, reportPackingReject } from '@/app/(dashboard)/packing-log/actions'
+import { createPacking, editPacking, voidPacking, markPrinted, reportPackingReject, editPackingReject, clearPackingReject } from '@/app/(dashboard)/packing-log/actions'
 import type { UserRole } from '@/lib/types/database'
 import { TimPickerStd, AdminPickerStd } from '@/components/modules/produksi/serah-terima-modal'
 
@@ -298,10 +298,10 @@ function EditModal({p,tims,adminList,onClose,onSubmit,isPending,error}:{p:any;ti
 }
 
 // ─── Reject Modal ─────────────────────────────────────────────────────────────
-function RejectModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>void;onSubmit:(pcs:number,gram:number,fotosB64:string[],catatan:string)=>void;isPending:boolean;error:string}){
-  const [pcs,setPcs]=useState('')
-  const [gram,setGram]=useState('')
-  const [catatan,setCatatan]=useState('')
+function RejectModal({p,onClose,onSubmit,isPending,error,isEdit}:{p:any;onClose:()=>void;onSubmit:(pcs:number,gram:number,fotosB64:string[],catatan:string)=>void;isPending:boolean;error:string;isEdit?:boolean}){
+  const [pcs,setPcs]=useState(isEdit?String(p.pcs_reject??''):'')
+  const [gram,setGram]=useState(isEdit?String(p.gram_reject??''):'')
+  const [catatan,setCatatan]=useState(isEdit?(p.catatan_reject??''):'')
   const [fotoFiles,setFotoFiles]=useState<File[]>([])
   const stCount=p.shieldtag_count??0
   const maxPcs=p.pcs_dipack-stCount
@@ -314,7 +314,7 @@ function RejectModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>voi
       <div className="w-full sm:max-w-sm bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 flex-shrink-0">
           <div>
-            <h2 className="text-[15px] font-bold text-slate-900">Laporkan Reject Packing</h2>
+            <h2 className="text-[15px] font-bold text-slate-900">{isEdit?'Edit Reject Packing':'Laporkan Reject Packing'}</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">{p.kode} · {stCount}/{p.pcs_dipack - (p.pcs_reject??0)} shieldtag berhasil</p>
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
@@ -345,7 +345,7 @@ function RejectModal({p,onClose,onSubmit,isPending,error}:{p:any;onClose:()=>voi
           <button disabled={isPending||!pcs||!gram||!catatan.trim()} onClick={handleSubmit}
             className="flex-1 h-9 rounded-lg bg-orange-500 hover:bg-orange-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
             {isPending&&<span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>}
-            {isPending?'Menyimpan...':'Simpan Reject'}
+            {isPending?'Menyimpan...':isEdit?'Simpan Perubahan':'Simpan Reject'}
           </button>
         </div>
       </div>
@@ -417,6 +417,7 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
   const [selectedIds,setSelectedIds]=useState<Set<number>>(new Set())
   const [stModal,setStModal]=useState<{kode:string;list:{kode:string;status:string;lokasi:string|null}[]}|null>(null)
   const [rejectDetail,setRejectDetail]=useState<any|null>(null)
+  const [editingReject,setEditingReject]=useState(false)
 
   function toggleSelect(id:number){setSelectedIds(prev=>{const s=new Set(prev);s.has(id)?s.delete(id):s.add(id);return s})}
   function toggleSelectAll(records:any[]){
@@ -469,7 +470,9 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
   function handleCreate(fd:FormData){setErr('');startTransition(async()=>{const r=await createPacking(fd);if(r?.error){setErr(r.error);return}toast.success(`${r?.kode} berhasil dicatat`);setModal(null)})}
   function handleEdit(fd:FormData){if(!active)return;setErr('');startTransition(async()=>{const r=await editPacking(active.id,active.kode,fd);if(r?.error){setErr(r.error);return}toast.success('Packing diperbarui');setModal(null)})}
   function handleDelete(){if(!active)return;startTransition(async()=>{const r=await voidPacking(active.id,active.kode);if(r?.error){toast.error(r.error);return}toast.success('Packing dihapus');setModal(null)})}
-  function handleReject(pcs:number,gram:number,fotosB64:string[],catatan:string){if(!active)return;setErr('');startTransition(async()=>{const r=await reportPackingReject(active.id,pcs,gram,fotosB64,catatan);if(r?.error){setErr(r.error);return}toast.success(`Reject ${pcs} pcs (${gram.toFixed(3)}gr) dicatat`);setModal(null)})}
+  function handleReject(pcs:number,gram:number,fotosB64:string[],catatan:string){if(!active)return;setErr('');startTransition(async()=>{const r=await reportPackingReject(active.id,pcs,gram,fotosB64,catatan);if(r?.error){setErr(r.error);return}toast.success(`Reject ${pcs} pcs (${gram.toFixed(2)}gr) dicatat`);setModal(null)})}
+  function handleEditReject(pcs:number,gram:number,fotosB64:string[],catatan:string){if(!rejectDetail)return;setErr('');startTransition(async()=>{const r=await editPackingReject(rejectDetail.id,pcs,gram,fotosB64,catatan);if(r?.error){setErr(r.error);return}toast.success('Reject diperbarui');setEditingReject(false);setRejectDetail(null)})}
+  function handleClearReject(){if(!rejectDetail)return;startTransition(async()=>{const r=await clearPackingReject(rejectDetail.id);if(r?.error){toast.error(r.error);return}toast.success('Data reject dihapus');setRejectDetail(null)})}
 
   function handlePrint(p:any){
     markPrinted(p.id).catch(console.error)
@@ -717,14 +720,16 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
 
       {stModal && <ShieldtagListModal kode={stModal.kode} list={stModal.list} onClose={()=>setStModal(null)}/>}
       {modal==='reject'&&active&&<RejectModal p={active} onClose={()=>{setModal(null);setErr('')}} onSubmit={handleReject} isPending={isPending} error={err}/>}
-      {rejectDetail&&<RejectDetailModal p={rejectDetail} onClose={()=>setRejectDetail(null)}/>}
+      {rejectDetail&&!editingReject&&<RejectDetailModal p={rejectDetail} canManage={canManage} onClose={()=>setRejectDetail(null)} onEdit={()=>setEditingReject(true)} onClear={handleClearReject}/>}
+      {rejectDetail&&editingReject&&<RejectModal p={rejectDetail} onClose={()=>{setEditingReject(false);setRejectDetail(null);setErr('')}} onSubmit={handleEditReject} isPending={isPending} error={err} isEdit/>}
     </div>
   )
 }
 
 // ─── Modal detail reject (foto + catatan) ─────────────────────────────────────
-function RejectDetailModal({p,onClose}:{p:any;onClose:()=>void}){
+function RejectDetailModal({p,canManage,onClose,onEdit,onClear}:{p:any;canManage:boolean;onClose:()=>void;onEdit:()=>void;onClear:()=>void}){
   const [lightbox,setLightbox]=useState<string|null>(null)
+  const [confirmClear,setConfirmClear]=useState(false)
   const fotos:string[]=Array.isArray(p.foto_reject)?p.foto_reject:[]
   return(
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
@@ -733,7 +738,7 @@ function RejectDetailModal({p,onClose}:{p:any;onClose:()=>void}){
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div>
             <h2 className="text-[15px] font-bold text-slate-900">Detail Reject</h2>
-            <p className="text-[11px] text-slate-400 mt-0.5">{p.kode} · {p.pcs_reject} pcs · {Number(p.gram_reject??0).toFixed(3)} gr</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">{p.kode} · {p.pcs_reject} pcs · {Number(p.gram_reject??0).toFixed(2)} gr</p>
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
         </div>
@@ -758,7 +763,22 @@ function RejectDetailModal({p,onClose}:{p:any;onClose:()=>void}){
             <p className="text-[12px] text-slate-400 italic">Tidak ada foto bukti</p>
           )}
         </div>
-        <div className="px-5 py-4 border-t border-slate-200">
+        <div className="px-5 py-4 border-t border-slate-200 space-y-2">
+          {canManage&&!confirmClear&&(
+            <div className="flex gap-2">
+              <button onClick={onEdit} className="flex-1 h-9 rounded-lg bg-blue-50 hover:bg-blue-100 text-[13px] font-semibold text-blue-600 transition-colors">Edit Reject</button>
+              <button onClick={()=>setConfirmClear(true)} className="flex-1 h-9 rounded-lg bg-red-50 hover:bg-red-100 text-[13px] font-semibold text-red-500 transition-colors">Hapus Reject</button>
+            </div>
+          )}
+          {canManage&&confirmClear&&(
+            <div className="rounded-lg bg-red-50 border border-red-200 p-3 space-y-2">
+              <p className="text-[12px] font-semibold text-red-700">Yakin hapus data reject ini?</p>
+              <div className="flex gap-2">
+                <button onClick={()=>setConfirmClear(false)} className="flex-1 h-8 rounded-lg bg-white border border-slate-200 text-[12px] font-semibold text-slate-600">Batal</button>
+                <button onClick={onClear} className="flex-1 h-8 rounded-lg bg-red-500 hover:bg-red-600 text-[12px] font-bold text-white transition-colors">Ya, Hapus</button>
+              </div>
+            </div>
+          )}
           <button onClick={onClose} className="w-full h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Tutup</button>
         </div>
       </div>

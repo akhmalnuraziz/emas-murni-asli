@@ -321,3 +321,90 @@ export async function reportPackingReject(
   revalidatePath('/bahan-baku')
   return { success: true }
 }
+
+async function checkRejectNotInLebur(supabase: any, packingId: number) {
+  const { data: rows } = await supabase
+    .from('peleburan_sumber')
+    .select('id, peleburan:peleburan_id(voided_at)')
+    .eq('tipe', 'reject_packing')
+    .eq('ref_id', String(packingId))
+  const active = (rows ?? []).filter((r: any) => !r.peleburan?.voided_at)
+  return active.length > 0
+}
+
+export async function editPackingReject(
+  packingId: number, pcsReject: number, gramReject: number,
+  fotosB64: string[] = [], catatan: string = ''
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat', 'spv', 'manager'].includes(profile?.role ?? ''))
+    return { error: 'Hanya Owner/Manager/SPV/Admin Pusat' }
+
+  if (pcsReject <= 0) return { error: 'PCS reject harus lebih dari 0' }
+  if (gramReject <= 0) return { error: 'Gram reject harus lebih dari 0' }
+
+  if (await checkRejectNotInLebur(supabase, packingId))
+    return { error: 'Tidak bisa edit — reject ini sudah masuk Peleburan. Void Peleburan terkait terlebih dahulu.' }
+
+  const { data: packing } = await supabase.from('packing')
+    .select('pcs_dipack, shieldtag_count, kode, foto_reject')
+    .eq('id', packingId).single()
+  if (!packing) return { error: 'Packing tidak ditemukan' }
+
+  const stCount = packing.shieldtag_count ?? 0
+  if (pcsReject + stCount > packing.pcs_dipack)
+    return { error: `Total shieldtag (${stCount}) + reject (${pcsReject}) melebihi PCS dipack (${packing.pcs_dipack})` }
+
+  // Foto baru di-upload, lama dipakai kalau tidak ada baru
+  const fotoUrls = fotosB64.length > 0 ? await uploadBase64Fotos(supabase, fotosB64, packing.kode) : (packing.foto_reject ?? [])
+
+  await supabase.from('packing').update({
+    pcs_reject: pcsReject, gram_reject: gramReject,
+    foto_reject: fotoUrls,
+    catatan_reject: catatan || null,
+  }).eq('id', packingId)
+
+  supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'EDIT_REJECT', module: 'PACKING',
+    record_key: packing.kode, record_id: String(packingId),
+    after_data: { pcs_reject: pcsReject, gram_reject: gramReject, catatan },
+  })
+
+  revalidatePath('/packing-log')
+  revalidatePath('/bahan-baku')
+  return { success: true }
+}
+
+export async function clearPackingReject(packingId: number) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  if (!['owner', 'admin_pusat', 'spv', 'manager'].includes(profile?.role ?? ''))
+    return { error: 'Hanya Owner/Manager/SPV/Admin Pusat' }
+
+  if (await checkRejectNotInLebur(supabase, packingId))
+    return { error: 'Tidak bisa hapus reject — sudah masuk Peleburan. Void Peleburan terkait terlebih dahulu.' }
+
+  const { data: packing } = await supabase.from('packing').select('kode').eq('id', packingId).single()
+  if (!packing) return { error: 'Packing tidak ditemukan' }
+
+  await supabase.from('packing').update({
+    pcs_reject: null, gram_reject: null,
+    foto_reject: [], catatan_reject: null,
+  }).eq('id', packingId)
+
+  supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'CLEAR_REJECT', module: 'PACKING',
+    record_key: packing.kode, record_id: String(packingId),
+  })
+
+  revalidatePath('/packing-log')
+  revalidatePath('/bahan-baku')
+  return { success: true }
+}
