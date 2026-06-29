@@ -50,7 +50,7 @@ export async function createPacking(formData: FormData) {
   const tanggal = formData.get('tanggal') as string
   const jam = (formData.get('jam') as string) || null
   const timId = formData.get('packing_tim_id') ? parseInt(formData.get('packing_tim_id') as string) : null
-  const timAnggota = (formData.get('packing_tim_anggota') as string) || null
+  const timAnggota = (formData.get('packing_tim_anggota_aktif') as string) || null
   const operatorPacking = timAnggota || (formData.get('operator_packing') as string) || (formData.get('pic') as string) || ''
   const adminInput = (formData.get('serah_admin_nama') as string) || (formData.get('admin_input') as string) || ''
   const catatan = formData.get('catatan') as string
@@ -159,7 +159,7 @@ export async function editPacking(packingId: number, packingKode: string, formDa
   const tanggal = formData.get('tanggal') as string
   const jamEdit = (formData.get('jam') as string) || null
   const timIdEdit = formData.get('packing_tim_id') ? parseInt(formData.get('packing_tim_id') as string) : null
-  const timAnggotaEdit = (formData.get('packing_tim_anggota') as string) || null
+  const timAnggotaEdit = (formData.get('packing_tim_anggota_aktif') as string) || null
   const operatorPacking = timAnggotaEdit || (formData.get('operator_packing') as string) || (formData.get('pic') as string) || ''
   const adminInput = (formData.get('serah_admin_nama') as string) || (formData.get('admin_input') as string) || ''
   const catatan = formData.get('catatan') as string

@@ -159,11 +159,11 @@ function buildPrintBody(p: any): string {
 function openPrintWindow(bodyHtml: string, title: string) {
   const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + title + '</title>'
     + '<style>body{margin:0}@media print{.pagebreak{page-break-after:always}}</style></head>'
-    + '<body>' + bodyHtml + '<script>window.onload=function(){window.print()}<\/script></body></html>'
+    + '<body>' + bodyHtml + '</body></html>'
   const blob = new Blob([html], { type: 'text/html' })
   const url = URL.createObjectURL(blob)
   window.open(url, '_blank')
-  setTimeout(function() { URL.revokeObjectURL(url) }, 10000)
+  setTimeout(function() { URL.revokeObjectURL(url) }, 30000)
 }
 // ─── Create Modal ─────────────────────────────────────────────────────────────
 function CreateModal({items,tims,adminList,onClose,onSubmit,isPending,error}:{
