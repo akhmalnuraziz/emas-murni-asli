@@ -18,7 +18,7 @@ export default async function DashboardPage({
 
   // ── Date range from period filter ──────────────────────────────────────
   const period  = sp?.period ?? 'month'
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().split('T')[0]
   let dateFrom: string
   let dateTo: string = todayStr
 
@@ -78,7 +78,7 @@ export default async function DashboardPage({
       .is('voided_at', null)
       .not('current_status', 'in', '("Sudah Packing","Reject")'),
     supabase.from('produksi_item')
-      .select('id, kode, gramasi, berat_reject, batch_kode')
+      .select('id, kode, gramasi, berat_reject, berat_reject_dilebur, batch_kode')
       .eq('status_reject', 'belum_dilebur')
       .gt('berat_reject', 0)
       .is('voided_at', null),
@@ -145,7 +145,7 @@ export default async function DashboardPage({
   const omzetPeriode  = (penjualanPeriode ?? []).reduce((s, p) => s + (Number(p.harga_jual) || 0), 0)
 
   const rejectPcs  = (rejectBelumDilebur ?? []).length
-  const rejectGram = (rejectBelumDilebur ?? []).reduce((s, r) => s + Number(r.berat_reject ?? 0), 0)
+  const rejectGram = (rejectBelumDilebur ?? []).reduce((s, r) => s + Math.max(0, Number(r.berat_reject ?? 0) - Number(r.berat_reject_dilebur ?? 0)), 0)
 
   const pipeline: Record<string, number> = {}
   for (const p of produksiPipeline ?? []) {

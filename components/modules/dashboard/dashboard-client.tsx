@@ -350,7 +350,6 @@ export default function DashboardClient({
             label="Stok Aktif"
             value={stok.pcs.toLocaleString('id-ID') + ' pcs'}
             sub={stok.gram.toFixed(2) + ' gr'}
-            sub2={canSeeRp && stok.nilaiRp > 0 ? formatRupiah(stok.nilaiRp) : undefined}
             icon={Tag} iconColor="text-violet-600" iconBg="bg-violet-50"
           />
           <KpiCard
