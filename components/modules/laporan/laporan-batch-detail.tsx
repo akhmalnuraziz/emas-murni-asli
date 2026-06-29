@@ -448,7 +448,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
                   const loss = Number(p.dikasih_gram) - Number(p.diterima_gram ?? 0)
                   return (
                     <tr key={p.id} className="hover:bg-cyan-50/20 transition-colors">
-                      <td className="px-4 py-3 font-mono font-bold text-cyan-700"><a href={`/produksi?q=${encodeURIComponent(p.kode)}`} className="hover:underline">{p.kode}</a></td>
+                      <td className="px-4 py-3 font-mono font-bold text-cyan-700"><a href={`/bahan-baku?q=${encodeURIComponent(batch.kode)}`} className="hover:underline">{p.kode}</a></td>
                       <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatDate(p.tanggal)}</td>
                       <td className="px-4 py-3 text-slate-700">{p.tim_nama ?? '—'}</td>
                       <td className="px-4 py-3 font-semibold tabular-nums text-slate-800">{fg(p.dikasih_gram)}</td>
