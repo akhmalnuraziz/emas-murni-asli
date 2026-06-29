@@ -111,12 +111,14 @@ export default async function DashboardPage({
       .gte('tanggal', dateFrom).lte('tanggal', dateTo)
       .is('voided_at', null)
       .order('tanggal'),
-    // Packing hari ini
+    // Packing periode terpilih
     supabase.from('packing')
-      .select('kode, batch_kode, gramasi, pcs_dipack')
-      .eq('tanggal', todayStr)
+      .select('kode, batch_kode, gramasi, pcs_dipack, tanggal')
+      .gte('tanggal', dateFrom)
+      .lte('tanggal', dateTo)
       .is('voided_at', null)
-      .order('created_at', { ascending: false }),
+      .order('tanggal', { ascending: false })
+      .limit(50),
     // Siap packing — menunggu dipacking
     supabase.from('produksi_item')
       .select('id, kode, gramasi, batch_kode')

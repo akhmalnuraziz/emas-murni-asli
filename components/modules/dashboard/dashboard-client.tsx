@@ -38,7 +38,7 @@ interface Props {
   }
   stokAkrilik: { produk_nama: string; produk_kode: string; gramasi: number; stok_qty: number }[]
   totalPengeluaran: number
-  packingHariIni: { kode: string; batch_kode: string; gramasi: string; pcs_dipack: number }[]
+  packingHariIni: { kode: string; batch_kode: string; gramasi: string; pcs_dipack: number; tanggal?: string }[]
   siapPacking: { id: number; kode: string; gramasi: string; batch_kode: string }[]
   rejectList: { id: number; kode: string; gramasi: string; berat_reject: number; batch_kode: string }[]
   balanceSelisih: number
@@ -473,8 +473,8 @@ export default function DashboardClient({
         ) : <EmptyState text="Belum ada stok akrilik" />}
       </Card>
 
-      {/* ── Packing Hari Ini ──────────────────────────────────────────── */}
-      <Section label="Packing Hari Ini" icon={<Package2 size={13} className="text-green-500" />}>
+      {/* ── Packing Periode ──────────────────────────────────────────── */}
+      <Section label={`Packing — ${period === 'today' ? 'Hari Ini' : period === 'week' ? '7 Hari' : period === 'month' ? 'Bulan Ini' : 'Periode Ini'}`} icon={<Package2 size={13} className="text-green-500" />}>
         <a href="/packing-log" className="block">
           <Card hoverable>
             {packingHariIni.length > 0 ? (() => {
