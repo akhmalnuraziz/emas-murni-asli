@@ -31,7 +31,7 @@ export default async function LaporanBatchPage({ params }: { params: Promise<{ k
       .is('voided_at', null)
       .order('tanggal'),
     supabase.from('produksi_item')
-      .select('id, kode, gramasi, pcs, total_gram, current_status, peleburan_id')
+      .select('id, kode, gramasi, pcs, total_gram, current_status, peleburan_id, sisa_serbuk, berat_reject, berat_reject_dilebur')
       .eq('batch_kode', kode)
       .is('voided_at', null)
       .order('gramasi'),
@@ -48,32 +48,11 @@ export default async function LaporanBatchPage({ params }: { params: Promise<{ k
 
   if (!batch) notFound()
 
-  // Fetch last sisa_serbuk per produksi item
-  const produksiIds = (produksiItems ?? []).map(p => p.id)
-  let serbukMap: Record<number, number> = {}
-  if (produksiIds.length > 0) {
-    const { data: events } = await supabase
-      .from('produksi_event')
-      .select('produksi_item_id, sisa_serbuk')
-      .in('produksi_item_id', produksiIds)
-      .is('voided_at', null)
-      .order('created_at', { ascending: false })
-    // take the latest sisa_serbuk per item
-    for (const ev of events ?? []) {
-      if (serbukMap[ev.produksi_item_id] === undefined && ev.sisa_serbuk !== null) {
-        serbukMap[ev.produksi_item_id] = Number(ev.sisa_serbuk)
-      }
-    }
-  }
-
   return (
     <LaporanBatchDetail
       batch={batch as any}
       peleburans={(peleburans ?? []) as any}
-      produksiItems={(produksiItems ?? []).map(p => ({
-        ...p,
-        sisa_serbuk: serbukMap[p.id] ?? 0,
-      })) as any}
+      produksiItems={(produksiItems ?? []) as any}
       packings={(packings ?? []) as any}
       shieldtags={(shieldtags ?? []) as any}
       userRole={role}

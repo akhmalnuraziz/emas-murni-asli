@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { Download, ArrowLeft, Package, Layers, Tag, Hammer, TrendingDown, CheckCircle2, Clock, FlaskConical, Shield, ArrowRight, CircleDot } from 'lucide-react'
 import Link from 'next/link'
@@ -11,7 +11,8 @@ import {
 interface Batch {
   kode: string; tanggal: string; supplier: string | null
   bahan_dari_pusat: number | null; timbangan_akhir: number | null
-  sisa_fisik: number | null; hpp_gr: number | null; harga_beli: number | null
+  sisa_fisik: number | null; sisa_bahan_seharusnya: number | null
+  hpp_gr: number | null; harga_beli: number | null
   status: string | null; catatan: string | null
 }
 interface Peleburan {
@@ -22,7 +23,8 @@ interface Peleburan {
 interface ProduksiItem {
   id: number; kode: string; gramasi: string
   pcs: number; total_gram: number | null
-  current_status: string | null; sisa_serbuk: number
+  current_status: string | null; sisa_serbuk: number | null
+  berat_reject: number | null; berat_reject_dilebur: number | null
 }
 interface Packing {
   id: number; kode: string; gramasi: string | null
@@ -35,7 +37,7 @@ interface Props {
 }
 
 const canSeeHpp = (r: string) => ['owner', 'admin_pusat', 'accounting', 'manager'].includes(r)
-const fg = (n: number | null | undefined, d = 3) => n != null ? Number(n).toFixed(d) : '—'
+const fg = (n: number | null | undefined, d = 2) => n != null ? Number(n).toFixed(d) : '—'
 const pct = (part: number, total: number) => total === 0 ? '0.00' : (part / total * 100).toFixed(2)
 
 const PALETTE = {
@@ -48,7 +50,9 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
   const showHpp = canSeeHpp(userRole)
 
   // ── Kalkulasi utama ──────────────────────────────────────────────────────────
-  const bahanMasuk    = Number(batch.bahan_dari_pusat ?? 0)
+  const bahanDariPusat = Number(batch.bahan_dari_pusat ?? 0)
+  const timbanganGudang = Number(batch.timbangan_akhir ?? 0)
+  const bahanMasuk    = bahanDariPusat  // alias for flow funnel
   const totalDikasih  = peleburans.reduce((s, p) => s + Number(p.dikasih_gram ?? 0), 0)
   const totalDiterima = peleburans.reduce((s, p) => s + Number(p.diterima_gram ?? 0), 0)
   const lossLebur     = totalDikasih - totalDiterima
@@ -69,9 +73,12 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
     .sort((a, b) => parseFloat(a.gramasi) - parseFloat(b.gramasi))
 
   const totalGramProduksi = gramasiRows.reduce((s, r) => s + r.total_gram, 0)
-  const totalSerbuk       = gramasiRows.reduce((s, r) => s + r.sisa_serbuk, 0)
+  const totalSerbuk       = produksiItems.reduce((s, p) => s + Number(p.sisa_serbuk ?? 0), 0)
   const totalPcs          = gramasiRows.reduce((s, r) => s + r.pcs, 0)
-  const lossProduksi      = totalDiterima - totalGramProduksi - totalSerbuk
+  const rejectBlmDilebur  = produksiItems.reduce((s, p) => s + Math.max(0, Number(p.berat_reject ?? 0) - Number(p.berat_reject_dilebur ?? 0)), 0)
+  const sisaSeharusnya    = Number(batch.sisa_bahan_seharusnya ?? 0)
+  const sisaFisik         = Number(batch.sisa_fisik ?? 0)
+  const lossProduksi      = timbanganGudang - totalGramProduksi - totalSerbuk - rejectBlmDilebur - sisaFisik
   const totalLosses       = totalDikasih - totalGramProduksi - totalSerbuk
   const totalLossesPct    = totalDikasih > 0 ? totalLosses / totalDikasih * 100 : 0
 
@@ -173,11 +180,16 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
           {/* KPI strip inside header */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: 'Bahan Masuk', val: `${fg(bahanMasuk, 2)} gr`, color: PALETTE.violet, bg: '#F5F3FF' },
-              { label: 'Siap Cetak', val: `${fg(totalDiterima, 2)} gr`, sub: `dari ${fg(totalDikasih,2)} gr lebur`, color: PALETTE.cyan, bg: '#ECFEFF' },
-              { label: 'Gram Produksi', val: `${fg(totalGramProduksi, 2)} gr`, sub: `${totalPcs} pcs`, color: PALETTE.green, bg: '#F0FDF4' },
-              { label: 'Total Losses', val: `${fg(totalLosses, 2)} gr`, sub: `${totalLossesPct.toFixed(2)}% dari bahan masuk`,
-                color: totalLosses > 0 ? PALETTE.red : '#64748B', bg: totalLosses > 0 ? '#FEF2F2' : '#F8FAFC' },
+              { label: 'Bahan Baku', val: `${fg(bahanDariPusat)} gr`, sub: `Timbangan gudang: ${fg(timbanganGudang)} gr`, color: PALETTE.violet, bg: '#F5F3FF' },
+              { label: 'Total Gramasi Jadi', val: `${fg(totalGramProduksi)} gr`, color: PALETTE.green, bg: '#F0FDF4' },
+              { label: 'Total Produksi', val: `${totalPcs} pcs`, color: PALETTE.blue, bg: '#EFF6FF' },
+              { label: 'Total Sisa Serbuk', val: `${fg(totalSerbuk)} gr`, color: '#D97706', bg: '#FFFBEB' },
+              { label: 'Reject Blm Dilebur', val: `${fg(rejectBlmDilebur)} gr`, color: '#DC2626', bg: '#FEF2F2' },
+              { label: 'Sisa Seharusnya', val: `${fg(sisaSeharusnya)} gr`, color: PALETTE.cyan, bg: '#ECFEFF' },
+              { label: 'Sisa Bahan Fisik', val: `${fg(sisaFisik)} gr`, color: '#0369A1', bg: '#F0F9FF' },
+              { label: 'Loses Produksi', val: `${fg(lossProduksi)} gr`,
+                color: lossProduksi > 0.005 ? PALETTE.red : '#16A34A',
+                bg: lossProduksi > 0.005 ? '#FEF2F2' : '#F0FDF4' },
             ].map(({ label, val, sub, color, bg }) => (
               <div key={label} className="rounded-xl p-3.5 border" style={{ background: bg, borderColor: color + '30' }}>
                 <p className="text-[10px] font-medium text-slate-400">{label}</p>
@@ -221,7 +233,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
                       <div className="flex items-center gap-1.5">
                         <ArrowRight size={10} className="text-slate-300" />
                         <span className="text-[10px] font-medium text-slate-400">
-                          loss: {fg(flowSteps[i-1].gram - step.gram, 3)} gr
+                          loss: {fg(flowSteps[i-1].gram - step.gram)} gr
                           ({(100 - stepPct).toFixed(2)}%)
                         </span>
                       </div>
@@ -268,7 +280,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
                   <div key={label} className="rounded-xl px-3 py-2.5" style={{ background: color + '0D', border: `1px solid ${color}25` }}>
                     <p className="text-[10px] font-medium text-slate-400">{label}</p>
                     <p className="text-[15px] font-bold tabular-nums mt-0.5" style={{ color }}>
-                      {fg(val, 3)} <span className="text-[10px] font-medium">gr</span>
+                      {fg(val)} <span className="text-[10px] font-medium">gr</span>
                     </p>
                     <p className="text-[10px] font-semibold" style={{ color }}>{p.toFixed(2)}%</p>
                   </div>
@@ -391,8 +403,8 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
                     <tr key={r.gramasi} className="hover:bg-slate-50/60 transition-colors">
                       <td className="px-3 py-3 font-bold text-slate-800">{r.gramasi} gr</td>
                       <td className="px-3 py-3 font-bold tabular-nums text-violet-700">{r.pcs}</td>
-                      <td className="px-3 py-3 font-semibold tabular-nums text-green-700">{fg(r.total_gram, 3)}</td>
-                      <td className="px-3 py-3 font-semibold tabular-nums text-amber-600">{fg(r.sisa_serbuk, 3)}</td>
+                      <td className="px-3 py-3 font-semibold tabular-nums text-green-700">{fg(r.total_gram)}</td>
+                      <td className="px-3 py-3 font-semibold tabular-nums text-amber-600">{fg(r.sisa_serbuk)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -400,8 +412,8 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
                   <tr className="border-t-2 border-slate-200 bg-slate-50">
                     <td className="px-3 py-3 text-[10px] font-bold text-slate-500 uppercase">Total</td>
                     <td className="px-3 py-3 font-bold tabular-nums text-violet-700">{totalPcs}</td>
-                    <td className="px-3 py-3 font-bold tabular-nums text-green-700">{fg(totalGramProduksi, 3)}</td>
-                    <td className="px-3 py-3 font-bold tabular-nums text-amber-600">{fg(totalSerbuk, 3)}</td>
+                    <td className="px-3 py-3 font-bold tabular-nums text-green-700">{fg(totalGramProduksi)}</td>
+                    <td className="px-3 py-3 font-bold tabular-nums text-amber-600">{fg(totalSerbuk)}</td>
                   </tr>
                 </tfoot>
               </table>
