@@ -1253,7 +1253,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
               {/* 4. Reject Packing */}
               {packingRejectOptions.length>0&&(
                 <div>
-                  <p className="text-[12px] font-semibold text-slate-700 mb-2">Reject Packing (Shieldtag Gagal)</p>
+                  <p className="text-[12px] font-semibold text-slate-700 mb-2">Reject Packing</p>
                   <div className="space-y-2">
                     {packingRejectOptions.map((pk:any)=>{
                       const sisaGram = Number(pk.gram_reject??0) - Number(pk.gram_reject_dilebur??0)

@@ -151,6 +151,11 @@ export default async function BahanBakuPage({
     if (p.batch_kode) packingRejectCountMap[p.batch_kode] = (packingRejectCountMap[p.batch_kode] ?? 0) + 1
   }
 
+  // Gabungkan packing reject ke rejectCountMap agar badge alert lengkap
+  for (const [bk, cnt] of Object.entries(packingRejectCountMap)) {
+    rejectCountMap[bk] = (rejectCountMap[bk] ?? 0) + cnt
+  }
+
   return (
     <BahanBakuClient
       batches={batches ?? []}
