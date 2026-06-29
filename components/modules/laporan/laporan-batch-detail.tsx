@@ -58,23 +58,23 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
   const lossLebur     = totalDikasih - totalDiterima
   const lossPct       = totalDikasih > 0 ? lossLebur / totalDikasih * 100 : 0
 
-  const gramasiMap = new Map<string, { pcs: number; total_gram: number; sisa_serbuk: number }>()
-  for (const p of produksiItems) {
-    const g = p.gramasi
-    const cur = gramasiMap.get(g) ?? { pcs: 0, total_gram: 0, sisa_serbuk: 0 }
-    gramasiMap.set(g, {
-      pcs: cur.pcs + Number(p.pcs ?? 0),
-      total_gram: cur.total_gram + Number(p.total_gram ?? 0),
-      sisa_serbuk: cur.sisa_serbuk + Number(p.sisa_serbuk ?? 0),
+  // Gramasi Jadi & Total Produksi → dari packing (lebih akurat, tidak bergantung produksi_item.total_gram)
+  const packingGramasiMap = new Map<string, { pcs: number; total_gram: number }>()
+  for (const pk of packings) {
+    const g = pk.gramasi ?? '?'
+    const cur = packingGramasiMap.get(g) ?? { pcs: 0, total_gram: 0 }
+    packingGramasiMap.set(g, {
+      pcs: cur.pcs + Number(pk.pcs ?? 0),
+      total_gram: cur.total_gram + Number(pk.total_gram ?? 0),
     })
   }
-  const gramasiRows = [...gramasiMap.entries()]
-    .map(([gramasi, v]) => ({ gramasi, ...v }))
+  const gramasiRows = [...packingGramasiMap.entries()]
+    .map(([gramasi, v]) => ({ gramasi, ...v, sisa_serbuk: 0 }))
     .sort((a, b) => parseFloat(a.gramasi) - parseFloat(b.gramasi))
 
-  const totalGramProduksi = gramasiRows.reduce((s, r) => s + r.total_gram, 0)
+  const totalGramProduksi = packings.reduce((s, pk) => s + Number(pk.total_gram ?? 0), 0)
+  const totalPcs          = packings.reduce((s, pk) => s + Number(pk.pcs ?? 0), 0)
   const totalSerbuk       = produksiItems.reduce((s, p) => s + Number(p.sisa_serbuk ?? 0), 0)
-  const totalPcs          = gramasiRows.reduce((s, r) => s + r.pcs, 0)
   const rejectBlmDilebur  = produksiItems.reduce((s, p) => s + Math.max(0, Number(p.berat_reject ?? 0) - Number(p.berat_reject_dilebur ?? 0)), 0)
   const sisaSeharusnya    = Number(batch.sisa_bahan_seharusnya ?? 0)
   const sisaFisik         = Number(batch.sisa_fisik ?? 0)
@@ -448,7 +448,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
                   const loss = Number(p.dikasih_gram) - Number(p.diterima_gram ?? 0)
                   return (
                     <tr key={p.id} className="hover:bg-cyan-50/20 transition-colors">
-                      <td className="px-4 py-3 font-mono font-bold text-cyan-700">{p.kode}</td>
+                      <td className="px-4 py-3 font-mono font-bold text-cyan-700"><a href={`/bahan-baku?q=${encodeURIComponent(p.kode)}`} className="hover:underline">{p.kode}</a></td>
                       <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatDate(p.tanggal)}</td>
                       <td className="px-4 py-3 text-slate-700">{p.tim_nama ?? '—'}</td>
                       <td className="px-4 py-3 font-semibold tabular-nums text-slate-800">{fg(p.dikasih_gram)}</td>
@@ -514,7 +514,7 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
               <tbody className="divide-y divide-slate-50">
                 {packings.map(p => (
                   <tr key={p.id} className="hover:bg-blue-50/10 transition-colors">
-                    <td className="px-4 py-3 font-mono font-bold text-blue-700">{p.kode}</td>
+                    <td className="px-4 py-3 font-mono font-bold text-blue-700"><a href={`/packing-log?q=${encodeURIComponent(p.kode)}`} className="hover:underline">{p.kode}</a></td>
                     <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{formatDate(p.tanggal)}</td>
                     <td className="px-4 py-3 font-semibold text-slate-800">{p.gramasi ?? '—'} gr</td>
                     <td className="px-4 py-3 font-semibold tabular-nums text-slate-700">{p.pcs}</td>
