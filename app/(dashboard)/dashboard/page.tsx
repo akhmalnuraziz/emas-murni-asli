@@ -78,7 +78,7 @@ export default async function DashboardPage({
     supabase.from('produksi_item')
       .select('current_status, total_gram')
       .is('voided_at', null)
-      .not('current_status', 'in', '("Sudah Packing","Reject")'),
+      .in('current_status', ['Cutting', 'Pas Berat', 'Annealing', 'Siap Packing']),
     supabase.from('produksi_item')
       .select('id, kode, gramasi, berat_reject, berat_reject_dilebur, batch_kode')
       .eq('status_reject', 'belum_dilebur')
