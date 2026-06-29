@@ -1,5 +1,4 @@
-
-  useRealtimeRefresh(['batch','peleburan','packing'])'use client'
+'use client'
 
 import { useState, useTransition, useEffect } from 'react'
 import { useRealtimeRefresh } from '@/lib/supabase/use-realtime-refresh'
@@ -336,6 +335,7 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[],produksiItems=[],rejectCountMap,packingRejectItems=[],packingRejectCountMap={},toleransiPeleburan=0.05,tims=[],adminList=[],userRole,userName,batchLossMap={},currentQ='',batchPage=1,batchTotal=0,batchPageSize=30}:Props){
+  useRealtimeRefresh(['batch','peleburan','packing'])
   const [filter,setFilter]=useState<'semua'|'aktif'|'terkunci'>('semua')
   const router = useRouter()
   const [peleburanModalBatch,setPeleburanModalBatch]=useState<string|null>(null)
