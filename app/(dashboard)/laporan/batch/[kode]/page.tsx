@@ -17,69 +17,61 @@ export default async function LaporanBatchPage({ params }: { params: Promise<{ k
 
   const kode = decodeURIComponent(rawKode)
 
-  const [
-    { data: batch },
-    { data: peleburans },
-    { data: packings },
-    { data: shieldtags },
-  ] = await Promise.all([
+  const [{ data: batch }, { data: peleburans }, { data: shieldtags }] = await Promise.all([
     supabase.from('batch').select('*').eq('kode', kode).is('voided_at', null).single(),
     supabase.from('peleburan')
       .select('id, kode, tanggal, dikasih_gram, diterima_gram, status, tim_nama, operator, sumber_batch_gram')
-      .eq('batch_kode', kode)
-      .is('voided_at', null)
-      .order('tanggal'),
-    supabase.from('packing')
-      .select('id, kode, gramasi, pcs, total_gram, tanggal, pic, produksi_item_id')
-      .eq('batch_kode', kode)
-      .is('voided_at', null)
-      .order('tanggal'),
+      .eq('batch_kode', kode).is('voided_at', null).order('tanggal'),
     supabase.from('shieldtag')
       .select('kode, gramasi, status')
-      .eq('batch_kode', kode)
-      .is('voided_at', null),
+      .eq('batch_kode', kode).is('voided_at', null),
   ])
 
   if (!batch) notFound()
 
-  const COLS = 'id, kode, gramasi, pcs, total_gram, current_status, peleburan_id, sisa_serbuk, berat_reject, berat_reject_dilebur'
+  const ITEM_COLS = 'id, kode, gramasi, pcs, total_gram, current_status, peleburan_id, sisa_serbuk, berat_reject, berat_reject_dilebur'
 
-  // Coba 3 cara untuk dapat produksi_items — pakai yang pertama memberikan hasil
-  let produksiItems: any[] = []
+  // Kumpulkan produksi_items: gabung semua sumber agar tidak ada yang terlewat
+  const peleburanIds = (peleburans ?? []).map((p: any) => p.id)
 
-  const { data: byBatch } = await supabase
-    .from('produksi_item').select(COLS)
-    .eq('batch_kode', kode).is('voided_at', null).order('gramasi')
+  const [{ data: byBatch }, { data: byPlb }] = await Promise.all([
+    supabase.from('produksi_item').select(ITEM_COLS)
+      .eq('batch_kode', kode).is('voided_at', null),
+    peleburanIds.length > 0
+      ? supabase.from('produksi_item').select(ITEM_COLS)
+          .in('peleburan_id', peleburanIds).is('voided_at', null)
+      : Promise.resolve({ data: [] as any[] }),
+  ])
 
-  if (byBatch && byBatch.length > 0) {
-    produksiItems = byBatch
-  } else {
-    const peleburanIds = (peleburans ?? []).map(p => p.id)
-    if (peleburanIds.length > 0) {
-      const { data: byPlb } = await supabase
-        .from('produksi_item').select(COLS)
-        .in('peleburan_id', peleburanIds).is('voided_at', null).order('gramasi')
-      produksiItems = byPlb ?? []
-    }
-  }
+  // Gabung unik by id
+  const itemMap = new Map<number, any>()
+  for (const it of [...(byBatch ?? []), ...(byPlb ?? [])]) itemMap.set(it.id, it)
+  const produksiItems = [...itemMap.values()]
 
-  if (produksiItems.length === 0) {
-    // Fallback: via produksi_item_id dari packing records
-    const itemIds = [...new Set((packings ?? []).map((p: any) => p.produksi_item_id).filter(Boolean))]
-    if (itemIds.length > 0) {
-      const { data: byPacking } = await supabase
-        .from('produksi_item').select(COLS)
-        .in('id', itemIds).is('voided_at', null).order('gramasi')
-      produksiItems = byPacking ?? []
-    }
-  }
+  // Kumpulkan packings: dari batch_kode DAN dari produksi_item_id
+  const produksiItemIds = produksiItems.map(it => it.id)
+
+  const [{ data: packByBatch }, { data: packByItem }] = await Promise.all([
+    supabase.from('packing')
+      .select('id, kode, gramasi, pcs, total_gram, tanggal, pic, produksi_item_id')
+      .eq('batch_kode', kode).is('voided_at', null).order('tanggal'),
+    produksiItemIds.length > 0
+      ? supabase.from('packing')
+          .select('id, kode, gramasi, pcs, total_gram, tanggal, pic, produksi_item_id')
+          .in('produksi_item_id', produksiItemIds).is('voided_at', null).order('tanggal')
+      : Promise.resolve({ data: [] as any[] }),
+  ])
+
+  const packMap = new Map<number, any>()
+  for (const pk of [...(packByBatch ?? []), ...(packByItem ?? [])]) packMap.set(pk.id, pk)
+  const packings = [...packMap.values()].sort((a, b) => a.tanggal.localeCompare(b.tanggal))
 
   return (
     <LaporanBatchDetail
       batch={batch as any}
       peleburans={(peleburans ?? []) as any}
       produksiItems={produksiItems as any}
-      packings={(packings ?? []) as any}
+      packings={packings as any}
       shieldtags={(shieldtags ?? []) as any}
       userRole={role}
     />
