@@ -3,10 +3,10 @@
 import { useState, useTransition } from 'react'
 import {
   RotateCcw, Plus, X, Check, RefreshCw, ChevronDown, ChevronUp,
-  Camera, User, Phone, Tag, AlertTriangle, CheckCircle2, Wrench, Flame, Archive
+  Camera, AlertTriangle, CheckCircle2, Wrench, Flame, Archive, Pencil, Trash2
 } from 'lucide-react'
 import { cn, formatDate, formatRupiah } from '@/lib/utils'
-import { createBuyback, prossesBuyback, getBuybackList } from '@/app/(dashboard)/buyback/actions'
+import { createBuyback, prossesBuyback, getBuybackList, editBuyback, deleteBuyback } from '@/app/(dashboard)/buyback/actions'
 import type { UserRole } from '@/lib/types/database'
 
 interface Props {
@@ -36,6 +36,7 @@ const F = ({ label, req, children }: { label: string; req?: boolean; children: R
 )
 
 const CAN_PROSES: UserRole[] = ['owner', 'manager', 'spv']
+const CAN_DELETE: UserRole[] = ['owner', 'manager']
 
 async function filesToBase64(files: File[]): Promise<string[]> {
   const results: string[] = []
@@ -63,6 +64,7 @@ async function filesToBase64(files: File[]): Promise<string[]> {
 export default function BuybackClient({ initialList, userRole, userName }: Props) {
   const [list, setList] = useState<any[]>(initialList)
   const [showForm, setShowForm] = useState(false)
+  const [editTarget, setEditTarget] = useState<any | null>(null)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -117,12 +119,22 @@ export default function BuybackClient({ initialList, userRole, userName }: Props
         </div>
       </div>
 
-      {/* Form */}
+      {/* Form tambah */}
       {showForm && (
         <BuybackForm
           userName={userName}
           onClose={() => setShowForm(false)}
           onSaved={() => { setShowForm(false); reloadList() }}
+        />
+      )}
+
+      {/* Form edit */}
+      {editTarget && (
+        <BuybackForm
+          userName={userName}
+          initial={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSaved={() => { setEditTarget(null); reloadList() }}
         />
       )}
 
@@ -139,8 +151,10 @@ export default function BuybackClient({ initialList, userRole, userName }: Props
             expanded={expandedId === b.id}
             onToggle={() => setExpandedId(expandedId === b.id ? null : b.id)}
             canProses={CAN_PROSES.includes(userRole)}
+            canDelete={CAN_DELETE.includes(userRole)}
             userName={userName}
             onUpdated={reloadList}
+            onEdit={() => setEditTarget(b)}
           />
         ))}
       </div>
@@ -148,15 +162,22 @@ export default function BuybackClient({ initialList, userRole, userName }: Props
   )
 }
 
-// ─── Form terima buyback baru ──────────────────────────────────────────────────
-function BuybackForm({ userName, onClose, onSaved }: {
-  userName: string; onClose: () => void; onSaved: () => void
+// ─── Form terima / edit buyback ───────────────────────────────────────────────
+function BuybackForm({ userName, initial, onClose, onSaved }: {
+  userName: string; initial?: any; onClose: () => void; onSaved: () => void
 }) {
+  const isEdit = !!initial
   const [form, setForm] = useState({
-    tanggal: new Date().toISOString().split('T')[0],
-    namaCustomer: '', hpCustomer: '', shieldtagKode: '',
-    gramasi: '1', kondisiEmas: 'bagus', kondisiTag: 'bagus',
-    hasilInspeksi: 'ready_resell', hargaBeli: '', catatan: '',
+    tanggal: initial?.tanggal ?? new Date().toISOString().split('T')[0],
+    namaCustomer: initial?.nama_customer ?? '',
+    hpCustomer: initial?.hp_customer ?? '',
+    shieldtagKode: initial?.shieldtag_kode ?? '',
+    gramasi: initial?.gramasi ?? '1',
+    kondisiEmas: initial?.kondisi_emas ?? 'bagus',
+    kondisiTag: initial?.kondisi_tag ?? 'bagus',
+    hasilInspeksi: 'ready_resell',
+    hargaBeli: initial?.harga_beli ? String(initial.harga_beli) : '',
+    catatan: initial?.catatan ?? '',
   })
   const [fotos, setFotos] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
@@ -175,15 +196,25 @@ function BuybackForm({ userName, onClose, onSaved }: {
   async function handleSave() {
     if (!form.namaCustomer) { setErr('Nama customer wajib diisi'); return }
     setSaving(true); setErr('')
-    const res = await createBuyback({
-      ...form,
-      hargaBeli: parseInt(form.hargaBeli) || 0,
-      fotosB64: fotos,
-      userName,
-    })
-    setSaving(false)
-    if (!res.success) { setErr(res.error ?? 'Gagal'); return }
-    setDone(res.kode ?? '')
+    if (isEdit) {
+      const res = await editBuyback(initial.id, {
+        ...form,
+        hargaBeli: parseInt(form.hargaBeli) || 0,
+      })
+      setSaving(false)
+      if (!res.success) { setErr(res.error ?? 'Gagal'); return }
+      onSaved()
+    } else {
+      const res = await createBuyback({
+        ...form,
+        hargaBeli: parseInt(form.hargaBeli) || 0,
+        fotosB64: fotos,
+        userName,
+      })
+      setSaving(false)
+      if (!res.success) { setErr(res.error ?? 'Gagal'); return }
+      setDone(res.kode ?? '')
+    }
   }
 
   if (done) return (
@@ -200,7 +231,7 @@ function BuybackForm({ userName, onClose, onSaved }: {
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h2 className="font-bold text-slate-800">Terima Buyback Baru</h2>
+        <h2 className="font-bold text-slate-800">{isEdit ? 'Edit Buyback' : 'Terima Buyback Baru'}</h2>
         <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"><X size={16} /></button>
       </div>
 
@@ -240,21 +271,23 @@ function BuybackForm({ userName, onClose, onSaved }: {
             <option value="hilang">Hilang</option>
           </select>
         </F>
-        <F label="Hasil Inspeksi" req>
-          <select value={form.hasilInspeksi} onChange={e => set('hasilInspeksi', e.target.value)} className={inp}>
-            <option value="ready_resell">Siap Jual Lagi</option>
-            <option value="repair">Perlu Repair</option>
-            <option value="reject">Holding Reject</option>
-            <option value="lebur">Akan Dilebur</option>
-          </select>
-        </F>
+        {!isEdit && (
+          <F label="Hasil Inspeksi" req>
+            <select value={form.hasilInspeksi} onChange={e => set('hasilInspeksi', e.target.value)} className={inp}>
+              <option value="ready_resell">Siap Jual Lagi</option>
+              <option value="repair">Perlu Repair</option>
+              <option value="reject">Holding Reject</option>
+              <option value="lebur">Akan Dilebur</option>
+            </select>
+          </F>
+        )}
         <F label="Harga Beli Kembali (Rp)">
           <input type="number" value={form.hargaBeli} onChange={e => set('hargaBeli', e.target.value)}
             className={inp} placeholder="0" min={0} />
         </F>
       </div>
 
-      <F label="Foto Kondisi Barang">
+      {!isEdit && <F label="Foto Kondisi Barang">
         <div className="flex gap-2 flex-wrap">
           {fotos.map((f, i) => (
             <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200">
@@ -272,7 +305,7 @@ function BuybackForm({ userName, onClose, onSaved }: {
             </label>
           )}
         </div>
-      </F>
+      </F>}
 
       <F label="Catatan">
         <textarea value={form.catatan} onChange={e => set('catatan', e.target.value)}
@@ -288,7 +321,7 @@ function BuybackForm({ userName, onClose, onSaved }: {
         </button>
         <button onClick={handleSave} disabled={saving}
           className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
-          {saving ? 'Menyimpan…' : 'Simpan Buyback'}
+          {saving ? 'Menyimpan…' : isEdit ? 'Simpan Perubahan' : 'Simpan Buyback'}
         </button>
       </div>
     </div>
@@ -296,20 +329,30 @@ function BuybackForm({ userName, onClose, onSaved }: {
 }
 
 // ─── Card item buyback ─────────────────────────────────────────────────────────
-function BuybackCard({ buyback: b, expanded, onToggle, canProses, userName, onUpdated }: {
+function BuybackCard({ buyback: b, expanded, onToggle, canProses, canDelete, userName, onUpdated, onEdit }: {
   buyback: any; expanded: boolean; onToggle: () => void
-  canProses: boolean; userName: string; onUpdated: () => void
+  canProses: boolean; canDelete: boolean; userName: string
+  onUpdated: () => void; onEdit: () => void
 }) {
   const [aksi, setAksi] = useState<string>('')
   const [catatan, setCatatan] = useState('')
   const [saving, setSaving] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const cfg = HASIL_CFG[b.status] ?? HASIL_CFG.pending
   const StatusIcon = cfg.icon
+  const isPending = b.status === 'pending'
 
   async function doProses() {
     if (!aksi) return
     setSaving(true)
     await prossesBuyback({ id: b.id, kode: b.kode, aksi: aksi as any, catatan, userName })
+    setSaving(false)
+    onUpdated()
+  }
+
+  async function doDelete() {
+    setSaving(true)
+    await deleteBuyback(b.id)
     setSaving(false)
     onUpdated()
   }
@@ -328,7 +371,7 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, userName, onUp
             <p className="text-[12px] text-slate-400">{b.nama_customer} • {formatDate(b.tanggal)}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {b.shieldtag_kode && (
             <span className="text-[10px] font-mono bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{b.shieldtag_kode}</span>
           )}
@@ -337,8 +380,52 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, userName, onUp
           )}
           <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
             style={{ background: cfg.bg, color: cfg.text }}>{cfg.label}</span>
+          {isPending && (
+            <>
+              <button onClick={e => { e.stopPropagation(); onEdit() }}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
+                title="Edit">
+                <Pencil size={14} />
+              </button>
+              {canDelete && (
+                <button onClick={e => { e.stopPropagation(); setConfirmDelete(true) }}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                  title="Hapus">
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </>
+          )}
           {expanded ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
         </div>
+
+        {/* Konfirmasi hapus */}
+        {confirmDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-2xl shadow-2xl p-5 w-full max-w-sm space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                  <Trash2 size={16} className="text-red-500" />
+                </div>
+                <div>
+                  <p className="text-[14px] font-semibold text-slate-900">Hapus Buyback?</p>
+                  <p className="text-[12px] text-slate-500 mt-0.5">{b.kode} · {b.nama_customer}</p>
+                  <p className="text-[12px] text-red-500 mt-1">Shieldtag akan dikembalikan ke status Terjual.</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setConfirmDelete(false)} disabled={saving}
+                  className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">
+                  Batal
+                </button>
+                <button onClick={doDelete} disabled={saving}
+                  className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
+                  {saving ? 'Menghapus…' : 'Ya, Hapus'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {expanded && (
