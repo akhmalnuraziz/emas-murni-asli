@@ -31,7 +31,7 @@ const PAGE_META: Record<string, { title: string; subtitle: string }> = {
   '/stock-opname':          { title: 'Stock Opname',         subtitle: 'Rekonsiliasi fisik vs sistem per lokasi' },
   '/pelanggan':             { title: 'Database Pelanggan',   subtitle: 'Manajemen data pelanggan tetap' },
   '/retur-penjualan':       { title: 'Retur Penjualan',      subtitle: 'Pencatatan retur dan pengembalian barang' },
-  '/buyback':               { title: 'Buyback',              subtitle: 'Pembelian kembali emas dari pelanggan' },
+  '/buyback':               { title: 'Buyback',              subtitle: 'Terima buyback dari customer — BAGUS kembali ke stok, REJECT ke Karantina' },
   '/shieldtag-explorer':    { title: 'Shieldtag Explorer',   subtitle: 'Lacak posisi dan riwayat lengkap per kode shieldtag' },
 }
 

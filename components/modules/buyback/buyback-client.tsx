@@ -153,6 +153,7 @@ function BuybackForm({ userName, onClose, onSaved }: {
   userName: string; onClose: () => void; onSaved: () => void
 }) {
   const [form, setForm] = useState({
+    tanggal: new Date().toISOString().split('T')[0],
     namaCustomer: '', hpCustomer: '', shieldtagKode: '',
     gramasi: '1', kondisiEmas: 'bagus', kondisiTag: 'bagus',
     hasilInspeksi: 'ready_resell', hargaBeli: '', catatan: '',
@@ -204,6 +205,10 @@ function BuybackForm({ userName, onClose, onSaved }: {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <F label="Tanggal Buyback" req>
+          <input type="date" value={form.tanggal} onChange={e => set('tanggal', e.target.value)} className={inp} required />
+        </F>
+        <div />
         <F label="Nama Customer" req>
           <input value={form.namaCustomer} onChange={e => set('namaCustomer', e.target.value)}
             className={inp} placeholder="Nama lengkap customer" />
@@ -370,11 +375,21 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, userName, onUp
               <select value={aksi} onChange={e => setAksi(e.target.value)}
                 className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all">
                 <option value="">-- Pilih tindakan --</option>
-                <option value="ready_resell">Siap Jual Lagi (kondisi bagus)</option>
-                <option value="repair">Repair (perlu perbaikan)</option>
-                <option value="reject">Holding Reject (tidak layak jual)</option>
-                <option value="lebur">Lebur (tidak bisa diperbaiki)</option>
+                <option value="ready_resell">✅ Siap Jual Lagi — Stok Gudang bertambah</option>
+                <option value="repair">🔧 Repair — Masuk Karantina (Repair)</option>
+                <option value="reject">⛔ Holding Reject — Masuk Karantina</option>
+                <option value="lebur">🔥 Lebur — Masuk Karantina (Akan Dilebur)</option>
               </select>
+              {aksi === 'ready_resell' && b.shieldtag_kode && (
+                <p className="text-[11px] text-emerald-700 bg-emerald-50 rounded-lg px-3 py-1.5">
+                  Shieldtag <span className="font-mono font-semibold">{b.shieldtag_kode}</span> akan kembali ke <strong>Aktif di Gudang Pusat</strong> — Inventory otomatis bertambah.
+                </p>
+              )}
+              {aksi && aksi !== 'ready_resell' && b.shieldtag_kode && (
+                <p className="text-[11px] text-amber-700 bg-amber-50 rounded-lg px-3 py-1.5">
+                  Shieldtag <span className="font-mono font-semibold">{b.shieldtag_kode}</span> akan masuk <strong>Karantina</strong> — tidak masuk stok sampai ada keputusan lanjut.
+                </p>
+              )}
               <textarea value={catatan} onChange={e => setCatatan(e.target.value)}
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all resize-none"
                 rows={2} placeholder="Keterangan (opsional)" />

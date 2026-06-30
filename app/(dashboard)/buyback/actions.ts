@@ -32,6 +32,7 @@ async function uploadBase64Fotos(supabase: any, b64Array: string[], prefix: stri
 }
 
 export async function createBuyback(params: {
+  tanggal?: string
   namaCustomer: string
   hpCustomer: string
   shieldtagKode: string
@@ -58,7 +59,7 @@ export async function createBuyback(params: {
 
     const { error } = await supabase.from('buyback').insert({
       kode,
-      tanggal: new Date().toISOString().slice(0, 10),
+      tanggal: params.tanggal || new Date().toISOString().slice(0, 10),
       nama_customer: params.namaCustomer,
       hp_customer: params.hpCustomer || null,
       shieldtag_kode: params.shieldtagKode || null,
@@ -125,6 +126,10 @@ export async function prossesBuyback(params: {
     lebur: 'akan_dilebur',
   }
 
+  // Ambil shieldtag_kode dari record buyback
+  const { data: bbRecord } = await supabase.from('buyback')
+    .select('shieldtag_kode').eq('id', params.id).single()
+
   const { error } = await supabase.from('buyback').update({
     status: STATUS_MAP[params.aksi],
     hasil_inspeksi: params.aksi,
@@ -134,6 +139,27 @@ export async function prossesBuyback(params: {
   }).eq('id', params.id)
 
   if (error) return { success: false, error: error.message }
+
+  // Sync shieldtag berdasarkan keputusan
+  if (bbRecord?.shieldtag_kode) {
+    const kode = bbRecord.shieldtag_kode
+    if (params.aksi === 'ready_resell') {
+      // Kondisi BAGUS — kembali ke stok gudang, inventory otomatis bertambah
+      await supabase.from('shieldtag')
+        .update({ status: 'Aktif', lokasi: 'Gudang Pusat' })
+        .eq('kode', kode)
+    } else {
+      // REJECT / repair / lebur — masuk Karantina, tidak masuk stok
+      const lokasiMap: Record<string, string> = {
+        repair: 'Buyback — Repair',
+        reject: 'Buyback — Karantina',
+        lebur: 'Buyback — Akan Dilebur',
+      }
+      await supabase.from('shieldtag')
+        .update({ status: 'Karantina', lokasi: lokasiMap[params.aksi] ?? 'Karantina' })
+        .eq('kode', kode)
+    }
+  }
 
   supabase.from('audit_log').insert({
     user_id: user.id,
