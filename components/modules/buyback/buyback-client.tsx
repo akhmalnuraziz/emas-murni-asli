@@ -1,9 +1,11 @@
-﻿'use client'
+'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef } from 'react'
+import * as XLSX from 'xlsx'
 import {
   RotateCcw, Plus, X, Check, RefreshCw, ChevronDown, ChevronUp,
-  Camera, AlertTriangle, CheckCircle2, Wrench, Flame, Archive, Pencil, Trash2
+  Camera, AlertTriangle, CheckCircle2, Wrench, Flame, Archive, Pencil, Trash2,
+  Upload, Hash
 } from 'lucide-react'
 import { cn, formatDate, formatRupiah } from '@/lib/utils'
 import { createBuyback, prossesBuyback, getBuybackList, editBuyback, deleteBuyback } from '@/app/(dashboard)/buyback/actions'
@@ -61,6 +63,127 @@ async function filesToBase64(files: File[]): Promise<string[]> {
   return results
 }
 
+// Base-26 range expansion for shieldtag codes (last 2 chars = AA–ZZ)
+function expandRange(start: string, end: string): string[] {
+  if (start.length !== end.length) return [start, end]
+  const prefix = start.slice(0, -2)
+  if (end.slice(0, -2) !== prefix) return [start, end]
+  const toN = (s: string) => (s.charCodeAt(0) - 65) * 26 + (s.charCodeAt(1) - 65)
+  const toS = (n: number) => String.fromCharCode(Math.floor(n / 26) + 65, (n % 26) + 65)
+  const a = toN(start.slice(-2)), b = toN(end.slice(-2))
+  if (b < a || b - a > 500) return [start, end]
+  return Array.from({ length: b - a + 1 }, (_, i) => prefix + toS(a + i))
+}
+
+async function parseExcelKodes(file: File): Promise<string[]> {
+  const buf = await file.arrayBuffer()
+  const wb = XLSX.read(buf, { type: 'array' })
+  const ws = wb.Sheets[wb.SheetNames[0]]
+  const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 })
+  return rows.flatMap(r => r[0] ? [String(r[0]).trim().toUpperCase()] : []).filter(Boolean)
+}
+
+// ─── Multi shieldtag input ─────────────────────────────────────────────────────
+function ShieldtagInput({ kodes, onChange }: { kodes: string[]; onChange: (k: string[]) => void }) {
+  const [text, setText] = useState('')
+  const [rangeStart, setRangeStart] = useState('')
+  const [rangeEnd, setRangeEnd] = useState('')
+  const [mode, setMode] = useState<'manual' | 'range'>('manual')
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  function addKode(raw: string) {
+    const codes = raw.toUpperCase().split(/[\s,;]+/).map(s => s.trim()).filter(Boolean)
+    const next = [...new Set([...kodes, ...codes])]
+    onChange(next)
+    setText('')
+  }
+
+  function applyRange() {
+    if (!rangeStart || !rangeEnd) return
+    const expanded = expandRange(rangeStart.toUpperCase(), rangeEnd.toUpperCase())
+    onChange([...new Set([...kodes, ...expanded])])
+    setRangeStart(''); setRangeEnd('')
+  }
+
+  async function handleExcel(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const parsed = await parseExcelKodes(file)
+    onChange([...new Set([...kodes, ...parsed])])
+    e.target.value = ''
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Mode tabs */}
+      <div className="flex gap-1">
+        {(['manual', 'range'] as const).map(m => (
+          <button key={m} type="button" onClick={() => setMode(m)}
+            className={cn('px-3 py-1 rounded-lg text-[11px] font-semibold transition-colors',
+              mode === m ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200')}>
+            {m === 'manual' ? 'Manual' : 'Range'}
+          </button>
+        ))}
+        <button type="button" onClick={() => fileRef.current?.click()}
+          className="px-3 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors flex items-center gap-1">
+          <Upload size={11} /> Excel
+        </button>
+        <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleExcel} />
+      </div>
+
+      {mode === 'manual' && (
+        <div className="flex gap-2">
+          <input value={text} onChange={e => setText(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addKode(text) } }}
+            className={cn(inp, 'font-mono flex-1')}
+            placeholder="Ketik kode lalu Enter (bisa lebih dari satu, pisah koma)" />
+          <button type="button" onClick={() => addKode(text)}
+            className="h-9 px-3 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[12px] font-semibold transition-colors">
+            +
+          </button>
+        </div>
+      )}
+
+      {mode === 'range' && (
+        <div className="flex gap-2 items-center">
+          <input value={rangeStart} onChange={e => setRangeStart(e.target.value.toUpperCase())}
+            className={cn(inp, 'font-mono')} placeholder="Dari (mis: 1H80AA)" />
+          <span className="text-slate-400 text-[12px] shrink-0">s/d</span>
+          <input value={rangeEnd} onChange={e => setRangeEnd(e.target.value.toUpperCase())}
+            className={cn(inp, 'font-mono')} placeholder="Sampai (mis: 1H80AZ)" />
+          <button type="button" onClick={applyRange}
+            className="h-9 px-3 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[12px] font-semibold transition-colors shrink-0">
+            Buat
+          </button>
+        </div>
+      )}
+
+      {/* Tag list */}
+      {kodes.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 p-3 bg-slate-50 rounded-lg border border-slate-200 max-h-40 overflow-y-auto">
+          {kodes.map(k => (
+            <span key={k} className="flex items-center gap-1 px-2 py-0.5 bg-white border border-slate-200 rounded-full text-[11px] font-mono text-slate-700">
+              {k}
+              <button type="button" onClick={() => onChange(kodes.filter(x => x !== k))}
+                className="text-slate-400 hover:text-red-500 transition-colors">
+                <X size={10} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      {kodes.length === 0 && (
+        <p className="text-[11px] text-slate-400 italic">
+          Kosongkan jika tidak ada shieldtag (barang tanpa shieldtag tidak masuk inventory).
+        </p>
+      )}
+      {kodes.length > 0 && (
+        <p className="text-[11px] text-violet-600 font-semibold">{kodes.length} shieldtag — akan membuat {kodes.length} record</p>
+      )}
+    </div>
+  )
+}
+
 export default function BuybackClient({ initialList, userRole, userName }: Props) {
   const [list, setList] = useState<any[]>(initialList)
   const [showForm, setShowForm] = useState(false)
@@ -84,8 +207,8 @@ export default function BuybackClient({ initialList, userRole, userName }: Props
             <RotateCcw size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-[16px] font-semibold text-slate-900">Buyback</h1>
-            <p className="text-[12px] text-slate-400">Terima buyback, inspeksi, dan tentukan tindakan</p>
+            <h1 className="text-[16px] font-semibold text-slate-900">Buyback / Barang Masuk</h1>
+            <p className="text-[12px] text-slate-400">Terima buyback atau input barang masuk, lalu tentukan tindakan</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -100,16 +223,16 @@ export default function BuybackClient({ initialList, userRole, userName }: Props
           </button>
           <button onClick={() => setShowForm(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px] font-semibold text-white transition-all bg-violet-600 hover:bg-violet-700">
-            <Plus size={14} /> Terima Buyback
+            <Plus size={14} /> Tambah Barang Masuk
           </button>
         </div>
       </div>
 
       {/* Panduan flow */}
       <div className="bg-slate-50 rounded-xl px-5 py-4 border border-slate-200">
-        <p className="text-[12px] font-semibold text-slate-500 mb-2">Flow Buyback (PRD v5)</p>
+        <p className="text-[12px] font-semibold text-slate-500 mb-2">Alur Buyback / Barang Masuk</p>
         <div className="flex items-center gap-2 flex-wrap text-[12px] text-slate-400">
-          {['Terima Buyback', '→', 'Inspeksi', '→', ['Siap Jual','Repair','Holding Reject','Lebur']].map((step, i) =>
+          {['Input Barang', '→', 'Pending Inspeksi', '→', ['Siap Jual','Repair','Holding Reject','Lebur']].map((step, i) =>
             Array.isArray(step) ? (
               <span key={i} className="flex gap-1 flex-wrap">
                 {step.map(s => <span key={s} className="px-2 py-0.5 bg-white rounded-full border border-slate-200 text-[10px] font-semibold">{s}</span>)}
@@ -119,7 +242,6 @@ export default function BuybackClient({ initialList, userRole, userName }: Props
         </div>
       </div>
 
-      {/* Form tambah */}
       {showForm && (
         <BuybackForm
           userName={userName}
@@ -128,7 +250,6 @@ export default function BuybackClient({ initialList, userRole, userName }: Props
         />
       )}
 
-      {/* Form edit */}
       {editTarget && (
         <BuybackForm
           userName={userName}
@@ -138,11 +259,10 @@ export default function BuybackClient({ initialList, userRole, userName }: Props
         />
       )}
 
-      {/* List */}
       <div className="space-y-3">
         {list.length === 0 ? (
           <div className="bg-white rounded-xl border border-slate-200 py-16 text-center text-slate-300 text-[13px]">
-            Belum ada data buyback
+            Belum ada data
           </div>
         ) : list.map(b => (
           <BuybackCard
@@ -162,7 +282,7 @@ export default function BuybackClient({ initialList, userRole, userName }: Props
   )
 }
 
-// ─── Form terima / edit buyback ───────────────────────────────────────────────
+// ─── Form tambah / edit ────────────────────────────────────────────────────────
 function BuybackForm({ userName, initial, onClose, onSaved }: {
   userName: string; initial?: any; onClose: () => void; onSaved: () => void
 }) {
@@ -171,18 +291,21 @@ function BuybackForm({ userName, initial, onClose, onSaved }: {
     tanggal: initial?.tanggal ?? new Date().toISOString().split('T')[0],
     namaCustomer: initial?.nama_customer ?? '',
     hpCustomer: initial?.hp_customer ?? '',
-    shieldtagKode: initial?.shieldtag_kode ?? '',
     gramasi: initial?.gramasi ?? '1',
     kondisiEmas: initial?.kondisi_emas ?? 'bagus',
     kondisiTag: initial?.kondisi_tag ?? 'bagus',
-    hasilInspeksi: 'ready_resell',
     hargaBeli: initial?.harga_beli ? String(initial.harga_beli) : '',
     catatan: initial?.catatan ?? '',
+    // edit mode: single shieldtag field
+    shieldtagKode: initial?.shieldtag_kode ?? '',
   })
+  const [kodes, setKodes] = useState<string[]>(
+    !isEdit && initial?.shieldtag_kode ? [initial.shieldtag_kode] : []
+  )
   const [fotos, setFotos] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
-  const [done, setDone] = useState('')
+  const [doneCount, setDoneCount] = useState(0)
 
   const set = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
 
@@ -194,7 +317,6 @@ function BuybackForm({ userName, initial, onClose, onSaved }: {
   }
 
   async function handleSave() {
-    if (!form.namaCustomer) { setErr('Nama customer wajib diisi'); return }
     setSaving(true); setErr('')
     if (isEdit) {
       const res = await editBuyback(initial.id, {
@@ -206,22 +328,30 @@ function BuybackForm({ userName, initial, onClose, onSaved }: {
       onSaved()
     } else {
       const res = await createBuyback({
-        ...form,
+        tanggal: form.tanggal,
+        namaCustomer: form.namaCustomer || undefined,
+        hpCustomer: form.hpCustomer || undefined,
+        shieldtagKodes: kodes,
+        gramasi: form.gramasi,
+        kondisiEmas: form.kondisiEmas,
+        kondisiTag: form.kondisiTag,
         hargaBeli: parseInt(form.hargaBeli) || 0,
         fotosB64: fotos,
-        userName,
+        catatan: form.catatan,
       })
       setSaving(false)
       if (!res.success) { setErr(res.error ?? 'Gagal'); return }
-      setDone(res.kode ?? '')
+      setDoneCount(res.count ?? 1)
     }
   }
 
-  if (done) return (
+  if (doneCount > 0) return (
     <div className="bg-white rounded-xl border border-slate-200 p-8 text-center space-y-3">
       <CheckCircle2 size={40} className="mx-auto text-emerald-500" />
-      <p className="font-semibold text-slate-800">Buyback Diterima</p>
-      <p className="text-[13px] font-mono text-slate-500">{done}</p>
+      <p className="font-semibold text-slate-800">
+        {doneCount > 1 ? `${doneCount} item berhasil ditambahkan` : 'Barang Masuk Diterima'}
+      </p>
+      <p className="text-[12px] text-slate-400">Status: Pending Inspeksi</p>
       <button onClick={onSaved} className="px-6 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors">
         Selesai
       </button>
@@ -231,33 +361,36 @@ function BuybackForm({ userName, initial, onClose, onSaved }: {
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h2 className="font-bold text-slate-800">{isEdit ? 'Edit Buyback' : 'Terima Buyback Baru'}</h2>
+        <div>
+          <h2 className="font-bold text-slate-800">{isEdit ? 'Edit Buyback' : 'Tambah Buyback / Barang Masuk'}</h2>
+          {!isEdit && <p className="text-[12px] text-slate-400 mt-0.5">Tindakan inspeksi ditentukan setelah penyimpanan</p>}
+        </div>
         <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"><X size={16} /></button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <F label="Tanggal Buyback" req>
-          <input type="date" value={form.tanggal} onChange={e => set('tanggal', e.target.value)} className={inp} required />
+        <F label="Tanggal" req>
+          <input type="date" value={form.tanggal} onChange={e => set('tanggal', e.target.value)} className={inp} />
         </F>
         <div />
-        <F label="Nama Customer" req>
+        <F label="Nama Customer">
           <input value={form.namaCustomer} onChange={e => set('namaCustomer', e.target.value)}
-            className={inp} placeholder="Nama lengkap customer" />
+            className={inp} placeholder="Opsional" />
         </F>
         <F label="No. HP">
           <input value={form.hpCustomer} onChange={e => set('hpCustomer', e.target.value)}
-            className={inp} placeholder="08xx-xxxx-xxxx" />
+            className={inp} placeholder="Opsional" />
         </F>
-        <F label="Kode Shieldtag">
-          <input value={form.shieldtagKode} onChange={e => set('shieldtagKode', e.target.value.toUpperCase())}
-            className={cn(inp, 'font-mono')} placeholder="Misal: 1H80AA" />
-        </F>
-        <F label="Gramasi">
+        <F label="Gramasi" req>
           <select value={form.gramasi} onChange={e => set('gramasi', e.target.value)} className={inp}>
             {GRAMASI_OPTIONS.map(g => <option key={g} value={g}>{g} gr</option>)}
           </select>
         </F>
-        <F label="Kondisi Emas">
+        <F label="Harga Beli Kembali (Rp)">
+          <input type="number" value={form.hargaBeli} onChange={e => set('hargaBeli', e.target.value)}
+            className={inp} placeholder="0" min={0} />
+        </F>
+        <F label="Kondisi Emas" req>
           <select value={form.kondisiEmas} onChange={e => set('kondisiEmas', e.target.value)} className={inp}>
             <option value="bagus">Bagus</option>
             <option value="rusak_ringan">Rusak Ringan</option>
@@ -271,64 +404,70 @@ function BuybackForm({ userName, initial, onClose, onSaved }: {
             <option value="hilang">Hilang</option>
           </select>
         </F>
-        {!isEdit && (
-          <F label="Hasil Inspeksi" req>
-            <select value={form.hasilInspeksi} onChange={e => set('hasilInspeksi', e.target.value)} className={inp}>
-              <option value="ready_resell">Siap Jual Lagi</option>
-              <option value="repair">Perlu Repair</option>
-              <option value="reject">Holding Reject</option>
-              <option value="lebur">Akan Dilebur</option>
-            </select>
-          </F>
-        )}
-        <F label="Harga Beli Kembali (Rp)">
-          <input type="number" value={form.hargaBeli} onChange={e => set('hargaBeli', e.target.value)}
-            className={inp} placeholder="0" min={0} />
-        </F>
       </div>
 
-      {!isEdit && <F label="Foto Kondisi Barang">
-        <div className="flex gap-2 flex-wrap">
-          {fotos.map((f, i) => (
-            <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200">
-              <img src={f} alt="" className="w-full h-full object-cover" />
-              <button onClick={() => setFotos(p => p.filter((_, j) => j !== i))}
-                className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center">
-                <X size={10} />
-              </button>
-            </div>
-          ))}
-          {fotos.length < 5 && (
-            <label className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center cursor-pointer hover:border-violet-300 transition-colors">
-              <Camera size={18} className="text-slate-300" />
-              <input type="file" accept="image/*" multiple className="hidden" onChange={handleFotos} />
-            </label>
-          )}
-        </div>
-      </F>}
+      {/* Shieldtag input — single for edit, multi for create */}
+      {isEdit ? (
+        <F label="Kode Shieldtag">
+          <input value={form.shieldtagKode} onChange={e => set('shieldtagKode', e.target.value.toUpperCase())}
+            className={cn(inp, 'font-mono')} placeholder="Opsional" />
+        </F>
+      ) : (
+        <F label="Kode Shieldtag">
+          <ShieldtagInput kodes={kodes} onChange={setKodes} />
+        </F>
+      )}
+
+      {!isEdit && (
+        <F label="Foto Kondisi Barang">
+          <div className="flex gap-2 flex-wrap">
+            {fotos.map((f, i) => (
+              <div key={i} className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200">
+                <img src={f} alt="" className="w-full h-full object-cover" />
+                <button type="button" onClick={() => setFotos(p => p.filter((_, j) => j !== i))}
+                  className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center">
+                  <X size={10} />
+                </button>
+              </div>
+            ))}
+            {fotos.length < 5 && (
+              <label className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center cursor-pointer hover:border-violet-300 transition-colors">
+                <Camera size={18} className="text-slate-300" />
+                <input type="file" accept="image/*" multiple className="hidden" onChange={handleFotos} />
+              </label>
+            )}
+          </div>
+        </F>
+      )}
 
       <F label="Catatan">
         <textarea value={form.catatan} onChange={e => set('catatan', e.target.value)}
-          className={cn(inp, 'resize-none')} rows={2} placeholder="Keterangan tambahan" />
+          className={cn(inp, 'resize-none h-auto')} rows={2} placeholder="Keterangan tambahan" />
       </F>
 
       {err && <p className="text-[12px] text-red-600 bg-red-50 rounded-lg px-3 py-2">{err}</p>}
 
       <div className="flex gap-2.5">
-        <button onClick={onClose}
+        <button type="button" onClick={onClose}
           className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">
           Batal
         </button>
-        <button onClick={handleSave} disabled={saving}
+        <button type="button" onClick={handleSave} disabled={saving}
           className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
-          {saving ? 'Menyimpan…' : isEdit ? 'Simpan Perubahan' : 'Simpan Buyback'}
+          {saving
+            ? 'Menyimpan…'
+            : isEdit
+            ? 'Simpan Perubahan'
+            : kodes.length > 1
+            ? `Simpan ${kodes.length} Item`
+            : 'Simpan'}
         </button>
       </div>
     </div>
   )
 }
 
-// ─── Card item buyback ─────────────────────────────────────────────────────────
+// ─── Card ──────────────────────────────────────────────────────────────────────
 function BuybackCard({ buyback: b, expanded, onToggle, canProses, canDelete, userName, onUpdated, onEdit }: {
   buyback: any; expanded: boolean; onToggle: () => void
   canProses: boolean; canDelete: boolean; userName: string
@@ -368,7 +507,9 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, canDelete, use
           </div>
           <div>
             <p className="font-mono text-[13px] font-semibold text-slate-800">{b.kode}</p>
-            <p className="text-[12px] text-slate-400">{b.nama_customer} • {formatDate(b.tanggal)}</p>
+            <p className="text-[12px] text-slate-400">
+              {b.nama_customer ? `${b.nama_customer} · ` : ''}{formatDate(b.tanggal)}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -399,7 +540,6 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, canDelete, use
           {expanded ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
         </div>
 
-        {/* Konfirmasi hapus */}
         {confirmDelete && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={e => e.stopPropagation()}>
             <div className="bg-white rounded-2xl shadow-2xl p-5 w-full max-w-sm space-y-4">
@@ -409,8 +549,10 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, canDelete, use
                 </div>
                 <div>
                   <p className="text-[14px] font-semibold text-slate-900">Hapus Buyback?</p>
-                  <p className="text-[12px] text-slate-500 mt-0.5">{b.kode} · {b.nama_customer}</p>
-                  <p className="text-[12px] text-red-500 mt-1">Shieldtag akan dikembalikan ke status Terjual.</p>
+                  <p className="text-[12px] text-slate-500 mt-0.5">{b.kode}{b.nama_customer ? ` · ${b.nama_customer}` : ''}</p>
+                  {b.shieldtag_kode && (
+                    <p className="text-[12px] text-red-500 mt-1">Shieldtag akan dikembalikan ke status Terjual.</p>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2">
@@ -439,7 +581,7 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, canDelete, use
 
           {(b.foto ?? []).length > 0 && (
             <div className="flex gap-2 flex-wrap">
-              {(b.foto as string[]).map((url, i) => (
+              {(b.foto as string[]).map((url: string, i: number) => (
                 <img key={i} src={url} alt="" className="w-20 h-20 rounded-xl object-cover border border-slate-200" />
               ))}
             </div>
@@ -455,10 +597,9 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, canDelete, use
             <p className="text-[12px] text-slate-400">Diproses oleh <span className="font-semibold">{b.approved_by}</span></p>
           )}
 
-          {/* Panel proses jika masih pending */}
-          {b.status === 'pending' && canProses && (
+          {isPending && canProses && (
             <div className="rounded-lg px-3 py-3 bg-violet-50 border border-violet-100 space-y-3">
-              <p className="text-[12px] font-semibold text-violet-700">Tentukan Tindakan Buyback</p>
+              <p className="text-[12px] font-semibold text-violet-700">Tentukan Tindakan</p>
               <select value={aksi} onChange={e => setAksi(e.target.value)}
                 className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all">
                 <option value="">-- Pilih tindakan --</option>
@@ -467,6 +608,11 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, canDelete, use
                 <option value="reject">⛔ Holding Reject — Masuk Karantina</option>
                 <option value="lebur">🔥 Lebur — Masuk Karantina (Akan Dilebur)</option>
               </select>
+              {aksi === 'ready_resell' && !b.shieldtag_kode && (
+                <p className="text-[11px] text-amber-700 bg-amber-50 rounded-lg px-3 py-1.5">
+                  Barang ini tidak punya shieldtag — tidak akan masuk inventory. Pastikan ini disengaja.
+                </p>
+              )}
               {aksi === 'ready_resell' && b.shieldtag_kode && (
                 <p className="text-[11px] text-emerald-700 bg-emerald-50 rounded-lg px-3 py-1.5">
                   Shieldtag <span className="font-mono font-semibold">{b.shieldtag_kode}</span> akan kembali ke <strong>Aktif di Gudang Pusat</strong> — Inventory otomatis bertambah.
@@ -474,7 +620,7 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, canDelete, use
               )}
               {aksi && aksi !== 'ready_resell' && b.shieldtag_kode && (
                 <p className="text-[11px] text-amber-700 bg-amber-50 rounded-lg px-3 py-1.5">
-                  Shieldtag <span className="font-mono font-semibold">{b.shieldtag_kode}</span> akan masuk <strong>Karantina</strong> — tidak masuk stok sampai ada keputusan lanjut.
+                  Shieldtag <span className="font-mono font-semibold">{b.shieldtag_kode}</span> akan masuk <strong>Karantina</strong> — tidak masuk stok.
                 </p>
               )}
               <textarea value={catatan} onChange={e => setCatatan(e.target.value)}

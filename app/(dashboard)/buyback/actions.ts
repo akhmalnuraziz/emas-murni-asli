@@ -1,4 +1,4 @@
-﻿'use server'
+'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
@@ -33,18 +33,16 @@ async function uploadBase64Fotos(supabase: any, b64Array: string[], prefix: stri
 
 export async function createBuyback(params: {
   tanggal?: string
-  namaCustomer: string
-  hpCustomer: string
-  shieldtagKode: string
+  namaCustomer?: string
+  hpCustomer?: string
+  shieldtagKodes: string[]  // empty array = no shieldtag
   gramasi: string
   kondisiEmas: string
   kondisiTag: string
-  hasilInspeksi: string
   hargaBeli: number
   fotosB64: string[]
   catatan: string
-  userName?: string
-}): Promise<{ success: boolean; error?: string; kode?: string }> {
+}): Promise<{ success: boolean; error?: string; count?: number }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Unauthorized' }
@@ -52,53 +50,53 @@ export async function createBuyback(params: {
   const userName = profile?.name ?? 'Unknown'
 
   try {
-    const kode = await generateBuybackCode(supabase)
+    const kode0 = await generateBuybackCode(supabase)
     const fotoUrls = params.fotosB64.length
-      ? await uploadBase64Fotos(supabase, params.fotosB64, kode)
+      ? await uploadBase64Fotos(supabase, params.fotosB64, kode0)
       : []
 
-    const { error } = await supabase.from('buyback').insert({
-      kode,
-      tanggal: params.tanggal || new Date().toISOString().slice(0, 10),
-      nama_customer: params.namaCustomer,
-      hp_customer: params.hpCustomer || null,
-      shieldtag_kode: params.shieldtagKode || null,
-      gramasi: params.gramasi || null,
-      kondisi_emas: params.kondisiEmas,
-      kondisi_tag: params.kondisiTag,
-      hasil_inspeksi: params.hasilInspeksi,
-      harga_beli: params.hargaBeli,
-      foto: fotoUrls.length ? fotoUrls : null,
-      catatan: params.catatan || null,
-      status: 'pending',
-      created_by: user.id,
-    })
+    const tanggal = params.tanggal || new Date().toISOString().slice(0, 10)
+    const targets = params.shieldtagKodes.length ? params.shieldtagKodes : [null]
 
-    if (error) return { success: false, error: error.message }
+    for (let i = 0; i < targets.length; i++) {
+      const stKode = targets[i]
+      const kode = i === 0 ? kode0 : await generateBuybackCode(supabase)
 
-    if (params.shieldtagKode) {
-      await supabase.from('shieldtag').update({ status: 'RETURNED' }).eq('kode', params.shieldtagKode)
+      const { error } = await supabase.from('buyback').insert({
+        kode,
+        tanggal,
+        nama_customer: params.namaCustomer || null,
+        hp_customer: params.hpCustomer || null,
+        shieldtag_kode: stKode,
+        gramasi: params.gramasi || null,
+        kondisi_emas: params.kondisiEmas,
+        kondisi_tag: params.kondisiTag,
+        harga_beli: params.hargaBeli,
+        foto: i === 0 && fotoUrls.length ? fotoUrls : null,
+        catatan: params.catatan || null,
+        status: 'pending',
+        created_by: user.id,
+      })
+      if (error) return { success: false, error: error.message }
+
+      if (stKode) {
+        await supabase.from('shieldtag').update({ status: 'RETURNED' }).eq('kode', stKode)
+      }
     }
 
-    supabase.from('audit_log').insert({
-      user_id: user.id,
-      user_name: userName,
-      action: 'CREATE',
-      module: 'buyback',
-      record_key: kode,
-      after_data: { nama_customer: params.namaCustomer, hasil_inspeksi: params.hasilInspeksi },
-    })
-
+    const label = params.namaCustomer
+      ? `${params.namaCustomer} · ${params.gramasi}gr`
+      : `${targets.length}x ${params.gramasi}gr`
     createNotif({
-      judul: `Buyback Baru: ${kode}`,
-      pesan: `${params.namaCustomer} · ${params.gramasi}gr · Rp${params.hargaBeli.toLocaleString('id-ID')}`,
+      judul: `Buyback/Barang Masuk: ${kode0}`,
+      pesan: label,
       tipe: 'info',
       link: '/buyback',
       untuk_role: ['owner', 'manager', 'spv'],
     })
 
     revalidatePath('/buyback')
-    return { success: true, kode }
+    return { success: true, count: targets.length }
   } catch (e: any) {
     return { success: false, error: e.message }
   }
@@ -126,7 +124,6 @@ export async function prossesBuyback(params: {
     lebur: 'akan_dilebur',
   }
 
-  // Ambil shieldtag_kode + gramasi dari record buyback
   const { data: bbRecord } = await supabase.from('buyback')
     .select('shieldtag_kode, gramasi').eq('id', params.id).single()
 
@@ -140,11 +137,9 @@ export async function prossesBuyback(params: {
 
   if (error) return { success: false, error: error.message }
 
-  // Sync shieldtag berdasarkan keputusan
   if (bbRecord?.shieldtag_kode) {
     const kode = bbRecord.shieldtag_kode
     if (params.aksi === 'ready_resell') {
-      // Kondisi BAGUS — kembali ke stok gudang, inventory otomatis bertambah
       // ponytail: upsert bukan update — shieldtag buyback lama mungkin belum terdaftar di tabel
       await supabase.from('shieldtag')
         .upsert({
@@ -156,7 +151,6 @@ export async function prossesBuyback(params: {
           registered_by: userName,
         }, { onConflict: 'kode' })
     } else {
-      // REJECT / repair / lebur — masuk Karantina, tidak masuk stok
       const lokasiMap: Record<string, string> = {
         repair: 'Buyback — Repair',
         reject: 'Buyback — Karantina',
@@ -192,8 +186,8 @@ export async function prossesBuyback(params: {
 
 export async function editBuyback(id: number, params: {
   tanggal?: string
-  namaCustomer: string
-  hpCustomer: string
+  namaCustomer?: string
+  hpCustomer?: string
   shieldtagKode: string
   gramasi: string
   kondisiEmas: string
@@ -205,13 +199,11 @@ export async function editBuyback(id: number, params: {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Unauthorized' }
 
-  // Hanya boleh edit jika masih pending
   const { data: existing } = await supabase.from('buyback')
     .select('status, shieldtag_kode').eq('id', id).single()
   if (!existing) return { success: false, error: 'Data tidak ditemukan' }
   if (existing.status !== 'pending') return { success: false, error: 'Hanya buyback pending yang bisa diedit' }
 
-  // Kalau shieldtag berubah — restore lama, set baru
   const oldKode = existing.shieldtag_kode
   const newKode = params.shieldtagKode || null
   if (oldKode && oldKode !== newKode) {
@@ -223,7 +215,7 @@ export async function editBuyback(id: number, params: {
 
   const { error } = await supabase.from('buyback').update({
     tanggal: params.tanggal || undefined,
-    nama_customer: params.namaCustomer,
+    nama_customer: params.namaCustomer || null,
     hp_customer: params.hpCustomer || null,
     shieldtag_kode: newKode,
     gramasi: params.gramasi || null,
@@ -250,7 +242,6 @@ export async function deleteBuyback(id: number): Promise<{ success: boolean; err
   if (!existing) return { success: false, error: 'Data tidak ditemukan' }
   if (existing.status !== 'pending') return { success: false, error: 'Hanya buyback pending yang bisa dihapus' }
 
-  // Restore shieldtag ke Terjual (status sebelum buyback)
   if (existing.shieldtag_kode) {
     await supabase.from('shieldtag')
       .update({ status: 'Terjual' })
