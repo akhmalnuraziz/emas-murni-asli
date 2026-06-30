@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useMemo } from 'react'
 import { useRealtimeRefresh } from '@/lib/supabase/use-realtime-refresh'
 import { toast } from 'sonner'
-import { Plus, X, Check, ChevronDown, ChevronUp, Trash2, ClipboardList } from 'lucide-react'
+import { Plus, X, Check, ChevronDown, ChevronUp, Trash2, ClipboardList, Search, Pencil } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
-import { createPO, updateStatusPO, updateQtyDikirim, deletePO } from '@/app/(dashboard)/po-cabang/actions'
+import { createPO, editPO, updateStatusPO, updateQtyDikirim, deletePO } from '@/app/(dashboard)/po-cabang/actions'
 import { konfirmasiTerimaPoItem } from '@/app/(dashboard)/stok-cabang/actions'
 import PaginationBar from '@/components/ui/pagination-bar'
 
@@ -15,7 +15,7 @@ const today = new Date().toISOString().split('T')[0]
 
 const STATUS_CFG: Record<string, { label: string; bg: string; text: string }> = {
   menunggu:  { label: 'Menunggu',  bg: 'rgba(245,158,11,0.1)',  text: '#D97706' },
-  pending:   { label: 'Menunggu',  bg: 'rgba(245,158,11,0.1)',  text: '#D97706' }, // legacy fallback
+  pending:   { label: 'Menunggu',  bg: 'rgba(245,158,11,0.1)',  text: '#D97706' },
   diproses:  { label: 'Diproses',  bg: 'rgba(59,130,246,0.1)',  text: '#2563EB' },
   partial:   { label: 'Sebagian',  bg: 'rgba(249,115,22,0.1)',  text: '#EA580C' },
   selesai:   { label: 'Selesai',   bg: 'rgba(34,197,94,0.1)',   text: '#16A34A' },
@@ -24,6 +24,8 @@ const STATUS_CFG: Record<string, { label: string; bg: string; text: string }> = 
 
 interface PoItem { id: number; produk_nama: string; gramasi: string; qty_diminta: number; qty_dikirim: number | null; qty_diterima: number | null; diterima_by: string | null; catatan_item: string | null }
 interface Po { id: number; kode: string; cabang_kode: string; cabang_nama: string; tanggal: string; status: string; catatan: string | null; catatan_admin: string | null; created_at: string; items: PoItem[] }
+
+type TabFilter = 'semua' | 'diproses' | 'selesai' | 'ditolak'
 
 export default function PoCabangClient({
   poList, cabangList, userRole, userName, page = 1, total = 0, pageSize = 20,
@@ -34,8 +36,10 @@ export default function PoCabangClient({
   useRealtimeRefresh(['po_cabang','po_cabang_item'])
   const [isPending, start] = useTransition()
   const [showCreate, setShowCreate] = useState(false)
+  const [editTarget, setEditTarget] = useState<Po | null>(null)
   const [expanded, setExpanded] = useState<number | null>(null)
-  const [err, setErr] = useState('')
+  const [search, setSearch] = useState('')
+  const [tab, setTab] = useState<TabFilter>('semua')
 
   const canApprove = ['owner', 'admin_pusat', 'spv'].includes(userRole)
   const canDelete  = ['owner', 'admin_pusat'].includes(userRole)
@@ -58,10 +62,34 @@ export default function PoCabangClient({
   }
 
   const counts = {
-    pending:  poList.filter(p => p.status === 'menunggu' || p.status === 'pending').length,
-    diproses: poList.filter(p => p.status === 'diproses').length,
+    semua:    poList.length,
+    diproses: poList.filter(p => p.status === 'diproses' || p.status === 'menunggu' || p.status === 'pending').length,
     selesai:  poList.filter(p => p.status === 'selesai').length,
+    ditolak:  poList.filter(p => p.status === 'ditolak').length,
   }
+
+  const displayed = useMemo(() => {
+    let list = poList
+    if (tab === 'diproses') list = list.filter(p => ['diproses','menunggu','pending'].includes(p.status))
+    else if (tab === 'selesai') list = list.filter(p => p.status === 'selesai')
+    else if (tab === 'ditolak') list = list.filter(p => p.status === 'ditolak')
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      list = list.filter(p =>
+        p.kode.toLowerCase().includes(q) ||
+        p.cabang_nama.toLowerCase().includes(q) ||
+        p.items.some(it => it.gramasi.includes(q))
+      )
+    }
+    return list
+  }, [poList, tab, search])
+
+  const TABS: { key: TabFilter; label: string; count: number }[] = [
+    { key: 'semua',    label: 'Semua',    count: counts.semua    },
+    { key: 'diproses', label: 'Diproses', count: counts.diproses },
+    { key: 'selesai',  label: 'Selesai',  count: counts.selesai  },
+    { key: 'ditolak',  label: 'Ditolak',  count: counts.ditolak  },
+  ]
 
   return (
     <div className="space-y-5">
@@ -74,50 +102,104 @@ export default function PoCabangClient({
           <div>
             <h1 className="text-[16px] font-semibold text-slate-900">PO Cabang</h1>
             <p className="text-[12px] text-slate-400">
-              {counts.pending} pending · {counts.diproses} diproses · {counts.selesai} selesai
+              {counts.diproses} diproses · {counts.selesai} selesai
             </p>
           </div>
         </div>
-        <button onClick={() => { setShowCreate(true); setErr('') }}
+        <button onClick={() => setShowCreate(true)}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-white bg-sky-500 hover:bg-sky-600">
           <Plus size={15} /> Buat PO
         </button>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-1.5 flex-wrap">
+        {TABS.map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)}
+            className={`h-8 px-3 rounded-lg text-[12px] font-semibold transition-colors ${
+              tab === t.key
+                ? 'bg-sky-500 text-white'
+                : 'bg-white border border-slate-200 text-slate-500 hover:bg-sky-50 hover:text-sky-600'
+            }`}>
+            {t.label}
+            {t.count > 0 && (
+              <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${
+                tab === t.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+              }`}>{t.count}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+        <input value={search} onChange={e => setSearch(e.target.value)}
+          placeholder="Cari kode PO, cabang, atau gramasi..."
+          className="w-full h-9 pl-8 pr-8 text-[12px] border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-sky-300/40" />
+        {search && (
+          <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+            <X size={12} />
+          </button>
+        )}
+      </div>
+
       {/* PO list */}
       <div className="space-y-3">
-        {poList.length === 0 && (
-          <div className="bg-white border border-slate-200 rounded-xl py-16 text-center"
-            >
+        {displayed.length === 0 && (
+          <div className="bg-white border border-slate-200 rounded-xl py-16 text-center">
             <ClipboardList size={32} className="mx-auto text-slate-200 mb-2" />
-            <p className="text-slate-300 text-[13px]">Belum ada PO. Buat PO baru dari tombol di atas.</p>
+            <p className="text-slate-300 text-[13px]">
+              {search ? `Tidak ada PO cocok dengan "${search}"` : 'Belum ada PO.'}
+            </p>
           </div>
         )}
         <PaginationBar page={page} total={total} pageSize={pageSize} label="PO" />
-        {poList.map(po => {
+        {displayed.map(po => {
           const cfg = STATUS_CFG[po.status] ?? STATUS_CFG.pending
           const isOpen = expanded === po.id
           const totalDiminta = po.items.reduce((s, it) => s + it.qty_diminta, 0)
           const totalDikirim = po.items.reduce((s, it) => s + (it.qty_dikirim ?? 0), 0)
+          const canEdit = po.status !== 'selesai' && po.status !== 'ditolak'
           return (
-            <div key={po.id} className="rounded-xl overflow-hidden"
-              >
-              <button onClick={() => setExpanded(isOpen ? null : po.id)}
-                className="w-full px-5 py-4 flex items-center gap-4 text-left hover:bg-slate-50/30 transition-colors">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono font-semibold text-[13px] text-sky-700">{po.kode}</span>
-                    <span className="text-[12px] font-semibold px-2.5 py-0.5 rounded-full"
-                      style={{ background: cfg.bg, color: cfg.text }}>{cfg.label}</span>
+            <div key={po.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+              <div className="px-5 py-4 flex items-center gap-4">
+                {/* Expand toggle */}
+                <button onClick={() => setExpanded(isOpen ? null : po.id)}
+                  className="flex-1 flex items-center gap-4 text-left hover:bg-slate-50/50 -mx-5 px-5 -my-4 py-4 transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono font-semibold text-[13px] text-sky-700">{po.kode}</span>
+                      <span className="text-[12px] font-semibold px-2.5 py-0.5 rounded-full"
+                        style={{ background: cfg.bg, color: cfg.text }}>{cfg.label}</span>
+                    </div>
+                    <p className="text-[13px] font-semibold text-slate-700 mt-0.5">{po.cabang_nama}</p>
+                    <p className="text-[12px] text-slate-400">{formatDate(po.tanggal)} · {po.items.length} item · {totalDiminta} pcs diminta</p>
                   </div>
-                  <p className="text-[13px] font-semibold text-slate-700 mt-0.5">{po.cabang_nama}</p>
-                  <p className="text-[12px] text-slate-400">{formatDate(po.tanggal)} · {po.items.length} item · {totalDiminta} pcs diminta</p>
-                </div>
-                {isOpen ? <ChevronUp size={16} className="text-slate-400 flex-shrink-0" /> : <ChevronDown size={16} className="text-slate-400 flex-shrink-0" />}
-              </button>
+                  {isOpen ? <ChevronUp size={16} className="text-slate-400 flex-shrink-0" /> : <ChevronDown size={16} className="text-slate-400 flex-shrink-0" />}
+                </button>
+
+                {/* Action buttons — always visible */}
+                {canEdit && (
+                  <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                    <button onClick={() => setEditTarget(po)}
+                      className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-sky-50 hover:text-sky-600 flex items-center justify-center text-slate-400 transition-colors"
+                      title="Edit PO">
+                      <Pencil size={13} />
+                    </button>
+                    {canDelete && (
+                      <button onClick={() => handleDelete(po.id)} disabled={isPending}
+                        className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-red-50 hover:text-red-500 flex items-center justify-center text-slate-400 transition-colors"
+                        title="Hapus PO">
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {isOpen && (
-                <div className="px-5 pb-5 pt-1 border-t border-slate-50 space-y-4">
+                <div className="px-5 pb-5 pt-1 border-t border-slate-100 space-y-4">
                   {/* Items table */}
                   <div className="rounded-xl overflow-hidden border border-slate-200">
                     <table className="w-full text-[13px]">
@@ -132,7 +214,6 @@ export default function PoCabangClient({
                         {po.items.map((it, i) => {
                           const diterima = it.qty_diterima ?? 0
                           const dikirim  = it.qty_dikirim ?? 0
-                          const sisaKonfirmasi = Math.max(0, dikirim - diterima)
                           return (
                             <tr key={it.id} className={i % 2 === 0 ? '' : 'bg-slate-50/30'}>
                               <td className="px-3 py-2 text-slate-700 font-medium">{it.produk_nama}</td>
@@ -179,7 +260,6 @@ export default function PoCabangClient({
                     </table>
                   </div>
 
-                  {/* Notes */}
                   {po.catatan && (
                     <p className="text-[12px] text-slate-500 bg-slate-50 rounded-xl px-4 py-2">
                       <span className="font-semibold">Catatan: </span>{po.catatan}
@@ -191,33 +271,13 @@ export default function PoCabangClient({
                     </p>
                   )}
 
-                  {/* Actions */}
-                  {canApprove && (
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {(po.status === 'menunggu' || po.status === 'pending') && (
-                        <>
-                          <button onClick={() => handleUpdateStatus(po.id, 'diproses')} disabled={isPending}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold text-white bg-blue-500 hover:bg-blue-600">
-                            <Check size={12} /> Proses
-                          </button>
-                          <button onClick={() => handleUpdateStatus(po.id, 'ditolak', 'Ditolak oleh admin')} disabled={isPending}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-colors">
-                            <X size={12} /> Tolak
-                          </button>
-                        </>
-                      )}
-                      {po.status === 'diproses' && (
-                        <button onClick={() => handleUpdateStatus(po.id, 'selesai')} disabled={isPending}
-                          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold text-white bg-emerald-500 hover:bg-emerald-600">
-                          <Check size={12} /> Tandai Selesai
-                        </button>
-                      )}
-                      {canDelete && po.status !== 'selesai' && (
-                        <button onClick={() => handleDelete(po.id)} disabled={isPending}
-                          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors ml-auto">
-                          <Trash2 size={12} /> Hapus
-                        </button>
-                      )}
+                  {/* Hanya tolak masih tersedia — selesai otomatis dari mutasi */}
+                  {canApprove && po.status === 'diproses' && (
+                    <div className="flex gap-2">
+                      <button onClick={() => handleUpdateStatus(po.id, 'ditolak', 'Ditolak oleh admin')} disabled={isPending}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12px] font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-colors">
+                        <X size={12} /> Tolak PO
+                      </button>
                     </div>
                   )}
                 </div>
@@ -230,10 +290,20 @@ export default function PoCabangClient({
 
       {/* Create modal */}
       {showCreate && (
-        <CreatePoModal
+        <PoModal
           cabangList={cabangList}
           onClose={() => setShowCreate(false)}
-          onCreated={(kode) => { toast.success(`PO ${kode} dibuat`); setShowCreate(false) }}
+          onSaved={(kode) => { toast.success(`PO ${kode} dibuat — langsung diproses`); setShowCreate(false) }}
+        />
+      )}
+
+      {/* Edit modal */}
+      {editTarget && (
+        <PoModal
+          cabangList={cabangList}
+          initial={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSaved={() => { toast.success('PO berhasil diubah'); setEditTarget(null) }}
         />
       )}
     </div>
@@ -286,22 +356,29 @@ function KonfirmasiTerimaInput({ itemId, poId, current, maxQty, onDone }: {
   )
 }
 
-// ── Create PO Modal ────────────────────────────────────────────────────────────
+// ── Create / Edit PO Modal ─────────────────────────────────────────────────────
 type NewItem = { produk_nama: string; gramasi: string; qty_diminta: number; catatan_item: string }
 
-function CreatePoModal({ cabangList, onClose, onCreated }: {
+function PoModal({ cabangList, initial, onClose, onSaved }: {
   cabangList: { kode: string; nama: string }[]
+  initial?: Po
   onClose: () => void
-  onCreated: (kode: string) => void
+  onSaved: (kode?: string) => void
 }) {
+  const isEdit = !!initial
   const [isPending, start] = useTransition()
   const [err, setErr] = useState('')
-  const [cabangKode, setCabangKode] = useState('')
-  const [tanggal, setTanggal] = useState(today)
-  const [catatan, setCatatan] = useState('')
-  const [items, setItems] = useState<NewItem[]>([
-    { produk_nama: '', gramasi: '1', qty_diminta: 1, catatan_item: '' }
-  ])
+  const [cabangKode, setCabangKode] = useState(initial?.cabang_kode ?? '')
+  const [tanggal, setTanggal] = useState(initial?.tanggal ?? today)
+  const [catatan, setCatatan] = useState(initial?.catatan ?? '')
+  const [items, setItems] = useState<NewItem[]>(
+    initial?.items.map(it => ({
+      produk_nama: it.produk_nama,
+      gramasi: it.gramasi,
+      qty_diminta: it.qty_diminta,
+      catatan_item: it.catatan_item ?? '',
+    })) ?? [{ produk_nama: '', gramasi: '1', qty_diminta: 1, catatan_item: '' }]
+  )
 
   const addItem = () => setItems(p => [...p, { produk_nama: '', gramasi: '1', qty_diminta: 1, catatan_item: '' }])
   const removeItem = (i: number) => setItems(p => p.filter((_, j) => j !== i))
@@ -322,9 +399,15 @@ function CreatePoModal({ cabangList, onClose, onCreated }: {
       qty_diminta: Number(it.qty_diminta),
     }))))
     start(async () => {
-      const r = await createPO(fd)
-      if (r?.error) { setErr(r.error); return }
-      onCreated(r.kode!)
+      if (isEdit) {
+        const r = await editPO(initial!.id, fd)
+        if (r?.error) { setErr(r.error); return }
+        onSaved()
+      } else {
+        const r = await createPO(fd)
+        if (r?.error) { setErr(r.error); return }
+        onSaved(r.kode!)
+      }
     })
   }
 
@@ -333,8 +416,8 @@ function CreatePoModal({ cabangList, onClose, onCreated }: {
       <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 flex-shrink-0">
           <div>
-            <h2 className="text-[15px] font-bold text-slate-900">Buat PO Baru</h2>
-            <p className="text-[11px] text-slate-400 mt-0.5">Isi detail pesanan ke cabang</p>
+            <h2 className="text-[15px] font-bold text-slate-900">{isEdit ? `Edit PO — ${initial!.kode}` : 'Buat PO Baru'}</h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">{isEdit ? 'Ubah detail PO' : 'Status langsung Diproses'}</p>
           </div>
           <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
         </div>
@@ -360,7 +443,6 @@ function CreatePoModal({ cabangList, onClose, onCreated }: {
             </div>
           </div>
 
-          {/* Items */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-[11px] font-medium text-slate-500">Item pesanan *</label>
@@ -396,9 +478,9 @@ function CreatePoModal({ cabangList, onClose, onCreated }: {
             Batal
           </button>
           <button onClick={handleSubmit} disabled={isPending}
-            className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+            className="flex-1 h-9 rounded-lg bg-sky-500 hover:bg-sky-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
             {isPending && <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-            Buat PO
+            {isEdit ? 'Simpan Perubahan' : 'Buat PO'}
           </button>
         </div>
       </div>

@@ -167,7 +167,7 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
   const [tanggal, setTanggal] = useState(new Date().toISOString().split('T')[0])
   const [noSurat, setNoSurat] = useState('')
   const [catatan, setCatatan] = useState('')
-  const [poId, setPoId] = useState<string>('')
+  const [poIds, setPoIds] = useState<Set<number>>(new Set())
   const [poList, setPoList] = useState<PoSiap[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -183,7 +183,7 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
 
   useEffect(() => {
     if (!cabang) return
-    setPoId('')
+    setPoIds(new Set())
     fetchPoCabangSiap(cabang).then(list => setPoList(list as PoSiap[]))
   }, [cabang])
 
@@ -221,7 +221,7 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
     fd.set('no_surat', noSurat)
     fd.set('catatan', catatan)
     fd.set('shieldtag_kodes', JSON.stringify([...selected]))
-    if (poId) fd.set('po_id', poId)
+    if (poIds.size > 0) fd.set('po_ids', JSON.stringify([...poIds]))
     const res = await kirimMutasiCabang(fd)
     setSubmitting(false)
     if (res.error) { setMsg({ type: 'err', text: res.error }); return }
@@ -250,14 +250,34 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
         <Field label="Catatan">
           <input value={catatan} onChange={e => setCatatan(e.target.value)} placeholder="Opsional" className={inp} />
         </Field>
-        <Field label="Link ke PO (Opsional)">
-          <select value={poId} onChange={e => setPoId(e.target.value)} className={inp}>
-            <option value="">— Tidak ada PO —</option>
-            {poList.map(po => {
-              const sisa = po.items.map(it => `${it.gramasi}gr: sisa ${it.qty_diminta - (it.qty_dikirim ?? 0)}`).join(', ')
-              return <option key={po.id} value={String(po.id)}>{po.kode} ({sisa})</option>
-            })}
-          </select>
+        <Field label="Link ke PO (Opsional — bisa pilih banyak)">
+          {poList.length === 0 ? (
+            <p className="text-[12px] text-slate-400 py-1.5">Tidak ada PO aktif untuk cabang ini</p>
+          ) : (
+            <div className="space-y-1.5 max-h-32 overflow-y-auto">
+              {poList.map(po => {
+                const checked = poIds.has(po.id)
+                const sisa = po.items.map(it => `${it.gramasi}gr ×${it.qty_diminta - (it.qty_dikirim ?? 0)}`).join(', ')
+                return (
+                  <label key={po.id} className={`flex items-start gap-2.5 p-2 rounded-lg border cursor-pointer transition-colors ${
+                    checked ? 'border-sky-400 bg-sky-50' : 'border-slate-200 hover:bg-slate-50'
+                  }`}>
+                    <input type="checkbox" checked={checked} onChange={() => {
+                      setPoIds(prev => {
+                        const next = new Set(prev)
+                        checked ? next.delete(po.id) : next.add(po.id)
+                        return next
+                      })
+                    }} className="mt-0.5 accent-sky-500" />
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-semibold font-mono text-slate-800">{po.kode}</p>
+                      <p className="text-[11px] text-slate-400">{sisa}</p>
+                    </div>
+                  </label>
+                )
+              })}
+            </div>
+          )}
         </Field>
       </div>
 

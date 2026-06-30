@@ -37,7 +37,7 @@ export async function createPO(formData: FormData) {
 
   const { data: po, error } = await supabase.from('po_cabang').insert({
     kode, cabang_kode: cabangKode, cabang_nama: cabangNama,
-    tanggal, status: 'menunggu', catatan: catatan || null,
+    tanggal, status: 'diproses', diproses_at: new Date().toISOString(), catatan: catatan || null,
     created_by: user.id,
   }).select('id').single()
   if (error) return { error: error.message }
@@ -65,6 +65,45 @@ export async function createPO(formData: FormData) {
   })
 
   return { success: true, kode }
+}
+
+export async function editPO(poId: number, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+
+  const { data: po } = await supabase.from('po_cabang').select('status').eq('id', poId).single()
+  if (po?.status === 'selesai' || po?.status === 'ditolak') return { error: 'PO ini sudah tidak bisa diedit' }
+
+  const cabangKode = formData.get('cabang_kode') as string
+  const cabangNama = formData.get('cabang_nama') as string
+  const tanggal    = formData.get('tanggal') as string
+  const catatan    = formData.get('catatan') as string | null
+  const itemsRaw   = formData.get('items') as string
+
+  if (!itemsRaw) return { error: 'Minimal satu item wajib diisi' }
+  const items: { produk_nama: string; gramasi: string; qty_diminta: number }[] = JSON.parse(itemsRaw)
+  if (!items.length) return { error: 'Minimal satu item wajib diisi' }
+
+  const { error } = await supabase.from('po_cabang').update({
+    cabang_kode: cabangKode, cabang_nama: cabangNama,
+    tanggal, catatan: catatan || null,
+  }).eq('id', poId)
+  if (error) return { error: error.message }
+
+  // Replace items — delete old, insert new
+  await supabase.from('po_cabang_item').delete().eq('po_id', poId)
+  const itemRows = items.map(it => ({
+    po_id: poId,
+    produk_nama: it.produk_nama || `LM REI ${it.gramasi}GR`,
+    gramasi: it.gramasi,
+    qty_diminta: it.qty_diminta,
+  }))
+  const { error: itemErr } = await supabase.from('po_cabang_item').insert(itemRows)
+  if (itemErr) return { error: itemErr.message }
+
+  revalidatePath('/po-cabang')
+  return { success: true }
 }
 
 export async function updateStatusPO(poId: number, status: 'diproses' | 'selesai' | 'ditolak', catatanAdmin?: string) {

@@ -50,8 +50,9 @@ export async function kirimMutasiCabang(formData: FormData) {
   const catatan       = (formData.get('catatan') as string) || null
   const noSurat       = (formData.get('no_surat') as string) || null
   const shieldtagRaw  = formData.get('shieldtag_kodes') as string
-  const poIdRaw       = formData.get('po_id') as string | null
-  const poId          = poIdRaw ? parseInt(poIdRaw, 10) : null
+  const poIdsRaw      = formData.get('po_ids') as string | null
+  const poIds: number[] = poIdsRaw ? JSON.parse(poIdsRaw) : []
+  const poId          = poIds[0] ?? null  // backward compat
 
   if (!cabangKode) return { error: 'Cabang tujuan wajib dipilih' }
   let shieldtagKodes: string[] = []
@@ -112,26 +113,24 @@ export async function kirimMutasiCabang(formData: FormData) {
     pengirim_by: user.id,
     created_by: user.id,
     po_id: poId ?? null,
+    po_ids: poIds.length > 0 ? poIds : null,
   }).select('id').single()
 
   if (mErr) return { error: 'Gagal membuat mutasi: ' + mErr.message }
 
-  // Update PO qty_dikirim per gramasi jika ada po_id
-  if (poId) {
+  // Update qty_dikirim di semua PO yang di-link
+  if (poIds.length > 0) {
     const gramasiQtyMap: Record<string, number> = {}
     for (const t of tags) gramasiQtyMap[t.gramasi] = (gramasiQtyMap[t.gramasi] ?? 0) + 1
 
-    const { data: poItems } = await supabase.from('po_cabang_item')
-      .select('id, gramasi, qty_diminta, qty_dikirim').eq('po_id', poId)
-
-    for (const item of poItems ?? []) {
-      const qtyBaru = (Number(item.qty_dikirim ?? 0)) + (gramasiQtyMap[item.gramasi] ?? 0)
-      await supabase.from('po_cabang_item').update({ qty_dikirim: qtyBaru }).eq('id', item.id)
+    for (const pid of poIds) {
+      const { data: poItems } = await supabase.from('po_cabang_item')
+        .select('id, gramasi, qty_diminta, qty_dikirim').eq('po_id', pid)
+      for (const item of poItems ?? []) {
+        const qtyBaru = (Number(item.qty_dikirim ?? 0)) + (gramasiQtyMap[item.gramasi] ?? 0)
+        await supabase.from('po_cabang_item').update({ qty_dikirim: qtyBaru }).eq('id', item.id)
+      }
     }
-
-    // Update PO status → diproses jika belum
-    await supabase.from('po_cabang').update({ status: 'diproses', diproses_at: new Date().toISOString() })
-      .eq('id', poId).eq('status', 'pending')
   }
 
   // Update shieldtag: status Transit, lokasi cabang, link mutasi
@@ -220,7 +219,7 @@ export async function terimaMutasiCabang(formData: FormData) {
   try { diterimaKodes = JSON.parse(diterimaRaw || '[]') } catch { diterimaKodes = [] }
 
   const { data: mutasi } = await supabase.from('mutasi')
-    .select('id, kode, shieldtag_kodes, status_terima, voided_at, po_id, cabang_tujuan')
+    .select('id, kode, shieldtag_kodes, status_terima, voided_at, po_id, po_ids, cabang_tujuan')
     .eq('id', mutasiId).maybeSingle()
 
   if (!mutasi || mutasi.voided_at) return { error: 'Mutasi tidak ditemukan' }
@@ -274,24 +273,27 @@ export async function terimaMutasiCabang(formData: FormData) {
 
   if (uErr) return { error: 'Gagal menyimpan konfirmasi terima: ' + uErr.message }
 
-  // Auto-update PO jika semua item sudah terpenuhi
-  if (mutasi.po_id && !isShort) {
-    const { data: poItems } = await supabase.from('po_cabang_item')
-      .select('qty_diminta, qty_dikirim').eq('po_id', mutasi.po_id)
-    const semuaTerpenuhi = (poItems ?? []).every(it =>
-      (Number(it.qty_dikirim ?? 0)) >= Number(it.qty_diminta)
-    )
-    if (semuaTerpenuhi) {
-      await supabase.from('po_cabang').update({
-        status: 'selesai', selesai_at: new Date().toISOString(),
-        catatan_admin: 'Otomatis selesai — semua item terpenuhi via mutasi',
-      }).eq('id', mutasi.po_id)
-      createNotif({
-        judul: `PO selesai otomatis`,
-        pesan: `Semua item PO dari ${mutasi.cabang_tujuan} sudah diterima.`,
-        tipe: 'success', link: '/po-cabang',
-        untuk_role: ['owner', 'manager', 'spv', 'admin_gudang'],
-      })
+  // Auto-selesai semua PO yang terpenuhi
+  const linkedPoIds: number[] = (mutasi.po_ids as number[] | null) ?? (mutasi.po_id ? [mutasi.po_id] : [])
+  if (linkedPoIds.length > 0 && !isShort) {
+    for (const pid of linkedPoIds) {
+      const { data: poItems } = await supabase.from('po_cabang_item')
+        .select('qty_diminta, qty_dikirim').eq('po_id', pid)
+      const semuaTerpenuhi = (poItems ?? []).every(it =>
+        (Number(it.qty_dikirim ?? 0)) >= Number(it.qty_diminta)
+      )
+      if (semuaTerpenuhi) {
+        await supabase.from('po_cabang').update({
+          status: 'selesai', selesai_at: new Date().toISOString(),
+          catatan_admin: 'Otomatis selesai — semua item terpenuhi via mutasi',
+        }).eq('id', pid).neq('status', 'selesai')
+        createNotif({
+          judul: `PO selesai otomatis`,
+          pesan: `Semua item PO dari ${mutasi.cabang_tujuan} sudah diterima.`,
+          tipe: 'success', link: '/po-cabang',
+          untuk_role: ['owner', 'manager', 'spv', 'admin_gudang'],
+        })
+      }
     }
   }
 
