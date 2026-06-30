@@ -746,16 +746,22 @@ export default function POVendorClient({
       {tab === 'stok' && (
         <div className="space-y-3">
           <p className="text-[12px] font-medium text-slate-400">Stok Packaging</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {stokList.map((s: any) => (
-              <div key={s.id} className="rounded-xl px-4 py-3.5 text-center bg-white border border-slate-200">
-                <p className="text-[20px] font-semibold text-slate-800">{fmtNum(s.stok_qty)}</p>
-                <p className="text-[12px] font-semibold text-slate-500 mt-0.5">pcs</p>
-                <div className="w-6 h-0.5 rounded-full mx-auto my-2" style={{ background: s.stok_qty > 0 ? '#7C3AED' : '#e2e8f0' }}/>
-                <p className="text-[11px] font-semibold text-slate-600">{s.produk_nama}</p>
-              </div>
-            ))}
-          </div>
+          {stokList.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-200 py-10 text-center">
+              <p className="text-[12px] text-slate-400">Belum ada stok — lakukan QC batch penerimaan untuk menambah stok</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {stokList.map((s: any) => (
+                <div key={s.id} className="rounded-xl px-4 py-3.5 text-center bg-white border border-slate-200">
+                  <p className="text-[20px] font-semibold text-slate-800">{fmtNum(s.stok_qty)}</p>
+                  <p className="text-[12px] font-semibold text-slate-500 mt-0.5">pcs</p>
+                  <div className="w-6 h-0.5 rounded-full mx-auto my-2" style={{ background: s.stok_qty > 0 ? '#7C3AED' : '#e2e8f0' }}/>
+                  <p className="text-[11px] font-semibold text-slate-600">{s.produk_nama}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -1398,7 +1404,7 @@ function POModal({ mode, po, poItemsForEdit, vendors, produkList, allPoItems, al
           {totalNilai > 0 && (
             <div className="mt-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 flex justify-between items-center">
               <span className="text-[12px] font-semibold text-emerald-700">Total Nilai PO</span>
-              <span className="text-[14px] font-semibold text-emerald-700">{fmtRp(totalNilai)}</span>
+              <span className="text-[13px] font-semibold text-emerald-700">{fmtRp(totalNilai)}</span>
             </div>
           )}
         </div>
@@ -1905,7 +1911,7 @@ function ConfirmModal({ state, onClose }: { state: ConfirmState; onClose: () => 
             <AlertTriangle size={20}/>
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-[14px] font-bold text-slate-900">{state.title}</h3>
+            <h3 className="text-[13px] font-bold text-slate-900">{state.title}</h3>
             <p className="text-[12px] text-slate-600 mt-1 leading-relaxed">{state.message}</p>
           </div>
         </div>
@@ -2145,7 +2151,7 @@ function VendorPerformanceDashboard({ rejectList, sjList, poItems, batchList, po
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <span className={`text-[14px] font-semibold ${i === 0 ? 'text-green-600' : i === scored.length - 1 ? 'text-red-500' : 'text-slate-700'}`}>
+                      <span className={`text-[13px] font-semibold ${i === 0 ? 'text-green-600' : i === scored.length - 1 ? 'text-red-500' : 'text-slate-700'}`}>
                         {v.score.toFixed(0)}
                       </span>
                       <span className="text-[11px] text-slate-400 ml-0.5">/100</span>
@@ -2164,12 +2170,12 @@ function VendorPerformanceDashboard({ rejectList, sjList, poItems, batchList, po
                   <div className="grid grid-cols-2 gap-1.5">
                     <div className="rounded-lg bg-slate-50 px-2.5 py-2">
                       <p className="text-[10px] font-medium text-slate-400">Total Diterima</p>
-                      <p className="text-[14px] font-semibold text-slate-700">{fmtNum(v.total_diterima)} pcs</p>
+                      <p className="text-[13px] font-semibold text-slate-700">{fmtNum(v.total_diterima)} pcs</p>
                       <p className="text-[10px] text-slate-400">{v.po_count} PO</p>
                     </div>
                     <div className="rounded-lg bg-red-50 px-2.5 py-2">
                       <p className="text-[10px] font-medium text-slate-400">Total Reject</p>
-                      <p className="text-[14px] font-semibold text-red-600">{fmtNum(v.total_reject)} pcs</p>
+                      <p className="text-[13px] font-semibold text-red-600">{fmtNum(v.total_reject)} pcs</p>
                       <p className="text-[10px] text-red-400">{(v.reject_rate * 100).toFixed(1)}% dari diterima</p>
                     </div>
                     <div className="rounded-lg bg-amber-50 px-2.5 py-2">
@@ -2179,7 +2185,7 @@ function VendorPerformanceDashboard({ rejectList, sjList, poItems, batchList, po
                     </div>
                     <div className="rounded-lg bg-blue-50 px-2.5 py-2">
                       <p className="text-[10px] font-medium text-slate-400">Avg Lead Time</p>
-                      <p className="text-[14px] font-semibold text-blue-700">{v.avg_lead_time > 0 ? `${v.avg_lead_time.toFixed(1)} hari` : '—'}</p>
+                      <p className="text-[13px] font-semibold text-blue-700">{v.avg_lead_time > 0 ? `${v.avg_lead_time.toFixed(1)} hari` : '—'}</p>
                       <p className="text-[10px] text-slate-400">PO → terima pertama</p>
                     </div>
                   </div>
@@ -2220,7 +2226,7 @@ function VendorPerformanceDashboard({ rejectList, sjList, poItems, batchList, po
                     <p className="text-[11px] text-slate-400">{po.vendor_nama} · {fmtDate(po.tanggal_po)}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className={`text-[14px] font-semibold ${po.pct > 10 ? 'text-red-600' : po.pct > 5 ? 'text-amber-600' : 'text-green-600'}`}>
+                    <p className={`text-[13px] font-semibold ${po.pct > 10 ? 'text-red-600' : po.pct > 5 ? 'text-amber-600' : 'text-green-600'}`}>
                       {po.pct.toFixed(1)}%
                     </p>
                     <p className="text-[10px] text-slate-400">{fmtNum(po.total_reject)} / {fmtNum(po.total_diterima)} pcs</p>

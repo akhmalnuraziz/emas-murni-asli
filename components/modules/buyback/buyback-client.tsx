@@ -560,7 +560,7 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, canDelete, use
                   <Trash2 size={16} className="text-red-500" />
                 </div>
                 <div>
-                  <p className="text-[14px] font-semibold text-slate-900">Hapus Buyback?</p>
+                  <p className="text-[13px] font-semibold text-slate-900">Hapus Buyback?</p>
                   <p className="text-[12px] text-slate-500 mt-0.5">{b.kode}{b.nama_customer ? ` · ${b.nama_customer}` : ''}</p>
                   {b.shieldtag_kode && (
                     <p className="text-[12px] text-red-500 mt-1">Shieldtag akan dikembalikan ke status Terjual.</p>

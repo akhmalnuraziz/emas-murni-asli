@@ -84,11 +84,47 @@ export async function updateStatusRetur(
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
   if (!['owner', 'manager', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
 
+  const { data: retur } = await supabase.from('retur_penjualan')
+    .select('shieldtag_kodes').eq('id', returId).single()
+
   const { error } = await supabase.from('retur_penjualan').update({
     status, catatan_admin: catatanAdmin || null, updated_at: new Date().toISOString(),
   }).eq('id', returId)
   if (error) return { error: error.message }
 
+  // Selesai → kembalikan shieldtag ke stok gudang
+  if (status === 'selesai' && retur?.shieldtag_kodes?.length) {
+    await supabase.from('shieldtag')
+      .update({ status: 'Aktif', lokasi: 'Gudang Pusat' })
+      .in('kode', retur.shieldtag_kodes)
+    revalidatePath('/inventory')
+  }
+
+  revalidatePath('/retur-penjualan')
+  return { success: true }
+}
+
+export async function editRetur(returId: number, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
+
+  const { data: retur } = await supabase.from('retur_penjualan').select('status').eq('id', returId).single()
+  if (!retur) return { error: 'Retur tidak ditemukan' }
+  if (retur.status === 'selesai') return { error: 'Retur yang sudah selesai tidak bisa diedit' }
+
+  const { error } = await supabase.from('retur_penjualan').update({
+    tanggal:        formData.get('tanggal') as string,
+    alasan:         formData.get('alasan') as string,
+    kondisi:        formData.get('kondisi') as string,
+    nama_customer:  (formData.get('nama_customer') as string) || null,
+    hp_customer:    (formData.get('hp_customer') as string) || null,
+    catatan_admin:  (formData.get('catatan_admin') as string) || null,
+  }).eq('id', returId)
+
+  if (error) return { error: error.message }
   revalidatePath('/retur-penjualan')
   return { success: true }
 }

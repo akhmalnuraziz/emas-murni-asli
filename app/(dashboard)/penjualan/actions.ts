@@ -165,9 +165,11 @@ export async function voidPenjualan(penjualanId: number, reason: string) {
   const now = new Date().toISOString()
   await supabase.from('penjualan').update({ voided_at: now, void_reason: reason, status: 'void' }).eq('id', penjualanId)
 
-  // Restore shieldtag back to Aktif
+  // Restore shieldtag back to Aktif @ Gudang Pusat
   if (pj.shieldtag_kodes?.length) {
-    await supabase.from('shieldtag').update({ status: 'Aktif' }).in('kode', pj.shieldtag_kodes)
+    await supabase.from('shieldtag')
+      .update({ status: 'Aktif', lokasi: 'Gudang Pusat' })
+      .in('kode', pj.shieldtag_kodes)
   }
 
   revalidatePath('/penjualan')
@@ -181,5 +183,36 @@ export async function voidPenjualan(penjualanId: number, reason: string) {
     untuk_role: ['owner', 'manager'],
   })
 
+  return { success: true }
+}
+
+// Edit metadata penjualan (channel, customer, catatan) — items tidak bisa diubah
+export async function editPenjualan(penjualanId: number, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
+
+  const { data: pj } = await supabase.from('penjualan').select('voided_at').eq('id', penjualanId).single()
+  if (!pj) return { error: 'Penjualan tidak ditemukan' }
+  if (pj.voided_at) return { error: 'Penjualan yang sudah void tidak bisa diedit' }
+
+  const { error } = await supabase.from('penjualan').update({
+    tanggal:          formData.get('tanggal') as string,
+    channel:          formData.get('channel') as string,
+    nama_customer:    (formData.get('nama_customer') as string) || null,
+    hp_customer:      (formData.get('hp_customer') as string) || null,
+    ktp_customer:     (formData.get('ktp_customer') as string) || null,
+    alamat_customer:  (formData.get('alamat_customer') as string) || null,
+    marketplace_akun: (formData.get('marketplace_akun') as string) || null,
+    no_invoice_mktpl: (formData.get('no_invoice_mktpl') as string) || null,
+    cabang_kode:      (formData.get('cabang_kode') as string) || null,
+    cabang_nama:      (formData.get('cabang_nama') as string) || null,
+    catatan:          (formData.get('catatan') as string) || null,
+  }).eq('id', penjualanId)
+
+  if (error) return { error: error.message }
+  revalidatePath('/penjualan')
   return { success: true }
 }
