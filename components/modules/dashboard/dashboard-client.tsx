@@ -561,7 +561,7 @@ export default function DashboardClient({
                     <div key={g} className="bg-green-50 border border-green-100 rounded-xl p-3">
                       <p className="text-[18px] font-bold text-green-700 tabular-nums leading-none">{v.pcs} pcs</p>
                       <p className="text-[11px] font-semibold text-green-600 mt-0.5">{g} gram</p>
-                      <p className="text-[9px] text-slate-400 mt-1 truncate">
+                      <p className="text-[10px] text-slate-400 mt-1 truncate">
                         {v.batches.slice(0, 2).join(', ')}{v.batches.length > 2 ? ` +${v.batches.length - 2}` : ''}
                       </p>
                     </div>

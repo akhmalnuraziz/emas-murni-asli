@@ -379,7 +379,7 @@ export default function POVendorClient({
             <Icon size={12}/>
             {label}
             {key === 'reject' && pendingReject > 0 && (
-              <span className="min-w-[16px] h-4 px-1 bg-red-500 text-white rounded-full text-[9px] flex items-center justify-center font-semibold">
+              <span className="min-w-[16px] h-4 px-1 bg-red-500 text-white rounded-full text-[10px] flex items-center justify-center font-semibold">
                 {pendingReject > 9 ? '9+' : pendingReject}
               </span>
             )}
@@ -2490,8 +2490,8 @@ function HistoriHargaPanel({ produkList, poList, poItems, vendors }: { produkLis
                       <div className="text-right flex-shrink-0">
                         <p className={`text-[13px] font-semibold ${isMin ? 'text-green-600' : isMax ? 'text-red-500' : 'text-slate-700'}`}>
                           {fmtRp(v.last.harga)}
-                          {isMin && <span className="ml-1 text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">Termurah</span>}
-                          {isMax && !isMin && <span className="ml-1 text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">Termahal</span>}
+                          {isMin && <span className="ml-1 text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">Termurah</span>}
+                          {isMax && !isMin && <span className="ml-1 text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">Termahal</span>}
                         </p>
                         <p className="text-[10px] text-slate-400">{fmtDate(v.last.tanggal)}</p>
                       </div>

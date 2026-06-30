@@ -533,17 +533,17 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                   {/* FIX poin 3: tampilkan pusat + gudang + sisa langsung di card */}
                   <div className="hidden sm:flex items-center gap-4 flex-shrink-0 mr-1">
                     <div className="text-right">
-                      <p className="text-[9px] font-medium text-slate-400">Pusat</p>
+                      <p className="text-[10px] font-medium text-slate-400">Pusat</p>
                       <p className="text-[12px] font-semibold text-slate-700 tabular-nums">{formatGram(batchPusat)}</p>
                     </div>
                     <div className="w-px h-7 bg-slate-200"/>
                     <div className="text-right">
-                      <p className="text-[9px] font-medium text-slate-400">Gudang</p>
+                      <p className="text-[10px] font-medium text-slate-400">Gudang</p>
                       <p className="text-[12px] font-semibold text-slate-700 tabular-nums">{formatGram(timbAkhir)}</p>
                     </div>
                     <div className="w-px h-7 bg-slate-200"/>
                     <div className="text-right">
-                      <p className="text-[9px] font-medium text-slate-400">Sisa</p>
+                      <p className="text-[10px] font-medium text-slate-400">Sisa</p>
                       <p className="text-[12px] font-semibold text-slate-700 tabular-nums">{formatGram(sisaSeharusnya)}</p>
                     </div>
                   </div>
@@ -707,7 +707,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                   <p className="text-[10px] font-medium text-slate-500 leading-tight">{col.label}</p>
                                 </div>
                                 <p className={`text-[14px] font-semibold ${col.warn?'text-red-500':'text-slate-800'}`}>{col.val}</p>
-                                <p className="text-[9px] text-slate-400 mt-0.5">{col.sub}</p>
+                                <p className="text-[10px] text-slate-400 mt-0.5">{col.sub}</p>
                               </div>
                             ))}
                             {/* Poin 5+11: Kolom Sisa Fisik inline-edit */}
@@ -1233,7 +1233,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                         <label className="flex items-center gap-2 cursor-pointer select-none">
                           <input type="checkbox" checked={rejGram[rej.id]!==undefined} onChange={()=>toggleRej(rej.id,sisa)} className="w-4 h-4 rounded accent-violet-600"/>
                           <span className="text-[12px] font-medium text-slate-700">{rej.kode??rej.nama_item}</span>
-                          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">{prosesLabel}</span>
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">{prosesLabel}</span>
                           <span className="text-[10px] text-slate-400">({rej.gramasi}gr)</span>
                           <span className="ml-auto text-[10px] text-red-400 font-semibold">{formatGram(sisa)}{rej.sisa_pcs?` · ${rej.sisa_pcs} pcs`:''}</span>
                         </label>
@@ -1262,7 +1262,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                         <label className="flex items-center gap-2 cursor-pointer select-none">
                           <input type="checkbox" checked={packRejGram[pk.id]!==undefined} onChange={()=>togglePackRej(pk.id,sisaGram)} className="w-4 h-4 rounded accent-violet-600"/>
                           <span className="text-[12px] font-medium text-slate-700">{pk.kode}</span>
-                          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">Reject Packing</span>
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">Reject Packing</span>
                           <span className="text-[10px] text-slate-400">({pk.gramasi}gr)</span>
                           <span className="ml-auto text-[10px] text-red-400 font-semibold">{formatGram(sisaGram)}{pk.pcs_reject?' · '+pk.pcs_reject+' pcs':''}</span>
                         </label>

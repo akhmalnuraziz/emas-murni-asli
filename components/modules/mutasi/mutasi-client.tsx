@@ -330,7 +330,7 @@ function KirimMutasi({ cabangList }: { cabangList: Cabang[] }) {
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-amber-50">
-                            <span className="text-[9px] font-semibold text-amber-600">AU</span>
+                            <span className="text-[10px] font-semibold text-amber-600">AU</span>
                           </div>
                           <div>
                             <p className="font-semibold text-slate-800 text-[13px]">Emas {gramasi} gr</p>

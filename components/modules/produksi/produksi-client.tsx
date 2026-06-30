@@ -489,7 +489,7 @@ function EventHistory({ events, item, stageHandovers = [], lossApprovals = [] }:
                       <div className="flex gap-2 pt-1">
                         {la.ttd_operator_url && (
                           <div>
-                            <p className="text-[9px] text-slate-400 mb-1">TTD Operator</p>
+                            <p className="text-[10px] text-slate-400 mb-1">TTD Operator</p>
                             <a href={la.ttd_operator_url} target="_blank" rel="noopener noreferrer">
                               <img src={la.ttd_operator_url} alt="TTD Operator"
                                 className="h-12 w-24 object-contain rounded-xl border border-red-100 bg-white"/>
@@ -498,7 +498,7 @@ function EventHistory({ events, item, stageHandovers = [], lossApprovals = [] }:
                         )}
                         {la.ttd_admin_url && (
                           <div>
-                            <p className="text-[9px] text-slate-400 mb-1">TTD Admin</p>
+                            <p className="text-[10px] text-slate-400 mb-1">TTD Admin</p>
                             <a href={la.ttd_admin_url} target="_blank" rel="noopener noreferrer">
                               <img src={la.ttd_admin_url} alt="TTD Admin"
                                 className="h-12 w-24 object-contain rounded-xl border border-red-100 bg-white"/>
@@ -769,7 +769,7 @@ function EditModal({ item, tims, adminList, onClose, onSubmit, isPending, error 
                   <div key={i} className="relative">
                     <img src={url} alt="" className="w-14 h-14 rounded-xl object-cover border border-blue-200" />
                     <button type="button" onClick={() => setExistingFotos(p => p.filter((_, j) => j !== i))}
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[9px] flex items-center justify-center">×</button>
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center">×</button>
                   </div>
                 ))}
               </div>
@@ -932,7 +932,7 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
                   <div key={i} className="relative">
                     <img src={url} alt="" className="w-14 h-14 rounded-xl object-cover border border-green-200" />
                     <button type="button" onClick={() => setExistingFotos(p => p.filter((_, j) => j !== i))}
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[9px] flex items-center justify-center">×</button>
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center">×</button>
                   </div>
                 ))}
               </div>
@@ -949,7 +949,7 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
                   <div key={i} className="relative">
                     <img src={URL.createObjectURL(f)} alt="" className="w-14 h-14 rounded-xl object-cover border border-violet-200" />
                     <button type="button" onClick={() => setFotos(p => p.filter((_, j) => j !== i))}
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[9px] flex items-center justify-center">×</button>
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center">×</button>
                   </div>
                 ))}
               </div>
@@ -1027,7 +1027,7 @@ function SerahStageModal({ item, tahap, tims, onClose, onSubmit, isPending, erro
           <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           {/* Info dari tahap sebelumnya */}
           <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700">
-            <p className="text-[9px] font-medium text-violet-500 mb-2">Data yang akan diserahkan</p>
+            <p className="text-[10px] font-medium text-violet-500 mb-2">Data yang akan diserahkan</p>
             <div className="flex flex-wrap gap-3">
               <div><p className="text-slate-400 text-[10px]">Total Berat</p><p className="font-semibold text-violet-700">{serahGram.toFixed(2)} gr</p></div>
               <div><p className="text-slate-400 text-[10px]">Gramasi</p><p className="font-semibold text-slate-700">{item.gramasi} gr</p></div>
@@ -1149,7 +1149,7 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
           <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           {/* Info diserahkan */}
           <div className="rounded-lg px-3 py-2 text-[12px] bg-violet-50 border border-violet-100 text-violet-700">
-            <p className="text-[9px] font-medium text-violet-500 mb-2">Diserahkan</p>
+            <p className="text-[10px] font-medium text-violet-500 mb-2">Diserahkan</p>
             <div className="flex flex-wrap gap-3">
               <div><p className="text-slate-400 text-[10px]">Total Berat</p><p className="font-semibold text-violet-700">{Number(serahGram).toFixed(2)} gr</p></div>
               <div><p className="text-slate-400 text-[10px]">Gramasi</p><p className="font-semibold text-slate-700">{item.gramasi} gr</p></div>
@@ -1645,7 +1645,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                         style={{background:sc.bg,color:sc.text}}>
                         {statusLabel}
                       </span>
-                      {item.status_cutting==='proses'&&<span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100">proses</span>}
+                      {item.status_cutting==='proses'&&<span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100">proses</span>}
                     </div>
                     <p className="text-[11px] text-slate-400 mt-1 font-medium">
                       {item.kode} · {item.batch_kode}
@@ -1662,7 +1662,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                     if(s==='Cutting' && !item.gramasi && item.status_cutting!=='selesai')
                       return <button onClick={()=>openModal('terimaCuttingItem',item)}
                         className="h-8 px-3 rounded-xl text-[11px] font-semibold flex items-center gap-1 flex-shrink-0 hover:scale-105 transition-all bg-violet-600 text-white">
-                        Terima Cutting <span className="text-[9px] opacity-70">(pilih gramasi)</span>
+                        Terima Cutting <span className="text-[10px] opacity-70">(pilih gramasi)</span>
                       </button>
                     if(s==='Cutting'&&item.status_cutting==='proses')
                       return <button onClick={()=>openModal('cuttingTerima',item)}
