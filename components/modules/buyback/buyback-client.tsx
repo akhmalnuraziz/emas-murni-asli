@@ -393,8 +393,8 @@ function BuybackForm({ userName, initial, onClose, onSaved }: {
         <F label="Kondisi Emas" req>
           <select value={form.kondisiEmas} onChange={e => set('kondisiEmas', e.target.value)} className={inp}>
             <option value="bagus">Bagus</option>
-            <option value="rusak_ringan">Rusak Ringan</option>
-            <option value="rusak_berat">Rusak Berat</option>
+            <option value="perlu_diperbaiki">Perlu Diperbaiki</option>
+            <option value="reject">Reject</option>
           </select>
         </F>
         <F label="Kondisi Shieldtag">
@@ -480,6 +480,8 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, canDelete, use
   const cfg = HASIL_CFG[b.status] ?? HASIL_CFG.pending
   const StatusIcon = cfg.icon
   const isPending = b.status === 'pending'
+  const isRepair = b.status === 'repair'
+  const canAct = isPending || isRepair
 
   async function doProses() {
     if (!aksi) return
@@ -597,14 +599,16 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, canDelete, use
             <p className="text-[12px] text-slate-400">Diproses oleh <span className="font-semibold">{b.approved_by}</span></p>
           )}
 
-          {isPending && canProses && (
+          {canAct && canProses && (
             <div className="rounded-lg px-3 py-3 bg-violet-50 border border-violet-100 space-y-3">
-              <p className="text-[12px] font-semibold text-violet-700">Tentukan Tindakan</p>
+              <p className="text-[12px] font-semibold text-violet-700">
+                {isRepair ? 'Selesai Repair — Tentukan Status Akhir' : 'Tentukan Tindakan'}
+              </p>
               <select value={aksi} onChange={e => setAksi(e.target.value)}
                 className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all">
                 <option value="">-- Pilih tindakan --</option>
                 <option value="ready_resell">✅ Siap Jual Lagi — Stok Gudang bertambah</option>
-                <option value="repair">🔧 Repair — Masuk Karantina (Repair)</option>
+                {!isRepair && <option value="repair">🔧 Repair — Masuk Karantina (Repair)</option>}
                 <option value="reject">⛔ Holding Reject — Masuk Karantina</option>
                 <option value="lebur">🔥 Lebur — Masuk Karantina (Akan Dilebur)</option>
               </select>
