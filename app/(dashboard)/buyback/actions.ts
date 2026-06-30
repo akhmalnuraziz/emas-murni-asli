@@ -126,9 +126,9 @@ export async function prossesBuyback(params: {
     lebur: 'akan_dilebur',
   }
 
-  // Ambil shieldtag_kode dari record buyback
+  // Ambil shieldtag_kode + gramasi dari record buyback
   const { data: bbRecord } = await supabase.from('buyback')
-    .select('shieldtag_kode').eq('id', params.id).single()
+    .select('shieldtag_kode, gramasi').eq('id', params.id).single()
 
   const { error } = await supabase.from('buyback').update({
     status: STATUS_MAP[params.aksi],
@@ -145,9 +145,16 @@ export async function prossesBuyback(params: {
     const kode = bbRecord.shieldtag_kode
     if (params.aksi === 'ready_resell') {
       // Kondisi BAGUS — kembali ke stok gudang, inventory otomatis bertambah
+      // ponytail: upsert bukan update — shieldtag buyback lama mungkin belum terdaftar di tabel
       await supabase.from('shieldtag')
-        .update({ status: 'Aktif', lokasi: 'Gudang Pusat' })
-        .eq('kode', kode)
+        .upsert({
+          kode,
+          status: 'Aktif',
+          lokasi: 'Gudang Pusat',
+          gramasi: bbRecord.gramasi ?? null,
+          tgl_regis: new Date().toISOString().slice(0, 10),
+          registered_by: userName,
+        }, { onConflict: 'kode' })
     } else {
       // REJECT / repair / lebur — masuk Karantina, tidak masuk stok
       const lokasiMap: Record<string, string> = {
