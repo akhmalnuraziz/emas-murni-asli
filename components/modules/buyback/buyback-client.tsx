@@ -617,10 +617,10 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, canDelete, use
               <select value={aksi} onChange={e => setAksi(e.target.value)}
                 className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all">
                 <option value="">-- Pilih tindakan --</option>
-                <option value="ready_resell">✅ Siap Jual Lagi — Stok Gudang bertambah</option>
-                {!isRepair && <option value="repair">🔧 Repair — Masuk Karantina (Repair)</option>}
-                <option value="reject">⛔ Holding Reject — Masuk Karantina</option>
-                <option value="lebur">🔥 Lebur — Masuk Karantina (Akan Dilebur)</option>
+                <option value="ready_resell">Siap Jual Lagi — Stok Gudang bertambah</option>
+                {!isRepair && <option value="repair">Repair — Masuk Karantina (Repair)</option>}
+                <option value="reject">Holding Reject — Masuk Karantina</option>
+                <option value="lebur">Lebur — Masuk Karantina (Akan Dilebur)</option>
               </select>
               {aksi === 'ready_resell' && !b.shieldtag_kode && (
                 <p className="text-[11px] text-amber-700 bg-amber-50 rounded-lg px-3 py-1.5">

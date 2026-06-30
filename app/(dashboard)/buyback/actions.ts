@@ -56,6 +56,15 @@ export async function createBuyback(params: {
       : []
 
     const tanggal = params.tanggal || new Date().toISOString().slice(0, 10)
+
+    if (params.shieldtagKodes.length > 0) {
+      const { data: existingTags } = await supabase.from('shieldtag')
+        .select('kode').in('kode', params.shieldtagKodes).is('voided_at', null)
+      const foundKodes = new Set((existingTags ?? []).map((t: any) => t.kode))
+      const missing = params.shieldtagKodes.filter(k => !foundKodes.has(k))
+      if (missing.length > 0) return { success: false, error: `ShieldTag tidak ditemukan: ${missing.join(', ')}` }
+    }
+
     const targets = params.shieldtagKodes.length ? params.shieldtagKodes : [null]
 
     for (let i = 0; i < targets.length; i++) {

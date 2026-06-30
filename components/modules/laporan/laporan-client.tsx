@@ -600,7 +600,7 @@ function NeracaTab({ neraca }: { neraca: Props['neraca'] }) {
         </div>
         <div>
           <p className={`text-[14px] font-semibold ${selisihOk ? 'text-green-700' : 'text-red-700'}`}>
-            {selisihOk ? 'Neraca Emas Seimbang ✅' : 'Ada Selisih Emas — Perlu Dicek! ⚠️'}
+            {selisihOk ? 'Neraca Emas Seimbang' : 'Ada Selisih Emas — Perlu Dicek!'}
           </p>
           <p className={`text-[13px] font-semibold mt-0.5 ${selisihOk ? 'text-green-600' : 'text-red-600'}`}>
             Selisih: {neraca.selisihGram >= 0 ? '+' : ''}{neraca.selisihGram.toFixed(3)} gr

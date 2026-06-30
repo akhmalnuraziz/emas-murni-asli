@@ -8,6 +8,7 @@ import {
   Package2, Truck, ClipboardCheck, AlertTriangle, RotateCcw,
   FileText, Printer, Building2, Search, Eye,
   ArrowRight, CheckCircle2, XCircle, Clock, BoxSelect,
+  Package, Tag, BarChart2, ClipboardList, DollarSign, LucideIcon,
 } from 'lucide-react'
 import {
   createVendor, updateVendor,
@@ -470,7 +471,7 @@ export default function POVendorClient({
                             onConfirm: async () => {
                               const r = await deletePO(po.id)
                               if (r?.error) showToast(r.error, false)
-                              else showToast('✅ PO dihapus')
+                              else showToast('PO dihapus')
                             },
                           })} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold text-red-500 bg-red-50 hover:bg-red-100">
                             <Trash2 size={11}/> Hapus
@@ -515,7 +516,7 @@ export default function POVendorClient({
                                   <p className="text-[12px] font-mono font-semibold text-slate-700">{b.nomor_batch}</p>
                                   <p className="text-[10px] text-slate-400">
                                     {desc} · {fmtDate(b.tanggal_terima)}
-                                    {b.status_qc === 'selesai' ? ` · ✅ ACC ${fmtNum(b.qty_acc ?? 0)} / Reject ${fmtNum(b.qty_reject ?? 0)}` : ' · ⏳ Pending QC'}
+                                    {b.status_qc === 'selesai' ? ` · ACC ${fmtNum(b.qty_acc ?? 0)} / Reject ${fmtNum(b.qty_reject ?? 0)}` : ' · Pending QC'}
                                   </p>
                                 </div>
                                 {canManage && (
@@ -547,7 +548,7 @@ export default function POVendorClient({
                                       onConfirm: async () => {
                                         const r = await deleteBatch(b.id)
                                         if (r?.error) showToast(r.error, false)
-                                        else showToast('✅ Batch dihapus')
+                                        else showToast('Batch dihapus')
                                       },
                                     })} className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-red-500 rounded-lg bg-red-50 hover:bg-red-100">
                                       <Trash2 size={9}/> Hapus
@@ -606,7 +607,7 @@ export default function POVendorClient({
                     {b.status_qc === 'selesai' && (
                       <>
                         <div className="flex gap-3 mt-1.5 flex-wrap">
-                          <span className="text-[10px] font-semibold text-green-600">✅ ACC: {fmtNum(b.qty_acc ?? 0)}</span>
+                          <span className="text-[10px] font-semibold text-green-600">ACC: {fmtNum(b.qty_acc ?? 0)}</span>
                           <span className="text-[10px] font-semibold text-red-500">❌ Reject: {fmtNum(b.qty_reject ?? 0)}</span>
                           {(b.qty_lebih ?? 0) > 0 && <span className="text-[10px] font-semibold text-orange-500">➕ Lebih: {fmtNum(b.qty_lebih)}</span>}
                         </div>
@@ -650,7 +651,7 @@ export default function POVendorClient({
                         onConfirm: async () => {
                           const r = await deleteBatch(b.id)
                           if (r?.error) showToast(r.error, false)
-                          else showToast('✅ Batch dihapus')
+                          else showToast('Batch dihapus')
                         },
                       })} className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-red-500 rounded-lg bg-red-50 hover:bg-red-100">
                         <Trash2 size={11}/> Hapus
@@ -714,7 +715,7 @@ export default function POVendorClient({
                           onConfirm: async () => {
                             const res = await resetRejectStatus(r.id)
                             if (res?.error) showToast(res.error, false)
-                            else showToast('✅ Status direset ke pending')
+                            else showToast('Status direset ke pending')
                           },
                         })} className="px-2 py-1 text-[10px] font-semibold text-amber-600 rounded-lg bg-amber-50 hover:bg-amber-100">
                           Reset
@@ -728,7 +729,7 @@ export default function POVendorClient({
                         onConfirm: async () => {
                           const res = await deleteRejectItem(r.id)
                           if (res?.error) showToast(res.error, false)
-                          else showToast('✅ Item reject dihapus')
+                          else showToast('Item reject dihapus')
                         },
                       })} className="p-1.5 rounded-lg text-red-400 hover:bg-red-50">
                         <Trash2 size={12}/>
@@ -738,7 +739,7 @@ export default function POVendorClient({
                 </div>
               </div>
             ))}
-          {rejectList.length === 0 && <Empty text="Tidak ada reject" icon="✅" />}
+          {rejectList.length === 0 && <Empty text="Tidak ada reject" icon={CheckCircle2} />}
         </div>
       )}
 
@@ -769,13 +770,13 @@ export default function POVendorClient({
       {tab === 'sj_retur' && (
         <div className="space-y-2">
           {sjList.length === 0 ? (
-            <Empty text="Belum ada surat jalan retur" icon="📦"/>
+            <Empty text="Belum ada surat jalan retur" />
           ) : (() => {
             const filtered = sjList.filter((sj: any) => !search ||
               sj.nomor_sj.toLowerCase().includes(search.toLowerCase()) ||
               (sj.vendor_nama ?? '').toLowerCase().includes(search.toLowerCase())
             )
-            if (filtered.length === 0) return <Empty text="Tidak ada SJ yang cocok" icon="🔍"/>
+            if (filtered.length === 0) return <Empty text="Tidak ada SJ yang cocok" icon={Search}/>
             return (
               <div className="space-y-2">
                 {filtered.map((sj: any) => {
@@ -845,7 +846,7 @@ export default function POVendorClient({
                               onConfirm: async () => {
                                 const r = await deleteSJRetur(sj.id)
                                 if (r?.error) showToast(r.error, false)
-                                else showToast('✅ SJ Retur dihapus')
+                                else showToast('SJ Retur dihapus')
                               },
                             })}
                               className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-semibold text-red-500 rounded-xl bg-red-50 hover:bg-red-100">
@@ -902,7 +903,7 @@ export default function POVendorClient({
                       <button onClick={async () => {
                         const r = await toggleProdukAktif(p.id, !p.aktif)
                         if (r?.error) showToast(r.error, false)
-                        else showToast(p.aktif ? 'Produk dinonaktifkan' : '✅ Produk diaktifkan')
+                        else showToast(p.aktif ? 'Produk dinonaktifkan' : 'Produk diaktifkan')
                       }}
                         className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold ${p.aktif ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
                         {p.aktif ? 'Nonaktifkan' : 'Aktifkan'}
@@ -919,7 +920,7 @@ export default function POVendorClient({
             <div className="space-y-2">
               <p className="text-[12px] text-slate-400 px-1">Kategori alasan reject yang muncul saat QC (contoh: Cover Baret, Stiker Kebalik)</p>
               {kategoriRejectList.length === 0 ? (
-                <Empty text="Belum ada kategori reject — klik Tambah Kategori" icon="🏷️"/>
+                <Empty text="Belum ada kategori reject — klik Tambah Kategori" icon={Tag}/>
               ) : kategoriRejectList.map((k: any) => (
                 <div key={k.id} className="rounded-xl px-4 py-3 flex items-center justify-between gap-3 bg-white border border-slate-200">
                   <div>
@@ -938,7 +939,7 @@ export default function POVendorClient({
                       <button onClick={async () => {
                         const r = await toggleKategoriRejectAktif(k.id, !k.aktif)
                         if (r?.error) showToast(r.error, false)
-                        else showToast(k.aktif ? 'Kategori dinonaktifkan' : '✅ Kategori diaktifkan')
+                        else showToast(k.aktif ? 'Kategori dinonaktifkan' : 'Kategori diaktifkan')
                       }}
                         className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold ${k.aktif ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
                         {k.aktif ? 'Nonaktifkan' : 'Aktifkan'}
@@ -1004,7 +1005,7 @@ export default function POVendorClient({
               ? await createProdukPackaging(fd)
               : await updateProdukPackaging(produkModal as number, fd)
             if (r?.error) { showToast(r.error, false); return }
-            showToast(produkModal === 'create' ? '✅ Produk ditambahkan' : '✅ Produk diperbarui')
+            showToast(produkModal === 'create' ? 'Produk ditambahkan' : 'Produk diperbarui')
             setProdukModal(null)
           }}
         />
@@ -1024,7 +1025,7 @@ export default function POVendorClient({
           onSave={async (fd) => {
             const r = await updateSJRetur(editSJModal.id, fd)
             if (r?.error) { showToast(r.error, false); return }
-            showToast('✅ SJ Retur diperbarui')
+            showToast('SJ Retur diperbarui')
             setEditSJModal(null)
           }}
         />
@@ -1037,7 +1038,7 @@ export default function POVendorClient({
           onSave={async (fd) => {
             const r = await createBatchPengganti(fd)
             if (r?.error) { showToast(r.error, false); return }
-            showToast('✅ Batch pengganti dibuat — silakan QC di tab Penerimaan')
+            showToast('Batch pengganti dibuat — silakan QC di tab Penerimaan')
             setPenggantiModal(null)
           }}
         />
@@ -1053,7 +1054,7 @@ export default function POVendorClient({
               ? await createKategoriReject(fd)
               : await updateKategoriReject(kategoriRejectModal as number, fd)
             if (r?.error) { showToast(r.error, false); return }
-            showToast(kategoriRejectModal === 'create' ? '✅ Kategori ditambahkan' : '✅ Kategori diperbarui')
+            showToast(kategoriRejectModal === 'create' ? 'Kategori ditambahkan' : 'Kategori diperbarui')
             setKategoriRejectModal(null)
           }}
         />
@@ -1069,7 +1070,7 @@ export default function POVendorClient({
               ? await createVendor(fd)
               : await updateVendor(vendorModal as number, fd)
             if (r?.error) { showToast(r.error, false); return }
-            showToast(vendorModal === 'create' ? '✅ Vendor ditambahkan' : '✅ Vendor diperbarui')
+            showToast(vendorModal === 'create' ? 'Vendor ditambahkan' : 'Vendor diperbarui')
             setVendorModal(null)
           }}
         />
@@ -1090,7 +1091,7 @@ export default function POVendorClient({
               ? await createPO(fd)
               : await updatePO(editPoId!, fd)
             if (r?.error) { showToast(r.error, false); return }
-            showToast(poModal === 'create' ? `✅ PO dibuat: ${(r as any).nomorPO}` : '✅ PO diperbarui')
+            showToast(poModal === 'create' ? `PO dibuat: ${(r as any).nomorPO}` : 'PO diperbarui')
             setPoModal(null); setEditPoId(null)
           }}
         />
@@ -1104,7 +1105,7 @@ export default function POVendorClient({
           onSave={async (fd) => {
             const r = await createBatchPenerimaan(fd)
             if (r?.error) { showToast(r.error, false); return }
-            const msg = `✅ Batch ${(r as any).nomor} dibuat` + ((r as any).qtyLebih > 0 ? ` · Lebihan: ${(r as any).qtyLebih} pcs` : '')
+            const msg = `Batch ${(r as any).nomor} dibuat` + ((r as any).qtyLebih > 0 ? ` · Lebihan: ${(r as any).qtyLebih} pcs` : '')
             showToast(msg)
             setBatchModal(null)
           }}
@@ -1120,7 +1121,7 @@ export default function POVendorClient({
           onSave={async (fd) => {
             const r = await editBatchPenerimaan(editBatchModal.id, fd)
             if (r?.error) { showToast(r.error, false); return }
-            showToast(`✅ Penerimaan ${editBatchModal.nomor_batch} diperbarui`)
+            showToast(`Penerimaan ${editBatchModal.nomor_batch} diperbarui`)
             setEditBatchModal(null)
           }}
         />
@@ -1138,7 +1139,7 @@ export default function POVendorClient({
           onSave={async (fd) => {
             const r = await submitQC(fd)
             if (r?.error) { showToast(r.error, false); return }
-            showToast('✅ QC selesai — stok diperbarui')
+            showToast('QC selesai — stok diperbarui')
             setQcModal(null)
           }}
         />
@@ -1156,7 +1157,7 @@ export default function POVendorClient({
           onSave={async (fd) => {
             const r = await editQCResult(fd)
             if (r?.error) { showToast(r.error, false); return }
-            showToast('✅ Hasil QC diperbarui — stok disesuaikan')
+            showToast('Hasil QC diperbarui — stok disesuaikan')
             setEditQcModal(null)
           }}
         />
@@ -1171,7 +1172,7 @@ export default function POVendorClient({
           onSave={async (fd) => {
             const r = await createSJRetur(fd)
             if (r?.error) { showToast(r.error, false); return }
-            showToast(`✅ SJ Retur ${(r as any).nomor} dibuat`)
+            showToast(`SJ Retur ${(r as any).nomor} dibuat`)
             setSjModal(null)
           }}
         />
@@ -1184,7 +1185,7 @@ export default function POVendorClient({
           onConfirm={async (reason) => {
             const r = await voidPO(voidPoId, reason)
             if (r?.error) { showToast(r.error, false); return }
-            showToast('✅ PO divoid')
+            showToast('PO divoid')
             setVoidPoId(null)
           }}
         />
@@ -1731,9 +1732,9 @@ function QCModal({ batch, batchItems, kategoriList, timAnggotaList, adminInputLi
 
             {(!ok || !rejectsOk) && (
               <div className="rounded-lg px-2 py-1 text-[10px] bg-amber-50 text-amber-700 border border-amber-200">
-                {!ok && `⚠️ Total ACC+Reject = ${total} harus ${maxChk}`}
+                {!ok && `Total ACC+Reject = ${total} harus ${maxChk}`}
                 {!ok && !rejectsOk && ' · '}
-                {!rejectsOk && '⚠️ Kategori/alasan reject wajib'}
+                {!rejectsOk && 'Kategori/alasan reject wajib'}
               </div>
             )}
           </div>
@@ -1885,7 +1886,7 @@ function VoidModal({ title, onClose, onConfirm }: { title: string; onClose: () =
     <ModalShell title={title} onClose={onClose}>
       <div className="space-y-3">
         <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">
-          <p className="font-semibold">⚠️ PO akan divoid dan tidak bisa diaktifkan kembali</p>
+          <p className="font-semibold">PO akan divoid dan tidak bisa diaktifkan kembali.</p>
         </div>
         <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Alasan Void *</label>
           <textarea value={reason} onChange={e => setReason(e.target.value)} rows={3} required className={inp}/></div>
@@ -2100,7 +2101,7 @@ function VendorPerformanceDashboard({ rejectList, sjList, poItems, batchList, po
       {/* ── Overview ── */}
       {dsTab === 'overview' && (
         <div className="space-y-4">
-          {scored.length === 0 ? <Empty text="Belum ada data transaksi" icon="📊"/> : (<>
+          {scored.length === 0 ? <Empty text="Belum ada data transaksi" icon={BarChart2}/> : (<>
             {/* Best / Worst */}
             <div className="grid grid-cols-2 gap-2">
               {best && (
@@ -2117,7 +2118,7 @@ function VendorPerformanceDashboard({ rejectList, sjList, poItems, batchList, po
               )}
               {worst && worst.id !== best?.id && (
                 <div className="rounded-xl bg-red-50 border border-red-200 p-3">
-                  <p className="text-[10px] font-semibold text-red-600 mb-1">⚠️ Perlu Evaluasi</p>
+                  <p className="text-[10px] font-semibold text-red-600 mb-1">Perlu Evaluasi</p>
                   <p className="text-[13px] font-semibold text-slate-800 truncate">{worst.nama}</p>
                   <p className="text-[12px] font-semibold text-red-700 mt-1">Score {worst.score.toFixed(0)}/100</p>
                   <div className="mt-1.5 space-y-0.5">
@@ -2217,7 +2218,7 @@ function VendorPerformanceDashboard({ rejectList, sjList, poItems, batchList, po
           <p className="text-[12px] text-slate-400 px-1">
             {rejectPerPO.length} PO · diurutkan dari reject % tertinggi · hijau &lt;5%, kuning 5-10%, merah &gt;10%
           </p>
-          {rejectPerPO.length === 0 ? <Empty text="Belum ada QC selesai" icon="📋"/> : (
+          {rejectPerPO.length === 0 ? <Empty text="Belum ada QC selesai" icon={ClipboardList}/> : (
             rejectPerPO.map((po: any) => (
               <div key={po.id} className="rounded-xl bg-white border border-slate-200 p-3">
                 <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -2245,7 +2246,7 @@ function VendorPerformanceDashboard({ rejectList, sjList, poItems, batchList, po
       {/* ── Kategori Reject per Vendor ── */}
       {dsTab === 'kategori' && (
         <div className="space-y-4">
-          {Object.entries(kategoriPerVendor).length === 0 ? <Empty text="Belum ada data reject" icon="🏷️"/> : (
+          {Object.entries(kategoriPerVendor).length === 0 ? <Empty text="Belum ada data reject" icon={Tag}/> : (
             Object.entries(kategoriPerVendor).map(([vid, kat]) => {
               const vs = vstats[parseInt(vid)]; if (!vs) return null
               const sorted = Object.entries(kat).sort((a, b) => b[1].qty - a[1].qty)
@@ -2290,10 +2291,10 @@ function VendorPerformanceDashboard({ rejectList, sjList, poItems, batchList, po
   )
 }
 
-function Empty({ text, icon = '📦' }: { text: string; icon?: string }) {
+function Empty({ text, icon: Icon = Package }: { text: string; icon?: LucideIcon }) {
   return (
     <div className="py-10 flex flex-col items-center gap-2 opacity-40">
-      <span className="text-[24px]">{icon}</span>
+      <Icon size={24} className="text-slate-400"/>
       <p className="text-[13px] text-slate-400">{text}</p>
     </div>
   )
@@ -2334,7 +2335,7 @@ function PenggantiModal({ sj, onClose, onSave }: { sj: any; onClose: () => void;
         <p className="text-blue-500 mt-0.5 text-[11px]">Bisa pilih lebih dari satu produk sekaligus. Produk yang sudah penuh diganti tidak muncul di daftar.</p>
       </div>
       {availableItems.length === 0 ? (
-        <Empty text="Semua item sudah sepenuhnya diganti" icon="✅"/>
+        <Empty text="Semua item sudah sepenuhnya diganti" icon={CheckCircle2}/>
       ) : (
         <form onSubmit={async e => {
           e.preventDefault()
@@ -2396,7 +2397,7 @@ function PenggantiModal({ sj, onClose, onSave }: { sj: any; onClose: () => void;
             <textarea name="catatan" rows={2} className={inp}/></div>
 
           {overQty && (
-            <p className="text-[10px] text-red-500 px-1">⚠️ Ada qty yang melebihi sisa perlu ganti</p>
+            <p className="text-[10px] text-red-500 px-1">Ada qty yang melebihi sisa perlu ganti</p>
           )}
           <p className="text-[10px] text-amber-700 px-1">
             ⚡ Setelah simpan, batch pengganti muncul di tab <b>Penerimaan</b> menunggu QC. Lanjutkan QC untuk masukkan ke stok.
@@ -2465,9 +2466,9 @@ function HistoriHargaPanel({ produkList, poList, poItems, vendors }: { produkLis
         </select>
       </div>
 
-      {!produkId && <Empty text="Pilih produk untuk lihat perbandingan harga antar vendor" icon="💰"/>}
+      {!produkId && <Empty text="Pilih produk untuk lihat perbandingan harga antar vendor" icon={DollarSign}/>}
 
-      {produkId && rows.length === 0 && <Empty text="Belum ada harga PO untuk produk ini" icon="💰"/>}
+      {produkId && rows.length === 0 && <Empty text="Belum ada harga PO untuk produk ini" icon={DollarSign}/>}
 
       {produkId && rows.length > 0 && (
         <>

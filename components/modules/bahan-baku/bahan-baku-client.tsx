@@ -670,7 +670,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                       const rCount = rejectCountMap[batch.kode] ?? 0
                       return rCount > 0 ? (
                         <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-semibold bg-red-50 border border-red-200 text-red-600">
-                          <span>⚠️</span>
+                          <AlertTriangle size={12} className="text-amber-500"/>
                           <span>{rCount} item reject belum dilebur</span>
                         </div>
                       ) : null
@@ -758,7 +758,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                   {sfSelisihLive!=null&&sfInput[batch.id]!==''&&(
                                     <div className={`px-3 py-1.5 rounded-xl text-[11px] font-semibold flex items-center justify-between ${sfOverTol?'bg-red-50 text-red-600':'bg-green-50 text-green-600'}`}>
                                       <span>{sfSelisihLive>0?`Gain: +${formatGram(sfSelisihLive)}`:`Loss: ${formatGram(Math.abs(sfSelisihLive))}`}</span>
-                                      <span>{sfOverTol?`⚠️ melebihi toleransi ${toleransiPeleburan}gr`:`✓ dalam toleransi`}</span>
+                                      <span>{sfOverTol?`Melebihi toleransi ${toleransiPeleburan}gr`:`✓ dalam toleransi`}</span>
                                     </div>
                                   )}
                                   {/* TTD panel jika selisih > toleransi */}
@@ -814,7 +814,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <p className="text-[12px] font-semibold text-slate-800">{plb.kode}</p>
                                   <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${plb.status==='selesai'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}`}>
-                                    {plb.status==='selesai'?'✓ Selesai':'⏳ Proses'}
+                                    {plb.status==='selesai'?'✓ Selesai':'Proses'}
                                   </span>
                                 </div>
                                 {/* FIX poin 7: jam mulai & selesai */}
@@ -1454,14 +1454,14 @@ function SelesaiLeburModal({ peleburan, toleransi = 0.05, tims = [], adminList =
           {/* Gain / Loss indicator realtime */}
           {diterimaVal !== '' && isGain && (
             <div className="rounded-lg px-3 py-2 text-[12px] font-semibold flex items-center justify-between bg-amber-50 border border-amber-100 text-amber-700">
-              <span>⚠️ Gain: +{gainNow.toFixed(3)} gr</span>
+              <span>Gain: +{gainNow.toFixed(3)} gr</span>
               <span className="text-[10px]">Timbangan naik dari yang diserahkan</span>
             </div>
           )}
           {diterimaVal !== '' && !isGain && (
             <div className={`rounded-lg px-3 py-2 text-[12px] font-semibold flex items-center justify-between ${overTol?'bg-red-50 border border-red-100 text-red-600':'bg-green-50 border border-green-100 text-green-700'}`}>
               <span>Loss: {lossNow.toFixed(3)} gr</span>
-              <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
+              <span className="text-[10px]">{overTol ? `Melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
             </div>
           )}
 
@@ -1706,7 +1706,7 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
           {existingLoss && (
             <div className="rounded-lg px-3 py-2 text-[12px] bg-amber-50 border border-amber-100 text-amber-700">
               <p className="font-semibold text-amber-700 mb-1">
-                {hasExistingTtd ? '✅ TTD Loss Tersimpan — tidak perlu tanda tangan ulang' : '⚠ TTD Loss Belum Lengkap'}
+                {hasExistingTtd ? 'TTD Loss Tersimpan — tidak perlu tanda tangan ulang' : '⚠ TTD Loss Belum Lengkap'}
               </p>
               <p className="text-amber-600">Alasan: {existingLoss.alasan || '—'}</p>
               <p className="text-amber-600">Operator: {existingLoss.operator_nama || '—'} · Admin: {existingLoss.admin_nama || '—'}</p>
@@ -1777,14 +1777,14 @@ function EditPeleburanTerimaModal({ peleburan, tims = [], adminList = [], tolera
           {/* Gain / Loss realtime indicator */}
           {diterimaVal !== '' && isGainEdit && (
             <div className="rounded-lg px-3 py-2 text-[12px] font-semibold flex items-center justify-between bg-amber-50 border border-amber-100 text-amber-700">
-              <span>⚠️ Gain: +{gainNowEdit.toFixed(3)} gr</span>
+              <span>Gain: +{gainNowEdit.toFixed(3)} gr</span>
               <span className="text-[10px]">Timbangan naik dari yang diserahkan</span>
             </div>
           )}
           {diterimaVal !== '' && !isGainEdit && (
             <div className={`rounded-lg px-3 py-2 text-[12px] font-semibold flex items-center justify-between ${overTol?'bg-red-50 border border-red-100 text-red-600':'bg-green-50 border border-green-100 text-green-700'}`}>
               <span>Loss: {lossNow.toFixed(3)} gr</span>
-              <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
+              <span className="text-[10px]">{overTol ? `Melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
             </div>
           )}
 

@@ -401,7 +401,7 @@ export function TerimaModalStd({
           {terimaVal !== '' && (
             <div className={`rounded-lg px-3 py-2 text-[12px] font-semibold flex items-center justify-between border ${(overTol || overGain) ? 'bg-red-50 border-red-100 text-red-600' : 'bg-green-50 border-green-100 text-green-700'}`}>
               <span>{overGain ? `Gain: ${gainNow.toFixed(3)} gr` : `Loss: ${lossNow.toFixed(3)} gr`}</span>
-              <span className="text-[10px]">{overGain ? `⚠️ timbangan naik melebihi toleransi ${toleransi} gr` : overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
+              <span className="text-[10px]">{overGain ? `timbangan naik melebihi toleransi ${toleransi} gr` : overTol ? `melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
             </div>
           )}
 

@@ -3,8 +3,8 @@
 import { useState, useTransition } from 'react'
 import { useRealtimeRefresh } from '@/lib/supabase/use-realtime-refresh'
 import { toast } from 'sonner'
-import { Plus, X, Trash2, Check, AlertTriangle, Search, Package } from 'lucide-react'
-import { createScrap, voidScrap, updateScrapStatus } from '@/app/(dashboard)/scrap/actions'
+import { Plus, X, Trash2, Search, Package, Pencil } from 'lucide-react'
+import { createScrap, voidScrap, updateScrapStatus, editScrap } from '@/app/(dashboard)/scrap/actions'
 import { formatDate } from '@/lib/utils'
 import PaginationBar from '@/components/ui/pagination-bar'
 
@@ -36,10 +36,22 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('semua')
   const [page, setPage] = useState(1)
-  const [modal, setModal] = useState<'create' | null>(null)
+  const [modal, setModal] = useState<'create' | 'edit' | null>(null)
+  const [editTarget, setEditTarget] = useState<any | null>(null)
   const [voidModal, setVoidModal] = useState<any | null>(null)
   const [voidReason, setVoidReason] = useState('')
   const [err, setErr] = useState('')
+
+  function handleEdit(fd: FormData) {
+    if (!editTarget) return
+    setErr('')
+    startTransition(async () => {
+      const r = await editScrap(editTarget.id, fd)
+      if (r?.error) { setErr(r.error); return }
+      toast.success('Scrap diperbarui')
+      setModal(null)
+    })
+  }
   const filtered = scrapList.filter(s => {
     if (filterStatus !== 'semua' && s.status !== filterStatus) return false
     const q = search.toLowerCase()
@@ -70,7 +82,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-[18px] font-semibold text-slate-800">Scrap Inventory</h1>
+          <h1 className="text-[18px] font-semibold text-slate-800">Inventori Scrap</h1>
           <p className="text-[12px] text-slate-400 mt-0.5">Sisa lebihan proses produksi</p>
         </div>
         {canManage && (
@@ -157,6 +169,12 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
                             Lebur
                           </button>
                         )}
+                        {canManage && s.status === 'tersedia' && (
+                          <button onClick={() => { setEditTarget(s); setErr(''); setModal('edit') }}
+                            className="w-7 h-7 rounded-lg bg-slate-50 text-slate-500 flex items-center justify-center hover:bg-slate-100 transition-colors">
+                            <Pencil size={11}/>
+                          </button>
+                        )}
                         {canManage && (
                           <button onClick={() => { setVoidModal(s); setVoidReason('') }}
                             className="w-7 h-7 rounded-lg bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 transition-colors">
@@ -184,6 +202,40 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
               className="px-3 py-1.5 rounded-lg text-[12px] font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
               Berikutnya →
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {modal === 'edit' && editTarget && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+          <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+              <h2 className="text-[15px] font-bold text-slate-900">Edit Scrap {editTarget.kode}</h2>
+              <button onClick={() => setModal(null)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X size={14}/></button>
+            </div>
+            <form id="scrap-edit-form" onSubmit={e => { e.preventDefault(); handleEdit(new FormData(e.currentTarget)) }} className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+              <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal *</label>
+                <input name="tanggal" type="date" required defaultValue={editTarget.tanggal?.split('T')[0]} className={inp}/></div>
+              <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Berat (gr) *</label>
+                <input name="berat_gram" type="number" step="0.001" min="0.001" required defaultValue={editTarget.berat_gram} className={inp}/></div>
+              <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Sumber Proses</label>
+                <select name="sumber_proses" defaultValue={editTarget.sumber_proses} className={inp}>
+                  {SUMBER.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Batch (opsional)</label>
+                <input name="batch_kode" defaultValue={editTarget.batch_kode ?? ''} placeholder="mis. B-030" className={inp}/></div>
+              <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan</label>
+                <input name="catatan" defaultValue={editTarget.catatan ?? ''} placeholder="opsional" className={inp}/></div>
+              {err && <p className="text-[12px] text-red-500 font-semibold">{err}</p>}
+            </form>
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
+              <button type="button" onClick={() => setModal(null)} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+              <button type="submit" form="scrap-edit-form" disabled={isPending} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
+                {isPending ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -238,7 +290,7 @@ export default function ScrapClient({ scrapList, timList, adminList, canManage }
             </div>
             <div className="px-5 py-4 space-y-4">
               <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">
-                <p className="font-semibold">⚠️ Scrap akan di-void dan tidak bisa diaktifkan kembali</p>
+                <p className="font-semibold">Scrap akan di-void dan tidak bisa diaktifkan kembali.</p>
               </div>
               <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Alasan Void *</label>
                 <input value={voidReason} onChange={e => setVoidReason(e.target.value)}

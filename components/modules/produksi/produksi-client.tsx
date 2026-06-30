@@ -892,7 +892,7 @@ function SelesaiCuttingModal({ item, toleransi, onClose, onSubmit, isPending, er
           {(terimaVal !== '') && (
             <div className={cn('px-3 py-2 rounded-xl text-[12px] font-semibold flex items-center justify-between', overTol ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700')}>
               <span>Loss: {lossNow.toFixed(2)} gr</span>
-              <span className="text-[10px]">{overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
+              <span className="text-[10px]">{overTol ? `Perhatian: melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
             </div>
           )}
 
@@ -1212,7 +1212,7 @@ function TerimaStageModal({ item, tahap, tims, toleransi, handoverId, onClose, o
           {(terimaVal !== '') && (
             <div className={cn('px-3 py-2 rounded-xl text-[12px] font-semibold flex items-center justify-between', (overTol || overGain) ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700')}>
               <span>{overGain ? `Gain: ${gainNow.toFixed(2)} gr` : `Loss: ${lossNow.toFixed(2)} gr`}</span>
-              <span className="text-[10px]">{overGain ? `⚠️ timbangan naik melebihi toleransi ${toleransi} gr` : overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
+              <span className="text-[10px]">{overGain ? `Perhatian: timbangan naik melebihi toleransi ${toleransi} gr` : overTol ? `Perhatian: melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
             </div>
           )}
 
@@ -1471,10 +1471,10 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
     })
   }
 
-  function handleCreate(fd: FormData) { setErr(''); start(async()=>{ const r=await createProduksi(fd); if(r?.error){setErr(r.error);return}; showToast(r.count && r.count > 1 ? `✅ ${r.count} item produksi dibuat (${r.kode} dst)` : `✅ ${r.kode} dibuat`); setModal(null) }) }
-  function handleTambahProduksi(fd: FormData) { setErr(''); start(async()=>{ const r=await createProduksi(fd); if(r?.error){setErr(r.error);return}; showToast(`✅ ${r.kode} ditambahkan`); setModal(null) }) }
-  function handleEdit(fd: FormData)   { if(!active)return; setErr(''); start(async()=>{ const r=await editProduksi(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Diperbarui'); setModal(null) }) }
-  function handleUpdate(fd: FormData) { if(!active)return; setErr(''); start(async()=>{ const r=await updateStatusProduksi(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Status diperbarui'); setModal(null) }) }
+  function handleCreate(fd: FormData) { setErr(''); start(async()=>{ const r=await createProduksi(fd); if(r?.error){setErr(r.error);return}; showToast(r.count && r.count > 1 ? `${r.count} item produksi dibuat (${r.kode} dst)` : `${r.kode} dibuat`); setModal(null) }) }
+  function handleTambahProduksi(fd: FormData) { setErr(''); start(async()=>{ const r=await createProduksi(fd); if(r?.error){setErr(r.error);return}; showToast(`${r.kode} ditambahkan`); setModal(null) }) }
+  function handleEdit(fd: FormData)   { if(!active)return; setErr(''); start(async()=>{ const r=await editProduksi(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('Diperbarui'); setModal(null) }) }
+  function handleUpdate(fd: FormData) { if(!active)return; setErr(''); start(async()=>{ const r=await updateStatusProduksi(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('Status diperbarui'); setModal(null) }) }
   function handleDelete()             { if(!active)return; setErr(''); start(async()=>{ const r=await deleteProduksi(active.id,active.kode); if(r?.error){setErr(r.error); showToast(r.error,false); return}; showToast('🗑️ Dihapus'); setModal(null) }) }
   function mapStdToCutting(fd: FormData): FormData {
     // Terjemahkan nama field standar → nama field yang dibaca selesaiCutting
@@ -1486,19 +1486,19 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
     if (fd.get('terima_catatan') != null) fd.set('catatan', String(fd.get('terima_catatan')))
     return fd
   }
-  function handleSelesaiCutting(fd: FormData) { if(!active)return; setErr(''); mapStdToCutting(fd); start(async()=>{ const r=await selesaiCutting(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Cutting diterima'); setModal(null) }) }
-  function handleEditCutting(fd: FormData) { if(!active)return; setErr(''); fd.set('is_edit','1'); mapStdToCutting(fd); start(async()=>{ const r=await selesaiCutting(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Cutting diperbarui'); setModal(null) }) }
-  function handleSerahStage(fd: FormData)  { if(!active)return; setErr(''); start(async()=>{ const r=await serahStageProduksi(active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast(`✅ Diserahkan ke ${activeTahap.replace('_',' ')}`); setModal(null) }) }
-  function handleTerimaStage(fd: FormData) { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await terimaStageProduksi(activeHandoverId,active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast(`✅ Terima berhasil`); setModal(null); router.refresh() }) }
-  function handleEditHandover(fd: FormData) { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await terimaStageProduksi(activeHandoverId,active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Data diperbarui'); setModal(null); router.refresh() }) }
-  function handleEditSerahStage(fd: FormData) { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await editSerahStage(activeHandoverId,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Data penyerahan diperbarui'); setModal(null); router.refresh() }) }
+  function handleSelesaiCutting(fd: FormData) { if(!active)return; setErr(''); mapStdToCutting(fd); start(async()=>{ const r=await selesaiCutting(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('Cutting diterima'); setModal(null) }) }
+  function handleEditCutting(fd: FormData) { if(!active)return; setErr(''); fd.set('is_edit','1'); mapStdToCutting(fd); start(async()=>{ const r=await selesaiCutting(active.id,active.kode,fd); if(r?.error){setErr(r.error);return}; showToast('Cutting diperbarui'); setModal(null) }) }
+  function handleSerahStage(fd: FormData)  { if(!active)return; setErr(''); start(async()=>{ const r=await serahStageProduksi(active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast(`Diserahkan ke ${activeTahap.replace('_',' ')}`); setModal(null) }) }
+  function handleTerimaStage(fd: FormData) { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await terimaStageProduksi(activeHandoverId,active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast(`Terima berhasil`); setModal(null); router.refresh() }) }
+  function handleEditHandover(fd: FormData) { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await terimaStageProduksi(activeHandoverId,active.id,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast('Data diperbarui'); setModal(null); router.refresh() }) }
+  function handleEditSerahStage(fd: FormData) { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await editSerahStage(activeHandoverId,active.kode,activeTahap,fd); if(r?.error){setErr(r.error);return}; showToast('Data penyerahan diperbarui'); setModal(null); router.refresh() }) }
   function handleDeleteHandover() { if(!active||!activeHandoverId)return; setErr(''); start(async()=>{ const r=await voidStageHandover(activeHandoverId,active.id,activeTahap,'Dihapus manual'); if(r?.error){setErr(r.error);return}; showToast('🗑️ Proses dihapus'); setModal(null); router.refresh() }) }
   function handleDeleteCutting() { if(!active)return; setErr(''); start(async()=>{ const r=await resetCutting(active.id,active.kode); if(r?.error){setErr(r.error);return}; showToast('🗑️ Data terima Cutting dihapus'); setModal(null); router.refresh() }) }
   function openSesiModal(type: 'sesiCuttingTerima'|'sesiSerahStage'|'sesiTerimaStage', sesiId: string, items: any[], tahap?: string) { setActiveSesi({sesiId, items, tahap}); setErr(''); setModal(type) }
-  function handleSesiCuttingTerima(fd: FormData) { if(!activeSesi)return; setErr(''); start(async()=>{ const r=await terimaCuttingSesi(activeSesi.sesiId,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Cutting sesi diterima'); setModal(null) }) }
-  function handleSesiSerahStage(fd: FormData) { if(!activeSesi)return; setErr(''); start(async()=>{ const r=await serahSesiStage(activeSesi.sesiId,activeSesi.tahap!,fd); if(r?.error){setErr(r.error);return}; showToast(`✅ Diserahkan ke ${activeSesi.tahap?.replace('_',' ')}`); setModal(null) }) }
-  function handleSesiTerimaStage(fd: FormData) { if(!activeSesi)return; setErr(''); start(async()=>{ const r=await terimaSesiStage(activeSesi.sesiId,activeSesi.tahap!,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Terima sesi berhasil'); setModal(null); router.refresh() }) }
-  function handleTerimaCuttingItem(fd: FormData) { if(!active)return; setErr(''); start(async()=>{ const r=await terimaCuttingItem(active.id,fd); if(r?.error){setErr(r.error);return}; showToast('✅ Cutting diterima, gramasi ditetapkan'); setModal(null) }) }
+  function handleSesiCuttingTerima(fd: FormData) { if(!activeSesi)return; setErr(''); start(async()=>{ const r=await terimaCuttingSesi(activeSesi.sesiId,fd); if(r?.error){setErr(r.error);return}; showToast('Cutting sesi diterima'); setModal(null) }) }
+  function handleSesiSerahStage(fd: FormData) { if(!activeSesi)return; setErr(''); start(async()=>{ const r=await serahSesiStage(activeSesi.sesiId,activeSesi.tahap!,fd); if(r?.error){setErr(r.error);return}; showToast(`Diserahkan ke ${activeSesi.tahap?.replace('_',' ')}`); setModal(null) }) }
+  function handleSesiTerimaStage(fd: FormData) { if(!activeSesi)return; setErr(''); start(async()=>{ const r=await terimaSesiStage(activeSesi.sesiId,activeSesi.tahap!,fd); if(r?.error){setErr(r.error);return}; showToast('Terima sesi berhasil'); setModal(null); router.refresh() }) }
+  function handleTerimaCuttingItem(fd: FormData) { if(!active)return; setErr(''); start(async()=>{ const r=await terimaCuttingItem(active.id,fd); if(r?.error){setErr(r.error);return}; showToast('Cutting diterima, gramasi ditetapkan'); setModal(null) }) }
 
   // ── Filter ────────────────────────────────────────────────────────────────
   const STATUS_TABS = ['Semua','Cutting','Pas Berat','Annealing','Siap Packing','Sudah Packing','Reject']
@@ -1781,7 +1781,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">Cutting</span>
                                     <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${item.status_cutting==='selesai'?'bg-green-50 text-green-700 border border-green-100':'bg-amber-50 text-amber-700 border border-amber-100'}`}>
-                                      {item.status_cutting==='selesai'?'✓ Selesai':'⏳ Proses'}
+                                      {item.status_cutting==='selesai'?'✓ Selesai':'Proses'}
                                     </span>
                                     {durasiC&&<span className="text-[10px] text-slate-400">⏱ {durasiC}</span>}
                                   </div>
@@ -1862,7 +1862,7 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">{tl[h.tahap]}</span>
                                     <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${h.status==='selesai'?'bg-green-50 text-green-700 border border-green-100':'bg-amber-50 text-amber-700 border border-amber-100'}`}>
-                                      {h.status==='selesai'?'✓ Selesai':'⏳ Proses'}
+                                      {h.status==='selesai'?'✓ Selesai':'Proses'}
                                     </span>
                                     {durasiH&&<span className="text-[10px] text-slate-400">⏱ {durasiH}</span>}
                                   </div>
@@ -2594,7 +2594,7 @@ function TerimaCuttingForm({ item, tims, adminList, toleransi, err, isPending, o
         {gramasiRows.length > 0 && (
           <div className={cn('px-3 py-2 rounded-xl text-[12px] font-semibold flex items-center justify-between', (overTol || overGain) ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700')}>
             <span>{overGain ? `Gain: ${gainNow.toFixed(2)} gr` : `Loss: ${lossNow.toFixed(2)} gr`}</span>
-            <span className="text-[10px]">{overGain ? `⚠️ timbangan naik melebihi toleransi ${toleransi} gr` : overTol ? `⚠️ melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
+            <span className="text-[10px]">{overGain ? `Perhatian: timbangan naik melebihi toleransi ${toleransi} gr` : overTol ? `Perhatian: melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
           </div>
         )}
         {(overTol || overGain) && (

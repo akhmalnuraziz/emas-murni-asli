@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
-import { Plus, X, Check, AlertTriangle, RotateCcw, Clock, CheckCircle2, XCircle, Search } from 'lucide-react'
-import { createRetur, updateStatusRetur, deleteRetur } from '@/app/(dashboard)/retur-penjualan/actions'
+import { Plus, X, RotateCcw, Clock, CheckCircle2, XCircle, Search, Pencil, Trash2 } from 'lucide-react'
+import { createRetur, updateStatusRetur, deleteRetur, editRetur } from '@/app/(dashboard)/retur-penjualan/actions'
 import { formatDate, formatRupiah, cn } from '@/lib/utils'
 
 interface Retur {
@@ -28,17 +28,38 @@ const STATUS_CFG: Record<string, { bg: string; text: string; icon: any; label: s
 }
 
 const KONDISI_LABEL: Record<string, string> = {
-  rusak: '⚠️ Rusak/Cacat', salah_produk: '🔄 Salah Produk', lainnya: '📦 Lainnya',
+  rusak: 'Rusak / Cacat', salah_produk: 'Salah Produk', lainnya: 'Lainnya',
 }
 
 export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
   const [isPending, startTransition] = useTransition()
-  const [modal, setModal]   = useState<'form' | 'detail' | null>(null)
+  const [modal, setModal]   = useState<'form' | 'detail' | 'edit' | 'hapus' | null>(null)
   const [active, setActive] = useState<Retur | null>(null)
   const [err, setErr]       = useState('')
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('Semua')
   const [catatanInput, setCatatanInput] = useState('')
+  const [editData, setEditData] = useState<Partial<Retur>>({})
+
+  function openEdit(r: Retur) { setActive(r); setEditData({ ...r }); setErr(''); setModal('edit') }
+
+  function handleEdit(fd: FormData) {
+    if (!active) return
+    startTransition(async () => {
+      const res = await editRetur(active.id, fd)
+      if (res?.error) { setErr(res.error); return }
+      toast.success('Retur diperbarui'); setModal(null)
+    })
+  }
+
+  function handleDelete() {
+    if (!active) return
+    startTransition(async () => {
+      const res = await deleteRetur(active.id)
+      if (res?.error) { toast.error(res.error); return }
+      toast.success('Retur dihapus'); setModal(null)
+    })
+  }
 
   const filtered = returList.filter(r => {
     if (filterStatus !== 'Semua' && r.status !== filterStatus) return false
@@ -270,24 +291,109 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
                 </div>
               )}
             </div>
-            {canManage && active.status !== 'selesai' && active.status !== 'ditolak' && (
-              <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
-                {active.status === 'pending' && (
-                  <button onClick={() => handleStatus('diproses')} disabled={isPending}
-                    className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
-                    Proses
+            <div className="px-5 py-4 border-t border-slate-200 flex-shrink-0 space-y-2">
+              {canManage && active.status !== 'selesai' && active.status !== 'ditolak' && (
+                <div className="flex gap-2">
+                  {active.status === 'pending' && (
+                    <button onClick={() => handleStatus('diproses')} disabled={isPending}
+                      className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
+                      Proses
+                    </button>
+                  )}
+                  <button onClick={() => handleStatus('selesai')} disabled={isPending}
+                    className="flex-1 h-9 rounded-lg bg-green-600 hover:bg-green-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
+                    Selesai
                   </button>
-                )}
-                <button onClick={() => handleStatus('selesai')} disabled={isPending}
-                  className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
-                  Selesai
-                </button>
-                <button onClick={() => handleStatus('ditolak')} disabled={isPending}
-                  className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
-                  Tolak
-                </button>
+                  <button onClick={() => handleStatus('ditolak')} disabled={isPending}
+                    className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
+                    Tolak
+                  </button>
+                </div>
+              )}
+              {canManage && active.status === 'pending' && (
+                <div className="flex gap-2">
+                  <button onClick={() => openEdit(active)}
+                    className="flex-1 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-[12px] font-semibold text-slate-600 flex items-center justify-center gap-1.5 transition-colors">
+                    <Pencil size={12}/> Edit
+                  </button>
+                  <button onClick={() => setModal('hapus')}
+                    className="flex-1 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-[12px] font-semibold text-red-500 flex items-center justify-center gap-1.5 transition-colors">
+                    <Trash2 size={12}/> Hapus
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {modal === 'edit' && active && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+          <div className="w-full sm:max-w-md bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+              <h2 className="text-[15px] font-bold text-slate-900">Edit Retur {active.kode}</h2>
+              <button onClick={() => setModal(null)} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X size={14}/></button>
+            </div>
+            <form id="retur-edit-form" onSubmit={e => { e.preventDefault(); handleEdit(new FormData(e.currentTarget)) }}
+              className="px-5 py-4 space-y-3 overflow-y-auto flex-1">
+              <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal *</label>
+                <input name="tanggal" type="date" defaultValue={active.tanggal?.split('T')[0]} required
+                  className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
               </div>
-            )}
+              <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Kondisi *</label>
+                <select name="kondisi" defaultValue={active.kondisi} required
+                  className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all">
+                  {Object.entries(KONDISI_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </div>
+              <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Alasan *</label>
+                <input name="alasan" defaultValue={active.alasan} required
+                  className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
+              </div>
+              <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Customer</label>
+                <input name="nama_customer" defaultValue={active.nama_customer ?? ''}
+                  className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
+              </div>
+              <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">No. HP Customer</label>
+                <input name="hp_customer" defaultValue={active.hp_customer ?? ''} placeholder="08xx…"
+                  className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
+              </div>
+              <div><label className="block text-[11px] font-medium text-slate-500 mb-1.5">Catatan Admin</label>
+                <input name="catatan_admin" defaultValue={active.catatan_admin ?? ''}
+                  className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
+              </div>
+              {err && <p className="text-[12px] text-red-500 font-semibold">{err}</p>}
+            </form>
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200 flex-shrink-0">
+              <button type="button" onClick={() => setModal('detail')} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+              <button type="submit" form="retur-edit-form" disabled={isPending} className="flex-1 h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
+                {isPending ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hapus Confirm */}
+      {modal === 'hapus' && active && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+          <div className="w-full sm:max-w-sm bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+              <h2 className="text-[15px] font-bold text-slate-900">Hapus Retur?</h2>
+              <button onClick={() => setModal('detail')} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"><X size={14}/></button>
+            </div>
+            <div className="px-5 py-4">
+              <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600">
+                <p className="font-semibold">Retur {active.kode} akan dihapus permanen dan tidak dapat dibatalkan.</p>
+              </div>
+            </div>
+            <div className="px-5 py-4 flex gap-2.5 border-t border-slate-200">
+              <button onClick={() => setModal('detail')} className="flex-1 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+              <button onClick={handleDelete} disabled={isPending} className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
+                {isPending ? 'Menghapus...' : 'Hapus'}
+              </button>
+            </div>
           </div>
         </div>
       )}

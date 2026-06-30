@@ -48,6 +48,38 @@ export async function createScrap(formData: FormData) {
   return { success: true, kode }
 }
 
+export async function editScrap(id: number, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'manager', 'spv', 'admin_gudang'].includes(profile?.role ?? ''))
+    return { error: 'Tidak ada akses' }
+
+  const berat = parseFloat(formData.get('berat_gram') as string)
+  if (!berat || berat <= 0) return { error: 'Berat wajib diisi' }
+
+  const { data: existing } = await supabase.from('scrap_inventory').select('berat_gram, berat_terpakai, status').eq('id', id).single()
+  if (!existing) return { error: 'Data tidak ditemukan' }
+  if (existing.status !== 'tersedia') return { error: 'Hanya scrap dengan status tersedia yang dapat diedit' }
+
+  const beratTerpakai = Number(existing.berat_terpakai ?? 0)
+  const sisaBaru = Math.max(0, berat - beratTerpakai)
+
+  const { error } = await supabase.from('scrap_inventory').update({
+    berat_gram: berat,
+    berat_sisa: sisaBaru,
+    tanggal: formData.get('tanggal') as string,
+    sumber_proses: (formData.get('sumber_proses') as string) || 'manual',
+    batch_kode: (formData.get('batch_kode') as string) || null,
+    catatan: (formData.get('catatan') as string) || null,
+  }).eq('id', id)
+  if (error) return { error: error.message }
+
+  revalidatePath('/scrap')
+  return { success: true }
+}
+
 export async function updateScrapStatus(id: number, status: string, beratTerpakai?: number) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
