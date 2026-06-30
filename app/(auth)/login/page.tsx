@@ -166,7 +166,7 @@ function LoginForm() {
       </div>
 
       <p className="text-center text-[11px] text-slate-400 mt-6">
-        © {new Date().getFullYear()} PT Emas Murni Asli · ERP v4.0
+        akhmal.dev
       </p>
     </div>
   )
