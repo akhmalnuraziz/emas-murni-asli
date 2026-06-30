@@ -52,6 +52,8 @@ export async function updateScrapStatus(id: number, status: string, beratTerpaka
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
+  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak ada akses' }
 
   const updates: any = { status }
   if (beratTerpakai !== undefined) {

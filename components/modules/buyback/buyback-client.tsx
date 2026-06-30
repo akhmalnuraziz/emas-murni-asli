@@ -63,16 +63,26 @@ async function filesToBase64(files: File[]): Promise<string[]> {
   return results
 }
 
-// Base-26 range expansion for shieldtag codes (last 2 chars = AA–ZZ)
+// Range expansion using same charset as shieldtag module (0-9A-Z)
+const ST_CHARSET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+function stIncrement(code: string): string {
+  const chars = code.split('')
+  let i = chars.length - 1
+  while (i >= 0) {
+    const idx = ST_CHARSET.indexOf(chars[i])
+    if (idx === -1) { i--; continue }
+    if (idx < ST_CHARSET.length - 1) { chars[i] = ST_CHARSET[idx + 1]; return chars.join('') }
+    chars[i] = ST_CHARSET[0]; i--
+  }
+  return code
+}
 function expandRange(start: string, end: string): string[] {
-  if (start.length !== end.length) return [start, end]
-  const prefix = start.slice(0, -2)
-  if (end.slice(0, -2) !== prefix) return [start, end]
-  const toN = (s: string) => (s.charCodeAt(0) - 65) * 26 + (s.charCodeAt(1) - 65)
-  const toS = (n: number) => String.fromCharCode(Math.floor(n / 26) + 65, (n % 26) + 65)
-  const a = toN(start.slice(-2)), b = toN(end.slice(-2))
-  if (b < a || b - a > 500) return [start, end]
-  return Array.from({ length: b - a + 1 }, (_, i) => prefix + toS(a + i))
+  const s = start.toUpperCase().trim(), e = end.toUpperCase().trim()
+  if (!s || !e) return []
+  const codes: string[] = [s]
+  let cur = s, guard = 0
+  while (cur !== e && guard < 500) { cur = stIncrement(cur); codes.push(cur); guard++ }
+  return codes
 }
 
 async function parseExcelKodes(file: File): Promise<string[]> {
