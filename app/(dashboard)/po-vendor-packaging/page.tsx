@@ -66,7 +66,7 @@ export default async function POVendorPage({
     supabase.from('admin_input').select('id, nama').eq('aktif', true).is('voided_at', null).order('nama'),
   ])
 
-  const canManage = ['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')
+  const canManage = true // ROLE_CHECK_DISABLED: ['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')
 
   return (
     <POVendorClient

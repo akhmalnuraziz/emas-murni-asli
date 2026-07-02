@@ -7,9 +7,9 @@ export async function fetchBackupData(table: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized', data: null }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'manager', 'admin_accounting'].includes(profile?.role ?? ''))
-    return { error: 'Tidak ada akses', data: null }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager', 'admin_accounting'].includes(profile?.role ?? ''))
+  // ROLE_CHECK_DISABLED: return { error: 'Tidak ada akses', data: null }
+  // ROLE_CHECK_DISABLED: 
   const ALLOWED = [
     'batch', 'peleburan', 'produksi_item', 'packing_log', 'shieldtag',
     'penjualan', 'penjualan_item', 'penjualan_payment',

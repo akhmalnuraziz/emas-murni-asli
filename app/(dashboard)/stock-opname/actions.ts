@@ -149,8 +149,8 @@ export async function approveStockOpname(params: {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? ''))
-    return { success: false, error: 'Hanya SPV/Admin yang bisa approve' }
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager', 'spv'].includes(profile?.role ?? ''))
+  // ROLE_CHECK_DISABLED: return { success: false, error: 'Hanya SPV/Admin yang bisa approve' }
   const userName = profile?.name ?? 'Unknown'
 
   const { error } = await supabase.from('stock_opname').update({

@@ -93,7 +93,7 @@ export default function StockOpnameClient({ initialList, cabangList, userRole, u
             so={so}
             expanded={expandedId === so.id}
             onToggle={() => setExpandedId(expandedId === so.id ? null : so.id)}
-            canApprove={CAN_APPROVE.includes(userRole)}
+            canApprove={true /* ROLE_CHECK_DISABLED: CAN_APPROVE.includes(userRole) */}
             userName={userName}
             onApproved={reloadList}
           />

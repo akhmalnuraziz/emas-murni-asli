@@ -175,9 +175,9 @@ export async function editShieldtagKode(shieldtagId: number, newKode: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? ''))
-    return { error: 'Hanya Owner/Manager/SPV yang bisa edit kode' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager', 'spv'].includes(profile?.role ?? ''))
+  // ROLE_CHECK_DISABLED: return { error: 'Hanya Owner/Manager/SPV yang bisa edit kode' }
+  // ROLE_CHECK_DISABLED: 
   const newKodeUp = newKode.toUpperCase().trim()
   if (!newKodeUp) return { error: 'Kode tidak boleh kosong' }
 
@@ -217,8 +217,8 @@ export async function voidShieldtag(shieldtagId: number, reason: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner','manager','spv'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager/SPV' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner','manager','spv'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager/SPV' }
+  // ROLE_CHECK_DISABLED: 
   const { data: st } = await supabase.from('shieldtag').select('*').eq('id', shieldtagId).single()
   if (!st) return { error: 'Shieldtag tidak ditemukan' }
 
@@ -311,8 +311,8 @@ export async function bulkVoidShieldtag(ids: number[], reason: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner','manager','spv'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager/SPV' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner','manager','spv'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager/SPV' }
+  // ROLE_CHECK_DISABLED: 
   const tanggal = new Date().toISOString().split('T')[0]
   const histEntry = { tanggal, action: 'VOID (Bulk)', alasan: reason, oleh: profile?.name || 'System' }
 

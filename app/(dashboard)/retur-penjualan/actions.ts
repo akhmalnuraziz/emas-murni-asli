@@ -82,8 +82,8 @@ export async function updateStatusRetur(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
+  // ROLE_CHECK_DISABLED: 
   const { data: retur } = await supabase.from('retur_penjualan')
     .select('shieldtag_kodes').eq('id', returId).single()
 
@@ -109,8 +109,8 @@ export async function editRetur(returId: number, formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
+  // ROLE_CHECK_DISABLED: 
   const { data: retur } = await supabase.from('retur_penjualan').select('status').eq('id', returId).single()
   if (!retur) return { error: 'Retur tidak ditemukan' }
   if (retur.status === 'selesai') return { error: 'Retur yang sudah selesai tidak bisa diedit' }
@@ -134,8 +134,8 @@ export async function deleteRetur(returId: number) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
+  // ROLE_CHECK_DISABLED: 
   await supabase.from('retur_penjualan').update({ voided_at: new Date().toISOString() }).eq('id', returId)
   revalidatePath('/retur-penjualan')
   return { success: true }

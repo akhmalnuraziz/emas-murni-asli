@@ -35,8 +35,8 @@ export default function BarangKeluarClient({ initialList, shieldtagAktif, userRo
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [search, setSearch] = useState('')
 
-  const canVoid = ['owner', 'manager'].includes(userRole)
-  const canEdit = ['owner', 'manager', 'admin_gudang'].includes(userRole)
+  const canVoid = true /* ROLE_CHECK_DISABLED: ['owner', 'manager'].includes(userRole) */
+  const canEdit = true /* ROLE_CHECK_DISABLED: ['owner', 'manager', 'admin_gudang'].includes(userRole) */
 
   const filtered = search.trim()
     ? initialList.filter(b =>

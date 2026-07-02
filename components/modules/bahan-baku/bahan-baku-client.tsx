@@ -558,10 +558,10 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                       <button onClick={()=>{setEditItem(batch);setFormError('')}}className="w-8 h-8 rounded-xl bg-blue-50 text-blue-400 flex items-center justify-center hover:bg-blue-100 hover:scale-110 transition-all"title="Edit"><Edit2 size={13}/></button>
                       <button onClick={()=>setLockModal(batch)}className="w-8 h-8 rounded-xl bg-amber-50 text-amber-400 flex items-center justify-center hover:bg-amber-100 hover:scale-110 transition-all"title="Kunci"><Lock size={13}/></button>
                     </>}
-                    {status==='terkunci'&&['owner','manager'].includes(userRole)&&(
+                    {status==='terkunci'&&true /* ROLE_CHECK_DISABLED: ['owner','manager'].includes(userRole) */&&(
                       <button onClick={()=>startTransition(async()=>{await unlockBatch(batch.id,batch.kode);toast.success('Batch dibuka')})}className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center hover:bg-emerald-100 hover:scale-110 transition-all"title="Buka"><Unlock size={13}/></button>
                     )}
-                    {['owner','manager'].includes(userRole)&&(
+                    {true /* ROLE_CHECK_DISABLED: ['owner','manager'].includes(userRole) */&&(
                       <button onClick={()=>setDelModal(batch)}className="w-8 h-8 rounded-xl bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 hover:scale-110 transition-all"title="Hapus"><Trash2 size={13}/></button>
                     )}
                     <button onClick={()=>setExpanded(isExp?null:batch.id)}className="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-slate-200 hover:scale-110 transition-all">

@@ -13,8 +13,8 @@ export default async function BarangKeluarPage() {
   const { data: profile } = await supabase
     .from('users_profile').select('name, role').eq('id', user.id).single()
 
-  const allowed = ['owner', 'manager', 'admin_pusat', 'spv', 'accounting']
-  if (!allowed.includes(profile?.role ?? '')) redirect('/dashboard')
+  // ROLE_CHECK_DISABLED: const allowed = ['owner', 'manager', 'admin_pusat', 'spv', 'accounting']
+  // ROLE_CHECK_DISABLED: if (!allowed.includes(profile?.role ?? '')) redirect('/dashboard')
 
   const [{ data: list }, { data: shieldtags }] = await Promise.all([
     getBarangKeluarList(),

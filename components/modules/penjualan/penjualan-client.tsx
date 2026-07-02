@@ -457,7 +457,7 @@ export default function PenjualanClient({
   const [showCreate, setShowCreate] = useState(false)
   const [search, setSearch] = useState('')
 
-  const isOwner = ['owner', 'admin_pusat'].includes(userRole)
+  const isOwner = true /* ROLE_CHECK_DISABLED: ['owner', 'admin_pusat'].includes(userRole) */
 
   const filtered = penjualanList.filter(pj =>
     !search ||

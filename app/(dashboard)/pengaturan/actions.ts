@@ -140,8 +140,7 @@ export async function updateBiayaPackaging(gramasiList: string[], values: Record
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'owner') return { error: 'Hanya Owner/Manager' }
-
+  // ROLE_CHECK_DISABLED: if (profile?.role !== 'owner') return { error: 'Hanya Owner/Manager' }
   for (const g of gramasiList) {
     const key = `biaya_packaging_${g}`
     const val = values[g]
@@ -160,8 +159,7 @@ export async function createCabang(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'owner') return { error: 'Hanya Owner/Manager' }
-
+  // ROLE_CHECK_DISABLED: if (profile?.role !== 'owner') return { error: 'Hanya Owner/Manager' }
   const nama = (formData.get('nama') as string)?.trim()
   if (!nama) return { error: 'Nama cabang wajib diisi' }
   const { count } = await supabase.from('cabang').select('*', { count: 'exact', head: true })
@@ -211,7 +209,7 @@ export async function updateUserRole(userId: string, role: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'owner') return { error: 'Hanya Owner/Manager' }
+  // ROLE_CHECK_DISABLED: if (profile?.role !== 'owner') return { error: 'Hanya Owner/Manager' }
   if (userId === user.id) return { error: 'Tidak bisa ubah role diri sendiri' }
 
   const { error } = await supabase.from('users_profile').update({ role }).eq('id', userId)
@@ -225,7 +223,7 @@ export async function toggleUserAktif(userId: string, aktif: boolean) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'owner') return { error: 'Hanya Owner/Manager' }
+  // ROLE_CHECK_DISABLED: if (profile?.role !== 'owner') return { error: 'Hanya Owner/Manager' }
   if (userId === user.id) return { error: 'Tidak bisa nonaktifkan diri sendiri' }
 
   const { error } = await supabase.from('users_profile').update({
@@ -244,8 +242,7 @@ export async function inviteUser(formData: FormData) {
   const { data: { user } } = await regularClient.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await regularClient.from('users_profile').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'owner') return { error: 'Hanya Owner/Manager' }
-
+  // ROLE_CHECK_DISABLED: if (profile?.role !== 'owner') return { error: 'Hanya Owner/Manager' }
   const email = (formData.get('email') as string)?.trim().toLowerCase()
   const name  = (formData.get('name') as string)?.trim()
   const role  = formData.get('role') as string
@@ -272,7 +269,7 @@ export async function deleteUser(userId: string) {
   const { data: { user } } = await regularClient.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await regularClient.from('users_profile').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'owner') return { error: 'Hanya Owner/Manager' }
+  // ROLE_CHECK_DISABLED: if (profile?.role !== 'owner') return { error: 'Hanya Owner/Manager' }
   if (userId === user.id) return { error: 'Tidak bisa hapus akun sendiri' }
 
   await regularClient.from('users_profile').delete().eq('id', userId)
@@ -289,8 +286,7 @@ export async function createGramasi(nilai: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'owner') return { error: 'Tidak ada akses' }
-
+  // ROLE_CHECK_DISABLED: if (profile?.role !== 'owner') return { error: 'Tidak ada akses' }
   const v = nilai.trim()
   if (!v || isNaN(Number(v))) return { error: 'Nilai gramasi tidak valid' }
 
@@ -328,7 +324,7 @@ export async function deleteGramasi(id: number) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'owner') return { error: 'Tidak ada akses' }
+  // ROLE_CHECK_DISABLED: if (profile?.role !== 'owner') return { error: 'Tidak ada akses' }
   const { error } = await supabase.from('gramasi_option').delete().eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/pengaturan')
@@ -342,8 +338,7 @@ export async function createProdukPengaturan(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'owner') return { error: 'Tidak ada akses' }
-
+  // ROLE_CHECK_DISABLED: if (profile?.role !== 'owner') return { error: 'Tidak ada akses' }
   const nama = (formData.get('nama') as string)?.trim()
   if (!nama) return { error: 'Nama produk wajib diisi' }
 
@@ -366,7 +361,7 @@ export async function updateProdukPengaturan(id: number, formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'owner') return { error: 'Tidak ada akses' }
+  // ROLE_CHECK_DISABLED: if (profile?.role !== 'owner') return { error: 'Tidak ada akses' }
   const { error } = await supabase.from('produk_packaging').update({
     nama: (formData.get('nama') as string)?.trim(),
     satuan: (formData.get('satuan') as string) || 'pcs',
@@ -394,7 +389,7 @@ export async function updateKpiTargetTim(timId: number, targetGram: number) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'owner') return { error: 'Tidak memiliki akses' }
+  // ROLE_CHECK_DISABLED: if (profile?.role !== 'owner') return { error: 'Tidak memiliki akses' }
   await supabase.from('pengaturan').upsert(
     { key: `kpi_target_tim_${timId}`, value: String(targetGram), label: `KPI Target Serah Tim ${timId} (gr/bulan)`, updated_by: user.id },
     { onConflict: 'key' }
@@ -409,7 +404,7 @@ export async function updateSafetyStockGlobal(value: number) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'owner') return { error: 'Tidak memiliki akses' }
+  // ROLE_CHECK_DISABLED: if (profile?.role !== 'owner') return { error: 'Tidak memiliki akses' }
   await supabase.from('pengaturan').upsert(
     { key: 'safety_stock_global', value: String(value), label: 'Safety Stock Default (pcs per gramasi)', updated_by: user.id },
     { onConflict: 'key' }
@@ -424,7 +419,7 @@ export async function updateTargetProduksi(targetPcs: number) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (profile?.role !== 'owner') return { error: 'Tidak memiliki akses' }
+  // ROLE_CHECK_DISABLED: if (profile?.role !== 'owner') return { error: 'Tidak memiliki akses' }
   await supabase.from('pengaturan').upsert(
     { key: 'target_packing_harian', value: String(targetPcs), label: 'Target Packing Harian (pcs)', updated_by: user.id },
     { onConflict: 'key' }

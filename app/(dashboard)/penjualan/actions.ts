@@ -155,7 +155,7 @@ export async function voidPenjualan(penjualanId: number, reason: string) {
   if (!user) return { error: 'Unauthorized' }
 
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
   if (!reason) return { error: 'Alasan void wajib diisi' }
 
   const { data: pj } = await supabase.from('penjualan').select('id, shieldtag_kodes, voided_at').eq('id', penjualanId).single()
@@ -192,8 +192,8 @@ export async function editPenjualan(penjualanId: number, formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
+  // ROLE_CHECK_DISABLED: 
   const { data: pj } = await supabase.from('penjualan').select('voided_at').eq('id', penjualanId).single()
   if (!pj) return { error: 'Penjualan tidak ditemukan' }
   if (pj.voided_at) return { error: 'Penjualan yang sudah void tidak bisa diedit' }

@@ -35,8 +35,8 @@ export default function PengaturanClient({
 }) {
   const [isPending, start] = useTransition()
   const [tab, setTab] = useState<'tim' | 'admin' | 'umum' | 'cabang' | 'users' | 'gramasi'>('tim')
-  const canManage = userRole === 'owner'
-  const isOwnerAdmin = userRole === 'owner'
+  const canManage = true /* ROLE_CHECK_DISABLED: userRole === 'owner' */
+  const isOwnerAdmin = true /* ROLE_CHECK_DISABLED: userRole === 'owner' */
 
   const TABS = [
     { id: 'tim'       as const, label: 'Master Tim',        icon: Users     },

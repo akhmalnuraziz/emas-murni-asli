@@ -20,7 +20,7 @@ export default async function ScrapPage() {
     supabase.from('scrap_usage').select('scrap_id, peleburan_kode, gram, created_at').order('created_at', { ascending: false }).limit(2000),
   ])
 
-  const canManage = ['owner', 'admin_pusat', 'spv', 'gudang'].includes(profile?.role ?? '')
+  const canManage = true // ROLE_CHECK_DISABLED: ['owner', 'admin_pusat', 'spv', 'gudang'].includes(profile?.role ?? '')
 
   return (
     <ScrapClient

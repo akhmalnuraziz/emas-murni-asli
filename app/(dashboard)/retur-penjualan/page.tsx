@@ -18,7 +18,7 @@ export default async function ReturPenjualanPage() {
     .order('created_at', { ascending: false })
     .limit(200)
 
-  const canManage = ['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')
+  const canManage = true // ROLE_CHECK_DISABLED: ['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')
   const canSeeRp  = ['owner', 'admin_pusat', 'accounting'].includes(profile?.role ?? '')
 
   return (

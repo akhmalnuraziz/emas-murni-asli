@@ -111,8 +111,8 @@ export async function updateStatusPO(poId: number, status: 'diproses' | 'selesai
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
+  // ROLE_CHECK_DISABLED: 
   const now = new Date().toISOString()
   const update: any = { status, catatan_admin: catatanAdmin || null, updated_at: now }
   if (status === 'diproses') update.diproses_at = now
@@ -145,9 +145,9 @@ export async function updateQtyDikirim(itemId: number, qtyDikirim: number) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'manager', 'spv', 'admin_gudang'].includes(profile?.role ?? ''))
-    return { error: 'Tidak memiliki akses' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager', 'spv', 'admin_gudang'].includes(profile?.role ?? ''))
+  // ROLE_CHECK_DISABLED: return { error: 'Tidak memiliki akses' }
+  // ROLE_CHECK_DISABLED: 
   const { error } = await supabase.from('po_cabang_item').update({ qty_dikirim: qtyDikirim }).eq('id', itemId)
   if (error) return { error: error.message }
   revalidatePath('/po-cabang')
@@ -159,8 +159,8 @@ export async function deletePO(poId: number) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
+  // ROLE_CHECK_DISABLED: 
   const { data: po } = await supabase.from('po_cabang').select('status').eq('id', poId).single()
   if (po?.status === 'selesai') return { error: 'PO yang sudah selesai tidak bisa dihapus' }
 

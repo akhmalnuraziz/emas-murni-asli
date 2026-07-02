@@ -41,8 +41,8 @@ export default function PoCabangClient({
   const [search, setSearch] = useState('')
   const [tab, setTab] = useState<TabFilter>('semua')
 
-  const canApprove = ['owner', 'admin_pusat', 'spv'].includes(userRole)
-  const canDelete  = ['owner', 'admin_pusat'].includes(userRole)
+  const canApprove = true /* ROLE_CHECK_DISABLED: ['owner', 'admin_pusat', 'spv'].includes(userRole) */
+  const canDelete  = true /* ROLE_CHECK_DISABLED: ['owner', 'admin_pusat'].includes(userRole) */
 
   function handleUpdateStatus(poId: number, status: 'diproses' | 'selesai' | 'ditolak', catatan?: string) {
     start(async () => {

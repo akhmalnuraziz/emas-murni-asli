@@ -10,9 +10,9 @@ export async function uploadFotoMaster(gramasi: string, formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'manager', 'spv', 'admin_pusat'].includes(profile?.role ?? ''))
-    return { error: 'Tidak punya akses upload foto' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager', 'spv', 'admin_pusat'].includes(profile?.role ?? ''))
+  // ROLE_CHECK_DISABLED: return { error: 'Tidak punya akses upload foto' }
+  // ROLE_CHECK_DISABLED: 
   const files = formData.getAll('foto') as File[]
   if (!files.length) return { error: 'Tidak ada file dipilih' }
 

@@ -11,9 +11,9 @@ export async function createKategori(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Tidak terautentikasi' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'manager', 'spv', 'admin_accounting'].includes(profile?.role ?? ''))
-    return { error: 'Tidak memiliki akses' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager', 'spv', 'admin_accounting'].includes(profile?.role ?? ''))
+  // ROLE_CHECK_DISABLED: return { error: 'Tidak memiliki akses' }
+  // ROLE_CHECK_DISABLED: 
   const nama  = (formData.get('nama') as string)?.trim()
   const warna = (formData.get('warna') as string) ?? '#6366F1'
   if (!nama) return { error: 'Nama kategori wajib diisi' }
@@ -32,9 +32,9 @@ export async function updateKategori(id: number, formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Tidak terautentikasi' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'manager', 'spv', 'admin_accounting'].includes(profile?.role ?? ''))
-    return { error: 'Tidak memiliki akses' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager', 'spv', 'admin_accounting'].includes(profile?.role ?? ''))
+  // ROLE_CHECK_DISABLED: return { error: 'Tidak memiliki akses' }
+  // ROLE_CHECK_DISABLED: 
   const nama  = (formData.get('nama') as string)?.trim()
   const warna = (formData.get('warna') as string)
   if (!nama) return { error: 'Nama kategori wajib diisi' }
@@ -147,9 +147,9 @@ export async function voidPengeluaran(id: number, reason: string) {
 
   const { data: profile } = await supabase.from('users_profile')
     .select('role').eq('id', user.id).single()
-  if (!['owner', 'manager', 'admin_accounting'].includes(profile?.role ?? ''))
-    return { error: 'Tidak memiliki akses untuk menghapus pengeluaran' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager', 'admin_accounting'].includes(profile?.role ?? ''))
+  // ROLE_CHECK_DISABLED: return { error: 'Tidak memiliki akses untuk menghapus pengeluaran' }
+  // ROLE_CHECK_DISABLED: 
   if (!reason?.trim()) return { error: 'Alasan void wajib diisi' }
 
   const { error } = await supabase.from('pengeluaran').update({

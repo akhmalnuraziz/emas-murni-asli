@@ -309,14 +309,24 @@ const ALL = ['dashboard', 'bahan-baku', 'produksi', 'packing-log', 'shieldtag', 
   'laporan-batch', 'laporan-efisiensi',
   'pengaturan', 'audit-log', 'backup']
 
+// ROLE_CHECK_DISABLED: semua role dapat akses penuh sementara untuk testing —
+// daftar asli per-role disimpan di bawah untuk dikembalikan nanti.
 export const ROLE_ACCESS: Record<UserRole, string[]> = {
   owner:            ['*'],
-  manager:          ALL,
-  spv:              ALL,
-  admin_produksi:   ['dashboard', 'bahan-baku', 'produksi', 'packing-log', 'shieldtag', 'kpi-tim', 'scrap'],
-  admin_gudang:     ['dashboard', 'inventory', 'mutasi', 'stock-opname', 'stok-cabang', 'po-cabang', 'po-vendor-packaging', 'prioritas-produksi'],
-  admin_accounting: ['dashboard', 'penjualan', 'retur-penjualan', 'pelanggan', 'buyback', 'pengeluaran', 'laporan'],
+  manager:          ['*'],
+  spv:              ['*'],
+  admin_produksi:   ['*'],
+  admin_gudang:     ['*'],
+  admin_accounting: ['*'],
 }
+// const ROLE_ACCESS_ORIGINAL: Record<UserRole, string[]> = {
+//   owner:            ['*'],
+//   manager:          ALL,
+//   spv:              ALL,
+//   admin_produksi:   ['dashboard', 'bahan-baku', 'produksi', 'packing-log', 'shieldtag', 'kpi-tim', 'scrap'],
+//   admin_gudang:     ['dashboard', 'inventory', 'mutasi', 'stock-opname', 'stok-cabang', 'po-cabang', 'po-vendor-packaging', 'prioritas-produksi'],
+//   admin_accounting: ['dashboard', 'penjualan', 'retur-penjualan', 'pelanggan', 'buyback', 'pengeluaran', 'laporan'],
+// }
 
 export const GRAMASI_OPTIONS = [
   '0.1', '0.5', '1', '2', '5', '10', '20', '25', '50', '100', '250', '500', '1000'

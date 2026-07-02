@@ -115,8 +115,8 @@ export async function editBarangKeluar(id: number, formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'manager', 'admin_gudang'].includes(profile?.role ?? '')) return { error: 'Tidak ada akses' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager', 'admin_gudang'].includes(profile?.role ?? '')) return { error: 'Tidak ada akses' }
+  // ROLE_CHECK_DISABLED: 
   const { data: bk } = await supabase.from('barang_keluar')
     .select('kode, tujuan, items:barang_keluar_item(shieldtag_kode, gramasi)').eq('id', id).single()
   if (!bk) return { error: 'Data tidak ditemukan' }
@@ -185,8 +185,8 @@ export async function voidBarangKeluar(id: number) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
+  // ROLE_CHECK_DISABLED: 
   const { data: bk } = await supabase
     .from('barang_keluar')
     .select('kode, items:barang_keluar_item(shieldtag_kode)')

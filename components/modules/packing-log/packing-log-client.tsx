@@ -426,8 +426,8 @@ export default function PackingLogClient({packingList,siapPackingItems,shieldtag
     setSelectedIds(allSel?new Set():new Set(ids))
   }
 
-  const canManage=['owner','admin_pusat','spv','operator_produksi'].includes(userRole)
-  const canDelete=['owner','admin_pusat'].includes(userRole)
+  const canManage=true /* ROLE_CHECK_DISABLED: ['owner','admin_pusat','spv','operator_produksi'].includes(userRole) */
+  const canDelete=true /* ROLE_CHECK_DISABLED: ['owner','admin_pusat'].includes(userRole) */
 
   const filtered=packingList.filter(p=>{
     const q=search.toLowerCase()

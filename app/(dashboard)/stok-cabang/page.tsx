@@ -22,7 +22,7 @@ export default async function StokCabangPage({
   const isKepala    = profile?.role === 'kepala_cabang'
   const cabangKode  = profile?.cabang_kode ?? undefined
   const filter      = isKepala ? cabangKode : undefined
-  const canAdjust   = ['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')
+  const canAdjust   = true // ROLE_CHECK_DISABLED: ['owner', 'admin_pusat', 'spv'].includes(profile?.role ?? '')
 
   const page = Math.max(1, parseInt(sp.page ?? '1', 10))
   const from = (page - 1) * PO_PAGE_SIZE

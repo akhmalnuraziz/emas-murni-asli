@@ -1451,8 +1451,8 @@ export default function ProduksiClient({ produksiList, batches, peleburanByBatch
   const [toast, setToast]       = useState<{msg:string;ok:boolean}|null>(null)
   const [isPending, start]      = useTransition()
 
-  const canEdit   = ['owner','admin_pusat','spv','operator_produksi'].includes(userRole)
-  const canDelete = ['owner','admin_pusat','spv'].includes(userRole)
+  const canEdit   = true /* ROLE_CHECK_DISABLED: ['owner','admin_pusat','spv','operator_produksi'].includes(userRole) */
+  const canDelete = true /* ROLE_CHECK_DISABLED: ['owner','admin_pusat','spv'].includes(userRole) */
 
   function showToast(msg: string, ok = true) { setToast({msg,ok}); setTimeout(()=>setToast(null),3200) }
   function openModal(type: typeof modal, item?: any) { setActive(item??null); setErr(''); setModal(type) }

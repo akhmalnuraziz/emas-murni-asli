@@ -14,8 +14,8 @@ export default async function EfisiensiPage({
   if (!user) redirect('/login')
 
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  const allowed = ['owner', 'manager', 'admin_pusat', 'spv', 'accounting']
-  if (!allowed.includes(profile?.role ?? '')) redirect('/dashboard')
+  // ROLE_CHECK_DISABLED: const allowed = ['owner', 'manager', 'admin_pusat', 'spv', 'accounting']
+  // ROLE_CHECK_DISABLED: if (!allowed.includes(profile?.role ?? '')) redirect('/dashboard')
 
   const sp = await searchParams
   const today = new Date().toISOString().split('T')[0]

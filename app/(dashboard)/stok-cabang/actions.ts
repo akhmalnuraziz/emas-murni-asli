@@ -155,8 +155,8 @@ export async function createStockAdjustment(params: {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? ''))
-    return { success: false, error: 'Hanya Owner/Manager/SPV yang bisa adjust stok' }
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager', 'spv'].includes(profile?.role ?? ''))
+  // ROLE_CHECK_DISABLED: return { success: false, error: 'Hanya Owner/Manager/SPV yang bisa adjust stok' }
   if (!params.alasan.trim()) return { success: false, error: 'Alasan wajib diisi' }
 
   const { error } = await supabase.from('stok_cabang_adjustment').insert({

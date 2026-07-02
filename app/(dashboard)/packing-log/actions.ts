@@ -216,8 +216,8 @@ export async function voidPacking(packingId: number, packingKode: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
+  // ROLE_CHECK_DISABLED: 
   // Block if shieldtags already registered
   const { count: stCount } = await supabase.from('shieldtag')
     .select('*', { count: 'exact', head: true })
@@ -286,9 +286,9 @@ export async function reportPackingReject(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat', 'spv', 'manager'].includes(profile?.role ?? ''))
-    return { error: 'Hanya Owner/Manager/SPV/Admin Pusat' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'admin_pusat', 'spv', 'manager'].includes(profile?.role ?? ''))
+  // ROLE_CHECK_DISABLED: return { error: 'Hanya Owner/Manager/SPV/Admin Pusat' }
+  // ROLE_CHECK_DISABLED: 
   if (pcsReject <= 0) return { error: 'PCS reject harus lebih dari 0' }
   if (gramReject <= 0) return { error: 'Gram reject harus lebih dari 0' }
 
@@ -340,9 +340,9 @@ export async function editPackingReject(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat', 'spv', 'manager'].includes(profile?.role ?? ''))
-    return { error: 'Hanya Owner/Manager/SPV/Admin Pusat' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'admin_pusat', 'spv', 'manager'].includes(profile?.role ?? ''))
+  // ROLE_CHECK_DISABLED: return { error: 'Hanya Owner/Manager/SPV/Admin Pusat' }
+  // ROLE_CHECK_DISABLED: 
   if (pcsReject <= 0) return { error: 'PCS reject harus lebih dari 0' }
   if (gramReject <= 0) return { error: 'Gram reject harus lebih dari 0' }
 
@@ -384,9 +384,9 @@ export async function clearPackingReject(packingId: number) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'admin_pusat', 'spv', 'manager'].includes(profile?.role ?? ''))
-    return { error: 'Hanya Owner/Manager/SPV/Admin Pusat' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'admin_pusat', 'spv', 'manager'].includes(profile?.role ?? ''))
+  // ROLE_CHECK_DISABLED: return { error: 'Hanya Owner/Manager/SPV/Admin Pusat' }
+  // ROLE_CHECK_DISABLED: 
   if (await checkRejectNotInLebur(supabase, packingId))
     return { error: 'Tidak bisa hapus reject — sudah masuk Peleburan. Void Peleburan terkait terlebih dahulu.' }
 

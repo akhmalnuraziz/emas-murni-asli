@@ -624,9 +624,9 @@ function toggleSelect(id: number) {
     else setSelected(new Set(filtered.map(st => st.id)))
   }
 
-  const canRegister = ['owner', 'admin_pusat', 'spv', 'operator_produksi'].includes(userRole)
-  const canVoid = ['owner', 'admin_pusat', 'spv'].includes(userRole)
-  const canEdit = ['owner', 'admin_pusat', 'spv'].includes(userRole)
+  const canRegister = true /* ROLE_CHECK_DISABLED: ['owner', 'admin_pusat', 'spv', 'operator_produksi'].includes(userRole) */
+  const canVoid = true /* ROLE_CHECK_DISABLED: ['owner', 'admin_pusat', 'spv'].includes(userRole) */
+  const canEdit = true /* ROLE_CHECK_DISABLED: ['owner', 'admin_pusat', 'spv'].includes(userRole) */
   const tabs = ['Semua', 'Aktif', 'Terdistribusi', 'Terjual', 'VOID']
 
   function handleRegister(fd: FormData) {

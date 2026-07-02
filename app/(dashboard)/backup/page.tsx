@@ -7,9 +7,9 @@ export default async function BackupPage() {
   const { data: { user } } = await supabase.auth.getUser()
   const { data: profile } = await supabase.from('users_profile').select('role, name').eq('id', user?.id ?? '').single()
 
-  if (!['owner', 'admin_pusat', 'accounting'].includes(profile?.role ?? '')) {
-    redirect('/dashboard')
-  }
+  // ROLE_CHECK_DISABLED: if (!['owner', 'admin_pusat', 'accounting'].includes(profile?.role ?? '')) {
+  //   redirect('/dashboard')
+  // }
 
   return <BackupClient userRole={profile?.role ?? ''} />
 }

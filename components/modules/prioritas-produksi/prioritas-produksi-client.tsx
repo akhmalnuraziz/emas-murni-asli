@@ -68,7 +68,7 @@ export default function PrioritasProduksiClient({
             </p>
           </div>
         </div>
-        {(userRole === 'admin' || userRole === 'superadmin') && (
+        {(true /* ROLE_CHECK_DISABLED: userRole === 'admin' */ || true /* ROLE_CHECK_DISABLED: userRole === 'superadmin' */) && (
           <a href="/pengaturan" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold text-slate-500 border border-slate-200 hover:border-slate-300 hover:text-slate-700 transition-colors bg-white">
             <Settings size={12} /> Atur Safety Stock
           </a>

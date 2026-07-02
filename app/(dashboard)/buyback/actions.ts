@@ -124,8 +124,8 @@ export async function prossesBuyback(params: {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? ''))
-    return { success: false, error: 'Tidak ada akses' }
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager', 'spv'].includes(profile?.role ?? ''))
+  // ROLE_CHECK_DISABLED: return { success: false, error: 'Tidak ada akses' }
   const userName = profile?.name ?? 'Unknown'
 
   if (params.aksi === 'reject' && (!params.beratGram || params.beratGram <= 0))
@@ -283,8 +283,8 @@ export async function deleteBuyback(id: number): Promise<{ success: boolean; err
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { success: false, error: 'Hanya Owner/Manager' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager'].includes(profile?.role ?? '')) return { success: false, error: 'Hanya Owner/Manager' }
+  // ROLE_CHECK_DISABLED: 
   const { data: existing } = await supabase.from('buyback')
     .select('status, shieldtag_kode, kode').eq('id', id).single()
   if (!existing) return { success: false, error: 'Data tidak ditemukan' }

@@ -77,9 +77,9 @@ export async function createBatch(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'manager'].includes(profile?.role ?? ''))
-    return { error: 'Hanya Owner/Manager yang bisa membuat batch bahan baku' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager'].includes(profile?.role ?? ''))
+  // ROLE_CHECK_DISABLED: return { error: 'Hanya Owner/Manager yang bisa membuat batch bahan baku' }
+  // ROLE_CHECK_DISABLED: 
   const kodeInput = (formData.get('kode') as string)?.trim()
   const kode = kodeInput || await generateBatchCode(supabase)
 
@@ -185,9 +185,9 @@ export async function createBatchFromScrap(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'manager'].includes(profile?.role ?? ''))
-    return { error: 'Hanya Owner/Manager yang bisa membuat batch bahan baku' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager'].includes(profile?.role ?? ''))
+  // ROLE_CHECK_DISABLED: return { error: 'Hanya Owner/Manager yang bisa membuat batch bahan baku' }
+  // ROLE_CHECK_DISABLED: 
   const scrapRaw = formData.get('scrap_json') as string
   const scrapSel: { ref_id: string; ref_label: string; gram_aktual: number }[] = scrapRaw ? JSON.parse(scrapRaw) : []
   if (scrapSel.length === 0) return { error: 'Pilih minimal satu scrap' }
@@ -280,9 +280,9 @@ export async function createBatchRingkas(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'manager'].includes(profile?.role ?? ''))
-    return { error: 'Hanya Owner/Manager yang bisa membuat batch' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager'].includes(profile?.role ?? ''))
+  // ROLE_CHECK_DISABLED: return { error: 'Hanya Owner/Manager yang bisa membuat batch' }
+  // ROLE_CHECK_DISABLED: 
   const kode = (formData.get('kode') as string)?.trim().toUpperCase()
   if (!kode) return { error: 'Kode batch wajib diisi' }
 
@@ -334,9 +334,9 @@ export async function updateBatch(batchId: number, batchKode: string, formData: 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'manager'].includes(profile?.role ?? ''))
-    return { error: 'Hanya Owner/Manager yang bisa update batch bahan baku' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager'].includes(profile?.role ?? ''))
+  // ROLE_CHECK_DISABLED: return { error: 'Hanya Owner/Manager yang bisa update batch bahan baku' }
+  // ROLE_CHECK_DISABLED: 
   const beratPusat  = parseFloat(formData.get('bahan_dari_pusat') as string)
   const beratGudang = parseFloat(formData.get('timbangan_akhir') as string)
   const selisih     = beratPusat - beratGudang
@@ -431,8 +431,8 @@ export async function deleteBatch(batchId: number, batchKode: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Tidak memiliki izin' }
+  // ROLE_CHECK_DISABLED: 
   const { count: prodCount } = await supabase.from('produksi_item')
     .select('*', { count: 'exact', head: true }).eq('batch_kode', batchKode).is('voided_at', null)
   if ((prodCount ?? 0) > 0) return { error: `Batch memiliki ${prodCount} data produksi. Hapus produksi terlebih dahulu.` }
@@ -457,8 +457,8 @@ export async function lockBatch(batchId: number, batchKode: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager/SPV' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager', 'spv'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager/SPV' }
+  // ROLE_CHECK_DISABLED: 
   await supabase.from('batch').update({
     status:      'terkunci',
     locked_at:   new Date().toISOString(),
@@ -488,8 +488,8 @@ export async function unlockBatch(batchId: number, batchKode: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
-  if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager'].includes(profile?.role ?? '')) return { error: 'Hanya Owner/Manager' }
+  // ROLE_CHECK_DISABLED: 
   await supabase.from('batch').update({ status: 'aktif', locked_at: null, locked_by: null, lock_reason: null }).eq('id', batchId)
   supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,

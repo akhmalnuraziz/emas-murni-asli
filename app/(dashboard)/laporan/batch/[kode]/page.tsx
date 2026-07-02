@@ -12,8 +12,8 @@ export default async function LaporanBatchPage({ params }: { params: Promise<{ k
 
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
   const role = profile?.role ?? ''
-  const allowedRoles = ['owner', 'manager', 'admin_pusat', 'spv', 'accounting']
-  if (!allowedRoles.includes(role)) redirect('/dashboard')
+  // ROLE_CHECK_DISABLED: const allowedRoles = ['owner', 'manager', 'admin_pusat', 'spv', 'accounting']
+  // ROLE_CHECK_DISABLED: if (!allowedRoles.includes(role)) redirect('/dashboard')
 
   const kode = decodeURIComponent(rawKode)
 

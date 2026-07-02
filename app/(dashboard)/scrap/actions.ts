@@ -10,9 +10,9 @@ export async function createScrap(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'manager', 'spv', 'admin_gudang'].includes(profile?.role ?? ''))
-    return { error: 'Tidak ada akses' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager', 'spv', 'admin_gudang'].includes(profile?.role ?? ''))
+  // ROLE_CHECK_DISABLED: return { error: 'Tidak ada akses' }
+  // ROLE_CHECK_DISABLED: 
   const berat = parseFloat(formData.get('berat_gram') as string)
   if (!berat || berat <= 0) return { error: 'Berat wajib diisi' }
 
@@ -52,9 +52,9 @@ export async function editScrap(id: number, formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'manager', 'spv', 'admin_gudang'].includes(profile?.role ?? ''))
-    return { error: 'Tidak ada akses' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager', 'spv', 'admin_gudang'].includes(profile?.role ?? ''))
+  // ROLE_CHECK_DISABLED: return { error: 'Tidak ada akses' }
+  // ROLE_CHECK_DISABLED: 
   const berat = parseFloat(formData.get('berat_gram') as string)
   if (!berat || berat <= 0) return { error: 'Berat wajib diisi' }
 
@@ -87,9 +87,9 @@ export async function voidScrap(id: number, reason: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'manager'].includes(profile?.role ?? ''))
-    return { error: 'Hanya Owner/Manager yang bisa void' }
-
+  // ROLE_CHECK_DISABLED: if (!['owner', 'manager'].includes(profile?.role ?? ''))
+  // ROLE_CHECK_DISABLED: return { error: 'Hanya Owner/Manager yang bisa void' }
+  // ROLE_CHECK_DISABLED: 
   const { data: row } = await supabase.from('scrap_inventory').select('berat_terpakai').eq('id', id).single()
   if (Number(row?.berat_terpakai ?? 0) > 0.0001)
     return { error: 'Scrap sudah terpakai di peleburan — batalkan peleburannya terlebih dahulu' }
