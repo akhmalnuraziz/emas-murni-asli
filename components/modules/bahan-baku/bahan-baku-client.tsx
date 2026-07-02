@@ -1030,7 +1030,6 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
           hasilLeburBelumCetak={hasilLeburBelumCetak}
           rejectOptions={(rejectItems as any[]).filter((r:any)=>r.batch_kode===peleburanModalBatch)}
           packingRejectOptions={(packingRejectItems as any[]).filter((r:any)=>r.batch_kode===peleburanModalBatch)}
-          scrapOptions={scrapOptions}
           tims={tims} adminList={adminList}
           onClose={()=>{
             // Auto-expand batch card agar riwayat peleburan langsung terlihat
@@ -1107,34 +1106,24 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
   )
 }
 
-// ─── Create Peleburan Modal — satu kategori sumber: Bahan Baru / Rework / Scrap ───
-function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasilLeburBelumCetak, rejectOptions, packingRejectOptions = [], scrapOptions = [], tims = [], adminList = [], onClose }: {
+// ─── Create Peleburan Modal — sumber dari batch ini (Baru + Rework). Scrap Inventory
+// punya jalur sendiri lewat "+ Registrasi Scrap Inventory", tidak dicampur di sini. ───
+function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasilLeburBelumCetak, rejectOptions, packingRejectOptions = [], tims = [], adminList = [], onClose }: {
   batchKode: string; batchNama: string
   sisaMentahBelumLebur: number; hasilLeburBelumCetak: number
-  rejectOptions: any[]; packingRejectOptions?: any[]; scrapOptions?: any[]; tims?: any[]; adminList?: any[]
+  rejectOptions: any[]; packingRejectOptions?: any[]; tims?: any[]; adminList?: any[]
   onClose: () => void
 }) {
   const [pend, start]     = useTransition()
   const [err, setErr]     = useState('')
   const [fotos, setFotos] = useState<File[]>([])
-  const [kategori, setKategori] = useState<'batch'|'scrap'>('batch')
   const [mentahChecked, setMentahChecked] = useState(false)
   const [mentahGram, setMentahGram]       = useState('')
   const [leburChecked, setLeburChecked]   = useState(false)
   const [leburGram, setLeburGram]         = useState('')
   const [rejGram, setRejGram]       = useState<Record<number,string>>({})
   const [packRejGram, setPackRejGram] = useState<Record<number,string>>({})
-  const [scrapGram, setScrapGram]   = useState<Record<number,string>>({})
   const router = useRouter()
-
-  // Ganti kategori = reset semua pilihan (Scrap Inventory tidak boleh dicampur dgn bahan batch ini)
-  function switchKategori(k: 'batch'|'scrap') {
-    setKategori(k)
-    setMentahChecked(false); setMentahGram('')
-    setLeburChecked(false); setLeburGram('')
-    setRejGram({}); setPackRejGram({}); setScrapGram({})
-    setErr('')
-  }
 
   function toggleRej(id: number, berat: number) {
     setRejGram(prev => { const n={...prev}; if(n[id]!==undefined){delete n[id]}else{n[id]=Number(berat).toFixed(2)}; return n })
@@ -1142,20 +1131,14 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
   function togglePackRej(id: number, gram: number) {
     setPackRejGram(prev => { const n={...prev}; if(n[id]!==undefined){delete n[id]}else{n[id]=Number(gram).toFixed(3)}; return n })
   }
-  function toggleScrap(id: number, sisa: number) {
-    setScrapGram(prev => { const n={...prev}; if(n[id]!==undefined){delete n[id]}else{n[id]=Number(sisa).toFixed(3)}; return n })
-  }
 
   const totalDikasih =
-    (kategori==='batch' ? (
-      (mentahChecked ? (Number(mentahGram)||0) : 0) +
-      (leburChecked ? (Number(leburGram)||0) : 0) +
-      Object.values(rejGram).reduce((s,v)=>s+(Number(v)||0),0) +
-      Object.values(packRejGram).reduce((s,v)=>s+(Number(v)||0),0)
-    ) : 0) +
-    (kategori==='scrap' ? Object.values(scrapGram).reduce((s,v)=>s+(Number(v)||0),0) : 0)
+    (mentahChecked ? (Number(mentahGram)||0) : 0) +
+    (leburChecked ? (Number(leburGram)||0) : 0) +
+    Object.values(rejGram).reduce((s,v)=>s+(Number(v)||0),0) +
+    Object.values(packRejGram).reduce((s,v)=>s+(Number(v)||0),0)
 
-  const mentahNaik = kategori==='batch' && mentahChecked && (Number(mentahGram)||0) > sisaMentahBelumLebur && sisaMentahBelumLebur >= 0
+  const mentahNaik = mentahChecked && (Number(mentahGram)||0) > sisaMentahBelumLebur && sisaMentahBelumLebur >= 0
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -1165,28 +1148,19 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
 
     type SI = { tipe:string; ref_id:string|null; ref_label:string; gram_otomatis:number; gram_aktual:number }
     const sumber: SI[] = []
-    if (kategori==='batch') {
-      if (mentahChecked && (Number(mentahGram)||0) > 0)
-        sumber.push({ tipe:'batch_mentah', ref_id:null, ref_label:'Sisa Bahan Mentah Belum Dilebur', gram_otomatis:sisaMentahBelumLebur, gram_aktual:Number(mentahGram) })
-      if (leburChecked && (Number(leburGram)||0) > 0)
-        sumber.push({ tipe:'sisa_peleburan', ref_id:null, ref_label:'Hasil Lebur Belum Dicetak', gram_otomatis:hasilLeburBelumCetak, gram_aktual:Number(leburGram) })
-      for (const [id,gram] of Object.entries(rejGram)) {
-        const rej = rejectOptions.find((r:any)=>r.id===Number(id))
-        if (rej && (Number(gram)||0) > 0)
-          sumber.push({ tipe:'reject_cutting', ref_id:id, ref_label:rej.kode??rej.nama_item, gram_otomatis:Number(rej.sisa_reject_gram ?? rej.berat_reject), gram_aktual:Number(gram) })
-      }
-      for (const [id,gram] of Object.entries(packRejGram)) {
-        const pk = packingRejectOptions.find((r:any)=>r.id===Number(id))
-        if (pk && (Number(gram)||0) > 0)
-          sumber.push({ tipe:'reject_packing', ref_id:id, ref_label:pk.kode, gram_otomatis:Number(pk.gram_reject), gram_aktual:Number(gram) })
-      }
+    if (mentahChecked && (Number(mentahGram)||0) > 0)
+      sumber.push({ tipe:'batch_mentah', ref_id:null, ref_label:'Sisa Bahan Mentah Belum Dilebur', gram_otomatis:sisaMentahBelumLebur, gram_aktual:Number(mentahGram) })
+    if (leburChecked && (Number(leburGram)||0) > 0)
+      sumber.push({ tipe:'sisa_peleburan', ref_id:null, ref_label:'Hasil Lebur Belum Dicetak', gram_otomatis:hasilLeburBelumCetak, gram_aktual:Number(leburGram) })
+    for (const [id,gram] of Object.entries(rejGram)) {
+      const rej = rejectOptions.find((r:any)=>r.id===Number(id))
+      if (rej && (Number(gram)||0) > 0)
+        sumber.push({ tipe:'reject_cutting', ref_id:id, ref_label:rej.kode??rej.nama_item, gram_otomatis:Number(rej.sisa_reject_gram ?? rej.berat_reject), gram_aktual:Number(gram) })
     }
-    if (kategori==='scrap') {
-      for (const [id,gram] of Object.entries(scrapGram)) {
-        const sc = scrapOptions.find((r:any)=>r.id===Number(id))
-        if (sc && (Number(gram)||0) > 0)
-          sumber.push({ tipe:'scrap', ref_id:id, ref_label:sc.kode, gram_otomatis:Number(sc.berat_sisa), gram_aktual:Number(gram) })
-      }
+    for (const [id,gram] of Object.entries(packRejGram)) {
+      const pk = packingRejectOptions.find((r:any)=>r.id===Number(id))
+      if (pk && (Number(gram)||0) > 0)
+        sumber.push({ tipe:'reject_packing', ref_id:id, ref_label:pk.kode, gram_otomatis:Number(pk.gram_reject), gram_aktual:Number(gram) })
     }
     if (sumber.length === 0) { setErr('Pilih minimal satu sumber bahan'); return }
     fd.set('sumber_json', JSON.stringify(sumber))
@@ -1216,28 +1190,14 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
         <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden flex-1">
         <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
 
-          {/* SUMBER BAHAN — Bahan Baku+Rework batch ini bisa digabung; Scrap Inventory terpisah */}
+          {/* SUMBER BAHAN — Bahan Baru + Rework dari batch ini, bisa dicentang bersamaan.
+              Scrap Inventory punya jalur sendiri: "+ Registrasi Scrap Inventory". */}
           <div className="rounded-lg overflow-hidden border border-slate-200">
             <div className="px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-200">
-              <span className="text-[11px] font-medium text-slate-500">Sumber Bahan</span>
+              <span className="text-[11px] font-medium text-slate-500">Bahan Batch Ini</span>
             </div>
             <div className="p-4 space-y-4">
-
-              {/* Kategori selector */}
-              <div className="grid grid-cols-2 gap-1.5 p-1 rounded-lg bg-slate-100">
-                {([
-                  ['batch', 'Bahan Batch Ini (Baru + Rework)'],
-                  ['scrap', 'Scrap Inventory'],
-                ] as const).map(([k, label]) => (
-                  <button key={k} type="button" onClick={() => switchKategori(k)}
-                    className={`h-8 rounded-md text-[11px] font-semibold transition-all ${kategori === k ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              {/* KATEGORI 1: Bahan Batch Ini — Bahan Baru + Rework, bisa dicentang bersamaan */}
-              {kategori==='batch'&&(<>
+              <>
                 <div>
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input type="checkbox" checked={mentahChecked} onChange={e=>{setMentahChecked(e.target.checked);if(e.target.checked&&!mentahGram)setMentahGram(sisaMentahBelumLebur.toFixed(3))}} className="w-4 h-4 rounded accent-violet-600"/>
@@ -1327,43 +1287,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                 {rejectOptions.length===0&&packingRejectOptions.length===0&&hasilLeburBelumCetak<=0&&(
                   <p className="text-[12px] text-slate-400 italic text-center py-2">Tidak ada material rework untuk batch ini</p>
                 )}
-              </>)}
-
-              {/* KATEGORI 3: Scrap Inventory — bisa pilih banyak record, partial gram */}
-              {kategori==='scrap'&&(
-                scrapOptions.length>0?(
-                  <div className="space-y-2">
-                    <p className="text-[11px] text-slate-400">Pilih satu/banyak record — gram bisa dipakai sebagian</p>
-                    {scrapOptions.map((sc:any)=>{
-                      const sisa = Number(sc.berat_sisa??0)
-                      return (
-                      <div key={sc.id}>
-                        <label className="flex items-center gap-2 cursor-pointer select-none">
-                          <input type="checkbox" checked={scrapGram[sc.id]!==undefined} onChange={()=>toggleScrap(sc.id,sisa)} className="w-4 h-4 rounded accent-violet-600"/>
-                          <span className="font-mono text-[12px] font-semibold text-slate-700">{sc.kode}</span>
-                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-500">
-                            {sc.sumber_proses==='serbuk_produksi'?'Serbuk':sc.sumber_proses==='buyback'?'Buyback':'Manual'}
-                          </span>
-                          {sc.batch_kode&&<span className="text-[10px] text-slate-400">{sc.batch_kode}</span>}
-                          <span className="ml-auto text-[10px] text-green-500 font-semibold">Sisa {formatGram(sisa)}</span>
-                        </label>
-                        {scrapGram[sc.id]!==undefined&&(
-                          <div className="mt-1 pl-6">
-                            <input type="number" step="0.001" max={sisa} placeholder={`Max ${formatGram(sisa)}`}
-                              value={scrapGram[sc.id]} onChange={e=>setScrapGram(p=>({...p,[sc.id]:e.target.value}))} className={inp}/>
-                            {(Number(scrapGram[sc.id])||0)>sisa+0.001&&(
-                              <p className="text-[11px] text-red-500 font-semibold mt-1">Melebihi sisa scrap ({formatGram(sisa)})</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      )
-                    })}
-                  </div>
-                ):(
-                  <p className="text-[12px] text-slate-400 italic text-center py-2">Tidak ada scrap tersedia — cek halaman Inventori Scrap</p>
-                )
-              )}
+              </>
 
               {/* Total */}
               <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-violet-50 border border-violet-100">
