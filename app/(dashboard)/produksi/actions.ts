@@ -694,9 +694,8 @@ export async function selesaiCutting(produksiId: number, produksiKode: string, f
     })
   }
 
-  // Insert event (Diterima Cutting)
-  await supabase.from('produksi_event').insert({
-    produksi_item_id: produksiId,
+  const isEdit = formData.get('is_edit') === '1'
+  const eventPayload = {
     tanggal: tanggalSelesai,
     status: 'Cutting',
     total_gram: terimaGram,
@@ -709,9 +708,28 @@ export async function selesaiCutting(produksiId: number, produksiKode: string, f
       : `Serah: ${serahGram}gr | Terima: ${terimaGram}gr | Reject Cutting: ${rejectGram}gr | Losses: ${losses.toFixed(3)}gr`,
     user_name: profile?.name || null,
     fotos: fotoUrls,
-  })
+  }
 
-  const isEdit = formData.get('is_edit') === '1'
+  if (isEdit) {
+    // Edit: UPDATE event Cutting yang sudah ada (bukan insert baru) supaya created_at tetap lama.
+    // Trigger DB sync_produksi_item_status men-set current_status dari event TERBARU by created_at —
+    // insert baru di sini akan membuat current_status mundur ke 'Cutting' walau item sudah lanjut
+    // ke Pas Berat/Annealing/Siap Packing.
+    const { data: existingEvent } = await supabase.from('produksi_event')
+      .select('id').eq('produksi_item_id', produksiId).eq('status', 'Cutting')
+      .is('voided_at', null).order('created_at', { ascending: true }).limit(1).maybeSingle()
+    if (existingEvent) {
+      await supabase.from('produksi_event').update(eventPayload).eq('id', existingEvent.id)
+    } else {
+      await supabase.from('produksi_event').insert({ produksi_item_id: produksiId, ...eventPayload })
+    }
+  } else {
+    await supabase.from('produksi_event').insert({ produksi_item_id: produksiId, ...eventPayload })
+  }
+
+  // Item sudah lanjut ke stage berikutnya? Kalau ya, JANGAN timpa total_gram/pcs —
+  // nilai itu sudah dimiliki stage terkini (Pas Berat/Annealing/dst), bukan Cutting lagi.
+  const sudahLanjut = isEdit && produksi.current_status !== 'Cutting'
 
   // Update produksi_item
   const updateData: any = {
@@ -720,12 +738,12 @@ export async function selesaiCutting(produksiId: number, produksiKode: string, f
     tanggal_selesai: tanggalSelesai,
     jam_selesai: jamSelesai,
     status_cutting: 'selesai',
-    total_gram: terimaGram,
     foto_diterima_cutting: fotoUrls,
   }
+  if (!sudahLanjut) updateData.total_gram = terimaGram
   // Catatan terima cutting → kolom terpisah agar tidak menimpa catatan serah
   if (catatan) updateData.catatan_terima = catatan
-  if (pcsGood && pcsGood > 0) {
+  if (pcsGood && pcsGood > 0 && !sudahLanjut) {
     updateData.pcs_good = pcsGood
     updateData.pcs = pcsGood
   }

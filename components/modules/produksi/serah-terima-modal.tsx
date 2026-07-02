@@ -304,7 +304,7 @@ export function TerimaModalStd({
             </div>
             <div className="p-4 space-y-3">
               <div>
-                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Berat Diterima — BAIK saja (gr) *</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Berat Diterima — ACC (gr) *</label>
                 <p className="text-[10px] text-amber-600 mb-1.5">Jangan masukkan berat reject/serbuk di sini — isi terpisah di bawah. Sistem akan menjumlahkan otomatis.</p>
                 <input name="terima_gram" type="number" step="0.001" placeholder={`Max ${Number(serahGram).toFixed(3)} gr`}
                   value={terimaVal} onChange={e => setTerimaVal(e.target.value)} className={inp} required />
@@ -402,7 +402,7 @@ export function TerimaModalStd({
           {terimaVal !== '' && (
             <div className="rounded-lg px-3 py-2 text-[11px] bg-slate-50 border border-slate-200 text-slate-600">
               <div className="flex items-center justify-between">
-                <span>Baik {(parseFloat(terimaVal)||0).toFixed(3)} + Reject {(parseFloat(rejectVal)||0).toFixed(3)} + Serbuk {(parseFloat(serbukVal)||0).toFixed(3)}</span>
+                <span>Berat ACC {(parseFloat(terimaVal)||0).toFixed(3)} + Reject {(parseFloat(rejectVal)||0).toFixed(3)} + Serbuk {(parseFloat(serbukVal)||0).toFixed(3)}</span>
                 <span className="font-semibold">= {((parseFloat(terimaVal)||0)+(parseFloat(rejectVal)||0)+(parseFloat(serbukVal)||0)).toFixed(3)} gr</span>
               </div>
               <div className="flex items-center justify-between mt-0.5 text-slate-400">
