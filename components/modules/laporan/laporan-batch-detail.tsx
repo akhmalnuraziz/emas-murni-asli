@@ -22,7 +22,7 @@ interface Peleburan {
 }
 interface ProduksiItem {
   id: number; kode: string; gramasi: string
-  pcs: number; total_gram: number | null
+  pcs: number; pcs_good: number | null; total_gram: number | null
   current_status: string | null; sisa_serbuk: number | null
   berat_reject: number | null; berat_reject_dilebur: number | null
 }
@@ -58,22 +58,26 @@ export default function LaporanBatchDetail({ batch, peleburans, produksiItems, p
   const lossLebur     = totalDikasih - totalDiterima
   const lossPct       = totalDikasih > 0 ? lossLebur / totalDikasih * 100 : 0
 
-  // Gramasi Jadi & Total Produksi → dari packing (lebih akurat, tidak bergantung produksi_item.total_gram)
-  const packingGramasiMap = new Map<string, { pcs: number; total_gram: number }>()
-  for (const pk of packings) {
-    const g = pk.gramasi ?? '?'
-    const cur = packingGramasiMap.get(g) ?? { pcs: 0, total_gram: 0 }
-    packingGramasiMap.set(g, {
-      pcs: cur.pcs + Number(pk.pcs ?? 0),
-      total_gram: cur.total_gram + Number(pk.total_gram ?? 0),
+  // Gramasi Jadi & Total Produksi → dari produksi_item yang sudah mencapai Siap Packing
+  // (Packing Log adalah proses fisik terpisah yang bisa lag di belakang produksi, jadi
+  // tidak dipakai sebagai sumber "Total Produksi" — itu akan under-report pcs yang sudah jadi)
+  const siapPackingItems = produksiItems.filter(p => p.current_status === 'Siap Packing')
+  const gramasiMap = new Map<string, { pcs: number; total_gram: number; sisa_serbuk: number }>()
+  for (const p of siapPackingItems) {
+    const g = p.gramasi ?? '?'
+    const cur = gramasiMap.get(g) ?? { pcs: 0, total_gram: 0, sisa_serbuk: 0 }
+    gramasiMap.set(g, {
+      pcs: cur.pcs + Number(p.pcs_good ?? p.pcs ?? 0),
+      total_gram: cur.total_gram + Number(p.total_gram ?? 0),
+      sisa_serbuk: cur.sisa_serbuk + Number(p.sisa_serbuk ?? 0),
     })
   }
-  const gramasiRows = [...packingGramasiMap.entries()]
-    .map(([gramasi, v]) => ({ gramasi, ...v, sisa_serbuk: 0 }))
+  const gramasiRows = [...gramasiMap.entries()]
+    .map(([gramasi, v]) => ({ gramasi, ...v }))
     .sort((a, b) => parseFloat(a.gramasi) - parseFloat(b.gramasi))
 
-  const totalGramProduksi = packings.reduce((s, pk) => s + Number(pk.total_gram ?? 0), 0)
-  const totalPcs          = packings.reduce((s, pk) => s + Number(pk.pcs ?? 0), 0)
+  const totalGramProduksi = siapPackingItems.reduce((s, p) => s + Number(p.total_gram ?? 0), 0)
+  const totalPcs          = siapPackingItems.reduce((s, p) => s + Number(p.pcs_good ?? p.pcs ?? 0), 0)
   const totalSerbuk       = produksiItems.reduce((s, p) => s + Number(p.sisa_serbuk ?? 0), 0)
   const rejectBlmDilebur  = produksiItems.reduce((s, p) => s + Math.max(0, Number(p.berat_reject ?? 0) - Number(p.berat_reject_dilebur ?? 0)), 0)
   const sisaSeharusnya    = Number(batch.sisa_bahan_seharusnya ?? 0)

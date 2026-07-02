@@ -179,6 +179,101 @@ export async function createBatch(formData: FormData) {
   return { success: true, kode }
 }
 
+// ── REGISTRASI SCRAP INVENTORY (batch baru dari konsolidasi scrap, langsung lebur) ─
+export async function createBatchFromScrap(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  if (!['owner', 'manager'].includes(profile?.role ?? ''))
+    return { error: 'Hanya Owner/Manager yang bisa membuat batch bahan baku' }
+
+  const scrapRaw = formData.get('scrap_json') as string
+  const scrapSel: { ref_id: string; ref_label: string; gram_aktual: number }[] = scrapRaw ? JSON.parse(scrapRaw) : []
+  if (scrapSel.length === 0) return { error: 'Pilih minimal satu scrap' }
+
+  const tanggal  = (formData.get('tanggal') as string) || new Date().toISOString().slice(0, 10)
+  const jamMulai = (formData.get('jam_mulai') as string) || null
+  const operator = (formData.get('operator') as string) || null
+  const namaBatch = (formData.get('nama_batch') as string)?.trim() || null
+
+  const ids = scrapSel.map(s => parseInt(s.ref_id))
+  const { data: rows } = await supabase.from('scrap_inventory')
+    .select('id, kode, berat_gram, berat_terpakai, berat_sisa, voided_at').in('id', ids)
+  const scrapRows: Record<number, any> = {}
+  let totalGram = 0
+  for (const s of scrapSel) {
+    const row = (rows ?? []).find((r: any) => r.id === parseInt(s.ref_id))
+    if (!row || row.voided_at) return { error: `Scrap ${s.ref_label} tidak ditemukan / sudah di-void` }
+    const sisa = Number(row.berat_sisa ?? 0)
+    if (Number(s.gram_aktual) > sisa + 0.001)
+      return { error: `Scrap ${row.kode}: gram dipakai (${Number(s.gram_aktual).toFixed(3)}) melebihi sisa (${sisa.toFixed(3)} gr)` }
+    scrapRows[row.id] = row
+    totalGram += Number(s.gram_aktual)
+  }
+  if (totalGram <= 0) return { error: 'Total gram harus lebih dari 0' }
+
+  const kode = await generateBatchCode(supabase)
+  const { data: batch, error: batchErr } = await supabase.from('batch').insert({
+    kode,
+    nama_batch: namaBatch || `Registrasi Scrap ${tanggal}`,
+    supplier: 'Scrap Inventory',
+    tanggal, tanggal_beli: tanggal,
+    bahan_dari_pusat: totalGram,
+    timbangan_akhir: totalGram,
+    selisih_berat: 0,
+    harga_beli: 0, biaya_tambahan: [], total_hpp: 0, hpp_gr: 0,
+    sisa_bahan_seharusnya: 0,
+    catatan: 'Batch dari konsolidasi Scrap Inventory',
+    fotos: [],
+    created_by: user.id,
+  }).select().single()
+  if (batchErr) return { error: batchErr.message }
+
+  const { count } = await supabase.from('peleburan').select('*', { count: 'exact', head: true })
+  const plbKode = `PLB.GDCJ/${String((count ?? 0) + 1).padStart(4, '0')}`
+
+  const { data: plb, error: plbErr } = await supabase.from('peleburan').insert({
+    kode: plbKode, batch_kode: kode,
+    tanggal, jam_mulai: jamMulai,
+    dikasih_gram: totalGram,
+    sumber_batch_gram: 0,
+    diterima_gram: null,
+    operator,
+    tim_id: formData.get('tim_id') ? Number(formData.get('tim_id')) : null,
+    tim_nama: (formData.get('tim_nama') as string) || null,
+    admin_input: (formData.get('admin_input') as string) || null,
+    status: 'proses',
+    created_by: user.id,
+  }).select().single()
+  if (plbErr) return { error: plbErr.message }
+
+  for (const s of scrapSel) {
+    const scrapId = parseInt(s.ref_id)
+    const row = scrapRows[scrapId]
+    const gram = Number(s.gram_aktual)
+    await supabase.from('scrap_usage').insert({
+      scrap_id: scrapId, peleburan_id: plb.id, peleburan_kode: plbKode, gram, created_by: user.id,
+    })
+    const terpakaiBaru = Number(row.berat_terpakai ?? 0) + gram
+    await supabase.from('scrap_inventory').update({
+      berat_terpakai: terpakaiBaru,
+      berat_sisa: Math.max(0, Number(row.berat_gram) - terpakaiBaru),
+      status: scrapStatusFrom(Number(row.berat_gram), terpakaiBaru),
+    }).eq('id', scrapId)
+  }
+
+  supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'CREATE_BATCH_FROM_SCRAP', module: 'BAHAN_BAKU',
+    record_key: kode, after_data: { kode, plbKode, totalGram, scrapCount: scrapSel.length },
+  })
+
+  revalidatePath('/bahan-baku')
+  revalidatePath('/scrap')
+  return { success: true, kode, plbKode }
+}
+
 // ── BATCH RINGKAS (historis, tanpa detail produksi) ───────────────────────────
 export async function createBatchRingkas(formData: FormData) {
   const supabase = await createClient()
@@ -529,17 +624,19 @@ export async function createPeleburan(formData: FormData) {
 
   if (sumberList.length === 0) return { error: 'Minimal satu sumber bahan harus dipilih' }
 
-  // ── Satu peleburan = satu kategori sumber (tidak boleh dicampur) ─────────
+  // ── Bahan Baku (batch_mentah) + Rework (sisa_peleburan/reject) boleh digabung
+  // karena masih berasal dari batch yang sama. Scrap Inventory (sumber eksternal
+  // dari batch/proses lain) tetap harus terpisah, tidak boleh dicampur.
   const KATEGORI: Record<SumberItem['tipe'], string> = {
-    batch_mentah: 'registrasi',
-    sisa_peleburan: 'rework',
-    reject_cutting: 'rework',
-    reject_packing: 'rework',
+    batch_mentah: 'batch',
+    sisa_peleburan: 'batch',
+    reject_cutting: 'batch',
+    reject_packing: 'batch',
     scrap: 'scrap',
   }
   const kategoriSet = new Set(sumberList.map(s => KATEGORI[s.tipe]))
   if (kategoriSet.size > 1)
-    return { error: 'Sumber bahan tidak boleh dicampur — pilih salah satu: Bahan Baru (Registrasi Batch), Rework Produksi, atau Scrap Inventory' }
+    return { error: 'Sumber Scrap Inventory tidak boleh dicampur dengan bahan dari batch ini — pilih salah satu' }
 
   const totalDikasih    = sumberList.reduce((s, x) => s + Number(x.gram_aktual), 0)
   const sumberBatchGram = sumberList.filter(x => x.tipe === 'batch_mentah')

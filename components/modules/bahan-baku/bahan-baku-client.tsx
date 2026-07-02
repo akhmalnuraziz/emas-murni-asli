@@ -14,7 +14,7 @@ import {
   createBatch, updateBatch, deleteBatch,
   lockBatch, unlockBatch, updateSisaFisik, hapusSisaFisik,
   createPeleburan, voidPeleburan, editPeleburan, editPeleburanSerah, editPeleburanTerima,
-  createBatchRingkas,
+  createBatchRingkas, createBatchFromScrap,
 } from '@/app/(dashboard)/bahan-baku/actions'
 import type { UserRole } from '@/lib/types/database'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
@@ -347,6 +347,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
   const [expanded,setExpanded]=useState<number|null>(null)
   const [showCreate,setShowCreate]=useState(false)
   const [showRingkas,setShowRingkas]=useState(false)
+  const [showScrapReg,setShowScrapReg]=useState(false)
   const [editItem,setEditItem]=useState<any|null>(null)
   const [lockModal,setLockModal]=useState<any|null>(null)
   const [delModal,setDelModal]=useState<any|null>(null)
@@ -378,6 +379,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
 
   function handleCreate(fd:FormData){setFormError('');startTransition(async()=>{const r=await createBatch(fd);if(r?.error){setFormError(r.error);return}toast.success('Batch berhasil disimpan');setShowCreate(false)})}
   function handleRingkas(fd:FormData){setFormError('');startTransition(async()=>{const r=await createBatchRingkas(fd);if(r?.error){setFormError(r.error);return}toast.success(`Batch ringkas ${(r as any).kode} diimpor`);setShowRingkas(false)})}
+  function handleScrapReg(fd:FormData){setFormError('');startTransition(async()=>{const r=await createBatchFromScrap(fd);if(r?.error){setFormError(r.error);return}toast.success(`Batch ${(r as any).kode} dibuat, peleburan ${(r as any).plbKode} dimulai`);setShowScrapReg(false);router.refresh()})}
   function handleUpdate(fd:FormData){if(!editItem)return;setFormError('');startTransition(async()=>{const r=await updateBatch(editItem.id,editItem.kode,fd);if(r?.error){setFormError(r.error);return}toast.success('Batch diperbarui');setEditItem(null)})}
 
   async function handleSisaFisik(batch:any, sisaSeharusnya:number, toleransi:number){
@@ -453,6 +455,10 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                 <Archive size={13}/> Impor Batch Lama
               </button>
             )}
+            <button onClick={()=>{setShowScrapReg(true);setFormError('')}}
+              className="flex items-center gap-1.5 h-8 px-3 text-[12px] font-semibold rounded-lg border bg-white text-violet-600 border-violet-200 hover:bg-violet-50 transition-colors">
+              <Plus size={14}/> Registrasi Scrap Inventory
+            </button>
             <button onClick={()=>{setShowCreate(true);setFormError('')}}
               className="flex items-center gap-1.5 h-8 px-3 text-[12px] font-semibold text-white rounded-lg bg-violet-600 hover:bg-violet-700 transition-colors">
               <Plus size={14}/> Registrasi Batch
@@ -1010,6 +1016,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
       {/* Modals */}
       {showCreate&&<BatchFormModal onSubmit={handleCreate} onClose={()=>setShowCreate(false)} isPending={isPending} error={formError}/>}
       {showRingkas&&<BatchRingkasModal onSubmit={handleRingkas} onClose={()=>setShowRingkas(false)} isPending={isPending} error={formError}/>}
+      {showScrapReg&&<RegistrasiScrapModal scrapOptions={scrapOptions} tims={tims} adminList={adminList} onSubmit={handleScrapReg} onClose={()=>setShowScrapReg(false)} isPending={isPending} error={formError}/>}
       {peleburanModalBatch&&(()=>{
         const pb = batches.find((b:any)=>b.kode===peleburanModalBatch)
         const plbBatch = (peleburanList as any[]).filter((p:any)=>p.batch_kode===peleburanModalBatch)
@@ -1110,7 +1117,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
   const [pend, start]     = useTransition()
   const [err, setErr]     = useState('')
   const [fotos, setFotos] = useState<File[]>([])
-  const [kategori, setKategori] = useState<'registrasi'|'rework'|'scrap'>('registrasi')
+  const [kategori, setKategori] = useState<'batch'|'scrap'>('batch')
   const [mentahChecked, setMentahChecked] = useState(false)
   const [mentahGram, setMentahGram]       = useState('')
   const [leburChecked, setLeburChecked]   = useState(false)
@@ -1120,8 +1127,8 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
   const [scrapGram, setScrapGram]   = useState<Record<number,string>>({})
   const router = useRouter()
 
-  // Ganti kategori = reset semua pilihan (satu peleburan satu sumber, tidak boleh campur)
-  function switchKategori(k: 'registrasi'|'rework'|'scrap') {
+  // Ganti kategori = reset semua pilihan (Scrap Inventory tidak boleh dicampur dgn bahan batch ini)
+  function switchKategori(k: 'batch'|'scrap') {
     setKategori(k)
     setMentahChecked(false); setMentahGram('')
     setLeburChecked(false); setLeburGram('')
@@ -1140,15 +1147,15 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
   }
 
   const totalDikasih =
-    (kategori==='registrasi' && mentahChecked ? (Number(mentahGram)||0) : 0) +
-    (kategori==='rework' ? (
+    (kategori==='batch' ? (
+      (mentahChecked ? (Number(mentahGram)||0) : 0) +
       (leburChecked ? (Number(leburGram)||0) : 0) +
       Object.values(rejGram).reduce((s,v)=>s+(Number(v)||0),0) +
       Object.values(packRejGram).reduce((s,v)=>s+(Number(v)||0),0)
     ) : 0) +
     (kategori==='scrap' ? Object.values(scrapGram).reduce((s,v)=>s+(Number(v)||0),0) : 0)
 
-  const mentahNaik = kategori==='registrasi' && mentahChecked && (Number(mentahGram)||0) > sisaMentahBelumLebur && sisaMentahBelumLebur >= 0
+  const mentahNaik = kategori==='batch' && mentahChecked && (Number(mentahGram)||0) > sisaMentahBelumLebur && sisaMentahBelumLebur >= 0
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -1158,9 +1165,9 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
 
     type SI = { tipe:string; ref_id:string|null; ref_label:string; gram_otomatis:number; gram_aktual:number }
     const sumber: SI[] = []
-    if (kategori==='registrasi' && mentahChecked && (Number(mentahGram)||0) > 0)
-      sumber.push({ tipe:'batch_mentah', ref_id:null, ref_label:'Sisa Bahan Mentah Belum Dilebur', gram_otomatis:sisaMentahBelumLebur, gram_aktual:Number(mentahGram) })
-    if (kategori==='rework') {
+    if (kategori==='batch') {
+      if (mentahChecked && (Number(mentahGram)||0) > 0)
+        sumber.push({ tipe:'batch_mentah', ref_id:null, ref_label:'Sisa Bahan Mentah Belum Dilebur', gram_otomatis:sisaMentahBelumLebur, gram_aktual:Number(mentahGram) })
       if (leburChecked && (Number(leburGram)||0) > 0)
         sumber.push({ tipe:'sisa_peleburan', ref_id:null, ref_label:'Hasil Lebur Belum Dicetak', gram_otomatis:hasilLeburBelumCetak, gram_aktual:Number(leburGram) })
       for (const [id,gram] of Object.entries(rejGram)) {
@@ -1209,18 +1216,17 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
         <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden flex-1">
         <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
 
-          {/* SUMBER BAHAN — satu kategori saja, tidak boleh dicampur */}
+          {/* SUMBER BAHAN — Bahan Baku+Rework batch ini bisa digabung; Scrap Inventory terpisah */}
           <div className="rounded-lg overflow-hidden border border-slate-200">
             <div className="px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-200">
-              <span className="text-[11px] font-medium text-slate-500">Sumber Bahan — pilih salah satu kategori</span>
+              <span className="text-[11px] font-medium text-slate-500">Sumber Bahan</span>
             </div>
             <div className="p-4 space-y-4">
 
               {/* Kategori selector */}
-              <div className="grid grid-cols-3 gap-1.5 p-1 rounded-lg bg-slate-100">
+              <div className="grid grid-cols-2 gap-1.5 p-1 rounded-lg bg-slate-100">
                 {([
-                  ['registrasi', 'Bahan Baru'],
-                  ['rework', 'Rework Produksi'],
+                  ['batch', 'Bahan Batch Ini (Baru + Rework)'],
                   ['scrap', 'Scrap Inventory'],
                 ] as const).map(([k, label]) => (
                   <button key={k} type="button" onClick={() => switchKategori(k)}
@@ -1230,8 +1236,8 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                 ))}
               </div>
 
-              {/* KATEGORI 1: Bahan Baru (Registrasi Batch) */}
-              {kategori==='registrasi'&&(
+              {/* KATEGORI 1: Bahan Batch Ini — Bahan Baru + Rework, bisa dicentang bersamaan */}
+              {kategori==='batch'&&(<>
                 <div>
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input type="checkbox" checked={mentahChecked} onChange={e=>{setMentahChecked(e.target.checked);if(e.target.checked&&!mentahGram)setMentahGram(sisaMentahBelumLebur.toFixed(3))}} className="w-4 h-4 rounded accent-violet-600"/>
@@ -1246,10 +1252,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
                     </div>
                   )}
                 </div>
-              )}
 
-              {/* KATEGORI 2: Rework Produksi */}
-              {kategori==='rework'&&(<>
                 <div>
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input type="checkbox" checked={leburChecked} onChange={e=>{setLeburChecked(e.target.checked);if(e.target.checked&&!leburGram)setLeburGram(hasilLeburBelumCetak.toFixed(3))}} className="w-4 h-4 rounded accent-violet-600"/>
@@ -1417,6 +1420,117 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
           </button>
         </div>
       </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Registrasi Scrap Inventory — buat batch baru langsung dari konsolidasi scrap ─
+function RegistrasiScrapModal({ scrapOptions, tims = [], adminList = [], onSubmit, onClose, isPending, error }: {
+  scrapOptions: any[]; tims?: any[]; adminList?: any[]
+  onSubmit: (fd: FormData) => void; onClose: () => void; isPending: boolean; error: string
+}) {
+  const [scrapGram, setScrapGram] = useState<Record<number,string>>({})
+  const [fotos, setFotos] = useState<File[]>([])
+
+  function toggleScrap(id: number, sisa: number) {
+    setScrapGram(prev => { const n={...prev}; if(n[id]!==undefined){delete n[id]}else{n[id]=Number(sisa).toFixed(3)}; return n })
+  }
+  const totalGram = Object.values(scrapGram).reduce((s,v)=>s+(Number(v)||0),0)
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    const sel = Object.entries(scrapGram).filter(([,g])=>Number(g)>0).map(([id,g])=>{
+      const sc = scrapOptions.find((r:any)=>r.id===Number(id))
+      return { ref_id:id, ref_label:sc?.kode??id, gram_aktual:Number(g) }
+    })
+    if (sel.length === 0) return
+    fd.set('scrap_json', JSON.stringify(sel))
+    if (fotos.length > 0) fd.set('foto_serahkan_b64', JSON.stringify(await filesToBase64(fotos)))
+    onSubmit(fd)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
+      <div className="w-full sm:max-w-lg bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 flex-shrink-0">
+          <div>
+            <h2 className="text-[15px] font-bold text-slate-900">Registrasi Scrap Inventory</h2>
+            <p className="text-[11px] text-slate-400 mt-0.5">Konsolidasi scrap jadi batch baru, langsung mulai peleburan</p>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"><X size={14} className="text-slate-500"/></button>
+        </div>
+        <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden flex-1">
+          <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+            <div>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Nama Batch (opsional)</label>
+              <input name="nama_batch" placeholder="cth: Scrap Konsolidasi Juli" className={inp}/>
+            </div>
+            <div className="rounded-lg overflow-hidden border border-slate-200">
+              <div className="px-3 py-2 bg-slate-50 border-b border-slate-200">
+                <span className="text-[11px] font-medium text-slate-500">Pilih Scrap — bisa banyak record, gram sebagian</span>
+              </div>
+              <div className="p-4 space-y-2">
+                {scrapOptions.length === 0 ? (
+                  <p className="text-[12px] text-slate-400 italic text-center py-2">Tidak ada scrap tersedia</p>
+                ) : scrapOptions.map((sc: any) => {
+                  const sisa = Number(sc.berat_sisa ?? 0)
+                  return (
+                    <div key={sc.id}>
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" checked={scrapGram[sc.id]!==undefined} onChange={()=>toggleScrap(sc.id,sisa)} className="w-4 h-4 rounded accent-violet-600"/>
+                        <span className="font-mono text-[12px] font-semibold text-slate-700">{sc.kode}</span>
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-500">
+                          {sc.sumber_proses==='serbuk_produksi'?'Serbuk':sc.sumber_proses==='buyback'?'Buyback':'Manual'}
+                        </span>
+                        {sc.batch_kode && <span className="text-[10px] text-slate-400">{sc.batch_kode}</span>}
+                        <span className="ml-auto text-[10px] text-green-500 font-semibold">Sisa {formatGram(sisa)}</span>
+                      </label>
+                      {scrapGram[sc.id]!==undefined && (
+                        <div className="mt-1 pl-6">
+                          <input type="number" step="0.001" max={sisa} placeholder={`Max ${formatGram(sisa)}`}
+                            value={scrapGram[sc.id]} onChange={e=>setScrapGram(p=>({...p,[sc.id]:e.target.value}))} className={inp}/>
+                          {(Number(scrapGram[sc.id])||0)>sisa+0.001 && (
+                            <p className="text-[11px] text-red-500 font-semibold mt-1">Melebihi sisa scrap ({formatGram(sisa)})</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-violet-50 border border-violet-100">
+              <span className="text-[12px] text-slate-500 font-semibold">Total</span>
+              <span className={`text-[13px] font-semibold ${totalGram>0?'text-violet-700':'text-slate-400'}`}>{formatGram(totalGram)}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Tanggal Mulai <span className="text-red-500">*</span></label>
+                <input name="tanggal" type="date" defaultValue={new Date().toISOString().split('T')[0]} className={inp} required/>
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Jam Mulai <span className="text-red-500">*</span></label>
+                <input name="jam_mulai" type="time" className={inp} required/>
+              </div>
+            </div>
+            <TimPickerStd tims={tims} prefix="" />
+            <AdminPickerStd adminList={adminList} prefix="" label="Admin Yang Menyerahkan" />
+            <div>
+              <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Foto (opsional, MAX 10)</label>
+              <FotoPicker files={fotos} onAdd={ff=>setFotos(p=>[...p,...ff].slice(0,10))} onRemove={i=>i===-1?setFotos([]):setFotos(p=>p.filter((_,j)=>j!==i))} label="Tambah foto"/>
+            </div>
+            {error && <div className="rounded-lg px-3 py-2 text-[12px] bg-red-50 border border-red-100 text-red-600 flex items-center gap-2"><AlertTriangle size={13} className="flex-shrink-0"/><span>{error}</span></div>}
+          </div>
+          <div className="flex-shrink-0 px-5 py-4 border-t border-slate-200 flex gap-2.5">
+            <button type="button" onClick={onClose} className="flex-1 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-[13px] font-semibold text-slate-600 transition-colors">Batal</button>
+            <button type="submit" disabled={isPending||totalGram<=0}
+              className="flex-1 h-9 rounded-xl bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
+              {isPending?'Menyimpan…':`Registrasi & Mulai Lebur (${formatGram(totalGram)})`}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )

@@ -145,6 +145,7 @@ function ShieldtagInput({ kodes, onChange }: { kodes: string[]; onChange: (k: st
         <div className="flex gap-2">
           <input value={text} onChange={e => setText(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addKode(text) } }}
+            onBlur={() => { if (text.trim()) addKode(text) }}
             className={cn(inp, 'font-mono flex-1')}
             placeholder="Ketik kode lalu Enter (bisa lebih dari satu, pisah koma)" />
           <button type="button" onClick={() => addKode(text)}

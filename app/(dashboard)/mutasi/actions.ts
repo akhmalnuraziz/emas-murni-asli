@@ -74,6 +74,19 @@ export async function kirimMutasiCabang(formData: FormData) {
 
   const totalPcs = tags.length
 
+  // VALIDASI GATE: gramasi shieldtag yang dipilih harus sesuai dengan yang diminta PO
+  // (cegah kirim barang 50gr untuk memenuhi PO yang minta 1gr)
+  if (poIds.length > 0) {
+    const { data: poItemsCheck } = await supabase.from('po_cabang_item')
+      .select('gramasi, po_id').in('po_id', poIds)
+    const gramasiDiminta = new Set((poItemsCheck ?? []).map((i: any) => String(i.gramasi)))
+    const gramasiSalah = tags.filter((t: any) => !gramasiDiminta.has(String(t.gramasi)))
+    if (gramasiSalah.length > 0) {
+      const salahList = [...new Set(gramasiSalah.map((t: any) => t.gramasi))].join(', ')
+      return { error: `Gramasi shieldtag (${salahList}gr) tidak sesuai dengan yang diminta PO ini (${[...gramasiDiminta].join(', ')}gr)` }
+    }
+  }
+
   // Ambil cabang nama
   const { data: cabang } = await supabase.from('cabang').select('nama').eq('kode', cabangKode).maybeSingle()
 

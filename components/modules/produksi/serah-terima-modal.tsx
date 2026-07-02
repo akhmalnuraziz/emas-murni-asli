@@ -304,7 +304,8 @@ export function TerimaModalStd({
             </div>
             <div className="p-4 space-y-3">
               <div>
-                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Berat Diterima (gr) *</label>
+                <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Berat Diterima — BAIK saja (gr) *</label>
+                <p className="text-[10px] text-amber-600 mb-1.5">Jangan masukkan berat reject/serbuk di sini — isi terpisah di bawah. Sistem akan menjumlahkan otomatis.</p>
                 <input name="terima_gram" type="number" step="0.001" placeholder={`Max ${Number(serahGram).toFixed(3)} gr`}
                   value={terimaVal} onChange={e => setTerimaVal(e.target.value)} className={inp} required />
               </div>
@@ -397,11 +398,25 @@ export function TerimaModalStd({
             </div>
           </div>
 
+          {/* Rekonsiliasi total — selalu tampil supaya user sadar sebelum submit kalau salah isi gross/net */}
+          {terimaVal !== '' && (
+            <div className="rounded-lg px-3 py-2 text-[11px] bg-slate-50 border border-slate-200 text-slate-600">
+              <div className="flex items-center justify-between">
+                <span>Baik {(parseFloat(terimaVal)||0).toFixed(3)} + Reject {(parseFloat(rejectVal)||0).toFixed(3)} + Serbuk {(parseFloat(serbukVal)||0).toFixed(3)}</span>
+                <span className="font-semibold">= {((parseFloat(terimaVal)||0)+(parseFloat(rejectVal)||0)+(parseFloat(serbukVal)||0)).toFixed(3)} gr</span>
+              </div>
+              <div className="flex items-center justify-between mt-0.5 text-slate-400">
+                <span>Diserahkan</span>
+                <span>{Number(serahGram).toFixed(3)} gr</span>
+              </div>
+            </div>
+          )}
+
           {/* Loss/Gain indicator realtime */}
           {terimaVal !== '' && (
             <div className={`rounded-lg px-3 py-2 text-[12px] font-semibold flex items-center justify-between border ${(overTol || overGain) ? 'bg-red-50 border-red-100 text-red-600' : 'bg-green-50 border-green-100 text-green-700'}`}>
               <span>{overGain ? `Gain: ${gainNow.toFixed(3)} gr` : `Loss: ${lossNow.toFixed(3)} gr`}</span>
-              <span className="text-[10px]">{overGain ? `timbangan naik melebihi toleransi ${toleransi} gr` : overTol ? `melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
+              <span className="text-[10px]">{overGain ? `timbangan naik melebihi toleransi ${toleransi} gr — cek: apakah "Berat Diterima" salah diisi berat kotor (termasuk reject)?` : overTol ? `melebihi toleransi ${toleransi} gr` : `✓ dalam toleransi (${toleransi} gr)`}</span>
             </div>
           )}
 

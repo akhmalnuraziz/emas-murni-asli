@@ -110,6 +110,76 @@ export async function createBarangKeluar(formData: FormData) {
   return { success: true, kode }
 }
 
+export async function editBarangKeluar(id: number, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Unauthorized' }
+  const { data: profile } = await supabase.from('users_profile').select('name, role').eq('id', user.id).single()
+  if (!['owner', 'manager', 'admin_gudang'].includes(profile?.role ?? '')) return { error: 'Tidak ada akses' }
+
+  const { data: bk } = await supabase.from('barang_keluar')
+    .select('kode, tujuan, items:barang_keluar_item(shieldtag_kode, gramasi)').eq('id', id).single()
+  if (!bk) return { error: 'Data tidak ditemukan' }
+
+  const tanggal    = formData.get('tanggal') as string
+  const tujuan     = formData.get('tujuan') as string
+  const adminInput = (formData.get('admin_input') as string) || null
+  const catatan    = (formData.get('catatan') as string) || null
+  const keepKodes  = JSON.parse(formData.get('keep_kodes') as string ?? '[]') as string[]
+  const addKodes   = JSON.parse(formData.get('add_kodes') as string ?? '[]') as string[]
+
+  if (!tanggal) return { error: 'Tanggal wajib diisi' }
+  if (!tujuan)  return { error: 'Tujuan wajib diisi' }
+
+  const oldKodes = (bk.items ?? []).map((it: any) => it.shieldtag_kode)
+  const removedKodes = oldKodes.filter((k: string) => !keepKodes.includes(k))
+  const finalKodes = [...keepKodes, ...addKodes]
+  if (finalKodes.length === 0) return { error: 'Minimal satu Shieldtag wajib dipilih' }
+
+  // Validasi shieldtag baru yang ditambahkan harus Aktif di Gudang Pusat
+  if (addKodes.length > 0) {
+    const { data: tags } = await supabase.from('shieldtag')
+      .select('kode, status, lokasi, voided_at').in('kode', addKodes)
+    const invalid = (tags ?? []).filter((t: any) => t.voided_at || t.status !== 'Aktif' || t.lokasi !== GUDANG_LOKASI)
+    if (invalid.length > 0)
+      return { error: `${invalid.length} shieldtag baru tidak valid (harus Aktif di Gudang Pusat): ${invalid.map((t: any) => t.kode).join(', ')}` }
+  }
+
+  await supabase.from('barang_keluar').update({ tanggal, tujuan, admin_input: adminInput, catatan }).eq('id', id)
+
+  // Shieldtag yang dihapus dari transaksi → kembali Aktif di Gudang Pusat
+  if (removedKodes.length > 0) {
+    await supabase.from('barang_keluar_item').delete().eq('barang_keluar_id', id).in('shieldtag_kode', removedKodes)
+    await supabase.from('shieldtag').update({ status: 'Aktif', lokasi: GUDANG_LOKASI }).in('kode', removedKodes)
+  }
+
+  // Shieldtag baru → tambah item + set Terjual/tujuan
+  if (addKodes.length > 0) {
+    const { data: tags } = await supabase.from('shieldtag').select('kode, gramasi').in('kode', addKodes)
+    await supabase.from('barang_keluar_item').insert(
+      (tags ?? []).map((t: any) => ({ barang_keluar_id: id, shieldtag_kode: t.kode, gramasi: t.gramasi }))
+    )
+    await supabase.from('shieldtag').update({ status: 'Terjual', lokasi: tujuan }).in('kode', addKodes)
+  }
+
+  // Kalau tujuan berubah, sinkronkan lokasi shieldtag yang tetap dipakai
+  if (tujuan !== bk.tujuan && keepKodes.length > 0) {
+    await supabase.from('shieldtag').update({ lokasi: tujuan }).in('kode', keepKodes)
+  }
+
+  supabase.from('audit_log').insert({
+    user_id: user.id, user_name: profile?.name, user_role: profile?.role,
+    action: 'EDIT_BARANG_KELUAR', module: 'BARANG_KELUAR',
+    record_key: bk.kode, record_id: String(id),
+    before_data: { tujuan: bk.tujuan, items: oldKodes },
+    after_data: { tujuan, items: finalKodes },
+  })
+
+  revalidatePath('/barang-keluar')
+  revalidatePath('/inventory')
+  return { success: true }
+}
+
 export async function voidBarangKeluar(id: number) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

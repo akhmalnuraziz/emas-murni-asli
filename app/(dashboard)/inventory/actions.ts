@@ -28,44 +28,63 @@ export async function fetchInventoryGudang(): Promise<{ rows: GudangRow[]; error
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { rows: [], error: 'Unauthorized' }
 
-  // 1. Total pcs per gramasi dari packing (yang belum void) = total masuk gudang
+  // 1. Total pcs per gramasi dari packing (yang belum void) = total pernah masuk gudang
   const { data: packings } = await supabase
     .from('packing')
-    .select('gramasi, pcs_dipack, total_gram, voided_at')
+    .select('id, gramasi, pcs_dipack, total_gram, voided_at')
     .is('voided_at', null)
 
-  // 2. Shieldtag aktif di gudang per gramasi = yang sudah tershieldtag & masih di gudang
-  const { data: shieldtags } = await supabase
+  // 2. Shieldtag Aktif di gudang saat ini (untuk kolom "tershieldtag" — stok fisik riil)
+  const { data: shieldtagsAktif } = await supabase
     .from('shieldtag')
-    .select('gramasi, status, lokasi, voided_at')
+    .select('gramasi, packing_id')
     .is('voided_at', null)
     .eq('status', 'Aktif')
     .eq('lokasi', GUDANG_LOKASI)
 
-  const packedMap = new Map<string, { pcs: number; gram: number }>()
+  // 3. SEMUA shieldtag per packing_id (apapun status/lokasinya) — untuk hitung "belum tershieldtag"
+  // yang benar: pcs dari packing ini yang BELUM PERNAH dibuatkan shieldtag sama sekali.
+  // Barang yang sudah tershieldtag lalu terjual/mutasi TETAP terhitung "sudah tershieldtag",
+  // bukan "belum" — beda dari formula lama yang keliru mengurangi stok aktif saat ini.
+  const { data: shieldtagsAll } = await supabase
+    .from('shieldtag')
+    .select('packing_id')
+    .is('voided_at', null)
+    .not('packing_id', 'is', null)
+
+  const taggedCountByPacking = new Map<number, number>()
+  for (const s of shieldtagsAll ?? []) {
+    if (s.packing_id == null) continue
+    taggedCountByPacking.set(s.packing_id, (taggedCountByPacking.get(s.packing_id) ?? 0) + 1)
+  }
+
+  const packedMap = new Map<string, { pcs: number; gram: number; belum: number }>()
   for (const p of packings ?? []) {
     const g = String(p.gramasi)
-    const cur = packedMap.get(g) ?? { pcs: 0, gram: 0 }
-    cur.pcs += Number(p.pcs_dipack ?? 0)
+    const cur = packedMap.get(g) ?? { pcs: 0, gram: 0, belum: 0 }
+    const pcs = Number(p.pcs_dipack ?? 0)
+    const sudahDitag = taggedCountByPacking.get(p.id) ?? 0
+    cur.pcs += pcs
     cur.gram += Number(p.total_gram ?? 0)
+    cur.belum += Math.max(0, pcs - sudahDitag)
     packedMap.set(g, cur)
   }
 
   const stMap = new Map<string, number>()
-  for (const s of shieldtags ?? []) {
+  for (const s of shieldtagsAktif ?? []) {
     const g = String(s.gramasi)
     stMap.set(g, (stMap.get(g) ?? 0) + 1)
   }
 
   const allGramasi = new Set<string>([...packedMap.keys(), ...stMap.keys()])
   const rows: GudangRow[] = [...allGramasi].map(g => {
-    const packed = packedMap.get(g) ?? { pcs: 0, gram: 0 }
+    const packed = packedMap.get(g) ?? { pcs: 0, gram: 0, belum: 0 }
     const tagged = stMap.get(g) ?? 0
     return {
       gramasi: g,
       total_packed: packed.pcs,
       tershieldtag: tagged,
-      belum_shieldtag: Math.max(0, packed.pcs - tagged),
+      belum_shieldtag: packed.belum,
       total_gram: packed.gram,
     }
   }).filter(r => r.total_packed > 0 || r.tershieldtag > 0)

@@ -1047,7 +1047,8 @@ export async function terimaStageProduksi(
     updateData.pcs_reject    = Number(cur?.pcs_reject ?? 0) + rejectPcs
     updateData.status_reject = 'belum_dilebur'
   }
-  await supabase.from('produksi_item').update(updateData).eq('id', produksiId)
+  const { error: updErr } = await supabase.from('produksi_item').update(updateData).eq('id', produksiId)
+  if (updErr) return { error: `Gagal update produksi_item: ${updErr.message}` }
 
   revalidatePath('/produksi')
 
@@ -1678,7 +1679,8 @@ export async function terimaSesiStage(sesiId: string, tahap: string, formData: F
       const STAGE_STATUS: Record<string,string> = { pas_berat: 'Pas Berat', annealing: 'Annealing', siap_packing: 'Siap Packing' }
       updateItem.current_status = nextStatusMap[tahap] ?? STAGE_STATUS[tahap]
     }
-    await supabase.from('produksi_item').update(updateItem).eq('id', item.id)
+    const { error: updErr } = await supabase.from('produksi_item').update(updateItem).eq('id', item.id)
+    if (updErr) return { error: `Gagal update item ${item.gramasi}gr: ${updErr.message}` }
   }
 
   if (tahap === 'pas_berat') revalidatePath('/scrap')

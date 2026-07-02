@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useState, useTransition } from 'react'
+import { Fragment, useState, useTransition } from 'react'
 import { ClipboardList, Plus, Check, X, RefreshCw, ChevronDown, ChevronUp, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { cn, formatDate } from '@/lib/utils'
 import {
@@ -112,6 +112,8 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
 }) {
   const [lokasi, setLokasi] = useState('gudang_pusat')
   const [rows, setRows] = useState<StokRow[]>([])
+  const [ditemukan, setDitemukan] = useState<Record<string, Set<string>>>({})
+  const [expandedG, setExpandedG] = useState<string | null>(null)
   const [loadingRows, setLoadingRows] = useState(false)
   const [catatan, setCatatan] = useState('')
   const [saving, setSaving] = useState(false)
@@ -123,23 +125,32 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
     setLoadingRows(true)
     const r = await getStokSistem(lokasi)
     setRows(r)
+    // Default: semua shieldtag dianggap ketemu — user uncheck yang hilang saat opname fisik
+    setDitemukan(Object.fromEntries(r.map(row => [row.gramasi, new Set(row.kodes)])))
     setLoadingRows(false)
     setStep('input')
   }
 
-  function setFisik(gramasi: string, pcs: number) {
-    setRows(prev => prev.map(r => {
-      if (r.gramasi !== gramasi) return r
-      const pcsFisik = isNaN(pcs) ? 0 : pcs
-      const gram = parseFloat(gramasi)
+  function toggleKode(gramasi: string, kode: string) {
+    setDitemukan(prev => {
+      const next = new Set(prev[gramasi] ?? [])
+      if (next.has(kode)) next.delete(kode); else next.add(kode)
+      return { ...prev, [gramasi]: next }
+    })
+  }
+
+  function fisikRows(): StokRow[] {
+    return rows.map(r => {
+      const found = ditemukan[r.gramasi]?.size ?? r.pcs_sistem
+      const gram = parseFloat(r.gramasi)
       return {
         ...r,
-        pcs_fisik: pcsFisik,
-        gram_fisik: parseFloat((pcsFisik * gram).toFixed(3)),
-        selisih_pcs: pcsFisik - r.pcs_sistem,
-        selisih_gram: parseFloat(((pcsFisik - r.pcs_sistem) * gram).toFixed(3)),
+        pcs_fisik: found,
+        gram_fisik: parseFloat((found * gram).toFixed(3)),
+        selisih_pcs: found - r.pcs_sistem,
+        selisih_gram: parseFloat(((found - r.pcs_sistem) * gram).toFixed(3)),
       }
-    }))
+    })
   }
 
   async function handleSave() {
@@ -147,14 +158,19 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
     const lokasiLabel = lokasi === 'gudang_pusat'
       ? 'Gudang Pusat'
       : cabangList.find(c => c.kode === lokasi)?.nama ?? lokasi
+    const computed = fisikRows()
     const res = await saveStockOpname({
       lokasi, lokasiLabel,
-      dataFisik: rows.map(r => ({ gramasi: r.gramasi, pcs_fisik: r.pcs_fisik })),
+      dataFisik: computed.map(r => ({
+        gramasi: r.gramasi, pcs_fisik: r.pcs_fisik,
+        kode_hilang: r.kodes.filter(k => !ditemukan[r.gramasi]?.has(k)),
+      })),
       catatan, userName,
     })
     setSaving(false)
     if (!res.success) { setErr(res.error ?? 'Gagal menyimpan'); return }
     setSavedKode(res.kode ?? '')
+    setRows(computed)
     setStep('done')
   }
 
@@ -203,45 +219,45 @@ function StockOpnameForm({ cabangList, userName, onClose, onSaved }: {
           <p className="text-[13px] font-semibold text-slate-600">
             Lokasi: <span className="text-violet-700">{lokasiLabel}</span>
           </p>
-          <p className="text-[12px] text-slate-400">Masukkan jumlah fisik yang dihitung langsung. Sistem akan otomatis menghitung selisih.</p>
+          <p className="text-[12px] text-slate-400">Semua shieldtag dianggap ketemu secara default — klik gramasi untuk buka daftar dan <span className="font-semibold text-red-500">uncheck</span> kode yang fisiknya tidak ditemukan.</p>
 
-          {/* Tabel input */}
-          <div className="rounded-xl overflow-hidden border border-slate-200">
-            <table className="w-full text-[13px]">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="text-left px-4 py-3 text-[12px] font-semibold text-slate-400">Gramasi</th>
-                  <th className="text-right px-4 py-3 text-[12px] font-semibold text-slate-400">Sistem (pcs)</th>
-                  <th className="text-right px-4 py-3 text-[12px] font-semibold text-slate-400">Fisik (pcs)</th>
-                  <th className="text-right px-4 py-3 text-[12px] font-semibold text-slate-400">Selisih</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(r => (
-                  <tr key={r.gramasi} className={cn('border-t border-slate-50', r.selisih_pcs !== 0 ? 'bg-amber-50/40' : '')}>
-                    <td className="px-4 py-2.5 font-semibold text-slate-700">{r.gramasi} gr</td>
-                    <td className="px-4 py-2.5 text-right text-slate-500">{r.pcs_sistem}</td>
-                    <td className="px-4 py-2.5 text-right">
-                      <input
-                        type="number"
-                        min={0}
-                        value={r.pcs_fisik}
-                        onChange={e => setFisik(r.gramasi, parseInt(e.target.value))}
-                        className="w-24 text-right px-3 py-1.5 text-[13px] rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-400/40"
-                      />
-                    </td>
-                    <td className={cn('px-4 py-2.5 text-right font-semibold text-[13px]',
-                      r.selisih_pcs > 0 ? 'text-emerald-600' : r.selisih_pcs < 0 ? 'text-red-600' : 'text-slate-400'
-                    )}>
+          {/* Tabel input — expandable per gramasi untuk checklist shieldtag */}
+          <div className="rounded-xl overflow-hidden border border-slate-200 divide-y divide-slate-100">
+            {fisikRows().map(r => {
+              const isOpen = expandedG === r.gramasi
+              return (
+                <div key={r.gramasi} className={cn(r.selisih_pcs !== 0 ? 'bg-amber-50/40' : 'bg-white')}>
+                  <button type="button" onClick={() => setExpandedG(isOpen ? null : r.gramasi)}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-left hover:bg-slate-50/60 transition-colors">
+                    <span className="font-semibold text-slate-700 w-16">{r.gramasi} gr</span>
+                    <span className="text-slate-500">Sistem: <span className="font-semibold">{r.pcs_sistem}</span></span>
+                    <span className="text-slate-500">Ditemukan: <span className="font-semibold text-violet-600">{r.pcs_fisik}</span></span>
+                    <span className={cn('font-semibold ml-auto',
+                      r.selisih_pcs > 0 ? 'text-emerald-600' : r.selisih_pcs < 0 ? 'text-red-600' : 'text-slate-400')}>
                       {r.selisih_pcs > 0 ? '+' : ''}{r.selisih_pcs}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </span>
+                    {isOpen ? <ChevronUp size={14} className="text-slate-400"/> : <ChevronDown size={14} className="text-slate-400"/>}
+                  </button>
+                  {isOpen && (
+                    <div className="px-4 pb-3 flex flex-wrap gap-1.5">
+                      {r.kodes.map(kode => {
+                        const found = ditemukan[r.gramasi]?.has(kode) ?? true
+                        return (
+                          <button key={kode} type="button" onClick={() => toggleKode(r.gramasi, kode)}
+                            className={cn('px-2 py-1 rounded-lg text-[11px] font-mono border transition-colors',
+                              found ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-600 line-through')}>
+                            {kode}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
 
-          {rows.some(r => r.selisih_pcs !== 0) && (
+          {rows.some(r => (fisikRows().find(f => f.gramasi === r.gramasi)?.selisih_pcs ?? 0) !== 0) && (
             <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-amber-50 border border-amber-100">
               <AlertTriangle size={15} className="text-amber-500 flex-shrink-0 mt-0.5" />
               <p className="text-[12px] text-amber-700">Ada selisih stok — akan membutuhkan approval setelah disimpan.</p>
@@ -325,12 +341,14 @@ function SOCard({ so, expanded, onToggle, canApprove, userName, onApproved }: {
                   </tr>
                 </thead>
                 <tbody>
-                  {(so.data_sistem as any[]).map((row: any) => {
+  {(so.data_sistem as any[]).map((row: any) => {
                     const fisik = (so.data_fisik as any[])?.find((f: any) => f.gramasi === row.gramasi)
                     const sel = selisih.find((s: any) => s.gramasi === row.gramasi)
                     const diff = sel?.selisih_pcs ?? 0
+                    const kodeHilang: string[] = fisik?.kode_hilang ?? []
                     return (
-                      <tr key={row.gramasi} className={cn('border-t border-slate-50', diff !== 0 ? 'bg-amber-50/30' : '')}>
+                      <Fragment key={row.gramasi}>
+                      <tr className={cn('border-t border-slate-50', diff !== 0 ? 'bg-amber-50/30' : '')}>
                         <td className="px-4 py-2.5 font-semibold text-slate-700">{row.gramasi} gr</td>
                         <td className="px-4 py-2.5 text-right text-slate-500">{row.pcs} pcs</td>
                         <td className="px-4 py-2.5 text-right text-slate-700">{fisik?.pcs ?? row.pcs} pcs</td>
@@ -340,6 +358,14 @@ function SOCard({ so, expanded, onToggle, canApprove, userName, onApproved }: {
                           {diff > 0 ? '+' : ''}{diff}
                         </td>
                       </tr>
+                      {kodeHilang.length > 0 && (
+                        <tr className="bg-red-50/40">
+                          <td colSpan={4} className="px-4 py-2 text-[11px] text-red-600">
+                            <span className="font-semibold">Shieldtag hilang:</span> {kodeHilang.join(', ')}
+                          </td>
+                        </tr>
+                      )}
+                      </Fragment>
                     )
                   })}
                 </tbody>

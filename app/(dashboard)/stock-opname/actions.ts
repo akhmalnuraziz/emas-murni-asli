@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
 const GRAMASI_ORDER = ['0.1','0.5','1','2','5','10','20','25','50','100','250','500','1000']
+const GUDANG_LOKASI = 'Gudang Pusat'
 
 export interface StokRow {
   gramasi: string
@@ -13,6 +14,7 @@ export interface StokRow {
   gram_fisik: number
   selisih_pcs: number
   selisih_gram: number
+  kodes: string[]
 }
 
 async function generateSOCode(supabase: any): Promise<string> {
@@ -24,66 +26,39 @@ async function generateSOCode(supabase: any): Promise<string> {
 export async function getStokSistem(lokasi: string): Promise<StokRow[]> {
   const supabase = await createClient()
 
-  if (lokasi === 'gudang_pusat') {
-    // Stok gudang: shieldtag aktif (status Aktif = belum dimutasi)
-    const { data: tags } = await supabase
-      .from('shieldtag')
-      .select('gramasi, hpp')
-      .eq('status', 'Aktif')
-      .is('voided_at', null)
+  // Stok gudang: shieldtag aktif (status Aktif, belum dimutasi). Stok cabang: status Aktif di lokasi cabang.
+  let q = supabase.from('shieldtag').select('kode, gramasi').eq('status', 'Aktif').is('voided_at', null)
+  q = lokasi === 'gudang_pusat' ? q.eq('lokasi', GUDANG_LOKASI) : q.eq('lokasi', lokasi)
+  const { data: tags } = await q
 
-    const map: Record<string, { pcs: number; gram: number }> = {}
-    for (const t of tags ?? []) {
-      const g = t.gramasi ?? '0'
-      if (!map[g]) map[g] = { pcs: 0, gram: 0 }
-      map[g].pcs++
-      map[g].gram += parseFloat(g)
-    }
-    return GRAMASI_ORDER
-      .filter(g => map[g])
-      .map(g => ({
-        gramasi: g,
-        pcs_sistem: map[g].pcs,
-        gram_sistem: parseFloat((map[g].gram).toFixed(3)),
-        pcs_fisik: map[g].pcs,
-        gram_fisik: parseFloat((map[g].gram).toFixed(3)),
-        selisih_pcs: 0,
-        selisih_gram: 0,
-      }))
-  } else {
-    // Stok cabang: ShieldTag status Aktif yang lokasinya di cabang tersebut
-    const { data: tags } = await supabase
-      .from('shieldtag')
-      .select('gramasi')
-      .eq('status', 'Aktif')
-      .eq('lokasi', lokasi)
-      .is('voided_at', null)
-
-    const map: Record<string, { pcs: number; gram: number }> = {}
-    for (const t of tags ?? []) {
-      const g = t.gramasi ?? '0'
-      if (!map[g]) map[g] = { pcs: 0, gram: 0 }
-      map[g].pcs++
-      map[g].gram += parseFloat(g)
-    }
-    return GRAMASI_ORDER
-      .filter(g => map[g])
-      .map(g => ({
-        gramasi: g,
-        pcs_sistem: map[g].pcs,
-        gram_sistem: parseFloat((map[g].gram).toFixed(3)),
-        pcs_fisik: map[g].pcs,
-        gram_fisik: parseFloat((map[g].gram).toFixed(3)),
-        selisih_pcs: 0,
-        selisih_gram: 0,
-      }))
+  const map: Record<string, { kodes: string[] }> = {}
+  for (const t of tags ?? []) {
+    const g = t.gramasi ?? '0'
+    if (!map[g]) map[g] = { kodes: [] }
+    map[g].kodes.push(t.kode)
   }
+  return GRAMASI_ORDER
+    .filter(g => map[g])
+    .map(g => {
+      const pcs = map[g].kodes.length
+      const gram = parseFloat((pcs * parseFloat(g)).toFixed(3))
+      return {
+        gramasi: g,
+        pcs_sistem: pcs,
+        gram_sistem: gram,
+        pcs_fisik: pcs,
+        gram_fisik: gram,
+        selisih_pcs: 0,
+        selisih_gram: 0,
+        kodes: map[g].kodes.sort(),
+      }
+    })
 }
 
 export async function saveStockOpname(params: {
   lokasi: string
   lokasiLabel: string
-  dataFisik: { gramasi: string; pcs_fisik: number }[]
+  dataFisik: { gramasi: string; pcs_fisik: number; kode_hilang?: string[] }[]
   catatan: string
   userName?: string
 }): Promise<{ success: boolean; error?: string; kode?: string }> {
@@ -96,12 +71,17 @@ export async function saveStockOpname(params: {
   try {
     const sistemRows = await getStokSistem(params.lokasi)
     const fisikMap: Record<string, number> = {}
-    for (const f of params.dataFisik) fisikMap[f.gramasi] = f.pcs_fisik
+    const hilangMap: Record<string, string[]> = {}
+    for (const f of params.dataFisik) {
+      fisikMap[f.gramasi] = f.pcs_fisik
+      hilangMap[f.gramasi] = f.kode_hilang ?? []
+    }
 
     const dataSistem = sistemRows.map(r => ({
       gramasi: r.gramasi,
       pcs: r.pcs_sistem,
       gram: r.gram_sistem,
+      kodes: r.kodes,
     }))
 
     const dataFisik = sistemRows.map(r => {
@@ -110,6 +90,7 @@ export async function saveStockOpname(params: {
         gramasi: r.gramasi,
         pcs: pcsFisik,
         gram: parseFloat((pcsFisik * parseFloat(r.gramasi)).toFixed(3)),
+        kode_hilang: hilangMap[r.gramasi] ?? [],
       }
     })
 

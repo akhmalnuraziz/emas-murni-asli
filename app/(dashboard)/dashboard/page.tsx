@@ -105,12 +105,14 @@ export default async function DashboardPage({
       .select('stok_qty, produk_kode, produk_nama, produk:produk_packaging(gramasi)')
       .order('produk_id'),
     Promise.resolve({ data: [] as any[] }),   // pengeluaran dinonaktifkan
-    // Trend produksi harian (dari packing)
-    supabase.from('packing')
-      .select('tanggal, gramasi, pcs_dipack')
-      .gte('tanggal', dateFrom).lte('tanggal', dateTo)
+    // Trend produksi harian — dari item yang SELESAI mencapai Siap Packing (bukan Packing Log,
+    // yang merupakan proses fisik terpisah dan bisa lag di belakang produksi aktual)
+    supabase.from('stage_handover')
+      .select('terima_tanggal, terima_pcs, produksi_item:produksi_item_id(gramasi)')
+      .eq('tahap', 'siap_packing').eq('status', 'selesai')
+      .gte('terima_tanggal', dateFrom).lte('terima_tanggal', dateTo)
       .is('voided_at', null)
-      .order('tanggal'),
+      .order('terima_tanggal'),
     // Packing periode terpilih
     supabase.from('packing')
       .select('kode, batch_kode, gramasi, pcs_dipack, tanggal')
@@ -233,9 +235,9 @@ export default async function DashboardPage({
   const trendMap: Record<string, Record<number, number>> = {}
   const dailyTotal: Record<number, number> = {}
   for (const p of packingHarian ?? []) {
-    const g = String(parseFloat(p.gramasi ?? '0'))
-    const day = new Date(p.tanggal).getDate()
-    const pcs = Number(p.pcs_dipack ?? 0)
+    const g = String(parseFloat((p as any).produksi_item?.gramasi ?? '0'))
+    const day = new Date((p as any).terima_tanggal).getDate()
+    const pcs = Number((p as any).terima_pcs ?? 0)
     if (!trendMap[g]) trendMap[g] = {}
     trendMap[g][day] = (trendMap[g][day] ?? 0) + pcs
     dailyTotal[day] = (dailyTotal[day] ?? 0) + pcs

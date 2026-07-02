@@ -29,7 +29,7 @@ export default async function LaporanBatchPage({ params }: { params: Promise<{ k
 
   if (!batch) notFound()
 
-  const ITEM_COLS = 'id, kode, gramasi, pcs, total_gram, current_status, peleburan_id, sisa_serbuk, berat_reject, berat_reject_dilebur'
+  const ITEM_COLS = 'id, kode, gramasi, pcs, pcs_good, total_gram, current_status, peleburan_id, sisa_serbuk, berat_reject, berat_reject_dilebur'
 
   // Kumpulkan produksi_items: gabung semua sumber agar tidak ada yang terlewat
   const peleburanIds = (peleburans ?? []).map((p: any) => p.id)
