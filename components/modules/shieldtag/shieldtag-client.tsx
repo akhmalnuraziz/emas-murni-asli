@@ -636,6 +636,7 @@ function toggleSelect(id: number) {
       if (r?.error) { setErr(r.error); return }
       toast.success(`${r?.count} Shieldtag berhasil didaftarkan`)
       setModal(null)
+      router.refresh()
     })
   }
 

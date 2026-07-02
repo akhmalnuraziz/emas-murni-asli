@@ -1,6 +1,8 @@
 ﻿'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { ShoppingBag, Plus, X, Search, Trash2, ChevronDown, ChevronUp, Printer } from 'lucide-react'
 import { createPenjualan, voidPenjualan, lookupShieldtag } from '@/app/(dashboard)/penjualan/actions'
 
@@ -337,12 +339,16 @@ function PenjualanRow({ pj, canSeeRp, isOwner }: { pj: Penjualan; canSeeRp: bool
   const [voidReason, setVoidReason] = useState('')
   const [showVoid, setShowVoid] = useState(false)
   const [pending, startTransition] = useTransition()
+  const router = useRouter()
 
   function doVoid() {
     if (!voidReason.trim()) return
     startTransition(async () => {
-      await voidPenjualan(pj.id, voidReason)
+      const res = await voidPenjualan(pj.id, voidReason)
+      if (res?.error) { toast.error(res.error); return }
+      toast.success('Penjualan di-void')
       setShowVoid(false)
+      router.refresh()
     })
   }
 

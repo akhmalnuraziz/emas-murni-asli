@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Plus, X, RotateCcw, Clock, CheckCircle2, XCircle, Search, Pencil, Trash2 } from 'lucide-react'
 import { createRetur, updateStatusRetur, deleteRetur, editRetur } from '@/app/(dashboard)/retur-penjualan/actions'
@@ -32,6 +33,7 @@ const KONDISI_LABEL: Record<string, string> = {
 }
 
 export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [modal, setModal]   = useState<'form' | 'detail' | 'edit' | 'hapus' | null>(null)
   const [active, setActive] = useState<Retur | null>(null)
@@ -48,7 +50,7 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
     startTransition(async () => {
       const res = await editRetur(active.id, fd)
       if (res?.error) { setErr(res.error); return }
-      toast.success('Retur diperbarui'); setModal(null)
+      toast.success('Retur diperbarui'); setModal(null); router.refresh()
     })
   }
 
@@ -57,7 +59,7 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
     startTransition(async () => {
       const res = await deleteRetur(active.id)
       if (res?.error) { toast.error(res.error); return }
-      toast.success('Retur dihapus'); setModal(null)
+      toast.success('Retur dihapus'); setModal(null); router.refresh()
     })
   }
 
@@ -77,7 +79,7 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
       const res = await createRetur(fd)
       if (res?.error) { setErr(res.error); return }
       toast.success(`Retur ${res.kode} berhasil dicatat`)
-      setModal(null)
+      setModal(null); router.refresh()
     })
   }
 
@@ -87,7 +89,7 @@ export default function ReturClient({ returList, canManage, canSeeRp }: Props) {
       const res = await updateStatusRetur(active.id, status, catatanInput)
       if (res?.error) { toast.error(res.error); return }
       toast.success(`Status diperbarui ke ${status}`)
-      setModal(null)
+      setModal(null); router.refresh()
     })
   }
 

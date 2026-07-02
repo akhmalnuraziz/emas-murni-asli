@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { useRealtimeRefresh } from '@/lib/supabase/use-realtime-refresh'
 import { toast as sonnerToast } from 'sonner'
 import {
@@ -292,6 +293,7 @@ export default function POVendorClient({
   batchPage = 1, batchTotal = 0, batchPageSize = 20,
 }: Props) {
   useRealtimeRefresh(['po_packaging','po_batch_penerimaan'])
+  const router = useRouter()
   const [tab, setTab] = useState<Tab>('monitoring')
   const [search, setSearch] = useState('')
 
@@ -471,7 +473,7 @@ export default function POVendorClient({
                             onConfirm: async () => {
                               const r = await deletePO(po.id)
                               if (r?.error) showToast(r.error, false)
-                              else showToast('PO dihapus')
+                              else { showToast('PO dihapus'); router.refresh() }
                             },
                           })} className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold text-red-500 bg-red-50 hover:bg-red-100">
                             <Trash2 size={11}/> Hapus
@@ -548,7 +550,7 @@ export default function POVendorClient({
                                       onConfirm: async () => {
                                         const r = await deleteBatch(b.id)
                                         if (r?.error) showToast(r.error, false)
-                                        else showToast('Batch dihapus')
+                                        else { showToast('Batch dihapus'); router.refresh() }
                                       },
                                     })} className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-red-500 rounded-lg bg-red-50 hover:bg-red-100">
                                       <Trash2 size={9}/> Hapus
@@ -651,7 +653,7 @@ export default function POVendorClient({
                         onConfirm: async () => {
                           const r = await deleteBatch(b.id)
                           if (r?.error) showToast(r.error, false)
-                          else showToast('Batch dihapus')
+                          else { showToast('Batch dihapus'); router.refresh() }
                         },
                       })} className="flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-red-500 rounded-lg bg-red-50 hover:bg-red-100">
                         <Trash2 size={11}/> Hapus
@@ -715,7 +717,7 @@ export default function POVendorClient({
                           onConfirm: async () => {
                             const res = await resetRejectStatus(r.id)
                             if (res?.error) showToast(res.error, false)
-                            else showToast('Status direset ke pending')
+                            else { showToast('Status direset ke pending'); router.refresh() }
                           },
                         })} className="px-2 py-1 text-[10px] font-semibold text-amber-600 rounded-lg bg-amber-50 hover:bg-amber-100">
                           Reset
@@ -729,7 +731,7 @@ export default function POVendorClient({
                         onConfirm: async () => {
                           const res = await deleteRejectItem(r.id)
                           if (res?.error) showToast(res.error, false)
-                          else showToast('Item reject dihapus')
+                          else { showToast('Item reject dihapus'); router.refresh() }
                         },
                       })} className="p-1.5 rounded-lg text-red-400 hover:bg-red-50">
                         <Trash2 size={12}/>
@@ -846,7 +848,7 @@ export default function POVendorClient({
                               onConfirm: async () => {
                                 const r = await deleteSJRetur(sj.id)
                                 if (r?.error) showToast(r.error, false)
-                                else showToast('SJ Retur dihapus')
+                                else { showToast('SJ Retur dihapus'); router.refresh() }
                               },
                             })}
                               className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-semibold text-red-500 rounded-xl bg-red-50 hover:bg-red-100">
@@ -903,7 +905,7 @@ export default function POVendorClient({
                       <button onClick={async () => {
                         const r = await toggleProdukAktif(p.id, !p.aktif)
                         if (r?.error) showToast(r.error, false)
-                        else showToast(p.aktif ? 'Produk dinonaktifkan' : 'Produk diaktifkan')
+                        else { showToast(p.aktif ? 'Produk dinonaktifkan' : 'Produk diaktifkan'); router.refresh() }
                       }}
                         className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold ${p.aktif ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
                         {p.aktif ? 'Nonaktifkan' : 'Aktifkan'}
@@ -939,7 +941,7 @@ export default function POVendorClient({
                       <button onClick={async () => {
                         const r = await toggleKategoriRejectAktif(k.id, !k.aktif)
                         if (r?.error) showToast(r.error, false)
-                        else showToast(k.aktif ? 'Kategori dinonaktifkan' : 'Kategori diaktifkan')
+                        else { showToast(k.aktif ? 'Kategori dinonaktifkan' : 'Kategori diaktifkan'); router.refresh() }
                       }}
                         className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold ${k.aktif ? 'bg-red-50 text-red-500 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}>
                         {k.aktif ? 'Nonaktifkan' : 'Aktifkan'}
@@ -952,7 +954,7 @@ export default function POVendorClient({
                         onConfirm: async () => {
                           const r = await deleteKategoriReject(k.id)
                           if (r?.error) showToast(r.error, false)
-                          else showToast('Kategori dihapus')
+                          else { showToast('Kategori dihapus'); router.refresh() }
                         },
                       })}
                         className="p-1.5 rounded-lg text-red-500 hover:bg-red-50">
@@ -1006,7 +1008,7 @@ export default function POVendorClient({
               : await updateProdukPackaging(produkModal as number, fd)
             if (r?.error) { showToast(r.error, false); return }
             showToast(produkModal === 'create' ? 'Produk ditambahkan' : 'Produk diperbarui')
-            setProdukModal(null)
+            setProdukModal(null); router.refresh()
           }}
         />
       )}
@@ -1026,7 +1028,7 @@ export default function POVendorClient({
             const r = await updateSJRetur(editSJModal.id, fd)
             if (r?.error) { showToast(r.error, false); return }
             showToast('SJ Retur diperbarui')
-            setEditSJModal(null)
+            setEditSJModal(null); router.refresh()
           }}
         />
       )}
@@ -1039,7 +1041,7 @@ export default function POVendorClient({
             const r = await createBatchPengganti(fd)
             if (r?.error) { showToast(r.error, false); return }
             showToast('Batch pengganti dibuat — silakan QC di tab Penerimaan')
-            setPenggantiModal(null)
+            setPenggantiModal(null); router.refresh()
           }}
         />
       )}
@@ -1055,7 +1057,7 @@ export default function POVendorClient({
               : await updateKategoriReject(kategoriRejectModal as number, fd)
             if (r?.error) { showToast(r.error, false); return }
             showToast(kategoriRejectModal === 'create' ? 'Kategori ditambahkan' : 'Kategori diperbarui')
-            setKategoriRejectModal(null)
+            setKategoriRejectModal(null); router.refresh()
           }}
         />
       )}
@@ -1071,7 +1073,7 @@ export default function POVendorClient({
               : await updateVendor(vendorModal as number, fd)
             if (r?.error) { showToast(r.error, false); return }
             showToast(vendorModal === 'create' ? 'Vendor ditambahkan' : 'Vendor diperbarui')
-            setVendorModal(null)
+            setVendorModal(null); router.refresh()
           }}
         />
       )}
@@ -1092,7 +1094,7 @@ export default function POVendorClient({
               : await updatePO(editPoId!, fd)
             if (r?.error) { showToast(r.error, false); return }
             showToast(poModal === 'create' ? `PO dibuat: ${(r as any).nomorPO}` : 'PO diperbarui')
-            setPoModal(null); setEditPoId(null)
+            setPoModal(null); setEditPoId(null); router.refresh()
           }}
         />
       )}
@@ -1107,7 +1109,7 @@ export default function POVendorClient({
             if (r?.error) { showToast(r.error, false); return }
             const msg = `Batch ${(r as any).nomor} dibuat` + ((r as any).qtyLebih > 0 ? ` · Lebihan: ${(r as any).qtyLebih} pcs` : '')
             showToast(msg)
-            setBatchModal(null)
+            setBatchModal(null); router.refresh()
           }}
         />
       )}
@@ -1122,7 +1124,7 @@ export default function POVendorClient({
             const r = await editBatchPenerimaan(editBatchModal.id, fd)
             if (r?.error) { showToast(r.error, false); return }
             showToast(`Penerimaan ${editBatchModal.nomor_batch} diperbarui`)
-            setEditBatchModal(null)
+            setEditBatchModal(null); router.refresh()
           }}
         />
       )}
@@ -1140,7 +1142,7 @@ export default function POVendorClient({
             const r = await submitQC(fd)
             if (r?.error) { showToast(r.error, false); return }
             showToast('QC selesai — stok diperbarui')
-            setQcModal(null)
+            setQcModal(null); router.refresh()
           }}
         />
       )}
@@ -1158,7 +1160,7 @@ export default function POVendorClient({
             const r = await editQCResult(fd)
             if (r?.error) { showToast(r.error, false); return }
             showToast('Hasil QC diperbarui — stok disesuaikan')
-            setEditQcModal(null)
+            setEditQcModal(null); router.refresh()
           }}
         />
       )}
@@ -1173,7 +1175,7 @@ export default function POVendorClient({
             const r = await createSJRetur(fd)
             if (r?.error) { showToast(r.error, false); return }
             showToast(`SJ Retur ${(r as any).nomor} dibuat`)
-            setSjModal(null)
+            setSjModal(null); router.refresh()
           }}
         />
       )}
@@ -1186,7 +1188,7 @@ export default function POVendorClient({
             const r = await voidPO(voidPoId, reason)
             if (r?.error) { showToast(r.error, false); return }
             showToast('PO divoid')
-            setVoidPoId(null)
+            setVoidPoId(null); router.refresh()
           }}
         />
       )}

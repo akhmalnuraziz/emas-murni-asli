@@ -289,6 +289,7 @@ function KategoriModal({ onClose, item }: { onClose: () => void; item?: Kategori
 export default function PengeluaranClient({
   pengeluaranList, kategoriList, canManage, period, dateFrom, dateTo,
 }: Props) {
+  const router = useRouter()
   const [tab, setTab] = useState<'pengeluaran' | 'kategori'>('pengeluaran')
   const [showAdd, setShowAdd] = useState(false)
   const [editItem, setEditItem] = useState<Pengeluaran | undefined>()
@@ -486,7 +487,7 @@ export default function PengeluaranClient({
                       <Pencil size={13}/>
                     </button>
                     <button disabled={togglePending}
-                      onClick={() => startToggle(async () => { await toggleKategoriAktif(k.id, !k.aktif) })}
+                      onClick={() => startToggle(async () => { await toggleKategoriAktif(k.id, !k.aktif); router.refresh() })}
                       className={cn('p-1.5 rounded-xl transition-colors',
                         k.aktif ? 'text-slate-400 hover:text-red-500 hover:bg-red-50' : 'text-green-500 hover:bg-green-50'
                       )}>
@@ -505,14 +506,14 @@ export default function PengeluaranClient({
         <PengeluaranModal
           kategoriList={kategoriList}
           item={editItem}
-          onClose={() => { setShowAdd(false); setEditItem(undefined) }}
+          onClose={() => { setShowAdd(false); setEditItem(undefined); router.refresh() }}
         />
       )}
 
       {(showAddKat || editKat) && (
         <KategoriModal
           item={editKat}
-          onClose={() => { setShowAddKat(false); setEditKat(undefined) }}
+          onClose={() => { setShowAddKat(false); setEditKat(undefined); router.refresh() }}
         />
       )}
 
@@ -547,7 +548,7 @@ export default function PengeluaranClient({
                 onClick={() => startVoid(async () => {
                   const res = await voidPengeluaran(voidId!, voidReason)
                   if (res?.error) { setVoidErr(res.error); return }
-                  setVoidId(null)
+                  setVoidId(null); router.refresh()
                 })}
                 className="flex-1 h-9 rounded-lg bg-red-500 hover:bg-red-600 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
                 {voidPending ? 'Menghapus...' : 'Ya, Hapus'}
