@@ -237,7 +237,8 @@ export async function voidPacking(packingId: number, packingKode: string) {
     return { error: 'Tidak bisa hapus — reject packing ini sudah masuk Peleburan. Void Peleburan terkait terlebih dahulu.' }
   }
 
-  const { data: existing } = await supabase.from('packing').select('produksi_item_id').eq('id', packingId).single()
+  const { data: existing } = await supabase.from('packing')
+    .select('produksi_item_id, pcs_reject, gram_reject').eq('id', packingId).single()
 
   await supabase.from('packing').update({
     voided_at: new Date().toISOString(),
@@ -249,6 +250,10 @@ export async function voidPacking(packingId: number, packingKode: string) {
     await supabase.from('produksi_item')
       .update({ current_status: 'Siap Packing' })
       .eq('id', existing.produksi_item_id)
+    // Kembalikan pcs/gram reject yang tadi dipotong (kalau packing ini pernah lapor reject)
+    if (existing.pcs_reject || existing.gram_reject) {
+      await applyRejectPackingToProduksi(supabase, existing.produksi_item_id, -Number(existing.pcs_reject ?? 0), -Number(existing.gram_reject ?? 0), '')
+    }
   }
 
   supabase.from('audit_log').insert({
@@ -293,7 +298,7 @@ export async function reportPackingReject(
   if (gramReject <= 0) return { error: 'Gram reject harus lebih dari 0' }
 
   const { data: packing } = await supabase.from('packing')
-    .select('pcs_dipack, shieldtag_count, pcs_reject, kode')
+    .select('pcs_dipack, shieldtag_count, pcs_reject, kode, produksi_item_id')
     .eq('id', packingId).single()
   if (!packing) return { error: 'Packing tidak ditemukan' }
   if ((packing.pcs_reject ?? 0) > 0) return { error: 'Reject sudah pernah dilaporkan untuk packing ini' }
@@ -310,6 +315,12 @@ export async function reportPackingReject(
     catatan_reject: catatan || null,
   }).eq('id', packingId)
 
+  // Reject packing → potong dari Siap Packing (pcs & gram) supaya "Terpakai Cetak"
+  // ikut turun dan sisa reject bisa dilebur balance dengan neraca bahan.
+  if (packing.produksi_item_id) {
+    await applyRejectPackingToProduksi(supabase, packing.produksi_item_id, pcsReject, gramReject, catatan)
+  }
+
   supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'REPORT_REJECT', module: 'PACKING',
@@ -319,7 +330,32 @@ export async function reportPackingReject(
 
   revalidatePath('/packing-log')
   revalidatePath('/bahan-baku')
+  revalidatePath('/produksi')
+  revalidatePath('/inventory')
   return { success: true }
+}
+
+// Potong pcs/gram Siap Packing di produksi_item sebesar reject packing (delta bisa negatif = kembalikan).
+async function applyRejectPackingToProduksi(supabase: any, produksiItemId: number, deltaPcs: number, deltaGram: number, catatan: string) {
+  const { data: item } = await supabase.from('produksi_item')
+    .select('pcs, pcs_good, total_gram').eq('id', produksiItemId).single()
+  if (!item) return
+  await supabase.from('produksi_item').update({
+    pcs: Math.max(0, (item.pcs ?? 0) - deltaPcs),
+    pcs_good: Math.max(0, (item.pcs_good ?? item.pcs ?? 0) - deltaPcs),
+    total_gram: Math.max(0, Number(item.total_gram ?? 0) - deltaGram),
+  }).eq('id', produksiItemId)
+
+  if (catatan) {
+    const { data: h } = await supabase.from('stage_handover')
+      .select('id, terima_catatan').eq('produksi_item_id', produksiItemId)
+      .eq('tahap', 'siap_packing').eq('status', 'selesai').is('voided_at', null).maybeSingle()
+    if (h) {
+      const note = `Catatan dari Tim Packing: ${catatan}`
+      const merged = h.terima_catatan ? `${h.terima_catatan} | ${note}` : note
+      await supabase.from('stage_handover').update({ terima_catatan: merged }).eq('id', h.id)
+    }
+  }
 }
 
 async function checkRejectNotInLebur(supabase: any, packingId: number) {
@@ -350,7 +386,7 @@ export async function editPackingReject(
     return { error: 'Tidak bisa edit — reject ini sudah masuk Peleburan. Void Peleburan terkait terlebih dahulu.' }
 
   const { data: packing } = await supabase.from('packing')
-    .select('pcs_dipack, shieldtag_count, kode, foto_reject')
+    .select('pcs_dipack, shieldtag_count, kode, foto_reject, produksi_item_id, pcs_reject, gram_reject')
     .eq('id', packingId).single()
   if (!packing) return { error: 'Packing tidak ditemukan' }
 
@@ -367,6 +403,13 @@ export async function editPackingReject(
     catatan_reject: catatan || null,
   }).eq('id', packingId)
 
+  // Selisih dari reject lama → terapkan delta-nya saja ke Siap Packing (bukan potong ulang dari awal)
+  if (packing.produksi_item_id) {
+    const deltaPcs  = pcsReject - Number(packing.pcs_reject ?? 0)
+    const deltaGram = gramReject - Number(packing.gram_reject ?? 0)
+    await applyRejectPackingToProduksi(supabase, packing.produksi_item_id, deltaPcs, deltaGram, catatan)
+  }
+
   supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
     action: 'EDIT_REJECT', module: 'PACKING',
@@ -376,6 +419,8 @@ export async function editPackingReject(
 
   revalidatePath('/packing-log')
   revalidatePath('/bahan-baku')
+  revalidatePath('/produksi')
+  revalidatePath('/inventory')
   return { success: true }
 }
 
@@ -390,13 +435,19 @@ export async function clearPackingReject(packingId: number) {
   if (await checkRejectNotInLebur(supabase, packingId))
     return { error: 'Tidak bisa hapus reject — sudah masuk Peleburan. Void Peleburan terkait terlebih dahulu.' }
 
-  const { data: packing } = await supabase.from('packing').select('kode').eq('id', packingId).single()
+  const { data: packing } = await supabase.from('packing')
+    .select('kode, produksi_item_id, pcs_reject, gram_reject').eq('id', packingId).single()
   if (!packing) return { error: 'Packing tidak ditemukan' }
 
   await supabase.from('packing').update({
     pcs_reject: null, gram_reject: null,
     foto_reject: [], catatan_reject: null,
   }).eq('id', packingId)
+
+  // Kembalikan pcs/gram reject yang tadi dipotong dari Siap Packing
+  if (packing.produksi_item_id && (packing.pcs_reject || packing.gram_reject)) {
+    await applyRejectPackingToProduksi(supabase, packing.produksi_item_id, -Number(packing.pcs_reject ?? 0), -Number(packing.gram_reject ?? 0), '')
+  }
 
   supabase.from('audit_log').insert({
     user_id: user.id, user_name: profile?.name, user_role: profile?.role,
@@ -406,5 +457,7 @@ export async function clearPackingReject(packingId: number) {
 
   revalidatePath('/packing-log')
   revalidatePath('/bahan-baku')
+  revalidatePath('/produksi')
+  revalidatePath('/inventory')
   return { success: true }
 }

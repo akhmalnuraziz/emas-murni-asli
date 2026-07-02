@@ -28,10 +28,11 @@ export async function fetchInventoryGudang(): Promise<{ rows: GudangRow[]; error
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { rows: [], error: 'Unauthorized' }
 
-  // 1. Total pcs per gramasi dari packing (yang belum void) = total pernah masuk gudang
+  // 1. Total pcs per gramasi dari packing (yang belum void) = total pernah masuk gudang.
+  // pcs_reject/gram_reject dikeluarkan — barang reject tidak pernah jadi stok gudang.
   const { data: packings } = await supabase
     .from('packing')
-    .select('id, gramasi, pcs_dipack, total_gram, voided_at')
+    .select('id, gramasi, pcs_dipack, total_gram, pcs_reject, gram_reject, voided_at')
     .is('voided_at', null)
 
   // 2. Shieldtag Aktif di gudang saat ini (untuk kolom "tershieldtag" — stok fisik riil)
@@ -62,11 +63,12 @@ export async function fetchInventoryGudang(): Promise<{ rows: GudangRow[]; error
   for (const p of packings ?? []) {
     const g = String(p.gramasi)
     const cur = packedMap.get(g) ?? { pcs: 0, gram: 0, belum: 0 }
-    const pcs = Number(p.pcs_dipack ?? 0)
+    const pcsGood = Math.max(0, Number(p.pcs_dipack ?? 0) - Number(p.pcs_reject ?? 0))
+    const gramGood = Math.max(0, Number(p.total_gram ?? 0) - Number(p.gram_reject ?? 0))
     const sudahDitag = taggedCountByPacking.get(p.id) ?? 0
-    cur.pcs += pcs
-    cur.gram += Number(p.total_gram ?? 0)
-    cur.belum += Math.max(0, pcs - sudahDitag)
+    cur.pcs += pcsGood
+    cur.gram += gramGood
+    cur.belum += Math.max(0, pcsGood - sudahDitag)
     packedMap.set(g, cur)
   }
 

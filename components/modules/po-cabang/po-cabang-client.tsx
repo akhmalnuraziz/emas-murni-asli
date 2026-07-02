@@ -91,6 +91,15 @@ export default function PoCabangClient({
     { key: 'ditolak',  label: 'Ditolak',  count: counts.ditolak  },
   ]
 
+  // Ringkasan total pcs diminta per gramasi, dari PO yang sedang ditampilkan (ikut filter tab & search)
+  const ringkasanGramasi = useMemo(() => {
+    const map: Record<string, number> = {}
+    for (const po of displayed) {
+      for (const it of po.items) map[it.gramasi] = (map[it.gramasi] ?? 0) + it.qty_diminta
+    }
+    return Object.entries(map).sort(([a], [b]) => parseFloat(a) - parseFloat(b))
+  }, [displayed])
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -143,6 +152,18 @@ export default function PoCabangClient({
           </button>
         )}
       </div>
+
+      {/* Ringkasan per gramasi */}
+      {ringkasanGramasi.length > 0 && (
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+          {ringkasanGramasi.map(([gramasi, qty]) => (
+            <div key={gramasi} className="rounded-xl px-3 py-2.5 bg-white border border-slate-200 text-center">
+              <p className="text-[15px] font-semibold text-sky-700">{qty}</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">{gramasi}gr diminta</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* PO list */}
       <div className="space-y-3">

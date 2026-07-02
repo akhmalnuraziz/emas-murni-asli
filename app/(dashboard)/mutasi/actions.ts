@@ -286,28 +286,42 @@ export async function terimaMutasiCabang(formData: FormData) {
 
   if (uErr) return { error: 'Gagal menyimpan konfirmasi terima: ' + uErr.message }
 
-  // Auto-selesai semua PO yang terpenuhi
+  // Auto-terima PO Cabang: begitu mutasi dikonfirmasi diterima (tidak short-ship),
+  // qty_diterima per item ikut ter-set otomatis — tidak perlu klik "Terima" manual lagi di PO Cabang.
   const linkedPoIds: number[] = (mutasi.po_ids as number[] | null) ?? (mutasi.po_id ? [mutasi.po_id] : [])
   if (linkedPoIds.length > 0 && !isShort) {
     for (const pid of linkedPoIds) {
       const { data: poItems } = await supabase.from('po_cabang_item')
-        .select('qty_diminta, qty_dikirim').eq('po_id', pid)
-      const semuaTerpenuhi = (poItems ?? []).every(it =>
-        (Number(it.qty_dikirim ?? 0)) >= Number(it.qty_diminta)
-      )
-      if (semuaTerpenuhi) {
+        .select('id, qty_diminta, qty_dikirim, qty_diterima').eq('po_id', pid)
+      for (const it of poItems ?? []) {
+        const qtyBaru = Math.max(Number(it.qty_diterima ?? 0), Number(it.qty_dikirim ?? 0))
+        if (qtyBaru > Number(it.qty_diterima ?? 0)) {
+          await supabase.from('po_cabang_item').update({
+            qty_diterima: qtyBaru,
+            diterima_at: new Date().toISOString(),
+            diterima_by: profile?.name ?? 'Otomatis via Mutasi',
+          }).eq('id', it.id)
+        }
+      }
+      const semuaSelesai = (poItems ?? []).every(it => Number(it.qty_dikirim ?? 0) >= Number(it.qty_diminta))
+      const adaPartial   = (poItems ?? []).some(it => Number(it.qty_dikirim ?? 0) > 0 && Number(it.qty_dikirim ?? 0) < Number(it.qty_diminta))
+      const newStatus = semuaSelesai ? 'selesai' : adaPartial ? 'partial' : null
+      if (newStatus) {
         await supabase.from('po_cabang').update({
-          status: 'selesai', selesai_at: new Date().toISOString(),
-          catatan_admin: 'Otomatis selesai — semua item terpenuhi via mutasi',
-        }).eq('id', pid).neq('status', 'selesai')
-        createNotif({
-          judul: `PO selesai otomatis`,
-          pesan: `Semua item PO dari ${mutasi.cabang_tujuan} sudah diterima.`,
-          tipe: 'success', link: '/po-cabang',
-          untuk_role: ['owner', 'manager', 'spv', 'admin_gudang'],
-        })
+          status: newStatus,
+          ...(newStatus === 'selesai' ? { selesai_at: new Date().toISOString(), catatan_admin: 'Otomatis selesai — diterima via Mutasi' } : {}),
+        }).eq('id', pid)
+        if (newStatus === 'selesai') {
+          createNotif({
+            judul: `PO selesai otomatis`,
+            pesan: `Semua item PO dari ${mutasi.cabang_tujuan} sudah diterima.`,
+            tipe: 'success', link: '/po-cabang',
+            untuk_role: ['owner', 'manager', 'spv', 'admin_gudang'],
+          })
+        }
       }
     }
+    revalidatePath('/po-cabang')
   }
 
   supabase.from('audit_log').insert({
