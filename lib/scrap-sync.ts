@@ -29,32 +29,33 @@ export async function syncSerbukScrap(supabase: SupabaseClient, p: {
     if (p.berat < terpakai - 0.001)
       return { error: `Serbuk sudah terpakai ${terpakai.toFixed(3)}gr di peleburan — berat tidak bisa di bawah itu` }
     if (p.berat <= 0.0001 && terpakai <= 0.0001) {
-      await supabase.from('scrap_inventory').update({
+      const { error } = await supabase.from('scrap_inventory').update({
         voided_at: new Date().toISOString(), void_reason: 'SERBUK_DIEDIT_KE_NOL',
       }).eq('id', existing.id)
+      if (error) return { error: error.message }
       return {}
     }
-    await supabase.from('scrap_inventory').update({
+    // berat_sisa adalah generated column (berat_gram - berat_terpakai) — jangan ditulis manual
+    const { error } = await supabase.from('scrap_inventory').update({
       berat_gram: p.berat,
-      berat_sisa: Math.max(0, p.berat - terpakai),
       status: scrapStatusFrom(p.berat, terpakai),
       tanggal: p.tanggal,
       batch_kode: p.batchKode,
       gramasi: p.gramasi,
     }).eq('id', existing.id)
+    if (error) return { error: error.message }
     return {}
   }
 
   if (p.berat <= 0.0001) return {}
   const kode = await generateScrapKode(supabase)
-  await supabase.from('scrap_inventory').insert({
+  const { error } = await supabase.from('scrap_inventory').insert({
     kode,
     sumber_ref: p.sumberRef,
     sumber_proses: 'serbuk_produksi',
     batch_kode: p.batchKode,
     gramasi: p.gramasi,
     berat_gram: p.berat,
-    berat_sisa: p.berat,
     berat_terpakai: 0,
     status: 'tersedia',
     tanggal: p.tanggal,
@@ -62,6 +63,7 @@ export async function syncSerbukScrap(supabase: SupabaseClient, p: {
     catatan: 'Otomatis dari serbuk produksi',
     created_by: p.createdBy,
   })
+  if (error) return { error: error.message }
   return {}
 }
 
@@ -73,8 +75,9 @@ export async function voidScrapBySumberRef(supabase: SupabaseClient, sumberRef: 
   if (!row) return {}
   if (Number(row.berat_terpakai ?? 0) > 0.0001)
     return { error: `Scrap ${row.kode} sudah terpakai di peleburan — batalkan peleburannya dulu` }
-  await supabase.from('scrap_inventory').update({
+  const { error } = await supabase.from('scrap_inventory').update({
     voided_at: new Date().toISOString(), void_reason: reason,
   }).eq('id', row.id)
+  if (error) return { error: error.message }
   return {}
 }

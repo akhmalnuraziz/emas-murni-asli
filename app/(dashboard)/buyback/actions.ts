@@ -160,19 +160,18 @@ export async function prossesBuyback(params: {
       const terpakai = Number(existingScrap.berat_terpakai ?? 0)
       if (params.beratGram < terpakai - 0.001)
         return { success: false, error: `Scrap buyback ini sudah terpakai ${terpakai.toFixed(3)}gr di peleburan` }
-      await supabase.from('scrap_inventory').update({
+      const { error: scrapErr } = await supabase.from('scrap_inventory').update({
         berat_gram: params.beratGram,
-        berat_sisa: Math.max(0, params.beratGram - terpakai),
         status: scrapStatusFrom(params.beratGram, terpakai),
       }).eq('id', existingScrap.id)
+      if (scrapErr) return { success: false, error: `Gagal update scrap: ${scrapErr.message}` }
     } else {
       const scrapKode = await generateScrapKode(supabase)
-      await supabase.from('scrap_inventory').insert({
+      const { error: scrapErr } = await supabase.from('scrap_inventory').insert({
         kode: scrapKode,
         sumber_ref: sumberRef,
         sumber_proses: 'buyback',
         berat_gram: params.beratGram,
-        berat_sisa: params.beratGram,
         berat_terpakai: 0,
         status: 'tersedia',
         gramasi: bbRecord?.gramasi ?? null,
@@ -181,6 +180,7 @@ export async function prossesBuyback(params: {
         catatan: `Buyback ${params.kode}${bbRecord?.shieldtag_kode ? ` · ShieldTag ${bbRecord.shieldtag_kode}` : ''}`,
         created_by: user.id,
       })
+      if (scrapErr) return { success: false, error: `Gagal buat scrap: ${scrapErr.message}` }
     }
     revalidatePath('/scrap')
   }

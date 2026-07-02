@@ -25,7 +25,6 @@ export async function createScrap(formData: FormData) {
     kode,
     sumber_proses: 'manual',
     berat_gram: berat,
-    berat_sisa: berat,
     berat_terpakai: 0,
     status: 'tersedia',
     tanggal,
@@ -70,7 +69,6 @@ export async function editScrap(id: number, formData: FormData) {
 
   const { error } = await supabase.from('scrap_inventory').update({
     berat_gram: berat,
-    berat_sisa: Math.max(0, berat - beratTerpakai),
     status: scrapStatusFrom(berat, beratTerpakai),
     tanggal: formData.get('tanggal') as string,
     catatan: (formData.get('catatan') as string) || null,

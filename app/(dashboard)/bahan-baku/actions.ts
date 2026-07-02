@@ -252,15 +252,16 @@ export async function createBatchFromScrap(formData: FormData) {
     const scrapId = parseInt(s.ref_id)
     const row = scrapRows[scrapId]
     const gram = Number(s.gram_aktual)
-    await supabase.from('scrap_usage').insert({
+    const { error: usageErr } = await supabase.from('scrap_usage').insert({
       scrap_id: scrapId, peleburan_id: plb.id, peleburan_kode: plbKode, gram, created_by: user.id,
     })
+    if (usageErr) return { error: `Gagal catat pemakaian scrap: ${usageErr.message}` }
     const terpakaiBaru = Number(row.berat_terpakai ?? 0) + gram
-    await supabase.from('scrap_inventory').update({
+    const { error: scrapErr } = await supabase.from('scrap_inventory').update({
       berat_terpakai: terpakaiBaru,
-      berat_sisa: Math.max(0, Number(row.berat_gram) - terpakaiBaru),
       status: scrapStatusFrom(Number(row.berat_gram), terpakaiBaru),
     }).eq('id', scrapId)
+    if (scrapErr) return { error: `Gagal update sisa scrap: ${scrapErr.message}` }
   }
 
   supabase.from('audit_log').insert({
@@ -724,19 +725,20 @@ export async function createPeleburan(formData: FormData) {
     const row = scrapRows[scrapId]
     if (!row) continue
     const gram = Number(s.gram_aktual)
-    await supabase.from('scrap_usage').insert({
+    const { error: usageErr } = await supabase.from('scrap_usage').insert({
       scrap_id: scrapId,
       peleburan_id: data.id,
       peleburan_kode: kode,
       gram,
       created_by: user.id,
     })
+    if (usageErr) return { error: `Gagal catat pemakaian scrap: ${usageErr.message}` }
     const terpakaiBaru = Number(row.berat_terpakai ?? 0) + gram
-    await supabase.from('scrap_inventory').update({
+    const { error: scrapErr } = await supabase.from('scrap_inventory').update({
       berat_terpakai: terpakaiBaru,
-      berat_sisa: Math.max(0, Number(row.berat_gram) - terpakaiBaru),
       status: scrapStatusFrom(Number(row.berat_gram), terpakaiBaru),
     }).eq('id', scrapId)
+    if (scrapErr) return { error: `Gagal update sisa scrap: ${scrapErr.message}` }
   }
   if (scrapItems.length > 0) revalidatePath('/scrap')
 
@@ -1158,11 +1160,11 @@ export async function voidPeleburan(id: number, reason: string) {
       .select('berat_gram, berat_terpakai').eq('id', u.scrap_id).single()
     if (!sc) continue
     const terpakaiBaru = Math.max(0, Number(sc.berat_terpakai ?? 0) - Number(u.gram))
-    await supabase.from('scrap_inventory').update({
+    const { error: scrapErr } = await supabase.from('scrap_inventory').update({
       berat_terpakai: terpakaiBaru,
-      berat_sisa: Math.max(0, Number(sc.berat_gram) - terpakaiBaru),
       status: scrapStatusFrom(Number(sc.berat_gram), terpakaiBaru),
     }).eq('id', u.scrap_id)
+    if (scrapErr) console.error('[voidPeleburan] gagal kembalikan sisa scrap:', scrapErr.message)
     await supabase.from('scrap_usage').delete().eq('id', u.id)
   }
   if ((usages ?? []).length > 0) revalidatePath('/scrap')
