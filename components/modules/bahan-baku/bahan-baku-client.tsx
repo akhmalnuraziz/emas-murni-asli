@@ -20,7 +20,7 @@ import type { UserRole } from '@/lib/types/database'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
 import { TimPickerStd, AdminPickerStd } from '@/components/modules/produksi/serah-terima-modal'
 
-interface Props { batches: any[]; peleburanList?: any[]; rejectItems?: any[]; produksiItems?: any[]; rejectCountMap: Record<string, number>; packingRejectItems?: any[]; packingRejectCountMap?: Record<string, number>; scrapOptions?: any[]; toleransiPeleburan?: number; tims?: any[]; adminList?: any[]; userRole: UserRole; userName: string; batchLossMap?: Record<number, any>; currentQ?: string; batchPage?: number; batchTotal?: number; batchPageSize?: number }
+interface Props { batches: any[]; peleburanList?: any[]; rejectItems?: any[]; produksiItems?: any[]; rejectCountMap: Record<string, number>; packingRejectItems?: any[]; packingRejectCountMap?: Record<string, number>; scrapOptions?: any[]; serbukByBatch?: Record<string, number>; toleransiPeleburan?: number; tims?: any[]; adminList?: any[]; userRole: UserRole; userName: string; batchLossMap?: Record<number, any>; currentQ?: string; batchPage?: number; batchTotal?: number; batchPageSize?: number }
 
 // ─── Selisih helper ──────────────────────────────────────────────────────────
 function hitungSelisih(pusat: number, gudang: number) {
@@ -334,7 +334,7 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
-export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[],produksiItems=[],rejectCountMap,packingRejectItems=[],packingRejectCountMap={},scrapOptions=[],toleransiPeleburan=0.05,tims=[],adminList=[],userRole,userName,batchLossMap={},currentQ='',batchPage=1,batchTotal=0,batchPageSize=30}:Props){
+export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[],produksiItems=[],rejectCountMap,packingRejectItems=[],packingRejectCountMap={},scrapOptions=[],serbukByBatch={},toleransiPeleburan=0.05,tims=[],adminList=[],userRole,userName,batchLossMap={},currentQ='',batchPage=1,batchTotal=0,batchPageSize=30}:Props){
   useRealtimeRefresh(['batch','peleburan','packing'])
   const [filter,setFilter]=useState<'semua'|'aktif'|'terkunci'>('semua')
   const router = useRouter()
@@ -690,17 +690,21 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
                       const terpakai    = batchProdItems.reduce((s:number,i:any)=>s+Number(i.total_gram??0),0)
                       const bahanMasuk  = timbAkhir
                       const siapCetak   = Number((batch as any).bahan_siap_cetak ?? 0)
+                      const totalSisaSerbuk = Number(serbukByBatch[batch.kode] ?? 0)
+                      const totalSeharusnyaAda = Math.max(0, bahanMasuk - terpakai - totalSisaSerbuk)
                       const selisihSisaFisik = sisaFisik!=null ? sisaFisik-sisaSeharusnya : null
                       const sfVal = sfInput[batch.id]!=null ? parseFloat(sfInput[batch.id]??'') : null
                       const sfSelisihLive = sfVal!=null&&!isNaN(sfVal) ? sfVal-sisaSeharusnya : null
                       const sfOverTol = sfSelisihLive!=null&&Math.abs(sfSelisihLive)>toleransiPeleburan+0.0001
                       const cols = [
-                        {label:'Bahan Masuk',     val:formatGram(bahanMasuk),  dot:'#94A3B8', warn:false, sub:'total raw'},
-                        {label:'Sudah Dilebur',   val:formatGram(sudahDilebur),dot:'#3B82F6', warn:false, sub:'diproses'},
-                        {label:'Siap Cetak',      val:formatGram(siapCetak),   dot:'#8B5CF6', warn:false, sub:'bisa dipakai'},
-                        {label:'Terpakai Cetak',  val:formatGram(terpakai),    dot:'#A855F7', warn:false, sub:'sudah dicetak'},
-                        {label:'Sisa Seharusnya', val:formatGram(sisaSeharusnya), dot:sisaSeharusnya<0?'#EF4444':'#94A3B8', warn:sisaSeharusnya<0, sub:'belum dilebur'},
-                        {label:'Total Losses',    val:formatGram(losses),      dot:losses>0?'#F87171':'#94A3B8', warn:losses>0, sub:`${bahanMasuk>0?(losses/bahanMasuk*100).toFixed(2):'0.00'}% dari bahan masuk`},
+                        {label:'Bahan Masuk',        val:formatGram(bahanMasuk),  dot:'#94A3B8', warn:false, sub:'total raw'},
+                        {label:'Sudah Dilebur',      val:formatGram(sudahDilebur),dot:'#3B82F6', warn:false, sub:'diproses'},
+                        {label:'Siap Cetak',         val:formatGram(siapCetak),   dot:'#8B5CF6', warn:false, sub:'bisa dipakai'},
+                        {label:'Terpakai Cetak',     val:formatGram(terpakai),    dot:'#A855F7', warn:false, sub:'sudah dicetak'},
+                        {label:'Total Sisa Serbuk',  val:formatGram(totalSisaSerbuk), dot:'#F59E0B', warn:false, sub:'dari Pas Berat'},
+                        {label:'Total Seharusnya Ada', val:formatGram(totalSeharusnyaAda), dot:'#0EA5E9', warn:false, sub:'masuk − terpakai − serbuk'},
+                        {label:'Sisa Bahan Mentah',  val:formatGram(sisaSeharusnya), dot:sisaSeharusnya<0?'#EF4444':'#94A3B8', warn:sisaSeharusnya<0, sub:'belum diserahkan ke lebur'},
+                        {label:'Total Losses',       val:formatGram(losses),      dot:losses>0?'#F87171':'#94A3B8', warn:losses>0, sub:`${bahanMasuk>0?(losses/bahanMasuk*100).toFixed(2):'0.00'}% dari bahan masuk`},
                       ]
                       return (
                         <div>

@@ -34,6 +34,7 @@ export default async function BahanBakuPage({
     { data: batchLossRows },
     { data: packingRejectRaw },
     { data: scrapTersedia },
+    { data: serbukRows },
   ] = await Promise.all([
     (() => {
       const bq = supabase.from('batch').select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(from, from + BATCH_PAGE_SIZE - 1)
@@ -83,6 +84,11 @@ export default async function BahanBakuPage({
       .gt('berat_sisa', 0)
       .is('voided_at', null)
       .order('created_at', { ascending: false }),
+    supabase.from('stage_handover')
+      .select('sisa_serbuk, produksi_item:produksi_item_id(batch_kode)')
+      .eq('tahap', 'pas_berat').eq('status', 'selesai')
+      .gt('sisa_serbuk', 0)
+      .is('voided_at', null),
   ])
 
   const usageMap: Record<number, number> = {}
@@ -163,6 +169,13 @@ export default async function BahanBakuPage({
     rejectCountMap[bk] = (rejectCountMap[bk] ?? 0) + cnt
   }
 
+  // Total sisa serbuk (Pas Berat) per batch — untuk neraca "Total Seharusnya Ada"
+  const serbukByBatch: Record<string, number> = {}
+  for (const r of serbukRows ?? []) {
+    const bk = (r as any).produksi_item?.batch_kode
+    if (bk) serbukByBatch[bk] = (serbukByBatch[bk] ?? 0) + Number(r.sisa_serbuk ?? 0)
+  }
+
   return (
     <BahanBakuClient
       batches={batches ?? []}
@@ -173,6 +186,7 @@ export default async function BahanBakuPage({
       packingRejectItems={packingRejectItems}
       packingRejectCountMap={packingRejectCountMap}
       scrapOptions={scrapTersedia ?? []}
+      serbukByBatch={serbukByBatch}
       toleransiPeleburan={parseFloat(tolPlbRow?.value ?? '0.05') || 0.05}
       tims={tims ?? []}
       adminList={adminRows ?? []}
