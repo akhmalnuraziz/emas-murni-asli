@@ -242,7 +242,7 @@ export default function BuybackClient({ initialList, userRole, userName }: Props
       <div className="bg-slate-50 rounded-xl px-5 py-4 border border-slate-200">
         <p className="text-[12px] font-semibold text-slate-500 mb-2">Alur Buyback / Barang Masuk</p>
         <div className="flex items-center gap-2 flex-wrap text-[12px] text-slate-400">
-          {['Input Barang', '→', 'Pending Inspeksi', '→', ['Siap Jual','Repair','Holding Reject','Lebur']].map((step, i) =>
+          {['Input Barang', '→', 'Pending Inspeksi', '→', ['Bagus → Gudang','Repair','Reject → Scrap Inventory']].map((step, i) =>
             Array.isArray(step) ? (
               <span key={i} className="flex gap-1 flex-wrap">
                 {step.map(s => <span key={s} className="px-2 py-0.5 bg-white rounded-full border border-slate-200 text-[10px] font-semibold">{s}</span>)}
@@ -302,8 +302,6 @@ function BuybackForm({ userName, initial, onClose, onSaved }: {
     namaCustomer: initial?.nama_customer ?? '',
     hpCustomer: initial?.hp_customer ?? '',
     gramasi: initial?.gramasi ?? '1',
-    kondisiEmas: initial?.kondisi_emas ?? 'bagus',
-    kondisiTag: initial?.kondisi_tag ?? 'bagus',
     hargaBeli: initial?.harga_beli ? String(initial.harga_beli) : '',
     catatan: initial?.catatan ?? '',
     // edit mode: single shieldtag field
@@ -343,8 +341,6 @@ function BuybackForm({ userName, initial, onClose, onSaved }: {
         hpCustomer: form.hpCustomer || undefined,
         shieldtagKodes: kodes,
         gramasi: form.gramasi,
-        kondisiEmas: form.kondisiEmas,
-        kondisiTag: form.kondisiTag,
         hargaBeli: parseInt(form.hargaBeli) || 0,
         fotosB64: fotos,
         catatan: form.catatan,
@@ -399,20 +395,6 @@ function BuybackForm({ userName, initial, onClose, onSaved }: {
         <F label="Harga Beli Kembali (Rp)">
           <input type="number" value={form.hargaBeli} onChange={e => set('hargaBeli', e.target.value)}
             className={inp} placeholder="0" min={0} />
-        </F>
-        <F label="Kondisi Emas" req>
-          <select value={form.kondisiEmas} onChange={e => set('kondisiEmas', e.target.value)} className={inp}>
-            <option value="bagus">Bagus</option>
-            <option value="perlu_diperbaiki">Perlu Diperbaiki</option>
-            <option value="reject">Reject</option>
-          </select>
-        </F>
-        <F label="Kondisi Shieldtag">
-          <select value={form.kondisiTag} onChange={e => set('kondisiTag', e.target.value)} className={inp}>
-            <option value="bagus">Bagus</option>
-            <option value="rusak">Rusak</option>
-            <option value="hilang">Hilang</option>
-          </select>
         </F>
       </div>
 
@@ -485,6 +467,8 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, canDelete, use
 }) {
   const [aksi, setAksi] = useState<string>('')
   const [catatan, setCatatan] = useState('')
+  const [beratReject, setBeratReject] = useState('')
+  const [errProses, setErrProses] = useState('')
   const [saving, setSaving] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const cfg = HASIL_CFG[b.status] ?? HASIL_CFG.pending
@@ -495,9 +479,18 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, canDelete, use
 
   async function doProses() {
     if (!aksi) return
+    setErrProses('')
+    if (aksi === 'reject' && !(parseFloat(beratReject) > 0)) {
+      setErrProses('Berat (gr) wajib diisi untuk tindakan Reject')
+      return
+    }
     setSaving(true)
-    await prossesBuyback({ id: b.id, kode: b.kode, aksi: aksi as any, catatan, userName })
+    const res = await prossesBuyback({
+      id: b.id, kode: b.kode, aksi: aksi as any, catatan, userName,
+      beratGram: aksi === 'reject' ? parseFloat(beratReject) : undefined,
+    })
     setSaving(false)
+    if (!res.success) { setErrProses(res.error ?? 'Gagal memproses'); return }
     onUpdated()
   }
 
@@ -586,8 +579,6 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, canDelete, use
         <div className="px-5 pb-5 border-t border-slate-50 pt-4 space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-[12px]">
             <div><p className="text-slate-400 mb-0.5">HP Customer</p><p className="font-semibold text-slate-700">{b.hp_customer || '—'}</p></div>
-            <div><p className="text-slate-400 mb-0.5">Kondisi Emas</p><p className="font-semibold text-slate-700 capitalize">{b.kondisi_emas?.replace(/_/g,' ') || '—'}</p></div>
-            <div><p className="text-slate-400 mb-0.5">Kondisi Tag</p><p className="font-semibold text-slate-700 capitalize">{b.kondisi_tag?.replace(/_/g,' ') || '—'}</p></div>
             <div><p className="text-slate-400 mb-0.5">Harga Beli</p><p className="font-semibold text-slate-700">{formatRupiah(b.harga_beli)}</p></div>
           </div>
 
@@ -614,14 +605,22 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, canDelete, use
               <p className="text-[12px] font-semibold text-violet-700">
                 {isRepair ? 'Selesai Repair — Tentukan Status Akhir' : 'Tentukan Tindakan'}
               </p>
-              <select value={aksi} onChange={e => setAksi(e.target.value)}
+              <select value={aksi} onChange={e => { setAksi(e.target.value); setErrProses('') }}
                 className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all">
                 <option value="">-- Pilih tindakan --</option>
-                <option value="ready_resell">Siap Jual Lagi — Stok Gudang bertambah</option>
-                {!isRepair && <option value="repair">Repair — Masuk Karantina (Repair)</option>}
-                <option value="reject">Holding Reject — Masuk Karantina</option>
-                <option value="lebur">Lebur — Masuk Karantina (Akan Dilebur)</option>
+                <option value="ready_resell">Bagus — Masuk Gudang (stok bertambah)</option>
+                {!isRepair && <option value="repair">Repair — Diperbaiki dulu</option>}
+                <option value="reject">Reject — Masuk Scrap Inventory (didaur ulang)</option>
               </select>
+              {aksi === 'reject' && (
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1.5">Berat (gr) <span className="text-red-500">*</span></label>
+                  <input type="number" step="0.001" min="0.001" value={beratReject}
+                    onChange={e => setBeratReject(e.target.value)} placeholder="cth: 12.500"
+                    className="w-full h-9 rounded-lg border border-slate-200 px-3 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all"/>
+                  <p className="text-[11px] text-slate-400 mt-1">Berat emas yang masuk Scrap Inventory untuk dilebur ulang</p>
+                </div>
+              )}
               {aksi === 'ready_resell' && !b.shieldtag_kode && (
                 <p className="text-[11px] text-amber-700 bg-amber-50 rounded-lg px-3 py-1.5">
                   Barang ini tidak punya shieldtag — tidak akan masuk inventory. Pastikan ini disengaja.
@@ -640,6 +639,7 @@ function BuybackCard({ buyback: b, expanded, onToggle, canProses, canDelete, use
               <textarea value={catatan} onChange={e => setCatatan(e.target.value)}
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400/30 transition-all resize-none"
                 rows={2} placeholder="Keterangan (opsional)" />
+              {errProses && <p className="text-[12px] text-red-600 bg-red-50 rounded-lg px-3 py-2">{errProses}</p>}
               <button onClick={doProses} disabled={saving || !aksi}
                 className="w-full h-9 rounded-lg bg-violet-600 hover:bg-violet-700 text-[13px] font-semibold text-white transition-colors disabled:opacity-50">
                 {saving ? 'Memproses…' : 'Konfirmasi Tindakan'}

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { createNotif } from '@/app/(dashboard)/notifikasi/actions'
+import { generateScrapKode, scrapStatusFrom } from '@/lib/scrap-sync'
 
 export async function createScrap(formData: FormData) {
   const supabase = await createClient()
@@ -18,19 +19,17 @@ export async function createScrap(formData: FormData) {
   const tanggal = formData.get('tanggal') as string
   if (!tanggal) return { error: 'Tanggal wajib diisi' }
 
-  const { data: counterData } = await supabase.rpc('increment_counter', { counter_name: 'scrap' })
-  const kode = `SCR${String(counterData ?? 1).padStart(4, '0')}`
+  const kode = await generateScrapKode(supabase)
 
   const { error } = await supabase.from('scrap_inventory').insert({
     kode,
-    batch_kode: (formData.get('batch_kode') as string) || null,
-    sumber_proses: (formData.get('sumber_proses') as string) || 'manual',
+    sumber_proses: 'manual',
     berat_gram: berat,
     berat_sisa: berat,
+    berat_terpakai: 0,
     status: 'tersedia',
     tanggal,
     catatan: (formData.get('catatan') as string) || null,
-    tim_nama: (formData.get('tim_nama') as string) || null,
     admin_input: (formData.get('admin_input') as string) || null,
     created_by: user.id,
   })
@@ -38,7 +37,7 @@ export async function createScrap(formData: FormData) {
 
   createNotif({
     judul: `Scrap Baru: ${kode}`,
-    pesan: `${berat}gr · ${(formData.get('sumber_proses') as string) || 'manual'}`,
+    pesan: `${berat}gr · manual`,
     tipe: 'info',
     link: '/scrap',
     untuk_role: ['owner', 'manager', 'spv'],
@@ -59,45 +58,26 @@ export async function editScrap(id: number, formData: FormData) {
   const berat = parseFloat(formData.get('berat_gram') as string)
   if (!berat || berat <= 0) return { error: 'Berat wajib diisi' }
 
-  const { data: existing } = await supabase.from('scrap_inventory').select('berat_gram, berat_terpakai, status').eq('id', id).single()
+  const { data: existing } = await supabase.from('scrap_inventory')
+    .select('berat_gram, berat_terpakai, status, sumber_ref').eq('id', id).single()
   if (!existing) return { error: 'Data tidak ditemukan' }
-  if (existing.status !== 'tersedia') return { error: 'Hanya scrap dengan status tersedia yang dapat diedit' }
+  if (existing.sumber_ref) return { error: 'Scrap otomatis (serbuk/buyback) — edit dari sumber asalnya' }
+  if (!['tersedia', 'sebagian'].includes(existing.status)) return { error: 'Scrap yang sudah habis terpakai tidak dapat diedit' }
 
   const beratTerpakai = Number(existing.berat_terpakai ?? 0)
-  const sisaBaru = Math.max(0, berat - beratTerpakai)
+  if (berat < beratTerpakai - 0.001)
+    return { error: `Berat tidak boleh di bawah yang sudah terpakai (${beratTerpakai.toFixed(3)}gr)` }
 
   const { error } = await supabase.from('scrap_inventory').update({
     berat_gram: berat,
-    berat_sisa: sisaBaru,
+    berat_sisa: Math.max(0, berat - beratTerpakai),
+    status: scrapStatusFrom(berat, beratTerpakai),
     tanggal: formData.get('tanggal') as string,
-    sumber_proses: (formData.get('sumber_proses') as string) || 'manual',
-    batch_kode: (formData.get('batch_kode') as string) || null,
     catatan: (formData.get('catatan') as string) || null,
+    admin_input: (formData.get('admin_input') as string) || null,
   }).eq('id', id)
   if (error) return { error: error.message }
 
-  revalidatePath('/scrap')
-  return { success: true }
-}
-
-export async function updateScrapStatus(id: number, status: string, beratTerpakai?: number) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Unauthorized' }
-  const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
-  if (!['owner', 'manager', 'spv'].includes(profile?.role ?? '')) return { error: 'Tidak ada akses' }
-
-  const updates: any = { status }
-  if (beratTerpakai !== undefined) {
-    const { data: scrap } = await supabase.from('scrap_inventory').select('berat_gram').eq('id', id).single()
-    if (scrap) {
-      updates.berat_terpakai = beratTerpakai
-      updates.berat_sisa = Math.max(0, scrap.berat_gram - beratTerpakai)
-    }
-  }
-
-  const { error } = await supabase.from('scrap_inventory').update(updates).eq('id', id)
-  if (error) return { error: error.message }
   revalidatePath('/scrap')
   return { success: true }
 }
@@ -109,6 +89,10 @@ export async function voidScrap(id: number, reason: string) {
   const { data: profile } = await supabase.from('users_profile').select('role').eq('id', user.id).single()
   if (!['owner', 'manager'].includes(profile?.role ?? ''))
     return { error: 'Hanya Owner/Manager yang bisa void' }
+
+  const { data: row } = await supabase.from('scrap_inventory').select('berat_terpakai').eq('id', id).single()
+  if (Number(row?.berat_terpakai ?? 0) > 0.0001)
+    return { error: 'Scrap sudah terpakai di peleburan — batalkan peleburannya terlebih dahulu' }
 
   const { error } = await supabase.from('scrap_inventory').update({
     voided_at: new Date().toISOString(),

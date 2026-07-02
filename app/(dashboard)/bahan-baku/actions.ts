@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { revalidatePath } from 'next/cache'
 import { createNotif } from '@/app/(dashboard)/notifikasi/actions'
+import { scrapStatusFrom } from '@/lib/scrap-sync'
 
 const BATCH_PREFIX = 'PROD.GDCJ/BATCH'
 
@@ -517,7 +518,7 @@ export async function createPeleburan(formData: FormData) {
 
   // ── Parse sumber bahan ──────────────────────────────────────────────────
   type SumberItem = {
-    tipe: 'batch_mentah' | 'sisa_peleburan' | 'reject_cutting' | 'reject_packing'
+    tipe: 'batch_mentah' | 'sisa_peleburan' | 'reject_cutting' | 'reject_packing' | 'scrap'
     ref_id: string | null
     ref_label: string
     gram_otomatis: number
@@ -527,6 +528,18 @@ export async function createPeleburan(formData: FormData) {
   const sumberList: SumberItem[] = sumberRaw ? JSON.parse(sumberRaw) : []
 
   if (sumberList.length === 0) return { error: 'Minimal satu sumber bahan harus dipilih' }
+
+  // ── Satu peleburan = satu kategori sumber (tidak boleh dicampur) ─────────
+  const KATEGORI: Record<SumberItem['tipe'], string> = {
+    batch_mentah: 'registrasi',
+    sisa_peleburan: 'rework',
+    reject_cutting: 'rework',
+    reject_packing: 'rework',
+    scrap: 'scrap',
+  }
+  const kategoriSet = new Set(sumberList.map(s => KATEGORI[s.tipe]))
+  if (kategoriSet.size > 1)
+    return { error: 'Sumber bahan tidak boleh dicampur — pilih salah satu: Bahan Baru (Registrasi Batch), Rework Produksi, atau Scrap Inventory' }
 
   const totalDikasih    = sumberList.reduce((s, x) => s + Number(x.gram_aktual), 0)
   const sumberBatchGram = sumberList.filter(x => x.tipe === 'batch_mentah')
@@ -551,6 +564,24 @@ export async function createPeleburan(formData: FormData) {
     const siapCetak = Number(batchRow?.bahan_siap_cetak ?? 0)
     if (sumberLeburGram > siapCetak + 0.01)
       return { error: `Hasil lebur yang dilebur ulang (${sumberLeburGram.toFixed(3)} gr) melebihi yang tersedia (${siapCetak.toFixed(3)} gr).` }
+  }
+
+  // Validasi: sumber scrap — sisa harus cukup (partial usage diizinkan)
+  const scrapItems = sumberList.filter(s => s.tipe === 'scrap' && s.ref_id)
+  const scrapRows: Record<number, { kode: string; berat_gram: number; berat_terpakai: number; berat_sisa: number }> = {}
+  if (scrapItems.length > 0) {
+    const ids = scrapItems.map(s => parseInt(s.ref_id!))
+    const { data: rows } = await supabase.from('scrap_inventory')
+      .select('id, kode, berat_gram, berat_terpakai, berat_sisa, status, voided_at')
+      .in('id', ids)
+    for (const s of scrapItems) {
+      const row = (rows ?? []).find((r: any) => r.id === parseInt(s.ref_id!))
+      if (!row || row.voided_at) return { error: `Scrap ${s.ref_label} tidak ditemukan / sudah di-void` }
+      const sisa = Number(row.berat_sisa ?? 0)
+      if (Number(s.gram_aktual) > sisa + 0.001)
+        return { error: `Scrap ${row.kode}: gram dipakai (${Number(s.gram_aktual).toFixed(3)}) melebihi sisa (${sisa.toFixed(3)} gr)` }
+      scrapRows[row.id] = row
+    }
   }
 
   // ── Upload foto ──────────────────────────────────────────────────────────
@@ -589,6 +620,28 @@ export async function createPeleburan(formData: FormData) {
       bahan_siap_cetak: Math.max(0, siapCetakNow - sumberLeburGram)
     }).eq('kode', batchKode)
   }
+
+  // ── Sumber scrap: catat pemakaian (audit trail) + update sisa ─────────────
+  for (const s of scrapItems) {
+    const scrapId = parseInt(s.ref_id!)
+    const row = scrapRows[scrapId]
+    if (!row) continue
+    const gram = Number(s.gram_aktual)
+    await supabase.from('scrap_usage').insert({
+      scrap_id: scrapId,
+      peleburan_id: data.id,
+      peleburan_kode: kode,
+      gram,
+      created_by: user.id,
+    })
+    const terpakaiBaru = Number(row.berat_terpakai ?? 0) + gram
+    await supabase.from('scrap_inventory').update({
+      berat_terpakai: terpakaiBaru,
+      berat_sisa: Math.max(0, Number(row.berat_gram) - terpakaiBaru),
+      status: scrapStatusFrom(Number(row.berat_gram), terpakaiBaru),
+    }).eq('id', scrapId)
+  }
+  if (scrapItems.length > 0) revalidatePath('/scrap')
 
   // ── Update reject_cutting: tambah berat_reject_dilebur, set status ────────
   const rejectCuttingItems = sumberList.filter(s => s.tipe === 'reject_cutting' && s.ref_id)
@@ -746,6 +799,14 @@ export async function editPeleburan(id: number, formData: FormData) {
   if (plb.diterima_gram && dikasih < plb.diterima_gram)
     return { error: `Dikasih tidak boleh kurang dari diterima (${plb.diterima_gram} gr)` }
 
+  // Peleburan bersumber Scrap Inventory: dikasih terkunci ke pemakaian scrap
+  if (dikasih !== Number(plb.dikasih_gram)) {
+    const { count: usageCount } = await supabase.from('scrap_usage')
+      .select('*', { count: 'exact', head: true }).eq('peleburan_id', id)
+    if ((usageCount ?? 0) > 0)
+      return { error: 'Peleburan ini bersumber Scrap Inventory — untuk mengubah bahan, hapus peleburan lalu buat ulang' }
+  }
+
   // Handle sisa bahan jika dikasih berubah
   const selisih = dikasih - Number(plb.dikasih_gram)
   if (selisih !== 0) {
@@ -843,6 +904,14 @@ export async function editPeleburanSerah(id: number, formData: FormData) {
   if (!plb) return { error: 'Peleburan tidak ditemukan' }
   if (plb.diterima_gram && dikasih < Number(plb.diterima_gram))
     return { error: `Dikasih tidak boleh kurang dari diterima (${plb.diterima_gram} gr)` }
+
+  // Peleburan bersumber Scrap Inventory: dikasih terkunci ke pemakaian scrap
+  if (dikasih !== Number(plb.dikasih_gram)) {
+    const { count: usageCount } = await supabase.from('scrap_usage')
+      .select('*', { count: 'exact', head: true }).eq('peleburan_id', id)
+    if ((usageCount ?? 0) > 0)
+      return { error: 'Peleburan ini bersumber Scrap Inventory — untuk mengubah bahan, hapus peleburan lalu buat ulang' }
+  }
 
   const selisih = dikasih - Number(plb.dikasih_gram)
   if (selisih !== 0 && plb.batch_kode) {
@@ -983,6 +1052,23 @@ export async function voidPeleburan(id: number, reason: string) {
   if (!plb) return { error: 'Peleburan tidak ditemukan' }
 
   await supabase.from('peleburan').update({ voided_at: new Date().toISOString(), void_reason: reason }).eq('id', id)
+
+  // ── Kembalikan pemakaian scrap (jika sumber peleburan dari Scrap Inventory) ─
+  const { data: usages } = await supabase.from('scrap_usage')
+    .select('id, scrap_id, gram').eq('peleburan_id', id)
+  for (const u of usages ?? []) {
+    const { data: sc } = await supabase.from('scrap_inventory')
+      .select('berat_gram, berat_terpakai').eq('id', u.scrap_id).single()
+    if (!sc) continue
+    const terpakaiBaru = Math.max(0, Number(sc.berat_terpakai ?? 0) - Number(u.gram))
+    await supabase.from('scrap_inventory').update({
+      berat_terpakai: terpakaiBaru,
+      berat_sisa: Math.max(0, Number(sc.berat_gram) - terpakaiBaru),
+      status: scrapStatusFrom(Number(sc.berat_gram), terpakaiBaru),
+    }).eq('id', u.scrap_id)
+    await supabase.from('scrap_usage').delete().eq('id', u.id)
+  }
+  if ((usages ?? []).length > 0) revalidatePath('/scrap')
 
   // ── Kembalikan bahan batch ────────────────────────────────────────────────
   if (plb.batch_kode) {

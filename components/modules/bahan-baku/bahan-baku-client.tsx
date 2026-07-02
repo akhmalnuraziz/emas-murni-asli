@@ -20,7 +20,7 @@ import type { UserRole } from '@/lib/types/database'
 import LossApprovalPanel from '@/components/modules/produksi/loss-approval-panel'
 import { TimPickerStd, AdminPickerStd } from '@/components/modules/produksi/serah-terima-modal'
 
-interface Props { batches: any[]; peleburanList?: any[]; rejectItems?: any[]; produksiItems?: any[]; rejectCountMap: Record<string, number>; packingRejectItems?: any[]; packingRejectCountMap?: Record<string, number>; toleransiPeleburan?: number; tims?: any[]; adminList?: any[]; userRole: UserRole; userName: string; batchLossMap?: Record<number, any>; currentQ?: string; batchPage?: number; batchTotal?: number; batchPageSize?: number }
+interface Props { batches: any[]; peleburanList?: any[]; rejectItems?: any[]; produksiItems?: any[]; rejectCountMap: Record<string, number>; packingRejectItems?: any[]; packingRejectCountMap?: Record<string, number>; scrapOptions?: any[]; toleransiPeleburan?: number; tims?: any[]; adminList?: any[]; userRole: UserRole; userName: string; batchLossMap?: Record<number, any>; currentQ?: string; batchPage?: number; batchTotal?: number; batchPageSize?: number }
 
 // ─── Selisih helper ──────────────────────────────────────────────────────────
 function hitungSelisih(pusat: number, gudang: number) {
@@ -334,7 +334,7 @@ function BatchFormModal({initial,onSubmit,onClose,isPending,error,isEdit=false}:
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
-export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[],produksiItems=[],rejectCountMap,packingRejectItems=[],packingRejectCountMap={},toleransiPeleburan=0.05,tims=[],adminList=[],userRole,userName,batchLossMap={},currentQ='',batchPage=1,batchTotal=0,batchPageSize=30}:Props){
+export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[],produksiItems=[],rejectCountMap,packingRejectItems=[],packingRejectCountMap={},scrapOptions=[],toleransiPeleburan=0.05,tims=[],adminList=[],userRole,userName,batchLossMap={},currentQ='',batchPage=1,batchTotal=0,batchPageSize=30}:Props){
   useRealtimeRefresh(['batch','peleburan','packing'])
   const [filter,setFilter]=useState<'semua'|'aktif'|'terkunci'>('semua')
   const router = useRouter()
@@ -1023,6 +1023,7 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
           hasilLeburBelumCetak={hasilLeburBelumCetak}
           rejectOptions={(rejectItems as any[]).filter((r:any)=>r.batch_kode===peleburanModalBatch)}
           packingRejectOptions={(packingRejectItems as any[]).filter((r:any)=>r.batch_kode===peleburanModalBatch)}
+          scrapOptions={scrapOptions}
           tims={tims} adminList={adminList}
           onClose={()=>{
             // Auto-expand batch card agar riwayat peleburan langsung terlihat
@@ -1099,23 +1100,34 @@ export default function BahanBakuClient({batches,peleburanList=[],rejectItems=[]
   )
 }
 
-// ─── Create Peleburan Modal (3 sumber: mentah / hasil lebur belum cetak / reject) ───
-function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasilLeburBelumCetak, rejectOptions, packingRejectOptions = [], tims = [], adminList = [], onClose }: {
+// ─── Create Peleburan Modal — satu kategori sumber: Bahan Baru / Rework / Scrap ───
+function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasilLeburBelumCetak, rejectOptions, packingRejectOptions = [], scrapOptions = [], tims = [], adminList = [], onClose }: {
   batchKode: string; batchNama: string
   sisaMentahBelumLebur: number; hasilLeburBelumCetak: number
-  rejectOptions: any[]; packingRejectOptions?: any[]; tims?: any[]; adminList?: any[]
+  rejectOptions: any[]; packingRejectOptions?: any[]; scrapOptions?: any[]; tims?: any[]; adminList?: any[]
   onClose: () => void
 }) {
   const [pend, start]     = useTransition()
   const [err, setErr]     = useState('')
   const [fotos, setFotos] = useState<File[]>([])
+  const [kategori, setKategori] = useState<'registrasi'|'rework'|'scrap'>('registrasi')
   const [mentahChecked, setMentahChecked] = useState(false)
   const [mentahGram, setMentahGram]       = useState('')
   const [leburChecked, setLeburChecked]   = useState(false)
   const [leburGram, setLeburGram]         = useState('')
   const [rejGram, setRejGram]       = useState<Record<number,string>>({})
   const [packRejGram, setPackRejGram] = useState<Record<number,string>>({})
+  const [scrapGram, setScrapGram]   = useState<Record<number,string>>({})
   const router = useRouter()
+
+  // Ganti kategori = reset semua pilihan (satu peleburan satu sumber, tidak boleh campur)
+  function switchKategori(k: 'registrasi'|'rework'|'scrap') {
+    setKategori(k)
+    setMentahChecked(false); setMentahGram('')
+    setLeburChecked(false); setLeburGram('')
+    setRejGram({}); setPackRejGram({}); setScrapGram({})
+    setErr('')
+  }
 
   function toggleRej(id: number, berat: number) {
     setRejGram(prev => { const n={...prev}; if(n[id]!==undefined){delete n[id]}else{n[id]=Number(berat).toFixed(2)}; return n })
@@ -1123,14 +1135,20 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
   function togglePackRej(id: number, gram: number) {
     setPackRejGram(prev => { const n={...prev}; if(n[id]!==undefined){delete n[id]}else{n[id]=Number(gram).toFixed(3)}; return n })
   }
+  function toggleScrap(id: number, sisa: number) {
+    setScrapGram(prev => { const n={...prev}; if(n[id]!==undefined){delete n[id]}else{n[id]=Number(sisa).toFixed(3)}; return n })
+  }
 
   const totalDikasih =
-    (mentahChecked ? (Number(mentahGram)||0) : 0) +
-    (leburChecked ? (Number(leburGram)||0) : 0) +
-    Object.values(rejGram).reduce((s,v)=>s+(Number(v)||0),0) +
-    Object.values(packRejGram).reduce((s,v)=>s+(Number(v)||0),0)
+    (kategori==='registrasi' && mentahChecked ? (Number(mentahGram)||0) : 0) +
+    (kategori==='rework' ? (
+      (leburChecked ? (Number(leburGram)||0) : 0) +
+      Object.values(rejGram).reduce((s,v)=>s+(Number(v)||0),0) +
+      Object.values(packRejGram).reduce((s,v)=>s+(Number(v)||0),0)
+    ) : 0) +
+    (kategori==='scrap' ? Object.values(scrapGram).reduce((s,v)=>s+(Number(v)||0),0) : 0)
 
-  const mentahNaik = mentahChecked && (Number(mentahGram)||0) > sisaMentahBelumLebur && sisaMentahBelumLebur >= 0
+  const mentahNaik = kategori==='registrasi' && mentahChecked && (Number(mentahGram)||0) > sisaMentahBelumLebur && sisaMentahBelumLebur >= 0
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -1140,19 +1158,28 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
 
     type SI = { tipe:string; ref_id:string|null; ref_label:string; gram_otomatis:number; gram_aktual:number }
     const sumber: SI[] = []
-    if (mentahChecked && (Number(mentahGram)||0) > 0)
+    if (kategori==='registrasi' && mentahChecked && (Number(mentahGram)||0) > 0)
       sumber.push({ tipe:'batch_mentah', ref_id:null, ref_label:'Sisa Bahan Mentah Belum Dilebur', gram_otomatis:sisaMentahBelumLebur, gram_aktual:Number(mentahGram) })
-    if (leburChecked && (Number(leburGram)||0) > 0)
-      sumber.push({ tipe:'sisa_peleburan', ref_id:null, ref_label:'Hasil Lebur Belum Dicetak', gram_otomatis:hasilLeburBelumCetak, gram_aktual:Number(leburGram) })
-    for (const [id,gram] of Object.entries(rejGram)) {
-      const rej = rejectOptions.find((r:any)=>r.id===Number(id))
-      if (rej && (Number(gram)||0) > 0)
-        sumber.push({ tipe:'reject_cutting', ref_id:id, ref_label:rej.kode??rej.nama_item, gram_otomatis:Number(rej.sisa_reject_gram ?? rej.berat_reject), gram_aktual:Number(gram) })
+    if (kategori==='rework') {
+      if (leburChecked && (Number(leburGram)||0) > 0)
+        sumber.push({ tipe:'sisa_peleburan', ref_id:null, ref_label:'Hasil Lebur Belum Dicetak', gram_otomatis:hasilLeburBelumCetak, gram_aktual:Number(leburGram) })
+      for (const [id,gram] of Object.entries(rejGram)) {
+        const rej = rejectOptions.find((r:any)=>r.id===Number(id))
+        if (rej && (Number(gram)||0) > 0)
+          sumber.push({ tipe:'reject_cutting', ref_id:id, ref_label:rej.kode??rej.nama_item, gram_otomatis:Number(rej.sisa_reject_gram ?? rej.berat_reject), gram_aktual:Number(gram) })
+      }
+      for (const [id,gram] of Object.entries(packRejGram)) {
+        const pk = packingRejectOptions.find((r:any)=>r.id===Number(id))
+        if (pk && (Number(gram)||0) > 0)
+          sumber.push({ tipe:'reject_packing', ref_id:id, ref_label:pk.kode, gram_otomatis:Number(pk.gram_reject), gram_aktual:Number(gram) })
+      }
     }
-    for (const [id,gram] of Object.entries(packRejGram)) {
-      const pk = packingRejectOptions.find((r:any)=>r.id===Number(id))
-      if (pk && (Number(gram)||0) > 0)
-        sumber.push({ tipe:'reject_packing', ref_id:id, ref_label:pk.kode, gram_otomatis:Number(pk.gram_reject), gram_aktual:Number(gram) })
+    if (kategori==='scrap') {
+      for (const [id,gram] of Object.entries(scrapGram)) {
+        const sc = scrapOptions.find((r:any)=>r.id===Number(id))
+        if (sc && (Number(gram)||0) > 0)
+          sumber.push({ tipe:'scrap', ref_id:id, ref_label:sc.kode, gram_otomatis:Number(sc.berat_sisa), gram_aktual:Number(gram) })
+      }
     }
     if (sumber.length === 0) { setErr('Pilih minimal satu sumber bahan'); return }
     fd.set('sumber_json', JSON.stringify(sumber))
@@ -1182,105 +1209,157 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
         <form onSubmit={handleSubmit} className="flex flex-col overflow-hidden flex-1">
         <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
 
-          {/* SUMBER BAHAN — 3 pilihan */}
+          {/* SUMBER BAHAN — satu kategori saja, tidak boleh dicampur */}
           <div className="rounded-lg overflow-hidden border border-slate-200">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-200">
-              <span className="text-[11px] font-medium text-slate-500">🧱 Sumber bahan</span>
+            <div className="px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-200">
+              <span className="text-[11px] font-medium text-slate-500">Sumber Bahan — pilih salah satu kategori</span>
             </div>
             <div className="p-4 space-y-4">
 
-              {/* 1. Sisa Bahan Mentah Belum Dilebur */}
-              <div>
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input type="checkbox" checked={mentahChecked} onChange={e=>{setMentahChecked(e.target.checked);if(e.target.checked&&!mentahGram)setMentahGram(sisaMentahBelumLebur.toFixed(3))}} className="w-4 h-4 rounded accent-violet-600"/>
-                  <span className="text-[12px] font-semibold text-slate-700">Sisa Bahan Mentah Belum Dilebur</span>
-                  <span className="ml-auto text-[10px] text-slate-400">{formatGram(sisaMentahBelumLebur)}</span>
-                </label>
-                {mentahChecked&&(
-                  <div className="mt-2 pl-6">
-                    <input type="number" step="0.001" placeholder={`cth: ${sisaMentahBelumLebur.toFixed(2)}`}
-                      value={mentahGram} onChange={e=>setMentahGram(e.target.value)} className={inp}/>
-                    {mentahNaik&&<p className="text-[11px] text-amber-600 font-semibold mt-1">⚠ Timbangan naik {((Number(mentahGram)||0)-sisaMentahBelumLebur).toFixed(2)} gr — wajib isi Catatan</p>}
-                  </div>
-                )}
+              {/* Kategori selector */}
+              <div className="grid grid-cols-3 gap-1.5 p-1 rounded-lg bg-slate-100">
+                {([
+                  ['registrasi', 'Bahan Baru'],
+                  ['rework', 'Rework Produksi'],
+                  ['scrap', 'Scrap Inventory'],
+                ] as const).map(([k, label]) => (
+                  <button key={k} type="button" onClick={() => switchKategori(k)}
+                    className={`h-8 rounded-md text-[11px] font-semibold transition-all ${kategori === k ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                    {label}
+                  </button>
+                ))}
               </div>
 
-              {/* 2. Hasil Lebur Belum Dicetak */}
-              <div>
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input type="checkbox" checked={leburChecked} onChange={e=>{setLeburChecked(e.target.checked);if(e.target.checked&&!leburGram)setLeburGram(hasilLeburBelumCetak.toFixed(3))}} className="w-4 h-4 rounded accent-violet-600"/>
-                  <span className="text-[12px] font-semibold text-slate-700">Hasil Lebur Belum Dicetak</span>
-                  <span className="ml-auto text-[10px] text-violet-400 font-semibold">{formatGram(hasilLeburBelumCetak)}</span>
-                </label>
-                {leburChecked&&(
-                  <div className="mt-2 pl-6">
-                    <input type="number" step="0.001" max={hasilLeburBelumCetak} placeholder={`Max ${hasilLeburBelumCetak.toFixed(2)}`}
-                      value={leburGram} onChange={e=>setLeburGram(e.target.value)} className={inp}/>
-                  </div>
-                )}
-              </div>
-
-              {/* 3. Reject Cutting / Reject PCS */}
-              {rejectOptions.length>0&&(
+              {/* KATEGORI 1: Bahan Baru (Registrasi Batch) */}
+              {kategori==='registrasi'&&(
                 <div>
-                  <p className="text-[12px] font-semibold text-slate-700 mb-2">Reject (Cutting / Pas Berat / Annealing)</p>
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" checked={mentahChecked} onChange={e=>{setMentahChecked(e.target.checked);if(e.target.checked&&!mentahGram)setMentahGram(sisaMentahBelumLebur.toFixed(3))}} className="w-4 h-4 rounded accent-violet-600"/>
+                    <span className="text-[12px] font-semibold text-slate-700">Sisa Bahan Mentah Belum Dilebur</span>
+                    <span className="ml-auto text-[10px] text-slate-400">{formatGram(sisaMentahBelumLebur)}</span>
+                  </label>
+                  {mentahChecked&&(
+                    <div className="mt-2 pl-6">
+                      <input type="number" step="0.001" placeholder={`cth: ${sisaMentahBelumLebur.toFixed(2)}`}
+                        value={mentahGram} onChange={e=>setMentahGram(e.target.value)} className={inp}/>
+                      {mentahNaik&&<p className="text-[11px] text-amber-600 font-semibold mt-1">Timbangan naik {((Number(mentahGram)||0)-sisaMentahBelumLebur).toFixed(2)} gr — wajib isi Catatan</p>}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* KATEGORI 2: Rework Produksi */}
+              {kategori==='rework'&&(<>
+                <div>
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" checked={leburChecked} onChange={e=>{setLeburChecked(e.target.checked);if(e.target.checked&&!leburGram)setLeburGram(hasilLeburBelumCetak.toFixed(3))}} className="w-4 h-4 rounded accent-violet-600"/>
+                    <span className="text-[12px] font-semibold text-slate-700">Hasil Lebur Belum Dicetak</span>
+                    <span className="ml-auto text-[10px] text-violet-400 font-semibold">{formatGram(hasilLeburBelumCetak)}</span>
+                  </label>
+                  {leburChecked&&(
+                    <div className="mt-2 pl-6">
+                      <input type="number" step="0.001" max={hasilLeburBelumCetak} placeholder={`Max ${hasilLeburBelumCetak.toFixed(2)}`}
+                        value={leburGram} onChange={e=>setLeburGram(e.target.value)} className={inp}/>
+                    </div>
+                  )}
+                </div>
+
+                {rejectOptions.length>0&&(
+                  <div>
+                    <p className="text-[12px] font-semibold text-slate-700 mb-2">Reject (Cutting / Pas Berat / Annealing)</p>
+                    <div className="space-y-2">
+                      {rejectOptions.map((rej:any)=>{
+                        const sisa = Number(rej.sisa_reject_gram ?? rej.berat_reject ?? 0)
+                        const prosesLabel = rej.sisa_label ?? 'Reject'
+                        return (
+                        <div key={rej.id}>
+                          <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" checked={rejGram[rej.id]!==undefined} onChange={()=>toggleRej(rej.id,sisa)} className="w-4 h-4 rounded accent-violet-600"/>
+                            <span className="text-[12px] font-medium text-slate-700">{rej.kode??rej.nama_item}</span>
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">{prosesLabel}</span>
+                            <span className="text-[10px] text-slate-400">({rej.gramasi}gr)</span>
+                            <span className="ml-auto text-[10px] text-red-400 font-semibold">{formatGram(sisa)}{rej.sisa_pcs?` · ${rej.sisa_pcs} pcs`:''}</span>
+                          </label>
+                          {rejGram[rej.id]!==undefined&&(
+                            <div className="mt-1 pl-6">
+                              <input type="number" step="0.001" max={sisa} placeholder={`Max ${formatGram(sisa)}`}
+                                value={rejGram[rej.id]} onChange={e=>setRejGram(p=>({...p,[rej.id]:e.target.value}))} className={inp}/>
+                            </div>
+                          )}
+                        </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {packingRejectOptions.length>0&&(
+                  <div>
+                    <p className="text-[12px] font-semibold text-slate-700 mb-2">Reject Packing</p>
+                    <div className="space-y-2">
+                      {packingRejectOptions.map((pk:any)=>{
+                        const sisaGram = Number(pk.gram_reject??0) - Number(pk.gram_reject_dilebur??0)
+                        return (
+                        <div key={pk.id}>
+                          <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" checked={packRejGram[pk.id]!==undefined} onChange={()=>togglePackRej(pk.id,sisaGram)} className="w-4 h-4 rounded accent-violet-600"/>
+                            <span className="text-[12px] font-medium text-slate-700">{pk.kode}</span>
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">Reject Packing</span>
+                            <span className="text-[10px] text-slate-400">({pk.gramasi}gr)</span>
+                            <span className="ml-auto text-[10px] text-red-400 font-semibold">{formatGram(sisaGram)}{pk.pcs_reject?' · '+pk.pcs_reject+' pcs':''}</span>
+                          </label>
+                          {packRejGram[pk.id]!==undefined&&(
+                            <div className="mt-1 pl-6">
+                              <input type="number" step="0.001" max={sisaGram} placeholder={`Max ${formatGram(sisaGram)}`}
+                                value={packRejGram[pk.id]} onChange={e=>setPackRejGram(p=>({...p,[pk.id]:e.target.value}))} className={inp}/>
+                            </div>
+                          )}
+                        </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {rejectOptions.length===0&&packingRejectOptions.length===0&&hasilLeburBelumCetak<=0&&(
+                  <p className="text-[12px] text-slate-400 italic text-center py-2">Tidak ada material rework untuk batch ini</p>
+                )}
+              </>)}
+
+              {/* KATEGORI 3: Scrap Inventory — bisa pilih banyak record, partial gram */}
+              {kategori==='scrap'&&(
+                scrapOptions.length>0?(
                   <div className="space-y-2">
-                    {rejectOptions.map((rej:any)=>{
-                      const sisa = Number(rej.sisa_reject_gram ?? rej.berat_reject ?? 0)
-                      const prosesLabel = rej.sisa_label ?? 'Reject'
+                    <p className="text-[11px] text-slate-400">Pilih satu/banyak record — gram bisa dipakai sebagian</p>
+                    {scrapOptions.map((sc:any)=>{
+                      const sisa = Number(sc.berat_sisa??0)
                       return (
-                      <div key={rej.id}>
+                      <div key={sc.id}>
                         <label className="flex items-center gap-2 cursor-pointer select-none">
-                          <input type="checkbox" checked={rejGram[rej.id]!==undefined} onChange={()=>toggleRej(rej.id,sisa)} className="w-4 h-4 rounded accent-violet-600"/>
-                          <span className="text-[12px] font-medium text-slate-700">{rej.kode??rej.nama_item}</span>
-                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">{prosesLabel}</span>
-                          <span className="text-[10px] text-slate-400">({rej.gramasi}gr)</span>
-                          <span className="ml-auto text-[10px] text-red-400 font-semibold">{formatGram(sisa)}{rej.sisa_pcs?` · ${rej.sisa_pcs} pcs`:''}</span>
+                          <input type="checkbox" checked={scrapGram[sc.id]!==undefined} onChange={()=>toggleScrap(sc.id,sisa)} className="w-4 h-4 rounded accent-violet-600"/>
+                          <span className="font-mono text-[12px] font-semibold text-slate-700">{sc.kode}</span>
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-500">
+                            {sc.sumber_proses==='serbuk_produksi'?'Serbuk':sc.sumber_proses==='buyback'?'Buyback':'Manual'}
+                          </span>
+                          {sc.batch_kode&&<span className="text-[10px] text-slate-400">{sc.batch_kode}</span>}
+                          <span className="ml-auto text-[10px] text-green-500 font-semibold">Sisa {formatGram(sisa)}</span>
                         </label>
-                        {rejGram[rej.id]!==undefined&&(
+                        {scrapGram[sc.id]!==undefined&&(
                           <div className="mt-1 pl-6">
                             <input type="number" step="0.001" max={sisa} placeholder={`Max ${formatGram(sisa)}`}
-                              value={rejGram[rej.id]} onChange={e=>setRejGram(p=>({...p,[rej.id]:e.target.value}))} className={inp}/>
+                              value={scrapGram[sc.id]} onChange={e=>setScrapGram(p=>({...p,[sc.id]:e.target.value}))} className={inp}/>
+                            {(Number(scrapGram[sc.id])||0)>sisa+0.001&&(
+                              <p className="text-[11px] text-red-500 font-semibold mt-1">Melebihi sisa scrap ({formatGram(sisa)})</p>
+                            )}
                           </div>
                         )}
                       </div>
                       )
                     })}
                   </div>
-                </div>
-              )}
-
-              {/* 4. Reject Packing */}
-              {packingRejectOptions.length>0&&(
-                <div>
-                  <p className="text-[12px] font-semibold text-slate-700 mb-2">Reject Packing</p>
-                  <div className="space-y-2">
-                    {packingRejectOptions.map((pk:any)=>{
-                      const sisaGram = Number(pk.gram_reject??0) - Number(pk.gram_reject_dilebur??0)
-                      return (
-                      <div key={pk.id}>
-                        <label className="flex items-center gap-2 cursor-pointer select-none">
-                          <input type="checkbox" checked={packRejGram[pk.id]!==undefined} onChange={()=>togglePackRej(pk.id,sisaGram)} className="w-4 h-4 rounded accent-violet-600"/>
-                          <span className="text-[12px] font-medium text-slate-700">{pk.kode}</span>
-                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-500">Reject Packing</span>
-                          <span className="text-[10px] text-slate-400">({pk.gramasi}gr)</span>
-                          <span className="ml-auto text-[10px] text-red-400 font-semibold">{formatGram(sisaGram)}{pk.pcs_reject?' · '+pk.pcs_reject+' pcs':''}</span>
-                        </label>
-                        {packRejGram[pk.id]!==undefined&&(
-                          <div className="mt-1 pl-6">
-                            <input type="number" step="0.001" max={sisaGram} placeholder={`Max ${formatGram(sisaGram)}`}
-                              value={packRejGram[pk.id]} onChange={e=>setPackRejGram(p=>({...p,[pk.id]:e.target.value}))} className={inp}/>
-                          </div>
-                        )}
-                      </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {rejectOptions.length===0&&packingRejectOptions.length===0&&!mentahChecked&&!leburChecked&&(
-                <p className="text-[12px] text-slate-400 italic text-center py-2">Centang sumber bahan di atas</p>
+                ):(
+                  <p className="text-[12px] text-slate-400 italic text-center py-2">Tidak ada scrap tersedia — cek halaman Inventori Scrap</p>
+                )
               )}
 
               {/* Total */}
@@ -1294,7 +1373,7 @@ function CreatePeleburanModal({ batchKode, batchNama, sisaMentahBelumLebur, hasi
           {/* DISERAHKAN */}
           <div className="rounded-lg overflow-hidden border border-slate-200">
             <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-200">
-              <span className="text-[11px] font-medium text-slate-500">📤 Diserahkan</span>
+              <span className="text-[11px] font-medium text-slate-500">Diserahkan</span>
             </div>
             <div className="p-4 space-y-3">
               <div className="grid grid-cols-2 gap-3">
@@ -1544,7 +1623,7 @@ function EditPeleburanSerahModal({ peleburan, tims = [], adminList = [], onClose
         <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
           <div className="rounded-lg overflow-hidden border border-slate-200">
             <div className="flex items-center gap-2 px-3 py-2 rounded-t-lg bg-slate-50 border-b border-slate-200">
-              <span className="text-[11px] font-medium text-slate-500">📤 Diserahkan</span>
+              <span className="text-[11px] font-medium text-slate-500">Diserahkan</span>
             </div>
             <div className="p-4 space-y-3">
               <div>

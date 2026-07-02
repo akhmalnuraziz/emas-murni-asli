@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { generateScrapKode, scrapStatusFrom } from '@/lib/scrap-sync'
 import { revalidatePath } from 'next/cache'
 import { createNotif } from '@/app/(dashboard)/notifikasi/actions'
 
@@ -37,8 +38,8 @@ export async function createBuyback(params: {
   hpCustomer?: string
   shieldtagKodes: string[]  // empty array = no shieldtag
   gramasi: string
-  kondisiEmas: string
-  kondisiTag: string
+  kondisiEmas?: string
+  kondisiTag?: string
   hargaBeli: number
   fotosB64: string[]
   catatan: string
@@ -78,8 +79,8 @@ export async function createBuyback(params: {
         hp_customer: params.hpCustomer || null,
         shieldtag_kode: stKode,
         gramasi: params.gramasi || null,
-        kondisi_emas: params.kondisiEmas,
-        kondisi_tag: params.kondisiTag,
+        kondisi_emas: params.kondisiEmas || 'bagus',
+        kondisi_tag: params.kondisiTag || 'bagus',
         harga_beli: params.hargaBeli,
         foto: i === 0 && fotoUrls.length ? fotoUrls : null,
         catatan: params.catatan || null,
@@ -117,6 +118,7 @@ export async function prossesBuyback(params: {
   aksi: 'ready_resell' | 'repair' | 'reject' | 'lebur'
   catatan: string
   userName?: string
+  beratGram?: number
 }): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -125,6 +127,9 @@ export async function prossesBuyback(params: {
   if (!['owner', 'manager', 'spv'].includes(profile?.role ?? ''))
     return { success: false, error: 'Tidak ada akses' }
   const userName = profile?.name ?? 'Unknown'
+
+  if (params.aksi === 'reject' && (!params.beratGram || params.beratGram <= 0))
+    return { success: false, error: 'Berat (gr) wajib diisi untuk tindakan Reject — barang masuk Scrap Inventory' }
 
   const STATUS_MAP = {
     ready_resell: 'ready_resell',
@@ -145,6 +150,40 @@ export async function prossesBuyback(params: {
   }).eq('id', params.id)
 
   if (error) return { success: false, error: error.message }
+
+  // Reject → otomatis masuk Scrap Inventory (upsert per buyback — proses ulang tidak duplikat)
+  if (params.aksi === 'reject' && params.beratGram && params.beratGram > 0) {
+    const sumberRef = `BB:${params.id}`
+    const { data: existingScrap } = await supabase.from('scrap_inventory')
+      .select('id, berat_terpakai').eq('sumber_ref', sumberRef).is('voided_at', null).maybeSingle()
+    if (existingScrap) {
+      const terpakai = Number(existingScrap.berat_terpakai ?? 0)
+      if (params.beratGram < terpakai - 0.001)
+        return { success: false, error: `Scrap buyback ini sudah terpakai ${terpakai.toFixed(3)}gr di peleburan` }
+      await supabase.from('scrap_inventory').update({
+        berat_gram: params.beratGram,
+        berat_sisa: Math.max(0, params.beratGram - terpakai),
+        status: scrapStatusFrom(params.beratGram, terpakai),
+      }).eq('id', existingScrap.id)
+    } else {
+      const scrapKode = await generateScrapKode(supabase)
+      await supabase.from('scrap_inventory').insert({
+        kode: scrapKode,
+        sumber_ref: sumberRef,
+        sumber_proses: 'buyback',
+        berat_gram: params.beratGram,
+        berat_sisa: params.beratGram,
+        berat_terpakai: 0,
+        status: 'tersedia',
+        gramasi: bbRecord?.gramasi ?? null,
+        tanggal: new Date().toISOString().slice(0, 10),
+        admin_input: userName,
+        catatan: `Buyback ${params.kode}${bbRecord?.shieldtag_kode ? ` · ShieldTag ${bbRecord.shieldtag_kode}` : ''}`,
+        created_by: user.id,
+      })
+    }
+    revalidatePath('/scrap')
+  }
 
   if (bbRecord?.shieldtag_kode) {
     const kode = bbRecord.shieldtag_kode
@@ -199,8 +238,8 @@ export async function editBuyback(id: number, params: {
   hpCustomer?: string
   shieldtagKode: string
   gramasi: string
-  kondisiEmas: string
-  kondisiTag: string
+  kondisiEmas?: string
+  kondisiTag?: string
   hargaBeli: number
   catatan: string
 }): Promise<{ success: boolean; error?: string }> {
@@ -228,8 +267,8 @@ export async function editBuyback(id: number, params: {
     hp_customer: params.hpCustomer || null,
     shieldtag_kode: newKode,
     gramasi: params.gramasi || null,
-    kondisi_emas: params.kondisiEmas,
-    kondisi_tag: params.kondisiTag,
+    kondisi_emas: params.kondisiEmas || 'bagus',
+    kondisi_tag: params.kondisiTag || 'bagus',
     harga_beli: params.hargaBeli,
     catatan: params.catatan || null,
   }).eq('id', id)

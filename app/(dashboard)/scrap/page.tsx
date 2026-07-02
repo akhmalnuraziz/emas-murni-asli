@@ -12,12 +12,12 @@ export default async function ScrapPage() {
 
   const [
     { data: scrapList },
-    { data: timList },
     { data: adminList },
+    { data: usageList },
   ] = await Promise.all([
     supabase.from('scrap_inventory').select('*').is('voided_at', null).order('created_at', { ascending: false }).limit(500),
-    supabase.from('tim_produksi').select('id, nama').eq('aktif', true),
     supabase.from('admin_input').select('id, nama').eq('aktif', true).is('voided_at', null),
+    supabase.from('scrap_usage').select('scrap_id, peleburan_kode, gram, created_at').order('created_at', { ascending: false }).limit(2000),
   ])
 
   const canManage = ['owner', 'admin_pusat', 'spv', 'gudang'].includes(profile?.role ?? '')
@@ -25,8 +25,8 @@ export default async function ScrapPage() {
   return (
     <ScrapClient
       scrapList={scrapList ?? []}
-      timList={timList ?? []}
       adminList={adminList ?? []}
+      usageList={usageList ?? []}
       userRole={profile?.role ?? ''}
       userName={profile?.name ?? ''}
       canManage={canManage}

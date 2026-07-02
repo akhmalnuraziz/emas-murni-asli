@@ -33,6 +33,7 @@ export default async function BahanBakuPage({
     { data: lossApprovalRows },
     { data: batchLossRows },
     { data: packingRejectRaw },
+    { data: scrapTersedia },
   ] = await Promise.all([
     (() => {
       const bq = supabase.from('batch').select('*', { count: 'exact' }).order('created_at', { ascending: false }).range(from, from + BATCH_PAGE_SIZE - 1)
@@ -74,6 +75,12 @@ export default async function BahanBakuPage({
     supabase.from('packing')
       .select('id, kode, gramasi, pcs_dipack, pcs_reject, gram_reject, gram_reject_dilebur, batch_kode')
       .gt('pcs_reject', 0)
+      .is('voided_at', null)
+      .order('created_at', { ascending: false }),
+    supabase.from('scrap_inventory')
+      .select('id, kode, batch_kode, gramasi, sumber_proses, berat_gram, berat_terpakai, berat_sisa, status, tanggal')
+      .in('status', ['tersedia', 'sebagian'])
+      .gt('berat_sisa', 0)
       .is('voided_at', null)
       .order('created_at', { ascending: false }),
   ])
@@ -165,6 +172,7 @@ export default async function BahanBakuPage({
       rejectCountMap={rejectCountMap}
       packingRejectItems={packingRejectItems}
       packingRejectCountMap={packingRejectCountMap}
+      scrapOptions={scrapTersedia ?? []}
       toleransiPeleburan={parseFloat(tolPlbRow?.value ?? '0.05') || 0.05}
       tims={tims ?? []}
       adminList={adminRows ?? []}

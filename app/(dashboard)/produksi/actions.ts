@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { createNotif } from '@/app/(dashboard)/notifikasi/actions'
+import { syncSerbukScrap, voidScrapBySumberRef } from '@/lib/scrap-sync'
 
 const PROD_PREFIX = 'PROD.GDCJ'
 const PCKG_PREFIX = 'PCKG.GDCJ'
@@ -936,7 +937,7 @@ export async function terimaStageProduksi(
   // Paralelkan: profile + produksi_item + toleransi + foto upload
   const [{ data: profile }, { data: item }, tolMap, newFotoUrls] = await Promise.all([
     supabase.from('users_profile').select('name').eq('id', user.id).single(),
-    supabase.from('produksi_item').select('total_gram, pcs_good, pcs').eq('id', produksiId).single(),
+    supabase.from('produksi_item').select('total_gram, pcs_good, pcs, batch_kode, gramasi').eq('id', produksiId).single(),
     getToleransiLoss(),
     fotosB64.length > 0 ? uploadBase64Fotos(supabase, fotosB64, `${produksiKode}-terima-${tahap}`) : Promise.resolve([] as string[]),
   ])
@@ -1005,6 +1006,22 @@ export async function terimaStageProduksi(
     })
   }
 
+  // Serbuk Pas Berat otomatis masuk Scrap Inventory (upsert — edit tersinkron).
+  // Dijalankan sebelum update handover supaya error validasi tidak menyisakan data setengah jalan.
+  if (tahap === 'pas_berat') {
+    const sync = await syncSerbukScrap(supabase, {
+      sumberRef: `SH:${targetHandoverId}`,
+      batchKode: (item as any)?.batch_kode ?? null,
+      gramasi: (item as any)?.gramasi != null ? String((item as any).gramasi) : null,
+      berat: sisaSerbuk,
+      tanggal: terimaTanggal,
+      admin: (formData.get('terima_admin_input') as string) || null,
+      createdBy: user.id,
+    })
+    if (sync.error) return { error: sync.error }
+    revalidatePath('/scrap')
+  }
+
   // Update stage_handover record
   await supabase.from('stage_handover').update({
     terima_gram: terimaGram, terima_pcs: terimaPcs,
@@ -1020,6 +1037,7 @@ export async function terimaStageProduksi(
   // Update produksi_item total_gram
   const updateData: any = { total_gram: terimaGram }
   if (terimaPcs && terimaPcs > 0) { updateData.pcs_good = terimaPcs }
+  if (sisaSerbuk > 0) updateData.sisa_serbuk = sisaSerbuk
   if (rejectPcs > 0 || rejectGram > 0) {
     // Akumulatif: reject dari stage ini ditambahkan ke total reject item
     // (detail per-stage tetap tersimpan di stage_handover.reject_gram/reject_pcs)
@@ -1150,6 +1168,13 @@ export async function voidStageHandover(
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Unauthorized' }
+
+  // Serbuk scrap dari handover ini ikut di-void (diblokir jika sudah terpakai di peleburan)
+  if (tahap === 'pas_berat') {
+    const v = await voidScrapBySumberRef(supabase, `SH:${handoverId}`, 'HANDOVER_DIVOID')
+    if (v.error) return { error: v.error }
+    revalidatePath('/scrap')
+  }
 
   await supabase.from('stage_handover').update({
     voided_at: new Date().toISOString(), void_reason: alasan
@@ -1610,6 +1635,20 @@ export async function terimaSesiStage(sesiId: string, tahap: string, formData: F
       })
     }
 
+    // Serbuk Pas Berat otomatis masuk Scrap Inventory (upsert — edit tersinkron)
+    if (tahap === 'pas_berat') {
+      const sync = await syncSerbukScrap(supabase, {
+        sumberRef: `SH:${handover.id}`,
+        batchKode: item.batch_kode ?? null,
+        gramasi: item.gramasi != null ? String(item.gramasi) : null,
+        berat: sisaSerbuk,
+        tanggal: terimaTanggal,
+        admin: (formData.get('terima_admin_input') as string) || null,
+        createdBy: user.id,
+      })
+      if (sync.error) return { error: `${item.gramasi}gr: ${sync.error}` }
+    }
+
     await supabase.from('stage_handover').update({
       terima_gram: terimaGram, terima_pcs: terimaPcs,
       terima_tanggal: terimaTanggal, terima_jam: terimaJam,
@@ -1642,6 +1681,7 @@ export async function terimaSesiStage(sesiId: string, tahap: string, formData: F
     await supabase.from('produksi_item').update(updateItem).eq('id', item.id)
   }
 
+  if (tahap === 'pas_berat') revalidatePath('/scrap')
   revalidatePath('/produksi')
   return { success: true }
 }
