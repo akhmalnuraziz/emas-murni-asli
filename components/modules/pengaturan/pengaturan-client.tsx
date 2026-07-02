@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import {
   Users, Plus, Trash2, Edit2, X, Check, AlertTriangle,
   Sliders, UserCheck, Settings2, UserPlus, Building2, Scale, Sparkles, LucideIcon,
+  Flame, Scissors, Thermometer, Package,
 } from 'lucide-react'
 import {
   createTim, updateTim, toggleTimAktif, deleteTim,
@@ -405,14 +406,14 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, canManage }
         </div>
         <div className="rounded-xl p-4 space-y-3 bg-white border border-slate-200 shadow-sm">
           {([
-            ['toleransi_loss_peleburan',    'Peleburan',    '🔥'],
-            ['toleransi_loss_cutting',      'Cutting',      '✂️'],
-            ['toleransi_loss_pas_berat',    'Pas Berat',    '⚖️'],
-            ['toleransi_loss_annealing',    'Annealing',    '🌡️'],
-            ['toleransi_loss_siap_packing', 'Siap Packing', '📦'],
-          ] as const).map(([key, label, icon]) => (
+            ['toleransi_loss_peleburan',    'Peleburan',    Flame],
+            ['toleransi_loss_cutting',      'Cutting',      Scissors],
+            ['toleransi_loss_pas_berat',    'Pas Berat',    Scale],
+            ['toleransi_loss_annealing',    'Annealing',    Thermometer],
+            ['toleransi_loss_siap_packing', 'Siap Packing', Package],
+          ] as [keyof typeof vals, string, LucideIcon][]).map(([key, label, Icon]) => (
             <div key={key} className="flex items-center gap-3">
-              <span className="text-[16px] w-8 text-center">{icon}</span>
+              <span className="w-8 flex justify-center"><Icon size={16} className="text-slate-400"/></span>
               <span className="flex-1 text-[13px] font-semibold text-slate-700">{label}</span>
               <div className="flex items-center gap-2">
                 <input type="number" step="0.001" disabled={!canManage}
@@ -434,7 +435,7 @@ function PengaturanUmumSection({ pengaturan, tims, isPending, start, canManage }
           {([
             ['ambang_gain_wajar',     'Gain Wajar (max tanpa persetujuan)', Sparkles,       'Gain di bawah ini dianggap wajar, tidak menurunkan KPI'],
             ['ambang_loss_kumulatif', 'Loss Kumulatif Waspada per Batch',   AlertTriangle,  'Jika total loss batch melebihi ini, sistem kirim notif'],
-          ] as [string, string, LucideIcon, string][]).map(([key, label, Icon, desc]) => (
+          ] as [keyof typeof vals, string, LucideIcon, string][]).map(([key, label, Icon, desc]) => (
             <div key={key}>
               <div className="flex items-center gap-3 mb-1">
                 <span className="w-8 flex justify-center"><Icon size={16} className="text-slate-400"/></span>
